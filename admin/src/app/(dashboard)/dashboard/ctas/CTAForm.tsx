@@ -146,6 +146,7 @@ export default function CTAForm({ initial, id }: Props) {
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />
             </div>
           </div>
+          </div>
         </CardContent>
       </Card>
 
