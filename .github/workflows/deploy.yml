@@ -1,0 +1,89 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Linode
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "IdentityFile ~/.ssh/deploy_key" >> ~/.ssh/config
+
+      - name: Pull latest code on server
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            cd /opt/forgebase/app
+            git pull origin main
+          '
+
+      - name: Apply DB migrations
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            cd /opt/forgebase/app/api
+            source .venv/bin/activate
+            alembic upgrade head
+          '
+
+      - name: Rebuild web frontend
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            cd /opt/forgebase/app/web
+            npm ci --prefer-offline
+            npm run build
+            cp -r .next/static .next/standalone/.next/static
+            cp -r public .next/standalone/public 2>/dev/null || true
+          '
+
+      - name: Rebuild admin frontend
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            cd /opt/forgebase/app/admin
+            npm ci --prefer-offline
+            npm run build
+            cp -r .next/static .next/standalone/.next/static
+            cp -r public .next/standalone/public 2>/dev/null || true
+          '
+
+      - name: Restart all services
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            systemctl restart forgebase-api
+            systemctl restart forgebase-web
+            systemctl restart forgebase-admin
+            sleep 3
+            systemctl is-active forgebase-api
+            systemctl is-active forgebase-web
+            systemctl is-active forgebase-admin
+          '
+
+      - name: Health check
+        run: |
+          sleep 5
+          STATUS=$(curl -sf http://${{ secrets.DEPLOY_HOST }}/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))")
+          if [ "$STATUS" != "ok" ]; then
+            echo "Health check failed: $STATUS"
+            exit 1
+          fi
+          echo "Health check passed: $STATUS"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "Deployment succeeded to http://${{ secrets.DEPLOY_HOST }}"
+          else
+            echo "Deployment FAILED"
+          fi
