@@ -355,10 +355,13 @@ async def receive_events_batch(
         new_score = None
         new_stage = None
         if ev.session_id and ev.visitor_id:
-            await _upsert_session(ev.session_id, ev.visitor_id, ev, db)
+            # Visitor MUST be upserted first to satisfy FK on tracking_sessions
             new_score, _, new_stage, _ = await _upsert_visitor(
                 ev.visitor_id, ev, db, score_delta
             )
+            await db.flush()
+            await _upsert_session(ev.session_id, ev.visitor_id, ev, db)
+            await db.flush()  # Also flush session before inserting event (fk_events_session_id)
         elif ev.visitor_id:
             new_score, _, new_stage, _ = await _upsert_visitor(
                 ev.visitor_id, ev, db, score_delta
@@ -451,7 +454,7 @@ async def events_summary(
     q = (
         select(TrackingEvent.event_name, func.count(TrackingEvent.event_id).label("count"))
         .group_by(TrackingEvent.event_name)
-        .order_by(col(func.count(TrackingEvent.event_id)).desc())
+        .order_by(func.count(TrackingEvent.event_id).desc())
     )
     if from_ts:
         q = q.where(TrackingEvent.timestamp >= from_ts)
@@ -493,7 +496,7 @@ async def events_by_page(
             TrackingEvent.page_id,
             TrackingEvent.page_url,
         )
-        .order_by(col(func.count(TrackingEvent.event_id)).desc())
+        .order_by(func.count(TrackingEvent.event_id).desc())
     )
     if page_type:
         q = q.where(TrackingEvent.page_type == page_type)

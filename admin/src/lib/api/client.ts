@@ -1,5 +1,10 @@
 // Admin API client — 所有對後端 API 的呼叫都經過這個 module
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+function resolveApiBase(rawBase?: string): string {
+  const base = (rawBase || "http://localhost:8000").replace(/\/$/, "");
+  return base.endsWith("/api/v1") ? base : `${base}/api/v1`;
+}
+
+export const API_BASE = resolveApiBase(process.env.NEXT_PUBLIC_API_URL);
 
 type RequestOptions = {
   method?: string;

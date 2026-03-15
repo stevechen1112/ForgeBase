@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-electrical-installation-utility",
+    "filename": "application-electrical-installation-utility.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic application hero image for electrical installation and utility work using insulated hand tools. Show a professional electrical panel or switchgear environment where VDE-rated insulated screwdrivers, pliers, and diagonal cutters are neatly arranged. The scene should communicate electrical safety, compliance with 1000V insulation standards, and professional trade use. Clean industrial environment, yellow-red insulation handle color visible but not cartoonish. No dangerous sparks, no dramatic scenes."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "yIq2aZKmCImS9tMPtq7F6AY",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 92,
+    "candidatesTokenCount": 1621,
+    "totalTokenCount": 1713,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 92
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

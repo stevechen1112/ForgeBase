@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-industrial-maintenance-mro",
+    "filename": "application-industrial-maintenance-mro.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic hero image for industrial maintenance and MRO (Maintenance, Repair, Operations) tool procurement. Show an orderly industrial facility maintenance scene: a technician's tool cart with calibrated torque tools, insulated screwdrivers, and socket sets near mechanical equipment. The visual should communicate reliability, process discipline, and scale. Neutral industrial palette, real workshop surfaces, no staged consumer imagery. The viewer should feel this is a procurement manager's or plant engineer's world."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "tIq2aenuJ_jt1e8Pl9nEsQE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 95,
+    "candidatesTokenCount": 1596,
+    "totalTokenCount": 1691,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 95
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

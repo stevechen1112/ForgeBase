@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-dh045",
+    "filename": "product-nft-dh045-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for a 45mm Dead Blow Hammer model NFT-DH045. Show the tool isolated on a clean neutral background, with clear detail on the shot-filled polymer head, comfortable grip handle, and professional build. Dead blow hammers have a distinctive look with their matte non-marring head surface. B2B professional presentation, export-quality visual, no retail packaging."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "QYu2abv0GrWL1e8PpbaVwQY",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 83,
+    "candidatesTokenCount": 1545,
+    "totalTokenCount": 1628,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 83
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

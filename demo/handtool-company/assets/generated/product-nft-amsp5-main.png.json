@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-amsp5",
+    "filename": "product-nft-amsp5-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for a 5-Piece Spark Plug Socket Set model NFT-AMSP5. Show 5 spark plug sockets in different common sizes (14mm, 16mm, 18mm, 21mm) with rubber insert visible, arranged neatly on a neutral background or in a rail clip. Professional automotive service tool quality, clean chrome-vanadium finish, B2B export presentation. No retail packaging, no consumer catalog styling."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "aYu2aZO0LtKJ1e8PsMqIkQg",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 97,
+    "candidatesTokenCount": 1665,
+    "totalTokenCount": 1762,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 97
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-workshop-assembly-repair",
+    "filename": "application-workshop-assembly-repair.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic hero image for a workshop assembly and repair environment. Show a well-organized mechanical assembly bench with ratchet handles, socket sets, dead blow hammers, and precision tools arranged for systematic work. The setting should suggest contract manufacturing, assembly-line maintenance, or precision repair work rather than consumer DIY. Clean work surfaces, labeled tool positions, organized tool boards. Neutral industrial tone, no exaggerated clutter or drama."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "2oq2abaOAfjH1e8P3JDC6AI",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 83,
+    "candidatesTokenCount": 1605,
+    "totalTokenCount": 1688,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 83
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

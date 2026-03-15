@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-private-label-programs",
+    "filename": "application-private-label-programs.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic B2B hero image for a private-label and OEM tool program offering. Show professional tool packaging and branding: blister-packed hand tools, a custom-branded toolkit case, and neatly arranged packaged product lines suggesting white-label manufacturing capability. The visual should communicate brand flexibility, packaging professionalism, and export readiness. Restrained backgrounds, premium packaging aesthetic, no discount retail look. Suitable for a manufacturer pitching to distributors and store brands."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "8Iq2aYXYH9TQ1e8Pp6e0gAE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 90,
+    "candidatesTokenCount": 1544,
+    "totalTokenCount": 1634,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 90
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

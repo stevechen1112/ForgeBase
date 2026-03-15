@@ -7,8 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/store";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/lib/api/client";
 
 type PageRow = {
   page_type: string | null;

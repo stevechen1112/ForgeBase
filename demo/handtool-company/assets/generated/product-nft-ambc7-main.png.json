@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ambc7",
+    "filename": "product-nft-ambc7-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for a Brake Caliper Service Kit model NFT-AMBC7. Show the kit contents arranged neatly — brake caliper wind-back tools, pistons compressor, adapters — either in a blow-molded case or laid out on a neutral surface. Professional automotive service tool presentation for a B2B manufacturer website. Clean composition, metal finish detail visible, no consumer packaging styling."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "UIu2af6SMsfT1e8Pu5zvyAk",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 80,
+    "candidatesTokenCount": 1548,
+    "totalTokenCount": 1628,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 80
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

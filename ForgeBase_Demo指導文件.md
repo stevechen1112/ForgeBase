@@ -5,9 +5,9 @@
 > 預估完整 Demo 時間：**75–100 分鐘**（可依客戶興趣裁剪）。
 >
 > 服務網址：
-> - 前台官網 → `http://localhost:3000`
-> - 管理後台 → `http://localhost:3001`
-> - API 文件 → `http://localhost:8000/docs`
+> - 前台官網 → `https://mitselect.com`
+> - 管理後台 → `https://mitselect.com/backend`
+> - API 文件 → `https://mitselect.com/api/docs`
 
 ---
 
@@ -15,9 +15,9 @@
 
 ### Demo 的運作原理
 
-**這個 Demo 不是靜態 UI 展示**。前台官網（:3000）的每一次點擊、瀏覽都會即時寫入後台資料庫，管理後台（:3001）即時呈現。換句話說：
+**這個 Demo 不是靜態 UI 展示**。前台官網的每一次點擊、瀏覽都會即時寫入後台資料庫，管理後台即時呈現。換句話說：
 
-> 你從 3000 扮演買家來瀏覽，3001 就會出現對應的事件、分數變化、訪客記錄。
+> 你從前台扮演買家來瀏覽，後台就會出現對應的事件、分數變化、訪客記錄。
 
 但「剛清空的後台」效果很差——訪客列表空白、RFQ 收件箱是零，完全無法說明系統在做什麼。正確的做法是：
 
@@ -30,59 +30,42 @@
 
 ### 步驟一：確認服務正常
 
-```bash
-# 三個服務都要啟動
-cd /Users/yuchuchen/Desktop/ForgeBase
+服務已部署於雲端，無需本地啟動。直接瀏覽器確認以下三個網址可正常存取：
 
-# API（8000）
-cd api && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
-
-# 前台（3000）
-cd web && npm run dev &
-
-# 後台（3001）
-cd admin && npm run dev -- --port 3001 &
-```
-
-確認方式：瀏覽器開啟三個網址都能正常顯示。
+- 前台官網：`https://mitselect.com`
+- 管理後台：`https://mitselect.com/backend`
+- API 文件：`https://mitselect.com/api/docs`
 
 ---
 
 ### 步驟二：匯入內容資料（產品、應用等）
 
-> **若已匯入過可略過此步驟**
+> **內容資料已匯入雲端，可略過此步驟。**
 
-```bash
-cd /Users/yuchuchen/Desktop/ForgeBase/demo/handtool-company/seed
-python3 import_demo_content.py
-```
-
-這個腳本會匯入：產品分類、產品、應用場景、認證、FAQ、比較主題。
-匯入後前台就有真實的頁面內容可以展示。
+前台已有真實的產品、應用場景、認證等頁面內容可直接展示。
 
 ---
 
 ### 步驟三：注入模擬訪客行為（Demo 狀態準備）
 
 ```bash
-cd /Users/yuchuchen/Desktop/ForgeBase/demo/handtool-company/seed
-python3 seed_demo_visitors.py
+cd /Users/yuchuchen/Desktop/ForgeBase
+source .venv/bin/activate
+python3 scripts/demo_seed_and_verify.py --mode demo \
+  --email admin@forgebase.com --password ForgeBase2026
 ```
 
 執行後後台會出現：
 
-| 訪客 | 來自 | 意圖階段 | 特色 |
-|---|---|---|---|
-| Thomas Bauer | 德國（採購） | 🔥 Hot | 已送出 RFQ，有完整事件軌跡 |
-| Sarah Mitchell | 美國（工程師） | ✅ Sales-Ready | 已送出 RFQ，來自 LinkedIn |
-| Marco Rossi | 義大利（採購） | 🟡 Warm | 下載過規格書，已建立 Contact |
-| Anna Kowalski | 波蘭（研發） | 🔥 Hot | 下載過規格書，尚未詢價 |
-| Kenji Tanaka | 日本（工程師） | 🟡 Warm | 回訪兩次，未留資 |
-| Liu Wei | 中國 | ❄️ Cold | 初訪，瀏覽了分類頁 |
-| David Park | 韓國 | ❄️ Cold | 只看首頁就離開 |
+| 資料類型 | 數量 | 說明 |
+|---|---|---|
+| Tracking Events | ~1,400+ 筆 | 橫跨過去 30 天，模擬真實流量分布 |
+| Unique Visitors | ~120 個 | 含 Hot / Warm / Cold 各比例 |
+| Sessions | ~210 個 | 每個 session 3–9 個事件 |
+| 聯絡表單 | 4 筆 | 各帶 visitor_id，可追溯來源 |
+| RFQ 詢價單 | 6 筆 | 帶產品關聯、優先級自動判定 |
 
-**RFQ 收件箱**：Thomas（新建）、Sarah（新建）  
-**聯絡人**：Marco、Anna（從 Download Gate 建立）
+**後台帳號**：`admin@forgebase.com` / `ForgeBase2026`
 
 ---
 
@@ -90,7 +73,7 @@ python3 seed_demo_visitors.py
 
 Demo 期間最有說服力的時刻：**客戶親眼看到系統即時記錄行為**。
 
-1. 打開一個**新的無痕視窗**（`⌘ + Shift + N`），開啟 `http://localhost:3000`
+1. 打開一個**新的無痕視窗**（`⌘ + Shift + N`），開啟 `https://mitselect.com`
 2. 瀏覽幾個產品頁、展開一個 FAQ、點擊 CTA 按鈕
 3. 切回管理後台 → 追蹤 → 事件列表 → 畫面重新整理
 4. **剛才的行為立即出現在後台**，並帶著 intent 分數變化
@@ -153,7 +136,7 @@ Demo 期間最有說服力的時刻：**客戶親眼看到系統即時記錄行�
 
 ### 1-1 前台官網整體瀏覽
 
-**操作**：開啟 `http://localhost:3000`
+**操作**：開啟 `https://mitselect.com`
 
 **展示重點**：
 - 首頁 Hero、產品分類卡片、應用場景摘要、認證展示
@@ -168,7 +151,7 @@ Demo 期間最有說服力的時刻：**客戶親眼看到系統即時記錄行�
 
 ### 1-2 管理後台 — 產品資料管理
 
-**操作**：切換到 `http://localhost:3001` → 登入 → 產品管理
+**操作**：切換到 `https://mitselect.com/backend` → 登入 → 產品管理
 
 **展示重點**：
 
@@ -385,7 +368,7 @@ Demo 期間最有說服力的時刻：**客戶親眼看到系統即時記錄行�
 
 ### 3-1 RFQ 詢價前台流程
 
-**操作**：開啟前台 `http://localhost:3000/request-quote` 或從產品頁點擊詢價 CTA
+**操作**：開啟前台 `https://mitselect.com/request-quote` 或從產品頁點擊詢價 CTA
 
 **展示重點**：
 

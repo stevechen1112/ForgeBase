@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-automotive-aftermarket",
+    "filename": "application-automotive-aftermarket-service.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic B2B hero image for automotive aftermarket service tools. Show a clean, professional auto service environment: a workbench with torque wrenches, spark plug sockets, brake service tools, and oil filter wrenches laid out systematically. The setting should feel like a professional independent workshop or franchise service center, not a consumer DIY garage. Controlled lighting, organized tool layout, matte industrial surfaces. No racing aesthetics, no flashy neon, no consumer auto-parts store styling."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "m4q2aaD1BJ2f1e8P_aiTmAw",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 92,
+    "candidatesTokenCount": 1579,
+    "totalTokenCount": 1671,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 92
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

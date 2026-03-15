@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ip200",
+    "filename": "product-nft-ip200-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for 200mm Insulated Combination Pliers model NFT-IP200. Show the pliers isolated on a clean neutral background with clear detail on the insulated dual-color grip handles (yellow-red, VDE rated), hardened steel jaw teeth, and professional finish. This is a B2B export-oriented presentation for an industrial tool manufacturer. Clean neutral background, sharp technical detail visible."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "MYu2aaf2KcjL1e8PgPuj0As",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 87,
+    "candidatesTokenCount": 1519,
+    "totalTokenCount": 1606,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 87
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

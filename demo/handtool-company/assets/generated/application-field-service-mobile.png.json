@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "application-field-service-mobile",
+    "filename": "application-field-service-mobile.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic hero image for field service and mobile maintenance work. Show a portable tool kit laid open — a blow-molded case or professional field bag containing organized hand tools: insulated screwdrivers, combination pliers, socket sets, a torque wrench, and measuring instruments. The environment suggests on-site service work: a maintenance vehicle, industrial facility exterior, or utility setting. Clean and professional, not rugged-for-drama. Practical tool selection visible, organized layout, durable case construction evident."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "AYu2aYfbJOaa1e8P8PukgQc",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 100,
+    "candidatesTokenCount": 1574,
+    "totalTokenCount": 1674,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 100
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

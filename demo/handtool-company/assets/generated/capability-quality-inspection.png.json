@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "capability-quality-inspection",
+    "filename": "capability-quality-inspection.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic B2B image for a quality inspection and precision manufacturing section. Show a well-lit quality control station in a hand tool factory: measurement instruments, calibration tools, a torque wrench being verified on a torque tester, and inspection documentation visible on a clipboard or screen. The environment should feel systematic, precise, and export-compliance-oriented. Neutral industrial setting, no dramatization, clear technical credibility."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "xou2adokn_jV7w_h6auxCQ",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 83,
+    "candidatesTokenCount": 1583,
+    "totalTokenCount": 1666,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 83
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

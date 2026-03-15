@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ktmev1",
+    "filename": "product-nft-ktmev1-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for an EVA Foam Mechanic Drawer Set model NFT-KTMEV1. Show a tool drawer liner set with precisely cut EVA foam slots holding sockets, wrenches, and ratchets in organized positions. The foam should show visible cutout profiles for each tool. Professional shadow-board or drawer organizer presentation, black or dark gray foam with tools sitting in cutouts. B2B presentation quality, suitable for a hand tool export manufacturer website."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "eou2aZHGB5SJosUPtu2byA8",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 91,
+    "candidatesTokenCount": 1537,
+    "totalTokenCount": 1628,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 91
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

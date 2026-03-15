@@ -5,8 +5,7 @@ import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/lib/api/client";
 
 type RFQ = {
   id: string;

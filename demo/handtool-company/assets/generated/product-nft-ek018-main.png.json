@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ek018",
+    "filename": "product-nft-ek018-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for an 18-Piece Electrician Service Kit model NFT-EK018. Show a complete electrician tool kit laid out or in a soft pouch/roll organizer: insulated VDE screwdrivers, combination pliers, long nose pliers, diagonal cutter, wire stripper, and voltage tester. Professional presentation, isolated on neutral background, organized display. B2B hand tool export quality, no consumer packaging design."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "I4u2acLLML-6vr0P8NS7sQQ",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 89,
+    "candidatesTokenCount": 1569,
+    "totalTokenCount": 1658,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 89
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

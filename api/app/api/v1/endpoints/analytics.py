@@ -194,6 +194,7 @@ async def strategy_map_analytics(
       - 'dark'     : page_views = 0 (no traffic)
     """
     # Fetch all strategy entries with linked page metrics
+    # content_strategies uses entity_id + entity_type (not page_id / funnel_stage)
     sql = text("""
         WITH page_metrics AS (
             SELECT
@@ -212,19 +213,19 @@ async def strategy_map_analytics(
         )
         SELECT
             cs.id::text                                          AS strategy_id,
-            cs.funnel_stage,
+            cs.page_type,
+            cs.entity_type,
+            cs.entity_id::text                                   AS entity_id,
             cs.status,
-            cs.buying_role,
-            cs.target_keyword,
-            cs.primary_message,
-            p.id::text                                           AS page_id,
-            p.title                                              AS page_title,
-            p.slug                                               AS page_slug,
-            COALESCE(pm.page_views,       0)                    AS page_views,
-            COALESCE(pm.unique_visitors,  0)                    AS unique_visitors,
-            COALESCE(pm.rfq_count,        0)                    AS rfq_count,
-            COALESCE(pm.spec_downloads,   0)                    AS spec_downloads,
-            COALESCE(pm.avg_intent_score, 0)                    AS avg_intent_score,
+            cs.locale,
+            cs.notes,
+            COALESCE(p.product_name, app.application_name, '')   AS entity_name,
+            COALESCE(p.slug, app.slug, '')                        AS entity_slug,
+            COALESCE(pm.page_views,       0)                     AS page_views,
+            COALESCE(pm.unique_visitors,  0)                     AS unique_visitors,
+            COALESCE(pm.rfq_count,        0)                     AS rfq_count,
+            COALESCE(pm.spec_downloads,   0)                     AS spec_downloads,
+            COALESCE(pm.avg_intent_score, 0)                     AS avg_intent_score,
             CASE
                 WHEN COALESCE(pm.rfq_count, 0) > 0 AND COALESCE(pm.page_views, 0) >= 10 THEN 'strong'
                 WHEN COALESCE(pm.page_views, 0) >= 10 THEN 'engaged'
@@ -232,15 +233,10 @@ async def strategy_map_analytics(
                 ELSE 'dark'
             END                                                  AS performance_tier
         FROM content_strategies cs
-        LEFT JOIN pages p ON p.id = cs.page_id
-        LEFT JOIN page_metrics pm ON pm.page_id = cs.page_id
+        LEFT JOIN products p     ON p.id = cs.entity_id AND cs.entity_type = 'product'
+        LEFT JOIN applications app ON app.id = cs.entity_id AND cs.entity_type = 'application'
+        LEFT JOIN page_metrics pm ON pm.page_id = cs.entity_id
         ORDER BY
-            CASE cs.funnel_stage
-                WHEN 'awareness' THEN 1
-                WHEN 'consideration' THEN 2
-                WHEN 'decision' THEN 3
-                ELSE 4
-            END,
             COALESCE(pm.page_views, 0) DESC
     """)
 

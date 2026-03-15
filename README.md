@@ -112,15 +112,26 @@ curl http://localhost:8000/api/v1/health
 
 ### Demo 資料注入（選用）
 
-以示範公司「手工具製造商」為例，注入 7 位模擬買家與 2 筆 RFQ：
+以示範公司「NorthForge 手工具製造商」為例，依序執行三個腳本：
 
 ```bash
-# 先確保 API (8000) 正在執行
-cd demo/handtool-company/seed
-python3 seed_demo_visitors.py
+# 在 api 目錄下執行（使用 api/.venv）
+cd api && source .venv/bin/activate
+
+# 步驟一：匯入產品、應用、認證、FAQ 等內容資料
+python3 ../demo/handtool-company/seed/import_demo_content.py
+# → 5 分類 / 32 產品 / 6 應用 / 5 認證 / 18 FAQ / 8 比較主題
+
+# 步驟二：注入模擬訪客行為資料（已有資料時可略過）
+python3 ../demo/handtool-company/seed/seed_demo_visitors.py
+# → 14 訪客 / 10 RFQ / 14 聯絡人 / 69 事件（含 Thomas/Sarah/Marco 等 demo 角色）
+
+# 步驟三：注入 Page Briefs、CTAs、Nurture 序列（已有資料時可略過）
+python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
+# → 8 個 Page Briefs（各狀態）/ 4 個 CTA / 2 個 Nurture 序列 7 個步驟
 ```
 
-注入成功後，管理後台（:3001）可立即看到 Cold / Warm / Hot / Sales-Ready 分布的訪客列表。
+注入成功後，管理後台（:3001）可立即看到 Cold / Warm / Hot / Sales-Ready 各階段訪客、RFQ 收件箱、Page Brief 列表、CTA 規則、Nurture 序列。
 
 ---
 
@@ -131,6 +142,46 @@ python3 seed_demo_visitors.py
 - DB migration：`alembic revision --autogenerate -m "描述"` 後 commit
 - 環境變數：`.env.example` 保持更新，**絕不 commit 真實 `.env`**
 - 所有 AI 生成必須有對應的 PageBrief（Approved 狀態）才能觸發
+
+---
+
+---
+
+## 生產環境（mitselect.com）
+
+| 項目 | 值 |
+|------|----|
+| **網站** | https://mitselect.com |
+| **管理後台** | https://mitselect.com/backend/login |
+| **API** | https://mitselect.com/api/v1/ |
+| **伺服器** | Linode Ubuntu 24.04，IP `172.234.81.223` |
+| **SSH** | `ssh -i ~/.ssh/forgebase_deploy root@172.234.81.223` |
+| **DB** | `postgresql://forgebase:***REMOVED***@localhost:5432/forgebase` |
+| **Admin 帳號** | `admin@forgebase.com` / `ForgeBase2026` |
+| **SSL 憑證** | Let's Encrypt，到期 2026-06-13（certbot auto-renew） |
+
+### Systemd 服務
+
+| 服務 | Port | 說明 |
+|------|------|------|
+| `forgebase-api` | 8000 | FastAPI |
+| `forgebase-web` | 3000 | 前台 Next.js |
+| `forgebase-admin` | 3001 | 管理後台 Next.js |
+
+```bash
+# 重新部署前端（兩個前端流程相同）
+cd /opt/forgebase/app/web   # 或 admin
+npm run build
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+systemctl restart forgebase-web   # 或 forgebase-admin
+```
+
+### 重要注意事項
+
+- **HTTPS Mixed Content**：`NEXT_PUBLIC_API_URL` 必須設為 `https://mitselect.com`（不可用 HTTP 或 IP），否則瀏覽器會封鎖所有 API 請求
+- **nginx `/backend` 路由**：`location /backend {`（無 trailing slash），`proxy_pass http://127.0.0.1:3001`（也無 trailing slash）— 兩端都有 `/` 會導致 404
+- **GitHub Actions CI/CD**：需在 GitHub → Settings → Secrets 設定 `DEPLOY_HOST=172.234.81.223` 與 `DEPLOY_SSH_KEY`
 
 ---
 

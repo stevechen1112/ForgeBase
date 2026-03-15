@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, BarChart2 } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE } from "@/lib/api/client";
 
 type PageRow = { slug: string; title?: string; views?: number; unique_visitors?: number; events?: number; avg_time_on_page?: number };
 type Analytics = { period_days: number; summary: { total_events: number; total_pages: number; total_unique_visitors: number }; pages: PageRow[] };

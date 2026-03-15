@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ktfm42",
+    "filename": "product-nft-ktfm42-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for a 42-Piece Field Maintenance Service Kit model NFT-KTFM42. Show a portable field service kit in a reinforced carry case, open to reveal organized compartments with insulated screwdrivers, combination pliers, socket set, and measuring tools. The case should look durable and field-ready. Professional presentation, neutral background, crisp detail on organized tool layout. B2B export-quality visual."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "lou2aaryHdrr1e8Pz6eamAk",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 88,
+    "candidatesTokenCount": 1591,
+    "totalTokenCount": 1679,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 88
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, BarChart2 } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "@/lib/api/client";
 
 const STATUS_LABELS: Record<string, string> = {
   unplanned: "未規劃",
@@ -71,7 +70,7 @@ export default function StrategiesPage() {
     setLoadingPerf(true);
     try {
       const res = await fetch(
-        `${API_BASE}/api/v1/tracking/analytics/strategy-map?days=${perfDays}`,
+        `${API_BASE}/tracking/analytics/strategy-map?days=${perfDays}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();

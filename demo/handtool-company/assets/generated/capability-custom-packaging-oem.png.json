@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "capability-custom-packaging-oem",
+    "filename": "capability-custom-packaging-oem.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic B2B image for an OEM custom packaging capability section. Show a professional tool packaging line or display: blister packs of hand tools on a retail-style backing card, a custom branded retail toolkit box, and a white-label toolkit case displayed together. The visual should communicate manufacturing flexibility and brand-program capability. Clean, professional, packaging-focused. No consumer discount aesthetic, no clutter. Suitable for a export manufacturer's capabilities page."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "q4u2aev-BKCWvr0PuMW76Aw",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 92,
+    "candidatesTokenCount": 1535,
+    "totalTokenCount": 1627,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 92
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

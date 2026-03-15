@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-tw500",
+    "filename": "product-nft-tw500-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for a 1/2 inch Drive Industrial Torque Wrench model NFT-TW500. Show a full-size heavy-duty click-type torque wrench isolated on a clean neutral background. The wrench should look robust with a textured grip handle, chrome-vanadium steel construction visible, and clear scale markings. Professional B2B manufacturer presentation, credible build quality, no retail packaging. Neutral matte background, controlled studio-quality lighting."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "E4u2acPsO5a4vr0Pr6HPgAs",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 94,
+    "candidatesTokenCount": 1577,
+    "totalTokenCount": 1671,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 94
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}
