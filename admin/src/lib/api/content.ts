@@ -201,6 +201,118 @@ export type PageBrief = {
   updated_at: string;
 };
 
+export type SEOEvaluationCheck = {
+  id: string;
+  label: string;
+  status: "good" | "warning" | "critical";
+  message: string;
+};
+
+export type SEOEvaluationSuggestion = {
+  id: string;
+  title: string;
+  detail: string;
+  priority: "high" | "medium" | "low";
+  field?: string;
+  suggested_value?: string | null;
+};
+
+export type SEOEvaluation = {
+  entity_type: string;
+  entity_label: string;
+  entity_name: string;
+  score: number;
+  status: "healthy" | "needs-work" | "critical";
+  summary: string;
+  focus_keywords: string[];
+  search_preview: {
+    title: string;
+    description: string;
+    url: string;
+  };
+  checks: SEOEvaluationCheck[];
+  suggestions: SEOEvaluationSuggestion[];
+  recommended: {
+    seo_title: string;
+    seo_description: string;
+    canonical_url: string;
+  };
+};
+
+export type SEOHealthTask = {
+  id: string;
+  title: string;
+  description: string;
+  count: number;
+  impact: string;
+  entity_types: string[];
+};
+
+export type SEOHealthEntity = {
+  id: string;
+  entity_type: string;
+  name: string;
+  score: number;
+  status: "healthy" | "needs-work" | "critical";
+  url: string;
+  focus_keywords: string[];
+  top_issue: string;
+};
+
+export type SEOHealthResponse = {
+  summary: {
+    total_entities: number;
+    healthy: number;
+    needs_work: number;
+    critical: number;
+    avg_score: number;
+    published_pages: number;
+    published_products: number;
+    published_categories: number;
+    published_applications: number;
+  };
+  tasks: SEOHealthTask[];
+  entities: SEOHealthEntity[];
+};
+
+export type SEOLinkOpportunity = {
+  source_type: string;
+  source_name: string;
+  source_url: string;
+  target_type: string;
+  target_name: string;
+  target_url: string;
+  reason: string;
+  confidence: string;
+};
+
+export type SEOLinksResponse = {
+  count: number;
+  suggestions: SEOLinkOpportunity[];
+};
+
+export type SEORevenueRow = {
+  page_id: string;
+  page_type: string;
+  page_name: string;
+  page_views: number;
+  unique_visitors: number;
+  rfq_count: number;
+  avg_intent_score: number;
+  conversion_rate: number;
+};
+
+export type SEORevenueResponse = {
+  summary: {
+    total_views: number;
+    total_rfq: number;
+    pages_with_rfq: number;
+    avg_conversion_rate: number;
+  };
+  top_converters: SEORevenueRow[];
+  underperformers: SEORevenueRow[];
+};
+
 // ── API client instances ──────────────────────────────────────────────────────
 const BASE = "/content";
 
@@ -233,6 +345,17 @@ export const capabilitiesApi = makeContentApi<Capability, Partial<Capability>, P
 export const ctasApi = makeContentApi<CTA, Partial<CTA>, Partial<CTA>>(`${BASE}/ctas`);
 export const pagesApi = makeContentApi<Page, Partial<Page>, Partial<Page>>(`${BASE}/pages`);
 export const briefsApi = makeContentApi<PageBrief, Partial<PageBrief>, Partial<PageBrief>>(`${BASE}/briefs`);
+
+export const seoWorkbenchApi = {
+  evaluate: (token: string, payload: { entity_type: string; data: Record<string, unknown> }) =>
+    apiClient.post<SEOEvaluation>(`${BASE}/seo-audit/evaluate`, payload, token),
+  health: (token: string) =>
+    apiClient.get<SEOHealthResponse>(`${BASE}/seo-audit/health`, token),
+  links: (token: string, limit = 20) =>
+    apiClient.get<SEOLinksResponse>(`${BASE}/seo-audit/links?limit=${limit}`, token),
+  revenue: (token: string, days = 30) =>
+    apiClient.get<SEORevenueResponse>(`${BASE}/seo-audit/revenue?days=${days}`, token),
+};
 
 // ── Preview Token (1a.6.4) ────────────────────────────────────────────────────
 export const previewApi = {

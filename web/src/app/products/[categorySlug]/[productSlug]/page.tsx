@@ -23,10 +23,11 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { getProductImage } from "@/lib/demoAssets";
+import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
 
 type Props = { params: Promise<{ categorySlug: string; productSlug: string }> };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = getSiteUrl();
 const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -34,26 +35,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductBySlug(productSlug);
   if (!product) return { title: "Not Found" };
 
-  const canonical = `${SITE_URL}/products/${categorySlug}/${product.slug}`;
+  const pagePath = `/products/${categorySlug}/${product.slug}`;
+  const canonical = buildCanonicalUrl(pagePath);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getProductLocales(product.slug).catch(() => []);
-  const languages: Record<string, string> = { "x-default": canonical };
-  for (const v of localeVariants) {
-    const url =
-      v.locale === "en"
-        ? `${SITE_URL}/products/${categorySlug}/${product.slug}`
-        : `${SITE_URL}/${v.locale}/products/${categorySlug}/${product.slug}`;
-    languages[v.locale] = url;
-  }
-  if (!("en" in languages)) languages.en = canonical;
+  const languages = buildLocaleAlternates(pagePath, localeVariants);
 
   return {
     title: product.seo_title ?? `${product.model_number} ${product.product_name}`,
     description: product.seo_description ?? product.short_description,
     alternates: {
       canonical,
-      languages: Object.keys(languages).length > 2 ? languages : undefined,
+      languages,
     },
   };
 }

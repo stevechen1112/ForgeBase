@@ -3,20 +3,11 @@ import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { buildDefaultMetadata } from "@/lib/seo";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-export const metadata: Metadata = {
-  title: {
-    default: process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase",
-    template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase"}`,
-  },
-  description: "外銷製造商官網成長系統",
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+export const metadata: Metadata = buildDefaultMetadata();
 
 export default function RootLayout({
   children,

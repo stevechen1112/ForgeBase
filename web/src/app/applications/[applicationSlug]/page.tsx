@@ -10,29 +10,23 @@ import {
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
 
 type Props = { params: Promise<{ applicationSlug: string }> };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = getSiteUrl();
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { applicationSlug } = await params;
   const application = await getApplicationBySlug(applicationSlug);
   if (!application) return { title: "Not Found" };
 
-  const canonical = `${SITE_URL}/applications/${application.slug}`;
+  const pagePath = `/applications/${application.slug}`;
+  const canonical = buildCanonicalUrl(pagePath);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getApplicationLocales(application.slug).catch(() => []);
-  const languages: Record<string, string> = { "x-default": canonical };
-  for (const v of localeVariants) {
-    const url =
-      v.locale === "en"
-        ? `${SITE_URL}/applications/${application.slug}`
-        : `${SITE_URL}/${v.locale}/applications/${application.slug}`;
-    languages[v.locale] = url;
-  }
-  if (!("en" in languages)) languages.en = canonical;
+  const languages = buildLocaleAlternates(pagePath, localeVariants);
 
   return {
     title: application.seo_title ?? application.application_name,
@@ -40,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       application.seo_description ?? application.description ?? undefined,
     alternates: {
       canonical,
-      languages: Object.keys(languages).length > 2 ? languages : undefined,
+      languages,
     },
   };
 }

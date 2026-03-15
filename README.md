@@ -218,6 +218,20 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 
 #### 管理後台（Admin Next.js）
 
+### v0.19 — SEO Workbench 與非專家操作體驗（2026-03-15）
+
+本次新增一套以「非 SEO 專家也能操作」為目標的 SEO workbench，將既有 metadata、診斷與分析能力整合成任務導向後台體驗。
+
+| 類別 | 變更 |
+|------|------|
+| **API** | `POST /content/seo-audit/evaluate` — 以產品 / 分類 / 應用場景的當前內容即時評估 SEO 健康度與建議 |
+| **API** | `GET /content/seo-audit/health` — 任務導向健康摘要，提供優先修正項與高風險內容清單 |
+| **API** | `GET /content/seo-audit/links` — 依分類與應用關聯提供內部連結建議 |
+| **API** | `GET /content/seo-audit/revenue` — 將 SEO 內容表現與 RFQ 轉換串接成洞察 |
+| **Admin** | 產品 / 分類 / 應用場景表單新增「SEO 助手」面板，可直接分析目前內容並一鍵套用建議標題與摘要 |
+| **Admin** | `後台 → AI / SEO → SEO 診斷` 改為任務式儀表板，分為總覽、內鏈建議、轉換洞察三區 |
+| **Web** | 新增 `web/src/lib/seo.ts` 共用 metadata helper，統一 canonical、metadataBase 與 hreflang 生成邏輯 |
+
 | 頁面 | 變更 |
 |------|------|
 | `products/` | 新增「主推 ⭐」欄位，點擊即時切換 `is_featured` |
