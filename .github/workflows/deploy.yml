@@ -90,7 +90,7 @@ jobs:
         run: |
           sleep 5
           for i in 1 2 3; do
-            STATUS=$(curl -sf --max-time 10 https://mitselect.com/api/v1/health \
+            STATUS=$(curl -sf --max-time 10 https://mitselect.com/health \
               | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))" 2>/dev/null || echo "unreachable")
             echo "Attempt $i: $STATUS"
             if [ "$STATUS" = "ok" ]; then
