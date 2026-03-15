@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "homepage-hero",
+    "filename": "homepage-hero-northforge-manufacturer.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic industrial B2B website hero image for a Taiwan-based professional hand tool manufacturer. Show a clean, organized tool assembly and inspection environment with torque wrenches, insulated screwdrivers, socket sets, and packaged toolkit cases visible in the foreground. The scene should feel export-ready, professional, and technically disciplined. Lighting should be crisp and neutral, with deep navy and steel-blue color cues, subtle orange accents, no cinematic effects, no workers staring at camera, no exaggerated sparks, no fantasy factory elements. Composition should leave negative space for a website headline on the left."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "BjC2aYj9FsOrvr0P6POpiQI",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 118,
+    "candidatesTokenCount": 1622,
+    "totalTokenCount": 1740,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 118
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

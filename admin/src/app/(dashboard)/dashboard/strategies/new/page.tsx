@@ -1,0 +1,158 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth/store";
+import { strategiesApi, type ContentStrategy } from "@/lib/api/content";
+
+const PAGE_TYPES = ["product", "application", "category", "faq", "comparison", "certification", "page", "other"];
+const STATUSES: ContentStrategy["status"][] = ["unplanned", "brief_created", "ai_generated", "in_review", "published"];
+const STATUS_LABELS: Record<string, string> = {
+  unplanned: "未規劃",
+  brief_created: "摘要已建",
+  ai_generated: "AI 已生成",
+  in_review: "審核中",
+  published: "已發布",
+};
+
+export default function NewStrategyPage() {
+  const router = useRouter();
+  const { state } = useAuth();
+  const token = state.status === "authenticated" ? state.accessToken : "";
+
+  const [form, setForm] = useState({
+    page_type: "product",
+    entity_type: "",
+    entity_id: "",
+    brief_id: "",
+    status: "unplanned" as ContentStrategy["status"],
+    locale: "zh-TW",
+    notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = Object.fromEntries(
+        Object.entries(form).map(([k, v]) => [k, v === "" ? null : v])
+      );
+      await strategiesApi.create(token, payload);
+      router.push("/dashboard/strategies");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "儲存失敗");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <Link href="/dashboard/strategies" className="text-xs text-muted-foreground hover:underline">← 返回策略地圖</Link>
+        <h1 className="text-2xl font-semibold text-foreground mt-2">新增內容策略</h1>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">頁面類型 *</label>
+            <select
+              value={form.page_type}
+              onChange={(e) => setForm({ ...form, page_type: e.target.value })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {PAGE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">狀態 *</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as ContentStrategy["status"] })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">實體類型</label>
+            <input
+              type="text"
+              placeholder="e.g. Product, Application"
+              value={form.entity_type}
+              onChange={(e) => setForm({ ...form, entity_type: e.target.value })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">實體 ID (UUID)</label>
+            <input
+              type="text"
+              placeholder="e.g. 550e8400-..."
+              value={form.entity_id}
+              onChange={(e) => setForm({ ...form, entity_id: e.target.value })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Brief ID (UUID)</label>
+            <input
+              type="text"
+              placeholder="關聯的摘要 ID"
+              value={form.brief_id}
+              onChange={(e) => setForm({ ...form, brief_id: e.target.value })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">語言</label>
+            <select
+              value={form.locale}
+              onChange={(e) => setForm({ ...form, locale: e.target.value })}
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {["zh-TW", "zh-CN", "en"].map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">備註</label>
+          <textarea
+            rows={3}
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-blue-700 px-5 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors disabled:opacity-50"
+          >
+            {saving ? "儲存中…" : "建立策略"}
+          </button>
+          <Link
+            href="/dashboard/strategies"
+            className="rounded-md border border-input px-5 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            取消
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+}

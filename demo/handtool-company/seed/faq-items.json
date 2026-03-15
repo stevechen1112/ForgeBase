@@ -1,0 +1,146 @@
+[
+  {
+    "question": "Can NorthForge support private-label branding on tool sets and cases?",
+    "answer": "<p>Yes. NorthForge supports private-label branding across selected product lines, molded cases, packaging inserts, carton marks, and barcode labels depending on project scope and order format.</p>",
+    "category_tag": "OEM",
+    "locale": "en",
+    "sort_order": 10,
+    "status": "published"
+  },
+  {
+    "question": "What is your typical MOQ for standard catalog tools?",
+    "answer": "<p>MOQ depends on product type, packaging format, and whether the order uses standard or private-label presentation. Standard items generally allow more flexible starting quantities than custom programs.</p>",
+    "category_tag": "MOQ",
+    "locale": "en",
+    "sort_order": 20,
+    "status": "published"
+  },
+  {
+    "question": "Do you offer OEM or ODM development for custom hand tools?",
+    "answer": "<p>NorthForge supports OEM and selected ODM development, including logo application, packaging changes, assortment planning, and some product modification or drawing-based review.</p>",
+    "category_tag": "OEM",
+    "locale": "en",
+    "sort_order": 30,
+    "status": "published"
+  },
+  {
+    "question": "Can you provide inspection reports before shipment?",
+    "answer": "<p>NorthForge can support internal inspection summaries and coordinate third-party pre-shipment inspection where required by the buyer.</p>",
+    "category_tag": "Quality",
+    "locale": "en",
+    "sort_order": 40,
+    "status": "published"
+  },
+  {
+    "question": "Do insulated tools come with supporting compliance documentation?",
+    "answer": "<p>NorthForge supports compliance-oriented documentation and process communication for insulated tool programs, especially for buyers serving professional electrical markets.</p>",
+    "category_tag": "Compliance",
+    "locale": "en",
+    "sort_order": 50,
+    "status": "published"
+  },
+  {
+    "question": "Can you build mixed toolkits with custom item combinations?",
+    "answer": "<p>Yes. NorthForge supports mixed-SKU toolkit programs, including EVA foam arrangements, molded cases, assortment planning, and branded packaging structures.</p>",
+    "category_tag": "Toolkits",
+    "locale": "en",
+    "sort_order": 60,
+    "status": "published"
+  },
+  {
+    "question": "How do you manage consistency between sample approval and mass production?",
+    "answer": "<p>NorthForge emphasizes clearer drawing control, approval confirmation, inspection workflow, and repeat-order discipline to reduce avoidable variation between samples and production orders.</p>",
+    "category_tag": "Quality",
+    "locale": "en",
+    "sort_order": 70,
+    "status": "published"
+  },
+  {
+    "question": "Do you work with importers and distributors, or only large brands?",
+    "answer": "<p>NorthForge is built to support importers, distributors, private-label brands, and industrial buyers. The company is positioned for structured mid-market programs, not only very large enterprise accounts.</p>",
+    "category_tag": "Business Model",
+    "locale": "en",
+    "sort_order": 80,
+    "status": "published"
+  },
+  {
+    "question": "Can you provide RoHS or REACH-related material declarations?",
+    "answer": "<p>NorthForge supports RoHS- and REACH-related documentation handling for buyers that need stronger material compliance visibility in export projects.</p>",
+    "category_tag": "Compliance",
+    "locale": "en",
+    "sort_order": 90,
+    "status": "published"
+  },
+  {
+    "question": "What packaging options are available for OEM customers?",
+    "answer": "<p>Packaging options may include retail boxes, molded cases, EVA inserts, labels, barcode stickers, instruction leaflets, and export carton customization depending on the program.</p>",
+    "category_tag": "Packaging",
+    "locale": "en",
+    "sort_order": 100,
+    "status": "published"
+  },
+  {
+    "question": "Can NorthForge support field-service and contractor kits?",
+    "answer": "<p>Yes. The company supports compact service kits, electrician kits, and mobile maintenance assortments for field technicians and contractor supply programs.</p>",
+    "category_tag": "Toolkits",
+    "locale": "en",
+    "sort_order": 110,
+    "status": "published"
+  },
+  {
+    "question": "Do you accept mixed-SKU repeat orders?",
+    "answer": "<p>NorthForge is structured to support mixed-SKU replenishment programs when assortments, packaging rules, and labeling requirements are clearly defined.</p>",
+    "category_tag": "Ordering",
+    "locale": "en",
+    "sort_order": 120,
+    "status": "published"
+  },
+  {
+    "question": "Can you support barcode and carton label requirements for retailers or distributors?",
+    "answer": "<p>Yes. Barcode labels, carton marks, and packing structure details can be managed as part of private-label and distribution-oriented programs.</p>",
+    "category_tag": "Packaging",
+    "locale": "en",
+    "sort_order": 130,
+    "status": "published"
+  },
+  {
+    "question": "What kinds of buyers usually work with NorthForge?",
+    "answer": "<p>Typical buyers include hand tool importers, industrial distributors, automotive aftermarket suppliers, contractor-focused tool brands, and private-label sourcing teams.</p>",
+    "category_tag": "Business Model",
+    "locale": "en",
+    "sort_order": 140,
+    "status": "published"
+  },
+  {
+    "question": "Can you help build retail-ready hand tool sets?",
+    "answer": "<p>Yes. NorthForge supports retail-ready mixed hand tool sets with packaging and private-label coordination for buyers launching or expanding branded product lines.</p>",
+    "category_tag": "Retail Programs",
+    "locale": "en",
+    "sort_order": 150,
+    "status": "published"
+  },
+  {
+    "question": "Do you support automotive-specific tool programs?",
+    "answer": "<p>Yes. NorthForge offers torque tools, socket sets, spark plug tools, pullers, brake service kits, trim tools, and workshop assortments suitable for automotive aftermarket programs.</p>",
+    "category_tag": "Automotive",
+    "locale": "en",
+    "sort_order": 160,
+    "status": "published"
+  },
+  {
+    "question": "Can I request samples before placing a production order?",
+    "answer": "<p>Sample handling depends on the item and project type, but NorthForge supports sample review and approval as part of structured OEM and recurring-order workflows.</p>",
+    "category_tag": "Samples",
+    "locale": "en",
+    "sort_order": 170,
+    "status": "published"
+  },
+  {
+    "question": "Why do buyers choose NorthForge instead of price-only suppliers?",
+    "answer": "<p>Buyers typically choose NorthForge when they value repeat-order consistency, packaging execution, clearer documentation, and smoother commercial communication rather than chasing the lowest unit price alone.</p>",
+    "category_tag": "Positioning",
+    "locale": "en",
+    "sort_order": 180,
+    "status": "published"
+  }
+]

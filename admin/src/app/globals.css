@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Salesforce Lightning Design System inspired palette ── */
+    --background:   0 0% 100%;
+    --foreground:   222 47% 11%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary = Salesforce blue */
+    --primary:      211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:    210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted:        210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent:       210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success:      142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning:      38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border:       214 32% 91%;
+    --input:        214 32% 91%;
+    --ring:         211 100% 50%;
+    --radius:       0.5rem;
+
+    /* ── Sidebar (dark slate, Lightning App Builder style) ── */
+    --sidebar-background:        222 47% 11%;
+    --sidebar-foreground:        213 27% 75%;
+    --sidebar-primary:           211 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:            222 47% 16%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border:            222 47% 16%;
+    --sidebar-ring:              211 100% 50%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply rounded-full bg-border; }
+::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/40; }
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans text-sm;
+  }
+
+  h1 { @apply text-2xl font-bold leading-tight; }
+  h2 { @apply text-xl font-semibold leading-tight; }
+  h3 { @apply text-lg font-semibold; }
+}
+
+@layer components {
+  /* ── Form Inputs ─────────────────────────────────────────────── */
+  .input-base {
+    @apply block w-full rounded-md border border-gray-300 bg-white px-3 py-2
+           text-sm text-gray-900 placeholder-gray-400
+           shadow-sm transition-colors
+           focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20
+           disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500;
+  }
+
+  .input-error {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-500/20;
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md
+           px-4 py-2 text-sm font-medium
+           transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-blue-700 text-white hover:bg-blue-800 focus:ring-blue-500;
+  }
+
+  .btn-secondary {
+    @apply btn border border-gray-300 bg-white text-gray-700
+           hover:bg-gray-50 focus:ring-gray-400;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-400;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* ── Card ────────────────────────────────────────────────────── */
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-card;
+  }
+
+  .card-hover {
+    @apply card transition-shadow hover:shadow-card-hover cursor-pointer;
+  }
+
+  /* ── Badge ───────────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* ── Table ───────────────────────────────────────────────────── */
+  .table-container {
+    @apply overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-card;
+  }
+
+  .table-th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500;
+  }
+
+  .table-td {
+    @apply px-4 py-3 text-sm text-gray-900;
+  }
+
+  /* ── Section header ──────────────────────────────────────────── */
+  .page-header {
+    @apply mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-gray-500;
+  }
+
+  /* ── Stat card ───────────────────────────────────────────────── */
+  .stat-card {
+    @apply card flex items-start gap-4 p-5;
+  }
+
+  .stat-icon {
+    @apply flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────── */
+  .sidebar-link {
+    @apply flex items-center gap-2.5 rounded-md px-3 py-2 text-sm
+           text-slate-400 transition-colors
+           hover:bg-slate-800 hover:text-slate-100;
+  }
+
+  .sidebar-link-active {
+    @apply sidebar-link bg-blue-700 text-white hover:bg-blue-700;
+  }
+
+  .sidebar-group-label {
+    @apply px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-600;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+  .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+
+  /* Scrollbar */
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 2px; }
+}

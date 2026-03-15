@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "category-insulated-electrical-tools",
+    "filename": "category-insulated-electrical-tools-hero.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic product-category image for insulated electrical hand tools. Show insulated screwdrivers, insulated combination pliers, diagonal cutters, and a compact electrician service kit arranged neatly on a neutral background. The image should communicate safety, reliability, and professional use. Use clean lighting and a restrained industrial color palette. Avoid toy-like colors and cartoonish styling."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "VTC2affTAqWQ9tMPqbyG4Qs",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 71,
+    "candidatesTokenCount": 1545,
+    "totalTokenCount": 1616,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 71
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

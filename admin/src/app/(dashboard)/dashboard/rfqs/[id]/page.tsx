@@ -1,0 +1,372 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth/store";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Sparkles } from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
+
+type RFQDetail = {
+  id: string; rfq_number: string; contact_id: string | null; visitor_id: string | null;
+  status: string; priority: string; intent_score_at_submit: number; assigned_to: string | null;
+  application_id: string | null; source_page: string | null; hubspot_deal_id: string | null;
+  product_ids: string[]; form_data: Record<string, unknown> | null;
+  assigned_notified_at: string | null; reminder_24h_sent_at: string | null;
+  escalation_48h_sent_at: string | null; closed_at: string | null;
+  created_at: string; updated_at: string;
+};
+
+type RFQAnalysis = {
+  match_score: number; urgency_level: string; key_requirements: string[];
+  matched_products: { id: string; name: string; reason: string }[];
+  unmet_requirements: string[]; recommended_actions: string[];
+  summary: string; language_detected: string;
+};
+type DraftReply = { subject: string; body: string; language: string };
+
+const STATUSES = ["new", "assigned", "in_progress", "quoted", "won", "lost", "expired"];
+const PRIORITY_VARIANT: Record<string, string> = {
+  urgent: "bg-red-100 text-red-700",
+  high: "bg-orange-100 text-orange-700",
+  normal: "bg-muted text-muted-foreground",
+};
+
+export default function RFQDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { state } = useAuth();
+  const token = state.status === "authenticated" ? state.accessToken : "";
+
+  const [rfq, setRfq] = useState<RFQDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [newStatus, setNewStatus] = useState("");
+  const [assignTo, setAssignTo] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const [analysis, setAnalysis] = useState<RFQAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+  const [reply, setReply] = useState<DraftReply | null>(null);
+  const [replyLoading, setReplyLoading] = useState(false);
+
+  async function runAnalysis() {
+    setAnalysisLoading(true); setAnalysisError("");
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/analyze`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Analysis failed");
+      setAnalysis(data);
+    } catch (e) { setAnalysisError(e instanceof Error ? e.message : "Unknown error"); }
+    finally { setAnalysisLoading(false); }
+  }
+
+  async function generateReply() {
+    setReplyLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/draft-reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ analysis }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Draft generation failed");
+      setReply(data);
+    } catch (e) { setAnalysisError(e instanceof Error ? e.message : "Unknown error"); }
+    finally { setReplyLoading(false); }
+  }
+
+  useEffect(() => {
+    fetch(`${API_BASE}/tracking/rfqs/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => { setRfq(data); setNewStatus(data.status); setAssignTo(data.assigned_to ?? ""); })
+      .finally(() => setLoading(false));
+  }, [id, token]);
+
+  async function saveStatus() {
+    if (!rfq || newStatus === rfq.status) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      setRfq((prev) => prev ? { ...prev, status: data.status } : prev);
+      setMessage("Status updated ✓");
+    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
+    finally { setSaving(false); }
+  }
+
+  async function saveAssign() {
+    if (!rfq || !assignTo) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/assign`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ assigned_to: assignTo }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      setRfq((prev) => prev ? { ...prev, assigned_to: data.assigned_to, status: data.status } : prev);
+      setMessage("Assigned ✓");
+    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
+    finally { setSaving(false); }
+  }
+
+  if (loading) return <div className="py-12 text-center text-muted-foreground">載入中…</div>;
+  if (!rfq) return <div className="py-12 text-center text-destructive">RFQ not found</div>;
+
+  const formData = rfq.form_data ?? {};
+
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-6 flex items-center gap-3">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link href="/dashboard/rfqs">← RFQs</Link>
+        </Button>
+        <h1 className="text-2xl font-bold tracking-tight">{rfq.rfq_number}</h1>
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${PRIORITY_VARIANT[rfq.priority] ?? "bg-muted text-muted-foreground"}`}>
+          {rfq.priority}
+        </span>
+      </div>
+
+      {message && (
+        <Alert className="mb-4">
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main info */}
+        <div className="lg:col-span-2 space-y-5">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Contact Information</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                  ["Full Name", formData.full_name], ["Email", formData.email],
+                  ["Company", formData.company_name], ["Phone", formData.phone],
+                  ["Country", formData.country], ["Job Title", formData.job_title],
+                ].map(([label, value]) => (
+                  <div key={String(label)}>
+                    <dt className="text-xs text-muted-foreground">{String(label)}</dt>
+                    <dd className="font-medium">{String(value ?? "—")}</dd>
+                  </div>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Request Details</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Quantity</dt>
+                  <dd>{String(formData.quantity ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Timeline</dt>
+                  <dd>{String(formData.timeline ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Technical Specifications</dt>
+                  <dd className="mt-1 whitespace-pre-wrap rounded bg-muted border p-3 font-mono text-xs">
+                    {String(formData.specifications ?? "—")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Additional Message</dt>
+                  <dd className="whitespace-pre-wrap">{String(formData.message ?? "—")}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Tracking</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-2 text-sm">
+                {[
+                  ["Intent Score", rfq.intent_score_at_submit], ["Source Page", rfq.source_page],
+                  ["Visitor ID", rfq.visitor_id], ["Contact ID", rfq.contact_id],
+                  ["Submitted", new Date(rfq.created_at).toLocaleString()],
+                  ["Last Updated", new Date(rfq.updated_at).toLocaleString()],
+                ].map(([label, value]) => (
+                  <div key={String(label)}>
+                    <dt className="text-xs text-muted-foreground">{String(label)}</dt>
+                    <dd className="font-medium truncate max-w-[200px]">{String(value ?? "—")}</dd>
+                  </div>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+
+          {/* AI Analysis Panel */}
+          <Card className="border-indigo-200 bg-indigo-50/30">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base text-indigo-800">AI Analysis</CardTitle>
+                <Button
+                  size="sm"
+                  onClick={runAnalysis}
+                  disabled={analysisLoading}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {analysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span className="ml-1.5">{analysisLoading ? "分析中…" : analysis ? "重新分析" : "執行 AI 分析"}</span>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {analysisError && (
+                <Alert variant="destructive" className="mb-3">
+                  <AlertDescription>{analysisError}</AlertDescription>
+                </Alert>
+              )}
+              {analysis && (
+                <div className="space-y-4 text-sm">
+                  <div className="flex gap-4">
+                    <div className="rounded-lg bg-white border border-indigo-100 px-4 py-2 text-center">
+                      <div className="text-2xl font-bold text-indigo-700">{analysis.match_score}</div>
+                      <div className="text-xs text-muted-foreground">Match Score</div>
+                    </div>
+                    <div className={`rounded-lg border px-4 py-2 text-center ${
+                      analysis.urgency_level === "high" ? "bg-red-50 border-red-200" :
+                      analysis.urgency_level === "medium" ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"
+                    }`}>
+                      <div className="text-lg font-bold capitalize">{analysis.urgency_level}</div>
+                      <div className="text-xs text-muted-foreground">Urgency</div>
+                    </div>
+                    <div className="rounded-lg bg-white border border-indigo-100 px-4 py-2 text-center">
+                      <div className="text-sm font-semibold uppercase">{analysis.language_detected}</div>
+                      <div className="text-xs text-muted-foreground">Language</div>
+                    </div>
+                  </div>
+                  <div className="rounded bg-white border border-indigo-100 p-3">
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">Summary</div>
+                    <p>{analysis.summary}</p>
+                  </div>
+                  {analysis.key_requirements.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">Key Requirements</div>
+                      <ul className="list-disc list-inside space-y-0.5">{analysis.key_requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                    </div>
+                  )}
+                  {analysis.matched_products.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">Matched Products</div>
+                      <div className="space-y-1">
+                        {analysis.matched_products.map((p, i) => (
+                          <div key={i} className="rounded bg-green-50 border border-green-100 px-3 py-1.5">
+                            <span className="font-medium text-green-800">{p.name}</span>
+                            {p.reason && <span className="ml-2 text-xs text-muted-foreground">— {p.reason}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {analysis.unmet_requirements.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">Unmet Requirements</div>
+                      <ul className="list-disc list-inside text-amber-700 space-y-0.5">{analysis.unmet_requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                    </div>
+                  )}
+                  {analysis.recommended_actions.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">Recommended Actions</div>
+                      <ul className="list-disc list-inside text-blue-700 space-y-0.5">{analysis.recommended_actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                    </div>
+                  )}
+                  <div className="border-t border-indigo-200 pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-semibold text-muted-foreground">Draft Reply Email</div>
+                      <Button size="sm" variant="outline" onClick={generateReply} disabled={replyLoading} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                        {replyLoading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                        {replyLoading ? "Generating…" : reply ? "Regenerate" : "Generate Draft"}
+                      </Button>
+                    </div>
+                    {reply && (
+                      <div className="rounded bg-white border border-indigo-100 p-3 space-y-2">
+                        <div className="text-xs text-muted-foreground">Subject: <span className="font-medium text-foreground">{reply.subject}</span></div>
+                        <pre className="whitespace-pre-wrap text-xs font-sans leading-relaxed max-h-64 overflow-y-auto">{reply.body}</pre>
+                        <button onClick={() => navigator.clipboard.writeText(`Subject: ${reply.subject}\n\n${reply.body}`)} className="text-xs text-indigo-600 hover:underline">
+                          Copy to clipboard
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Actions sidebar */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Update Status</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <select className={SELECT_CLS} value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+              </select>
+              <Button className="w-full" onClick={saveStatus} disabled={saving || newStatus === rfq.status}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Update Status
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Assign To</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">User UUID</Label>
+                <Input value={assignTo} onChange={(e) => setAssignTo(e.target.value)} placeholder="User UUID" className="font-mono text-xs" />
+              </div>
+              <Button variant="secondary" className="w-full" onClick={saveAssign} disabled={saving || !assignTo}>
+                Assign
+              </Button>
+              {rfq.assigned_to && (
+                <p className="text-xs text-muted-foreground truncate">Current: {rfq.assigned_to}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Notifications</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="space-y-1.5 text-xs">
+                {[
+                  ["Assigned notified", rfq.assigned_notified_at],
+                  ["24h reminder", rfq.reminder_24h_sent_at],
+                  ["48h escalation", rfq.escalation_48h_sent_at],
+                ].map(([label, dt]) => (
+                  <li key={String(label)} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className={dt ? "text-green-600" : "text-muted-foreground/50"}>
+                      {dt ? new Date(String(dt)).toLocaleDateString() : "pending"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

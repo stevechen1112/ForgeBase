@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "category-toolkits-storage",
+    "filename": "category-toolkits-storage-hero.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic image for a custom toolkit and storage-solutions category. Show an EVA foam drawer set, a blow-molded service case, and a portable field maintenance kit in a structured composition. The scene should communicate organization, portability, and private-label readiness. Clean background, restrained industrial styling, no bright retail gimmicks."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "kjC2advcOO6P9tMPypXFiAQ",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 67,
+    "candidatesTokenCount": 1524,
+    "totalTokenCount": 1591,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 67
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

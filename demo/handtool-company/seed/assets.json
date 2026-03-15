@@ -1,0 +1,86 @@
+[
+  {
+    "asset_type": "image",
+    "file_name": "page-home-hero.jpg",
+    "title": "Homepage Hero Image",
+    "path": "/demo/handtool-company/assets/page-home-hero.jpg",
+    "description": "Factory and tool-program hero visual for the homepage."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "page-about-hero.jpg",
+    "title": "About Page Hero Image",
+    "path": "/demo/handtool-company/assets/page-about-hero.jpg",
+    "description": "About page visual showing manufacturing and export identity."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "category-torque-socket-tools-hero.jpg",
+    "title": "Torque and Socket Tools Category Hero",
+    "path": "/demo/handtool-company/assets/category-torque-socket-tools-hero.jpg",
+    "description": "Category visual for torque and socket tools."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "category-insulated-electrical-tools-hero.jpg",
+    "title": "Insulated Electrical Tools Category Hero",
+    "path": "/demo/handtool-company/assets/category-insulated-electrical-tools-hero.jpg",
+    "description": "Category visual for insulated tools."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "category-striking-workshop-tools-hero.jpg",
+    "title": "Striking and Workshop Tools Category Hero",
+    "path": "/demo/handtool-company/assets/category-striking-workshop-tools-hero.jpg",
+    "description": "Category visual for workshop striking tools."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "category-automotive-service-tools-hero.jpg",
+    "title": "Automotive Service Tools Category Hero",
+    "path": "/demo/handtool-company/assets/category-automotive-service-tools-hero.jpg",
+    "description": "Category visual for automotive service tools."
+  },
+  {
+    "asset_type": "image",
+    "file_name": "category-custom-toolkits-storage-hero.jpg",
+    "title": "Custom Toolkits and Storage Category Hero",
+    "path": "/demo/handtool-company/assets/category-custom-toolkits-storage-hero.jpg",
+    "description": "Category visual for toolkit and storage solutions."
+  },
+  {
+    "asset_type": "pdf",
+    "file_name": "pdf-oem-checklist-v1.pdf",
+    "title": "OEM Project Checklist",
+    "path": "/demo/handtool-company/assets/pdf-oem-checklist-v1.pdf",
+    "description": "Download-gate asset for OEM inquiry and project qualification."
+  },
+  {
+    "asset_type": "pdf",
+    "file_name": "pdf-product-line-card-v1.pdf",
+    "title": "Product Line Card",
+    "path": "/demo/handtool-company/assets/pdf-product-line-card-v1.pdf",
+    "description": "Public-facing line card for category and buyer overview."
+  },
+  {
+    "asset_type": "pdf",
+    "file_name": "pdf-iso-9001-certificate.pdf",
+    "title": "ISO 9001 Certificate",
+    "path": "/demo/handtool-company/assets/pdf-iso-9001-certificate.pdf",
+    "description": "Certification support document."
+  },
+  {
+    "asset_type": "pdf",
+    "file_name": "pdf-rohs-statement.pdf",
+    "title": "RoHS Statement",
+    "path": "/demo/handtool-company/assets/pdf-rohs-statement.pdf",
+    "description": "Compliance-support document."
+  },
+  {
+    "asset_type": "pdf",
+    "file_name": "pdf-reach-declaration.pdf",
+    "title": "REACH Declaration",
+    "path": "/demo/handtool-company/assets/pdf-reach-declaration.pdf",
+    "description": "Compliance-support document."
+  }
+]

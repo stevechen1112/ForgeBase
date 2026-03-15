@@ -1,0 +1,76 @@
+{
+  "profile": "northforge-demo",
+  "description": "Minimum demo-ready image batch for NorthForge Tools website presentation.",
+  "jobs": [
+    {
+      "id": "homepage-hero",
+      "filename": "homepage-hero-northforge-manufacturer.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic industrial B2B website hero image for a Taiwan-based professional hand tool manufacturer. Show a clean, organized tool assembly and inspection environment with torque wrenches, insulated screwdrivers, socket sets, and packaged toolkit cases visible in the foreground. The scene should feel export-ready, professional, and technically disciplined. Lighting should be crisp and neutral, with deep navy and steel-blue color cues, subtle orange accents, no cinematic effects, no workers staring at camera, no exaggerated sparks, no fantasy factory elements. Composition should leave negative space for a website headline on the left."
+    },
+    {
+      "id": "about-factory-hero",
+      "filename": "about-factory-hero-northforge.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic photograph-style image of a mid-sized Taiwanese hand tool manufacturing facility interior. Show an orderly assembly or inspection area with metal tools, measurement stations, labeled bins, and a visible quality-control workflow. The environment should look clean, efficient, and export-oriented rather than massive or dramatic. Neutral industrial lighting, matte surfaces, believable machinery, no cinematic haze, no fake futuristic elements."
+    },
+    {
+      "id": "category-torque-socket-tools",
+      "filename": "category-torque-socket-tools-hero.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a high-quality product-category hero image for professional torque and socket tools. Show a 3/8-inch click torque wrench, ratchet handles, chrome sockets, and bit accessories arranged in a clean industrial composition on a matte gray background. The image should feel premium but practical, suitable for a B2B manufacturer website. Avoid consumer-retail styling, loud reflections, and messy layouts."
+    },
+    {
+      "id": "category-insulated-electrical-tools",
+      "filename": "category-insulated-electrical-tools-hero.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic product-category image for insulated electrical hand tools. Show insulated screwdrivers, insulated combination pliers, diagonal cutters, and a compact electrician service kit arranged neatly on a neutral background. The image should communicate safety, reliability, and professional use. Use clean lighting and a restrained industrial color palette. Avoid toy-like colors and cartoonish styling."
+    },
+    {
+      "id": "category-striking-workshop-tools",
+      "filename": "category-striking-workshop-tools-hero.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic category hero image for workshop striking tools. Show a dead blow hammer, soft-face mallet, engineer's hammer, pry bars, and punch tools arranged in a neat mechanical workshop composition. The visual should feel durable, technical, and professional, not rugged-for-drama. Use industrial realism, controlled lighting, and subtle texture detail."
+    },
+    {
+      "id": "category-automotive-service-tools",
+      "filename": "category-automotive-service-tools-hero.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic B2B category image for automotive service tools. Show spark plug sockets, oil filter tools, a brake service kit, pullers, and hex/Torx tools arranged like a workshop program offering. Clean composition, practical tool realism, matte workshop surfaces, no consumer garage clutter, no racing aesthetics."
+    },
+    {
+      "id": "category-toolkits-storage",
+      "filename": "category-toolkits-storage-hero.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic image for a custom toolkit and storage-solutions category. Show an EVA foam drawer set, a blow-molded service case, and a portable field maintenance kit in a structured composition. The scene should communicate organization, portability, and private-label readiness. Clean background, restrained industrial styling, no bright retail gimmicks."
+    },
+    {
+      "id": "product-nft-tw380",
+      "filename": "product-nft-tw380-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 3/8 in Drive Click Torque Wrench with model number NFT-TW380. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-id006",
+      "filename": "product-nft-id006-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 6-Piece VDE Insulated Screwdriver Set with model number NFT-ID006. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, insulated shafts, finish, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ktbc89",
+      "filename": "product-nft-ktbc89-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 89-Piece Blow-Molded Service Case with model number NFT-KTBC89. Show the toolkit case open on a clean neutral industrial background, with visible organized tool layout, case texture, latches, and practical workshop-ready presentation. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail styling unless explicitly requested."
+    }
+  ]
+}

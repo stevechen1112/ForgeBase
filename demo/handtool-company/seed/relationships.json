@@ -1,0 +1,73 @@
+{
+  "product_application_links": [
+    {"product_model_number": "NFT-TW380", "application_slug": "automotive-aftermarket-service"},
+    {"product_model_number": "NFT-TW500", "application_slug": "automotive-aftermarket-service"},
+    {"product_model_number": "NFT-AMBC7", "application_slug": "automotive-aftermarket-service"},
+    {"product_model_number": "NFT-AMSP5", "application_slug": "automotive-aftermarket-service"},
+    {"product_model_number": "NFT-AMHTM", "application_slug": "automotive-aftermarket-service"},
+    {"product_model_number": "NFT-SS137", "application_slug": "industrial-maintenance-and-mro"},
+    {"product_model_number": "NFT-DH060", "application_slug": "industrial-maintenance-and-mro"},
+    {"product_model_number": "NFT-PB4S", "application_slug": "industrial-maintenance-and-mro"},
+    {"product_model_number": "NFT-KTMEV1", "application_slug": "industrial-maintenance-and-mro"},
+    {"product_model_number": "NFT-ID006", "application_slug": "electrical-installation-and-utility-work"},
+    {"product_model_number": "NFT-ID013", "application_slug": "electrical-installation-and-utility-work"},
+    {"product_model_number": "NFT-IP200", "application_slug": "electrical-installation-and-utility-work"},
+    {"product_model_number": "NFT-IP165D", "application_slug": "electrical-installation-and-utility-work"},
+    {"product_model_number": "NFT-EK018", "application_slug": "electrical-installation-and-utility-work"},
+    {"product_model_number": "NFT-RH372", "application_slug": "workshop-assembly-and-repair"},
+    {"product_model_number": "NFT-SM40", "application_slug": "workshop-assembly-and-repair"},
+    {"product_model_number": "NFT-EH24", "application_slug": "workshop-assembly-and-repair"},
+    {"product_model_number": "NFT-CS6P", "application_slug": "workshop-assembly-and-repair"},
+    {"product_model_number": "NFT-KTPLR56", "application_slug": "private-label-tool-programs"},
+    {"product_model_number": "NFT-KTBC89", "application_slug": "private-label-tool-programs"},
+    {"product_model_number": "NFT-KTEC24", "application_slug": "private-label-tool-programs"},
+    {"product_model_number": "NFT-KTFM42", "application_slug": "field-service-and-mobile-maintenance"},
+    {"product_model_number": "NFT-KTBC89", "application_slug": "field-service-and-mobile-maintenance"},
+    {"product_model_number": "NFT-KTEC24", "application_slug": "field-service-and-mobile-maintenance"}
+  ],
+  "product_certification_links": [
+    {"product_model_number": "NFT-TW250", "cert_slug": "iso-9001-quality-management"},
+    {"product_model_number": "NFT-TW380", "cert_slug": "iso-9001-quality-management"},
+    {"product_model_number": "NFT-TW500", "cert_slug": "iso-9001-quality-management"},
+    {"product_model_number": "NFT-ID006", "cert_slug": "vde-process-aligned-insulated-tool-workflow"},
+    {"product_model_number": "NFT-ID013", "cert_slug": "vde-process-aligned-insulated-tool-workflow"},
+    {"product_model_number": "NFT-IP200", "cert_slug": "vde-process-aligned-insulated-tool-workflow"},
+    {"product_model_number": "NFT-IP165D", "cert_slug": "vde-process-aligned-insulated-tool-workflow"},
+    {"product_model_number": "NFT-EK018", "cert_slug": "vde-process-aligned-insulated-tool-workflow"},
+    {"product_model_number": "NFT-AMHTM", "cert_slug": "rohs-material-compliance-support"},
+    {"product_model_number": "NFT-KTPLR56", "cert_slug": "reach-documentation-handling"},
+    {"product_model_number": "NFT-KTBC89", "cert_slug": "pre-shipment-inspection-support"}
+  ],
+  "product_faq_links": [
+    {"product_model_number": "NFT-KTPLR56", "faq_question": "Can NorthForge support private-label branding on tool sets and cases?"},
+    {"product_model_number": "NFT-KTBC89", "faq_question": "Can you build mixed toolkits with custom item combinations?"},
+    {"product_model_number": "NFT-ID006", "faq_question": "Do insulated tools come with supporting compliance documentation?"},
+    {"product_model_number": "NFT-TW380", "faq_question": "How do you manage consistency between sample approval and mass production?"},
+    {"product_model_number": "NFT-AMHTM", "faq_question": "Do you support automotive-specific tool programs?"},
+    {"product_model_number": "NFT-KTEC24", "faq_question": "Can NorthForge support field-service and contractor kits?"}
+  ],
+  "product_comparison_links": [
+    {"product_model_number": "NFT-TW380", "comparison_slug": "click-torque-wrench-vs-beam-torque-wrench"},
+    {"product_model_number": "NFT-TW500", "comparison_slug": "click-torque-wrench-vs-beam-torque-wrench"},
+    {"product_model_number": "NFT-ID006", "comparison_slug": "insulated-tools-vs-standard-workshop-tools"},
+    {"product_model_number": "NFT-KTBC89", "comparison_slug": "blow-molded-tool-cases-vs-eva-foam-drawer-sets"},
+    {"product_model_number": "NFT-KTMEV1", "comparison_slug": "blow-molded-tool-cases-vs-eva-foam-drawer-sets"},
+    {"product_model_number": "NFT-KTPLR56", "comparison_slug": "standard-catalog-tools-vs-private-label-tool-programs"},
+    {"product_model_number": "NFT-KTFM42", "comparison_slug": "portable-service-kits-vs-fixed-workshop-assortments"}
+  ],
+  "application_faq_links": [
+    {"application_slug": "private-label-tool-programs", "faq_question": "What packaging options are available for OEM customers?"},
+    {"application_slug": "private-label-tool-programs", "faq_question": "Can NorthForge support private-label branding on tool sets and cases?"},
+    {"application_slug": "electrical-installation-and-utility-work", "faq_question": "Do insulated tools come with supporting compliance documentation?"},
+    {"application_slug": "automotive-aftermarket-service", "faq_question": "Do you support automotive-specific tool programs?"},
+    {"application_slug": "field-service-and-mobile-maintenance", "faq_question": "Can NorthForge support field-service and contractor kits?"}
+  ],
+  "featured_homepage_models": [
+    "NFT-TW380",
+    "NFT-ID006",
+    "NFT-DH045",
+    "NFT-AMHTM",
+    "NFT-KTBC89",
+    "NFT-KTEC24"
+  ]
+}

@@ -1,0 +1,44 @@
+import Link from "next/link";
+import type { Product } from "@/types/content";
+import { getProductImage } from "@/lib/demoAssets";
+
+type Props = {
+  product: Product;
+  /** Pass undefined when the category slug is not known (e.g. related products on application pages). */
+  categorySlug: string | undefined;
+};
+
+export function ProductCard({ product, categorySlug }: Props) {
+  const href = categorySlug
+    ? `/products/${categorySlug}/${product.slug}`
+    : `/products/${product.slug}`;
+  const productImage = getProductImage(product, categorySlug);
+
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+    >
+      {/* Placeholder image area */}
+      <div className="mb-4 aspect-square w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
+        {productImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={productImage}
+            alt={product.product_name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        )}
+      </div>
+      <p className="text-xs font-mono text-gray-400 mb-1">{product.model_number}</p>
+      <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors line-clamp-2">
+        {product.product_name}
+      </h3>
+      <p className="mt-2 text-xs text-gray-500 line-clamp-2">{product.short_description}</p>
+    </Link>
+  );
+}

@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "category-torque-socket-tools",
+    "filename": "category-torque-socket-tools-hero.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a high-quality product-category hero image for professional torque and socket tools. Show a 3/8-inch click torque wrench, ratchet handles, chrome sockets, and bit accessories arranged in a clean industrial composition on a matte gray background. The image should feel premium but practical, suitable for a B2B manufacturer website. Avoid consumer-retail styling, loud reflections, and messy layouts."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "QzC2adm1Nf2a1e8Py8jXwAE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 80,
+    "candidatesTokenCount": 1578,
+    "totalTokenCount": 1658,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 80
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

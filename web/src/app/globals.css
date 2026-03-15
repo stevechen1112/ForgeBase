@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background:   0 0% 100%;
+    --foreground:   224 71% 4%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    /* Primary = rich cobalt blue */
+    --primary:      217 91% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:    220 14% 96%;
+    --secondary-foreground: 224 71% 4%;
+
+    --muted:        220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent:       220 14% 93%;
+    --accent-foreground: 224 71% 4%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:       220 13% 91%;
+    --input:        220 13% 91%;
+    --ring:         217 91% 45%;
+    --radius:       0.625rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply rounded-full bg-muted; }
+::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/30; }
+
+@layer base {
+  :root {
+    --foreground-rgb: 15, 23, 42;
+    --background-start-rgb: 255, 255, 255;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-start-rgb));
+    @apply antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold leading-tight;
+  }
+
+  a {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

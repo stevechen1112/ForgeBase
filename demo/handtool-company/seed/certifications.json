@@ -1,0 +1,67 @@
+[
+  {
+    "cert_name": "ISO 9001 Quality Management",
+    "slug": "iso-9001-quality-management",
+    "issuer": "Bureau Veritas Certification",
+    "cert_number": "BV-TW-QMS-24118",
+    "issued_at": "2023-07-01T00:00:00",
+    "expires_at": "2026-06-30T00:00:00",
+    "description": "<p>NorthForge maintains an ISO 9001-oriented quality management workflow to support repeatable production, documented process control, and stronger consistency across recurring export orders.</p>",
+    "badge_image_url": "/demo/handtool-company/assets/cert-iso-9001-badge.png",
+    "document_url": "/demo/handtool-company/assets/pdf-iso-9001-certificate.pdf",
+    "locale": "en",
+    "status": "active"
+  },
+  {
+    "cert_name": "VDE Process-Aligned Insulated Tool Workflow",
+    "slug": "vde-process-aligned-insulated-tool-workflow",
+    "issuer": "NorthForge Internal Compliance Program",
+    "cert_number": "NFT-VDE-INS-2024",
+    "issued_at": "2024-01-15T00:00:00",
+    "expires_at": null,
+    "description": "<p>NorthForge applies a structured insulated-tool workflow intended to support buyers who require stronger safety-product positioning and better documentation readiness for insulated tool lines.</p>",
+    "badge_image_url": "/demo/handtool-company/assets/cert-vde-workflow-badge.png",
+    "document_url": "/demo/handtool-company/assets/pdf-vde-workflow-overview.pdf",
+    "locale": "en",
+    "status": "active"
+  },
+  {
+    "cert_name": "RoHS Material Compliance Support",
+    "slug": "rohs-material-compliance-support",
+    "issuer": "SGS Taiwan",
+    "cert_number": "SGS-RHS-21470",
+    "issued_at": "2024-03-10T00:00:00",
+    "expires_at": "2027-03-09T00:00:00",
+    "description": "<p>NorthForge supports RoHS-related material compliance documentation for product lines intended for regulated export markets and compliance-sensitive buyers.</p>",
+    "badge_image_url": "/demo/handtool-company/assets/cert-rohs-badge.png",
+    "document_url": "/demo/handtool-company/assets/pdf-rohs-statement.pdf",
+    "locale": "en",
+    "status": "active"
+  },
+  {
+    "cert_name": "REACH Documentation Handling",
+    "slug": "reach-documentation-handling",
+    "issuer": "Intertek Taiwan",
+    "cert_number": "ITK-REACH-19026",
+    "issued_at": "2024-02-05T00:00:00",
+    "expires_at": "2027-02-04T00:00:00",
+    "description": "<p>NorthForge supports REACH-related documentation handling for buyers who need stronger visibility into material declarations and compliance communication.</p>",
+    "badge_image_url": "/demo/handtool-company/assets/cert-reach-badge.png",
+    "document_url": "/demo/handtool-company/assets/pdf-reach-declaration.pdf",
+    "locale": "en",
+    "status": "active"
+  },
+  {
+    "cert_name": "Pre-Shipment Inspection Support",
+    "slug": "pre-shipment-inspection-support",
+    "issuer": "Third-Party Inspection Coordination",
+    "cert_number": "NFT-PSI-SUPPORT",
+    "issued_at": "2024-04-01T00:00:00",
+    "expires_at": null,
+    "description": "<p>NorthForge supports pre-shipment inspection coordination for buyers who require independent quality verification before export release.</p>",
+    "badge_image_url": "/demo/handtool-company/assets/cert-pre-shipment-inspection-badge.png",
+    "document_url": "/demo/handtool-company/assets/pdf-pre-shipment-inspection-support.pdf",
+    "locale": "en",
+    "status": "active"
+  }
+]

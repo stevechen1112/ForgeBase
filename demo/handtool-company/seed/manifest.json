@@ -1,0 +1,49 @@
+{
+  "package": "handtool-company-demo",
+  "company_name": "NorthForge Tools Co., Ltd.",
+  "locale": "en",
+  "status": "planning",
+  "targets": {
+    "product_categories": 5,
+    "products": 30,
+    "applications": 6,
+    "certifications": 5,
+    "capabilities": 6,
+    "faq_items": 18,
+    "comparison_topics": 8,
+    "pages": 4,
+    "assets": 12
+  },
+  "content_files": [
+    "../content/01-company-blueprint.md",
+    "../content/02-site-content-map.md",
+    "../content/03-content-model-map.md",
+    "../content/04-corporate-profile.md",
+    "../content/05-product-master-catalog.md",
+    "../content/06-applications-and-capabilities.md",
+    "../content/07-homepage-source.md",
+    "../content/08-about-source.md"
+  ],
+  "next_outputs": [
+    "applications.json",
+    "certifications.json",
+    "capabilities.json",
+    "faq-items.json",
+    "comparison-topics.json",
+    "assets.json",
+    "relationships.json"
+  ],
+  "completed_outputs": [
+    "categories.json",
+    "products.json",
+    "pages.json",
+    "applications.json",
+    "certifications.json",
+    "capabilities.json",
+    "faq-items.json",
+    "comparison-topics.json",
+    "assets.json",
+    "relationships.json",
+    "IMPORT_PLAN.md"
+  ]
+}

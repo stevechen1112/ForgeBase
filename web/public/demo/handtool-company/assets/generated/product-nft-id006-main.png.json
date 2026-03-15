@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-id006",
+    "filename": "product-nft-id006-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for 6-Piece VDE Insulated Screwdriver Set with model number NFT-ID006. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, insulated shafts, finish, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "tzC2ac7VOqCI1e8Py62soAs",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 90,
+    "candidatesTokenCount": 1588,
+    "totalTokenCount": 1678,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 90
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

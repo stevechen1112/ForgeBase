@@ -1,0 +1,52 @@
+import uuid
+from datetime import datetime
+from typing import Optional, List, TYPE_CHECKING
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
+from app.core.datetime import utcnow_naive
+from app.models.associations import ProductApplicationLink, ApplicationFAQLink, ApplicationRelatedLink
+
+if TYPE_CHECKING:
+    from app.models.product import Product
+    from app.models.faq_item import FAQItem
+
+
+class Application(SQLModel, table=True):
+    __tablename__ = "applications"
+    __table_args__ = (
+        UniqueConstraint("slug", "locale", name="uq_applications_slug_locale"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    application_name: str = Field(max_length=100, index=True)
+    slug: str = Field(max_length=100, index=True)
+    industry: str = Field(max_length=60)      # e.g. "Automotive", "Electronics"
+    description: Optional[str] = Field(default=None)   # richtext
+    challenge: Optional[str] = Field(default=None)     # richtext — pain points solved
+    solution: Optional[str] = Field(default=None)      # richtext — how product solves it
+    hero_image_url: Optional[str] = Field(default=None, max_length=500)
+    seo_title: Optional[str] = Field(default=None, max_length=70)
+    seo_description: Optional[str] = Field(default=None, max_length=160)
+    status: str = Field(default="draft", max_length=20)
+    locale: str = Field(default="en", max_length=5)
+    sort_order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=utcnow_naive)
+    updated_at: datetime = Field(default_factory=utcnow_naive)
+    published_at: Optional[datetime] = Field(default=None)
+
+    # Relationships
+    products: List["Product"] = Relationship(
+        back_populates="applications", link_model=ProductApplicationLink
+    )
+    faqs: List["FAQItem"] = Relationship(
+        back_populates="applications", link_model=ApplicationFAQLink
+    )
+    related_applications: List["Application"] = Relationship(
+        back_populates="related_applications",
+        link_model=ApplicationRelatedLink,
+        sa_relationship_kwargs={
+            "primaryjoin": "Application.id == ApplicationRelatedLink.application_id",
+            "secondaryjoin": "Application.id == ApplicationRelatedLink.related_application_id",
+            "lazy": "select",
+        },
+    )
