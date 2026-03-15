@@ -108,7 +108,7 @@ export default function SegmentDetailPage() {
   if (error) return <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
   if (!seg) return null;
 
-  let conditions: Record<string, unknown>[] = [];
+  let conditions: Array<{ field?: unknown; operator?: unknown; value?: unknown; event_name?: string; within_days?: number }> = [];
   try { conditions = JSON.parse(seg.conditions); } catch { /* ignore */ }
 
   return (
