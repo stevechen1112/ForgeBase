@@ -5,6 +5,7 @@ import {
   getPublishedApplications,
   getPublishedCertifications,
   getCTAByKey,
+  getFeaturedProducts,
 } from "@/lib/api";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
@@ -110,11 +111,12 @@ const TESTIMONIALS = [
 ];
 
 export default async function HomePage() {
-  const [categories, applicationsRes, certifications, heroCta] = await Promise.all([
+  const [categories, applicationsRes, certifications, heroCta, featuredProducts] = await Promise.all([
     getPublishedCategories(),
     getPublishedApplications(),
     getPublishedCertifications(),
     getCTAByKey("hero_home"),
+    getFeaturedProducts(),
   ]);
   const applications = applicationsRes.data.slice(0, 6);
 
@@ -201,6 +203,59 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Featured Products ── */}
+      {featuredProducts.length > 0 && (
+        <section className="bg-white py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="text-center">
+              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+                Featured
+              </span>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">Our Top Products</h2>
+              <p className="mx-auto mt-3 max-w-xl text-base text-gray-500">
+                Industry-leading solutions trusted by buyers worldwide.
+              </p>
+            </div>
+
+            <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.slug}`}
+                  className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
+                >
+                  <span className="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-blue-50 text-4xl group-hover:bg-blue-100 transition-colors">
+                    ⬡
+                  </span>
+                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                    {product.product_name}
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">{product.model_number}</p>
+                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-500">
+                    {product.short_description}
+                  </p>
+                  <span className="mt-3 text-xs font-semibold text-blue-600 group-hover:underline">
+                    View Details →
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-10 text-center">
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-6 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                Browse All Products
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Product Categories ── */}
       {categories.length > 0 && (

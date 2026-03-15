@@ -280,6 +280,12 @@ class AssignUpdate(BaseModel):
         return v
 
 
+class FollowUpUpdate(BaseModel):
+    first_response_at: Optional[datetime] = None
+    quote_sent_at: Optional[datetime] = None
+    lost_reason: Optional[str] = None
+
+
 @tracking_router.get("/rfqs")
 async def list_rfqs(
     status: Optional[str] = None,
@@ -387,6 +393,25 @@ async def assign_rfq(
     return {"rfq_number": r.rfq_number, "status": r.status, "assigned_to": str(r.assigned_to)}
 
 
+@tracking_router.put("/rfqs/{rfq_id}/follow-up")
+async def update_rfq_follow_up(
+    rfq_id: uuid.UUID,
+    body: FollowUpUpdate,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    r = await db.get(RFQRequest, rfq_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    updates = body.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(r, field, value)
+    r.updated_at = utcnow_naive()
+    db.add(r)
+    await db.commit()
+    return {"rfq_number": r.rfq_number, "updated_fields": list(updates.keys())}
+
+
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
@@ -417,4 +442,11 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         )
         base["closed_at"] = r.closed_at.isoformat() if r.closed_at else None
         base["updated_at"] = r.updated_at.isoformat()
+        base["first_response_at"] = (
+            r.first_response_at.isoformat() if r.first_response_at else None
+        )
+        base["quote_sent_at"] = (
+            r.quote_sent_at.isoformat() if r.quote_sent_at else None
+        )
+        base["lost_reason"] = r.lost_reason
     return base

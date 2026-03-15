@@ -61,7 +61,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
 
   deploy-web-staging:
-    name: Deploy Web to Vercel (Staging)
+    name: Deploy Web to Vercel
     runs-on: ubuntu-latest
     needs: [web]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -78,25 +78,4 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
         run: vercel deploy --prod --token=$VERCEL_TOKEN
-
-  deploy-admin-staging:
-    name: Deploy Admin to Linode (Staging)
-    runs-on: ubuntu-latest
-    needs: [admin]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy admin via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_PORT || 22 }}
-          script: |
-            set -e
-            cd /opt/forgebase/admin
-            git pull origin main
-            npm ci --production
-            npm run build
-            sudo systemctl restart forgebase-admin
+  # Admin production deploy is handled by deploy.yml on push to main

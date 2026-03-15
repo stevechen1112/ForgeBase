@@ -93,6 +93,14 @@ export async function getAllPublishedProducts(
   );
 }
 
+/** Fetch featured (is_featured=true) published products. */
+export async function getFeaturedProducts(locale = "en"): Promise<Product[]> {
+  const res = await apiFetch<ListResponse<Product>>(
+    `/content/products?status=published&featured=true&locale=${locale}&page_size=8`
+  );
+  return res.data;
+}
+
 /** Fetch all published applications for a locale. */
 export async function getAllPublishedApplications(
   locale = "en",

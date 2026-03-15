@@ -53,6 +53,15 @@ def select_dynamic_cta(
     stage = intent_stage if intent_stage in STAGE_ACTION_PRIORITY else "cold"
     action_priority = STAGE_ACTION_PRIORITY[stage]
 
+    # Filter CTAs by target_intent_stage: keep "any" + matching stage
+    filtered_ctas = [
+        cta for cta in available_ctas
+        if cta.get("target_intent_stage", "any") in ("any", stage)
+    ]
+    # Fall back to all CTAs if filtering removes everything
+    if not filtered_ctas:
+        filtered_ctas = available_ctas
+
     # Sort CTAs by stage preference
     def _priority(cta: dict) -> int:
         action_type = cta.get("action_type", "")
@@ -61,7 +70,7 @@ def select_dynamic_cta(
         except ValueError:
             return len(action_priority)
 
-    sorted_ctas = sorted(available_ctas, key=_priority)
+    sorted_ctas = sorted(filtered_ctas, key=_priority)
     selected = sorted_ctas[0] if sorted_ctas else None
 
     if selected is None:

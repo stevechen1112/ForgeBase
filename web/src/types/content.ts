@@ -26,6 +26,8 @@ export type Product = {
   seo_description: string | null;
   status: string;
   locale: string;
+  is_featured: boolean;
+  display_priority: number;
   published_at: string | null;
 };
 

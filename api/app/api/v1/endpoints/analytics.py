@@ -256,3 +256,76 @@ async def strategy_map_analytics(
         "tier_summary": tiers,
         "strategies": [dict(r) for r in rows],
     }
+
+
+# ── Funnel analytics ─────────────────────────────────────────────────────────
+
+@router.get("/funnel")
+async def funnel_analytics(
+    days: int = Query(30, ge=1, le=365),
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """
+    Marketing funnel overview:
+    - Visitor counts by intent_stage
+    - RFQ counts by status
+    - Conversion rates between stages
+    """
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # Visitors by intent stage
+    stage_sql = text("""
+        SELECT
+            COALESCE(intent_stage, 'cold') AS stage,
+            COUNT(*) AS count
+        FROM visitors
+        WHERE created_at >= :since
+        GROUP BY COALESCE(intent_stage, 'cold')
+        ORDER BY count DESC
+    """)
+    stage_result = await session.execute(stage_sql, {"since": since})
+    stage_rows = {r["stage"]: r["count"] for r in stage_result.mappings().all()}
+
+    # RFQ counts by status
+    rfq_sql = text("""
+        SELECT status, COUNT(*) AS count
+        FROM rfq_requests
+        WHERE created_at >= :since
+        GROUP BY status
+        ORDER BY count DESC
+    """)
+    rfq_result = await session.execute(rfq_sql, {"since": since})
+    rfq_rows = {r["status"]: r["count"] for r in rfq_result.mappings().all()}
+
+    # Totals for conversion rates
+    total_visitors = sum(stage_rows.values())
+    total_rfqs = sum(rfq_rows.values())
+    won = rfq_rows.get("won", 0)
+
+    conversions = {
+        "visitor_to_rfq": round(total_rfqs / total_visitors * 100, 1) if total_visitors else 0,
+        "rfq_to_won": round(won / total_rfqs * 100, 1) if total_rfqs else 0,
+        "visitor_to_won": round(won / total_visitors * 100, 1) if total_visitors else 0,
+    }
+
+    # Funnel stages in order
+    funnel_stages = []
+    for stage_name in ["cold", "warm", "hot", "sales_ready"]:
+        funnel_stages.append({
+            "stage": stage_name,
+            "visitors": stage_rows.get(stage_name, 0),
+        })
+
+    return {
+        "period_days": days,
+        "generated_at": _iso(datetime.now(timezone.utc)),
+        "funnel_stages": funnel_stages,
+        "rfq_by_status": rfq_rows,
+        "totals": {
+            "visitors": total_visitors,
+            "rfqs": total_rfqs,
+            "won": won,
+        },
+        "conversion_rates": conversions,
+    }

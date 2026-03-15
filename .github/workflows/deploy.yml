@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# Prevent concurrent deploys — if a new push comes in, cancel the previous run
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to Linode
@@ -25,21 +30,34 @@ jobs:
       - name: Pull latest code on server
         run: |
           ssh root@${{ secrets.DEPLOY_HOST }} '
+            set -e
             cd /opt/forgebase/app
             git pull origin main
           '
 
-      - name: Apply DB migrations
+      - name: Install Python dependencies & apply DB migrations
         run: |
           ssh root@${{ secrets.DEPLOY_HOST }} '
+            set -e
             cd /opt/forgebase/app/api
             source .venv/bin/activate
+            pip install -r requirements.txt --quiet
             alembic upgrade head
+          '
+
+      - name: Restart API service
+        run: |
+          ssh root@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            systemctl restart forgebase-api
+            sleep 3
+            systemctl is-active forgebase-api || (journalctl -u forgebase-api -n 30 && exit 1)
           '
 
       - name: Rebuild web frontend
         run: |
           ssh root@${{ secrets.DEPLOY_HOST }} '
+            set -e
             cd /opt/forgebase/app/web
             npm ci --prefer-offline
             npm run build
@@ -50,6 +68,7 @@ jobs:
       - name: Rebuild admin frontend
         run: |
           ssh root@${{ secrets.DEPLOY_HOST }} '
+            set -e
             cd /opt/forgebase/app/admin
             npm ci --prefer-offline
             npm run build
@@ -57,33 +76,38 @@ jobs:
             cp -r public .next/standalone/public 2>/dev/null || true
           '
 
-      - name: Restart all services
+      - name: Restart frontend services
         run: |
           ssh root@${{ secrets.DEPLOY_HOST }} '
-            systemctl restart forgebase-api
-            systemctl restart forgebase-web
-            systemctl restart forgebase-admin
+            set -e
+            systemctl restart forgebase-web forgebase-admin
             sleep 3
-            systemctl is-active forgebase-api
-            systemctl is-active forgebase-web
-            systemctl is-active forgebase-admin
+            systemctl is-active forgebase-web  || (journalctl -u forgebase-web  -n 20 && exit 1)
+            systemctl is-active forgebase-admin || (journalctl -u forgebase-admin -n 20 && exit 1)
           '
 
       - name: Health check
         run: |
           sleep 5
-          STATUS=$(curl -sf http://${{ secrets.DEPLOY_HOST }}/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))")
-          if [ "$STATUS" != "ok" ]; then
-            echo "Health check failed: $STATUS"
-            exit 1
-          fi
-          echo "Health check passed: $STATUS"
+          for i in 1 2 3; do
+            STATUS=$(curl -sf --max-time 10 https://mitselect.com/api/v1/health \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))" 2>/dev/null || echo "unreachable")
+            echo "Attempt $i: $STATUS"
+            if [ "$STATUS" = "ok" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed after 3 attempts"
+          ssh root@${{ secrets.DEPLOY_HOST }} 'journalctl -u forgebase-api -n 30'
+          exit 1
 
       - name: Notify deployment status
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "Deployment succeeded to http://${{ secrets.DEPLOY_HOST }}"
+            echo "Deployment succeeded → https://mitselect.com"
           else
-            echo "Deployment FAILED"
+            echo "Deployment FAILED — check logs above"
           fi

@@ -84,7 +84,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 17 個 DB migrations
+alembic upgrade head           # 套用全部 18 個 DB migrations
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -193,3 +193,64 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
 | [ForgeBase_完整開發計畫.md](ForgeBase_完整開發計畫.md) | 開發里程碑計畫 |
 | [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
+| [ForgeBase_前後台改造說明.md](ForgeBase_前後台改造說明.md) | 本次改造評估與工作項目（程式碼實查版）|
+
+---
+
+## 版本更新紀錄
+
+### v0.18 — 成長網站強化改造（2026-03-15）
+
+本次改造聚焦「B2B 行銷漏斗可視化與 CTA 意圖分階」，共完成 23 項工作項目，新增 1 個 Alembic migration（0018）。
+
+#### 後端 API（FastAPI）
+
+| 類別 | 變更 |
+|------|------|
+| **DB Model** | `products` 新增 `is_featured` (bool)、`display_priority` (int) |
+| **DB Model** | `rfq_requests` 新增 `first_response_at`、`quote_sent_at`、`lost_reason` |
+| **DB Model** | `ctas` 新增 `target_intent_stage` (cold / warm / hot / any) |
+| **Migration** | `0018_growth_site_fields.py` — 三表統一 migration |
+| **API** | `GET /products?featured=true` — 主推產品篩選 + `display_priority` 排序 |
+| **API** | `PUT /rfqs/{id}/follow-up` — 記錄首次回覆/報價/未成交原因 |
+| **API** | `GET /tracking/analytics/funnel` — 漏斗分析（意圖階段分佈、RFQ 狀態、轉換率）|
+| **Service** | `dynamic_cta.py` 新增 `target_intent_stage` 過濾邏輯 |
+
+#### 管理後台（Admin Next.js）
+
+| 頁面 | 變更 |
+|------|------|
+| `products/` | 新增「主推 ⭐」欄位，點擊即時切換 `is_featured` |
+| `rfqs/[id]/` | Sidebar 新增「銷售跟進」卡片：一鍵記錄首次回覆/報價時間、未成交原因 |
+| `ctas/CTAForm` | 新增「目標意圖階段」選擇器（any / cold / warm / hot）|
+| `analytics/funnel/` | 全新漏斗儀表板：轉換率卡片 + 意圖階段條形圖 + RFQ 狀態格 |
+| `nurture/` | 列表頁: 序列名稱可點擊、「新增序列」按鈕啟用 |
+| `nurture/new/` | 全新新增序列頁面 |
+| `nurture/[id]/` | 全新序列詳情頁：設定編輯 + 步驟管理（新增/刪除）+ 入列記錄 |
+| `segments/` | 「新增 Segment」按鈕啟用、名稱可點擊 |
+| `segments/new/` | 全新視覺化규則建構器（支援 intent_stage / intent_score / country / event_count）|
+| `segments/[id]/` | 全新詳情頁：設定編輯 + 條件規則展示 + 一鍵評估符合人數 |
+| `Sidebar` | 行銷分析區加入「行銷漏斗」連結 |
+
+#### 前台（Web Next.js）
+
+| 元件/頁面 | 變更 |
+|-----------|------|
+| `web/src/app/page.tsx` | Homepage 新增「主推產品」區塊（`getFeaturedProducts()` 取 `is_featured=true` 的產品，4 欄 Grid）|
+| `ProductCTAButtons.tsx` | 依訪客意圖動態調整主要 CTA 按鈕文案：Hot 階段顯示急迫樣式、服務後端 `personalization.cta_label_override` |
+
+#### 部署注意事項
+
+```bash
+# 1. 套用 DB migration（新增 3 欄位到 3 張表）
+cd api && source .venv/bin/activate
+alembic upgrade head
+# → 執行 0018_growth_site_fields
+
+# 2. 重新部署後端
+systemctl restart forgebase-api
+
+# 3. 重新建置並部署前台與後台
+cd /opt/forgebase/app/web && npm run build && ...
+cd /opt/forgebase/app/admin && npm run build && ...
+```

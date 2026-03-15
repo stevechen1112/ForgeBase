@@ -70,6 +70,8 @@ export type Product = {
   seo_description: string | null;
   status: string;
   locale: string;
+  is_featured: boolean;
+  display_priority: number;
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -154,6 +156,7 @@ export type CTA = {
   locale: string;
   status: string;
   sort_order: number;
+  target_intent_stage: string;
   created_at: string;
   updated_at: string;
 };

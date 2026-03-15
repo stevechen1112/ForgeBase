@@ -31,6 +31,7 @@ async def list_products(
     locale: str | None = Query(None),
     slug: str | None = Query(None),
     q: str | None = Query(None, description="Full-text search on product_name and model_number"),
+    featured: bool | None = Query(None, description="Filter by is_featured"),
     session: AsyncSession = Depends(get_session),
 ):
     base_q = select(Product)
@@ -47,9 +48,11 @@ async def list_products(
         base_q = base_q.where(
             Product.product_name.ilike(term) | Product.model_number.ilike(term)  # type: ignore[attr-defined]
         )
+    if featured is not None:
+        base_q = base_q.where(Product.is_featured == featured)
 
     total = (await session.exec(select(func.count()).select_from(base_q.subquery()))).one()
-    items_q = base_q.order_by(Product.product_name).offset((page - 1) * page_size).limit(page_size)
+    items_q = base_q.order_by(Product.display_priority.desc(), Product.product_name).offset((page - 1) * page_size).limit(page_size)
     items = (await session.exec(items_q)).all()
 
     return APIResponse(

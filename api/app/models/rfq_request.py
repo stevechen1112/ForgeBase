@@ -64,6 +64,11 @@ class RFQRequest(SQLModel, table=True):
     reminder_24h_sent_at: Optional[datetime] = Field(default=None)
     escalation_48h_sent_at: Optional[datetime] = Field(default=None)
 
+    # Sales follow-up timestamps
+    first_response_at: Optional[datetime] = Field(default=None)
+    quote_sent_at: Optional[datetime] = Field(default=None)
+    lost_reason: Optional[str] = Field(default=None, max_length=500)
+
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
     closed_at: Optional[datetime] = Field(default=None)

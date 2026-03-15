@@ -21,6 +21,7 @@ type RFQDetail = {
   assigned_notified_at: string | null; reminder_24h_sent_at: string | null;
   escalation_48h_sent_at: string | null; closed_at: string | null;
   created_at: string; updated_at: string;
+  first_response_at: string | null; quote_sent_at: string | null; lost_reason: string | null;
 };
 
 type RFQAnalysis = {
@@ -55,6 +56,41 @@ export default function RFQDetailPage() {
   const [analysisError, setAnalysisError] = useState("");
   const [reply, setReply] = useState<DraftReply | null>(null);
   const [replyLoading, setReplyLoading] = useState(false);
+
+  // Follow-up state
+  const [followUpSaving, setFollowUpSaving] = useState(false);
+  const [lostReason, setLostReason] = useState("");
+
+  async function saveFollowUp(field: "first_response_at" | "quote_sent_at") {
+    setFollowUpSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ [field]: new Date().toISOString() }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setRfq((prev) => prev ? { ...prev, [field]: new Date().toISOString() } : prev);
+      setMessage(`${field === "first_response_at" ? "首次回覆" : "報價發出"}時間已記錄 ✓`);
+    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
+    finally { setFollowUpSaving(false); }
+  }
+
+  async function saveLostReason() {
+    if (!lostReason.trim()) return;
+    setFollowUpSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ lost_reason: lostReason }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setRfq((prev) => prev ? { ...prev, lost_reason: lostReason } : prev);
+      setMessage("未成交原因已儲存 ✓");
+    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
+    finally { setFollowUpSaving(false); }
+  }
 
   async function runAnalysis() {
     setAnalysisLoading(true); setAnalysisError("");
@@ -362,6 +398,47 @@ export default function RFQDetailPage() {
                   </li>
                 ))}
               </ul>
+            </CardContent>
+          </Card>
+
+          {/* Sales Follow-up Tracking */}
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">銷售跟進</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">首次回覆</span>
+                {rfq.first_response_at ? (
+                  <span className="text-xs text-green-600">{new Date(rfq.first_response_at).toLocaleDateString()}</span>
+                ) : (
+                  <Button size="sm" variant="outline" disabled={followUpSaving} onClick={() => saveFollowUp("first_response_at")}>記錄</Button>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">報價發出</span>
+                {rfq.quote_sent_at ? (
+                  <span className="text-xs text-green-600">{new Date(rfq.quote_sent_at).toLocaleDateString()}</span>
+                ) : (
+                  <Button size="sm" variant="outline" disabled={followUpSaving} onClick={() => saveFollowUp("quote_sent_at")}>記錄</Button>
+                )}
+              </div>
+              {rfq.status === "lost" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">未成交原因</Label>
+                  <textarea
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                    rows={2}
+                    value={lostReason}
+                    onChange={(e) => setLostReason(e.target.value)}
+                    placeholder="請記錄未成交原因..."
+                  />
+                  <Button size="sm" variant="secondary" className="w-full" disabled={followUpSaving || !lostReason.trim()} onClick={saveLostReason}>
+                    儲存原因
+                  </Button>
+                  {rfq.lost_reason && (
+                    <p className="text-xs text-muted-foreground">已記錄: {rfq.lost_reason}</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

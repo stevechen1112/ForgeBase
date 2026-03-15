@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { productsApi, type Product } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -43,10 +43,31 @@ export default function ProductsListPage() {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
   };
 
+  const handleToggleFeatured = async (id: string, current: boolean) => {
+    await productsApi.update(token, id, { is_featured: !current } as Partial<Product>);
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, is_featured: !current } : r)));
+  };
+
   const COLUMNS = [
     { key: "product_name", label: "商品名稱" },
     { key: "model_number", label: "型號" },
     { key: "locale", label: "語言", className: "w-20" },
+    {
+      key: "is_featured",
+      label: "主推",
+      className: "w-16",
+      render: (_v: unknown, row: Product) => (
+        <button
+          onClick={() => handleToggleFeatured(row.id, row.is_featured)}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          title={row.is_featured ? "取消主推" : "設為主推"}
+        >
+          <Star
+            className={`h-4 w-4 ${row.is_featured ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+          />
+        </button>
+      ),
+    },
     {
       key: "status",
       label: "狀態",

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ function fmt(d?: string) {
 }
 
 export default function NurturePage() {
+  const router = useRouter();
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
   const [sequences, setSequences] = useState<Sequence[]>([]);
@@ -72,7 +74,7 @@ export default function NurturePage() {
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
           </Button>
-          <Button size="sm" disabled>
+          <Button size="sm" onClick={() => router.push("/dashboard/nurture/new")}>
             <PlusCircle className="mr-2 h-4 w-4" />新增序列
           </Button>
         </div>
@@ -122,8 +124,8 @@ export default function NurturePage() {
                 </thead>
                 <tbody className="divide-y">
                   {sequences.map(s => (
-                    <tr key={s.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-2 font-medium">{s.name}</td>
+                    <tr key={s.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => router.push(`/dashboard/nurture/${s.id}`)}>
+                      <td className="px-4 py-2 font-medium text-primary hover:underline">{s.name}</td>
                       <td className="px-4 py-2 text-center">{s.step_count ?? 0}</td>
                       <td className="px-4 py-2 text-center">
                         <Badge className={s.is_active !== false ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>

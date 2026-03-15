@@ -16,6 +16,8 @@ class ProductCreate(BaseModel):
     seo_description: Optional[str] = Field(default=None, max_length=160)
     status: str = Field(default="draft")
     locale: str = Field(default="en", max_length=5)
+    is_featured: bool = Field(default=False)
+    display_priority: int = Field(default=0)
 
 
 class ProductUpdate(BaseModel):
@@ -31,6 +33,8 @@ class ProductUpdate(BaseModel):
     status: Optional[str] = None
     locale: Optional[str] = Field(default=None, max_length=5)
     published_at: Optional[datetime] = None
+    is_featured: Optional[bool] = None
+    display_priority: Optional[int] = None
 
 
 class ProductRead(BaseModel):
@@ -46,6 +50,8 @@ class ProductRead(BaseModel):
     seo_description: Optional[str]
     status: str
     locale: str
+    is_featured: bool
+    display_priority: int
     created_at: datetime
     updated_at: datetime
     published_at: Optional[datetime]

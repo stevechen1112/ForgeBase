@@ -457,7 +457,7 @@ async def dynamic_cta_endpoint(
 
     # Fetch published CTAs
     ctas_sql = text(
-        "SELECT id::text, name, action_type, label, description FROM ctas "
+        "SELECT id::text, name, action_type, label, description, target_intent_stage FROM ctas "
         "WHERE status = 'published' LIMIT 15"
     )
     ctas_result = await session.execute(ctas_sql)

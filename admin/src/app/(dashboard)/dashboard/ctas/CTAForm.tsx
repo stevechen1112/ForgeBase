@@ -32,6 +32,7 @@ export default function CTAForm({ initial, id }: Props) {
     locale: initial?.locale ?? "en",
     status: initial?.status ?? "draft",
     sort_order: initial?.sort_order ?? 0,
+    target_intent_stage: initial?.target_intent_stage ?? "any",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +129,16 @@ export default function CTAForm({ initial, id }: Props) {
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
                 <option value="archived">Archived</option>
+              </select>
+            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>目標意圖階段</Label>
+              <select className={SELECT_CLS} {...f("target_intent_stage")}>
+                <option value="any">不限 (Any)</option>
+                <option value="cold">Cold — 初次瀏覽</option>
+                <option value="warm">Warm — 多次互動</option>
+                <option value="hot">Hot — 高意圖</option>
               </select>
             </div>
             <div className="space-y-1.5">
