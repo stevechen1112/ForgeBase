@@ -15,7 +15,7 @@ from app.api.v1.endpoints import (
     public_relations, preview,
     events, visitors, contacts, rfqs, integrations, segments, accounts, nurture,
     linkedin_audiences, seo_audit, seo_optimize, crm, esp, ab_test, analytics,
-    ml_scoring,
+    ml_scoring, chat,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router, nurture_ai_router,
@@ -77,6 +77,9 @@ forms_router = APIRouter()
 forms_router.include_router(contacts.forms_router)  # /forms/contact
 forms_router.include_router(rfqs.forms_router)      # /forms/rfq
 api_router.include_router(forms_router)
+
+# Chat MVP — /api/v1/chat/*
+api_router.include_router(chat.router)
 
 # Phase 1b: Admin utilities — /api/v1/admin/
 api_router.include_router(integrations.router)      # /admin/integrations/status

@@ -24,6 +24,8 @@ _BASE_SCORES: dict[str, int] = {
     "rfq_submit": 30,
     "return_visit": 6,
     "session_depth_reached": 5,
+    "chat_start": 8,
+    "chat_rfq_handoff": 20,
 }
 
 # ── Stage thresholds (spec 12.6.3) ────────────────────────────────────────────

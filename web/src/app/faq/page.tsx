@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedFAQs } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
@@ -29,6 +30,7 @@ export default async function FAQPage() {
   return (
     <>
       <PageViewTracker pageType="faq" />
+      <ChatWidget contextPage="/faq" contextEntityType="faq" />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },

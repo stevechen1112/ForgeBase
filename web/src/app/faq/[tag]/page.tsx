@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedFAQs } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
@@ -42,6 +43,7 @@ export default async function FAQTagPage({ params }: Props) {
   return (
     <>
       <PageViewTracker pageType="faq" pageId={tag} />
+      <ChatWidget contextPage={`/faq/${tag}`} contextEntityType="faq" />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },

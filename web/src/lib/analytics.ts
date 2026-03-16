@@ -34,7 +34,9 @@ export type EventName =
   | "rfq_start"
   | "rfq_submit"
   | "return_visit"
-  | "session_depth_reached";
+  | "session_depth_reached"
+  | "chat_start"
+  | "chat_rfq_handoff";
 
 export interface TrackPayload {
   event_name: EventName;
@@ -176,7 +178,7 @@ async function flushQueue(): Promise<void> {
     await fetch(`${API_ENDPOINT}/api/v1/tracking/events/batch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ events: q }),
+      body: JSON.stringify(q),
     });
   } catch {
     // If flush fails, events are already removed — acceptable loss

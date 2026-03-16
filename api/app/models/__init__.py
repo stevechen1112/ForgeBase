@@ -32,6 +32,7 @@ from app.models.nurture import NurtureSequence, NurtureStep, NurtureEnrollment
 from app.models.linkedin_audience import LinkedInAudience
 from app.models.crm_sync_log import CrmSyncLog
 from app.models.ab_test import ABTest, ABTestView
+from app.models.chat import ChatSession, ChatMessage
 
 __all__ = [
     "ProductApplicationLink",
@@ -69,4 +70,6 @@ __all__ = [
     "CrmSyncLog",
     "ABTest",
     "ABTestView",
+    "ChatSession",
+    "ChatMessage",
 ]

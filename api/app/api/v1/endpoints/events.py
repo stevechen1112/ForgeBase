@@ -42,7 +42,7 @@ VALID_EVENT_NAMES = {
     "page_view", "category_view", "product_view", "application_view",
     "faq_expand", "comparison_view", "spec_download", "certification_view",
     "cta_click", "form_start", "form_submit", "rfq_start", "rfq_submit",
-    "return_visit", "session_depth_reached",
+    "return_visit", "session_depth_reached", "chat_start", "chat_rfq_handoff",
 }
 
 # ── Request / Response schemas ────────────────────────────────────────────────

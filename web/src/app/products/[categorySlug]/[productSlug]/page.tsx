@@ -22,6 +22,7 @@ import {
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { getProductImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
 
@@ -104,6 +105,11 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <PageViewTracker pageType="product" pageId={product.id} />
+      <ChatWidget
+        contextPage={`/products/${category.slug}/${product.slug}`}
+        contextEntityType="product"
+        contextEntityId={product.id}
+      />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },
