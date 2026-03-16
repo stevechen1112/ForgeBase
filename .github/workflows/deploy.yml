@@ -32,10 +32,16 @@ jobs:
           ssh root@${{ secrets.DEPLOY_HOST }} '
             set -e
             cd /opt/forgebase/app
+            git checkout -- . || true
             git pull origin main
             # Restore any tracked static assets that may be missing from working tree
             # (git pull does not restore files whose content is unchanged between commits)
             git checkout HEAD -- web/public/demo/handtool-company/assets/
+            # Sync nginx config if changed
+            if ! diff -q infra/nginx_forgebase.conf /etc/nginx/sites-enabled/forgebase > /dev/null 2>&1; then
+              cp infra/nginx_forgebase.conf /etc/nginx/sites-enabled/forgebase
+              nginx -t && nginx -s reload
+            fi
           '
 
       - name: Install Python dependencies & apply DB migrations
