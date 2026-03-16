@@ -66,15 +66,19 @@ Generate product page content based on the following:
 
 Output JSON with these exact keys:
 {{
-  "seo_title": "string (max 70 chars)",
-  "seo_description": "string (max 160 chars)",
-  "full_description": "string (Markdown, ~500 words)",
+  "seo_title": "string (max 60 chars — include primary keyword near the front)",
+  "seo_description": "string (max 155 chars — include primary keyword and an action phrase such as 'Get a quote', 'Download spec sheet', or 'Compare models')",
+  "full_description": "string (Markdown, target {brief.get('word_count_target', 800)} words. REQUIRED structure: start the first paragraph with the primary keyword within the first 100 words; use at least one ## H2 heading that contains the primary keyword; use 2-3 additional ## H2 sections covering key specifications, typical use cases, and buyer benefits; use ### H3 sub-headings where appropriate)",
   "faq_suggestions": [
-    {{"question": "string", "answer": "string"}}
+    {{"question": "string (must start with What / How / Why / Which / Can / Is — optimised for Google PAA)", "answer": "string"}}
+  ],
+  "internal_link_suggestions": [
+    {{"anchor_text": "string", "target_slug": "string", "reason": "string"}}
   ],
   "cta_headline": "string",
   "cta_subheadline": "string"
 }}
+Provide 3-5 FAQ pairs and 2-4 internal link suggestions to related product, category, or application pages.
 """
 
 
@@ -100,15 +104,19 @@ Generate application page content based on the following:
 
 Output JSON with these exact keys:
 {{
-  "seo_title": "string (max 70 chars)",
-  "seo_description": "string (max 160 chars)",
-  "description": "string (Markdown overview, ~300 words)",
-  "challenge": "string (Markdown, ~200 words)",
-  "solution": "string (Markdown, ~300 words)",
+  "seo_title": "string (max 60 chars — include primary keyword near the front)",
+  "seo_description": "string (max 155 chars — include primary keyword and an action phrase such as 'Learn more', 'See how it works', or 'Request a sample')",
+  "description": "string (Markdown overview, target {brief.get('word_count_target', 300)} words. Include the primary keyword in the first 100 words and at least one ## H2 heading containing the primary keyword)",
+  "challenge": "string (Markdown, ~200 words. Use ## H2 heading for this section)",
+  "solution": "string (Markdown, ~300 words. Use ## H2 heading for this section; weave in secondary keywords naturally)",
   "faq_suggestions": [
-    {{"question": "string", "answer": "string"}}
+    {{"question": "string (must start with What / How / Why / Which / Can / Is — optimised for Google PAA)", "answer": "string"}}
+  ],
+  "internal_link_suggestions": [
+    {{"anchor_text": "string", "target_slug": "string", "reason": "string"}}
   ]
 }}
+Provide 3-5 FAQ pairs and 2-3 internal link suggestions to related products or capability pages.
 """
 
 
@@ -128,10 +136,10 @@ Generate FAQ content based on the following:
 Output JSON with these exact keys:
 {{
   "faq_items": [
-    {{"question": "string", "answer": "string", "category_tag": "string"}}
+    {{"question": "string (MUST start with What / How / Why / Which / Can / Is / Does / Should — Google People Also Ask format)", "answer": "string (40-60 words, direct answer in first sentence, optimised for featured snippet)", "category_tag": "string"}}
   ]
 }}
-Provide 5-8 Q&A pairs.
+Provide 5-8 Q&A pairs. Vary the question starters; do not repeat the same opening word more than twice.
 """
 
 
@@ -150,12 +158,15 @@ Generate competitive comparison content based on the following:
 
 Output JSON with these exact keys:
 {{
-  "seo_title": "string (max 70 chars)",
-  "seo_description": "string (max 160 chars)",
-  "summary": "string (Markdown overview, ~200 words)",
-  "dimensions": "string (JSON array of comparison dimensions)",
-  "conclusion": "string (Markdown recommendation, ~150 words)"
+  "seo_title": "string (max 60 chars — include primary keyword near the front)",
+  "seo_description": "string (max 155 chars — include primary keyword and a phrase like 'See the full comparison' or 'Find out which is right for you')",
+  "summary": "string (Markdown overview, ~200 words. Include the primary keyword in the first 100 words)",
+  "dimensions": [
+    {{"label": "string (comparison dimension name)", "our_value": "string", "competitor_value": "string", "winner": "us | competitor | tie"}}
+  ],
+  "conclusion": "string (Markdown recommendation, ~150 words. Include a CTA phrase at the end)"
 }}
+Provide 4-6 comparison dimensions.
 """
 
 
@@ -177,14 +188,17 @@ Generate product category page content based on the following:
 
 Output JSON with these exact keys:
 {{
-  "seo_title": "string (max 70 chars)",
-  "seo_description": "string (max 160 chars)",
-  "description": "string (Markdown overview, ~300 words — explain what this product category is, who uses it, and why buyers should care)",
+  "seo_title": "string (max 60 chars — include primary keyword near the front)",
+  "seo_description": "string (max 155 chars — include primary keyword and a phrase like 'Browse our range' or 'Request a quote')",
+  "description": "string (Markdown overview, target {brief.get('word_count_target', 600)} words — explain what this product category is, who uses it, and why buyers should care. REQUIRED: include primary keyword in first 100 words; use at least two ## H2 headings; weave secondary keywords naturally)",
   "faq_suggestions": [
-    {{"question": "string", "answer": "string"}}
+    {{"question": "string (must start with What / How / Why / Which / Can / Is — optimised for Google PAA)", "answer": "string (40-60 words)"}}
+  ],
+  "internal_link_suggestions": [
+    {{"anchor_text": "string", "target_slug": "string", "reason": "string"}}
   ]
 }}
-Provide 3-5 FAQ pairs relevant to this product category.
+Provide 3-5 FAQ pairs and 2-4 internal link suggestions to related category or product pages.
 """
 
 
@@ -206,12 +220,15 @@ Generate certification page content based on the following:
 
 Output JSON with these exact keys:
 {{
-  "seo_title": "string (max 70 chars)",
-  "seo_description": "string (max 160 chars)",
-  "description": "string (Markdown, ~200 words — explain what this certification means, why it matters to buyers, and what standards it covers)",
-  "trust_points": ["string", "string", "string"]
+  "seo_title": "string (max 60 chars — include the certification name and primary keyword)",
+  "seo_description": "string (max 155 chars — explain what the certification guarantees and include a phrase like 'View certified products' or 'Download certificate')",
+  "description": "string (Markdown, 400-600 words — REQUIRED sections: (1) ## What is [cert name]? (explain the certification body and scope); (2) ## Why It Matters to Buyers (procurement, compliance, market access angle); (3) ## Standards and Requirements (key technical standards covered); (4) ## Our Certified Products (name the product types, with internal links placeholders [product name](slug)). Weave in secondary keywords naturally.)",
+  "trust_points": ["string", "string", "string"],
+  "faq_suggestions": [
+    {{"question": "string (must start with What / How / Why / Which / Can / Is — optimised for Google PAA)", "answer": "string (40-60 words)"}}
+  ]
 }}
-Provide 3-5 trust-building bullet points.
+Provide 3-5 trust-building bullet points and 3-4 FAQ pairs.
 """
 
 
