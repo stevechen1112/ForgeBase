@@ -7,6 +7,7 @@ import {
   getApplicationRelatedFAQs,
   getApplicationLocales,
 } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
@@ -53,6 +54,11 @@ export default async function ApplicationDetailPage({ params }: Props) {
   return (
     <>
       <PageViewTracker pageType="application" pageId={application.id} />
+      <ChatWidget
+        contextPage={`/applications/${application.slug}`}
+        contextEntityType="application"
+        contextEntityId={application.id}
+      />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },

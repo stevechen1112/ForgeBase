@@ -4,7 +4,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, field_validator
 
 
-VALID_CONTEXT_TYPES = {"product", "faq", "unknown"}
+VALID_CONTEXT_TYPES = {"product", "faq", "home", "category", "application", "unknown"}
 VALID_SUGGESTED_ACTIONS = {"none", "rfq", "contact"}
 
 

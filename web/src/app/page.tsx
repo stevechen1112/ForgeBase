@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { StructuredData, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { HOME_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
@@ -123,6 +124,7 @@ export default async function HomePage() {
   return (
     <>
       <PageViewTracker pageType="home" />
+      <ChatWidget contextPage="/" contextEntityType="home" />
       <StructuredData
         data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })}
       />

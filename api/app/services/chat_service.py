@@ -11,10 +11,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
+from app.models.application import Application
 from app.models.certification import Certification
 from app.models.chat import ChatMessage, ChatSession
 from app.models.faq_item import FAQItem
 from app.models.product import Product
+from app.models.product_category import ProductCategory
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
@@ -35,12 +37,46 @@ def _faq_greeting() -> str:
     return "I can help you quickly find MOQ, customization, certification, or quotation-related answers."
 
 
+def _home_greeting() -> str:
+    return "I can help you find the right product category, OEM capability, MOQ guidance, or the fastest path to an RFQ."
+
+
+def _category_greeting(category_name: Optional[str]) -> str:
+    if category_name:
+        return f"I can help you compare options in {category_name}, narrow down fit, and move toward an RFQ."
+    return "I can help you compare product categories, OEM options, and the fastest path to a quotation."
+
+
+def _application_greeting(application_name: Optional[str]) -> str:
+    if application_name:
+        return f"I can help you evaluate products, requirements, and RFQ next steps for {application_name}."
+    return "I can help you connect application needs to the right products, OEM scope, and RFQ next steps."
+
+
 def _default_suggestions(context_entity_type: str) -> list[str]:
     if context_entity_type == "product":
         return [
             "What material is this product made of?",
             "What certifications does this product have?",
             "Can you provide OEM or custom branding?",
+        ]
+    if context_entity_type == "category":
+        return [
+            "Which products in this category fit OEM projects?",
+            "What certifications are common in this category?",
+            "How do I request a quote for this category?",
+        ]
+    if context_entity_type == "application":
+        return [
+            "Which products fit this application best?",
+            "Can you support OEM or customization for this use case?",
+            "What should I include in an RFQ for this application?",
+        ]
+    if context_entity_type == "home":
+        return [
+            "Which product category fits my application?",
+            "Can you support OEM or private label projects?",
+            "How do I start an RFQ?",
         ]
     return [
         "What is your MOQ?",
@@ -211,10 +247,20 @@ class ChatService:
         context_entity_id: Optional[uuid.UUID],
     ) -> tuple[ChatSession, str, list[str]]:
         product_name: Optional[str] = None
+        category_name: Optional[str] = None
+        application_name: Optional[str] = None
         if context_entity_type == "product" and context_entity_id:
             product = await self.db.get(Product, context_entity_id)
             if product:
                 product_name = product.product_name
+        elif context_entity_type == "category" and context_entity_id:
+            category = await self.db.get(ProductCategory, context_entity_id)
+            if category:
+                category_name = category.category_name
+        elif context_entity_type == "application" and context_entity_id:
+            application = await self.db.get(Application, context_entity_id)
+            if application:
+                application_name = application.application_name
 
         await self._ensure_visitor_exists(visitor_id)
         await self._ensure_tracking_session_exists(
@@ -246,7 +292,16 @@ class ChatService:
         await self.db.commit()
         await self.db.refresh(chat_session)
 
-        greeting = _product_greeting(product_name) if context_entity_type == "product" else _faq_greeting()
+        if context_entity_type == "product":
+            greeting = _product_greeting(product_name)
+        elif context_entity_type == "category":
+            greeting = _category_greeting(category_name)
+        elif context_entity_type == "application":
+            greeting = _application_greeting(application_name)
+        elif context_entity_type == "home":
+            greeting = _home_greeting()
+        else:
+            greeting = _faq_greeting()
         return chat_session, greeting, _default_suggestions(context_entity_type)
 
     async def answer_message(
@@ -455,6 +510,77 @@ class ChatService:
                 f"Related certifications: {' | '.join(cert_summary_parts) if cert_summary_parts else 'N/A'}"
             )
             return entity_summary, sources
+
+        if context_entity_type == "category" and chat_session.context_entity_id:
+            statement = (
+                select(ProductCategory)
+                .where(ProductCategory.id == chat_session.context_entity_id)
+                .options(selectinload(ProductCategory.products))
+            )
+            category = (await self.db.exec(statement)).first()
+            if category:
+                related_products = category.products[:5]
+                product_names = []
+                for product in related_products:
+                    product_names.append(product.product_name)
+                    sources.append(
+                        {
+                            "type": "product",
+                            "id": str(product.id),
+                            "name": product.product_name,
+                            "url": f"/products/{category.slug}/{product.slug}",
+                        }
+                    )
+
+                entity_summary = (
+                    f"Category name: {category.category_name}\n"
+                    f"Description: {_trim_text(category.description, 400)}\n"
+                    f"Example products: {' | '.join(product_names) if product_names else 'N/A'}"
+                )
+                return entity_summary, sources
+
+        if context_entity_type == "application" and chat_session.context_entity_id:
+            statement = (
+                select(Application)
+                .where(Application.id == chat_session.context_entity_id)
+                .options(
+                    selectinload(Application.products),
+                    selectinload(Application.faqs),
+                )
+            )
+            application = (await self.db.exec(statement)).first()
+            if application:
+                product_names = []
+                for product in application.products[:4]:
+                    product_names.append(product.product_name)
+                    sources.append(
+                        {
+                            "type": "product",
+                            "id": str(product.id),
+                            "name": product.product_name,
+                            "url": chat_session.context_page or "/products",
+                        }
+                    )
+
+                for faq in application.faqs[:3]:
+                    sources.append(
+                        {
+                            "type": "faq",
+                            "id": str(faq.id),
+                            "name": faq.question,
+                            "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+                        }
+                    )
+
+                entity_summary = (
+                    f"Application name: {application.application_name}\n"
+                    f"Industry: {application.industry}\n"
+                    f"Description: {_trim_text(application.description, 400)}\n"
+                    f"Challenge: {_trim_text(application.challenge, 240)}\n"
+                    f"Solution: {_trim_text(application.solution, 240)}\n"
+                    f"Related products: {' | '.join(product_names) if product_names else 'N/A'}"
+                )
+                return entity_summary, sources
 
         # FAQ context fallback
         faq_statement = select(FAQItem).where(FAQItem.status == "published").order_by(FAQItem.sort_order)

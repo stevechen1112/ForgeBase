@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedCategories } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PRODUCTS_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
@@ -24,6 +25,7 @@ export default async function ProductsPage() {
 
   return (
     <>
+      <ChatWidget contextPage="/products" contextEntityType="category" />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },

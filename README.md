@@ -14,6 +14,7 @@ ForgeBase 是專為外銷製造商設計的 B2B 網站成長平台，整合訪�
 | **RFQ 捕捉** | 結構化詢價表單，含產品需求、預算、時程等欄位，直送管理後台 |
 | **Download Gate** | 規格書、技術文件需留資才可下載，自動建立聯絡人 |
 | **帳戶智能（Account Intelligence）** | 通過 GeoIP 識別訪客國家，IP-to-Company 反查企業身份 |
+| **AI Product Advisor** | 於首頁、產品、應用、FAQ 等高價值頁面提供情境式 AI 導購，支援產品、MOQ、OEM、認證與 RFQ 導流 |
 | **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
 | **Dynamic CTA** | 依訪客買家階段顯示不同行動呼籲（詢價 / 下載目錄 / 聯繫業務）|
 | **Nurture Email 序列** | 依買家階段觸發自動化培育郵件，整合 Resend |
@@ -30,7 +31,7 @@ ForgeBase/
 ├── api/                    # 後端 API (Python 3.10 + FastAPI)
 │   ├── app/
 │   │   ├── api/v1/         # REST endpoints
-│   │   ├── db/migrations/  # Alembic migrations (17 版本)
+│   │   ├── db/migrations/  # Alembic migrations (20 版本)
 │   │   ├── models/         # SQLModel 資料模型
 │   │   └── schemas/        # Pydantic 輸入/輸出 schema
 │   ├── .venv/              # API 專用虛擬環境
@@ -67,6 +68,50 @@ ForgeBase/
 
 ---
 
+## AI Product Advisor MVP
+
+目前已上線的 AI Product Advisor 採用「強掛載 + 條件掛載」策略，避免全站無差別掛載造成低品質回答與雜訊事件。
+
+### 掛載範圍
+
+- 強掛載：FAQ 頁、FAQ tag 頁、產品詳頁
+- 條件掛載：首頁、產品總覽頁、產品分類頁、應用總覽頁、應用詳頁
+- 不掛載：法務頁、純品牌資訊頁、低內容密度頁面
+
+### 支援的 context 類型
+
+- `home`
+- `category`
+- `application`
+- `product`
+- `faq`
+
+### 事件與 handoff
+
+- `chat_start`：訪客開啟 chat session 時寫入 `tracking_events`
+- `chat_rfq_handoff`：AI 判定可導向 RFQ 並完成 handoff 時寫入 `tracking_events`
+- handoff 會回傳 `rfq_prefill_url`，供前台直接導到預填詢價頁
+
+### API endpoints
+
+```bash
+POST /api/v1/chat/sessions
+POST /api/v1/chat/sessions/{chat_session_id}/messages
+POST /api/v1/chat/sessions/{chat_session_id}/handoff
+```
+
+### 本地最小驗證
+
+```bash
+cd api && source .venv/bin/activate
+python -m pytest tests/test_chat.py -q
+
+cd ../web
+npm run type-check
+```
+
+---
+
 ## 快速開始
 
 ### 環境需求
@@ -84,7 +129,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 18 個 DB migrations
+alembic upgrade head           # 套用全部 20 個 DB migrations
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 

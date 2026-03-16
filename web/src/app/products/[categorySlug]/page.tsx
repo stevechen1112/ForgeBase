@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCategoryBySlug, getProductsByCategory } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { FacetedFilterBar } from "@/components/ui/FacetedFilterBar";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
@@ -60,6 +61,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   return (
     <>
       <PageViewTracker pageType="category" pageId={category.id} />
+      <ChatWidget contextPage={baseUrl} contextEntityType="category" contextEntityId={category.id} />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },

@@ -13,7 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-type ContextEntityType = "product" | "faq";
+type ContextEntityType = "product" | "faq" | "home" | "category" | "application";
 
 interface ChatWidgetProps {
   contextPage: string;
@@ -195,7 +195,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     <>
       <div className="fixed bottom-5 right-5 z-50 hidden md:block">
         {isOpen ? (
-          <div className="h-[560px] w-[380px]">
+          <div className="h-[min(560px,calc(100vh-96px))] w-[min(380px,calc(100vw-32px))]">
             <div className="mb-3 flex justify-end">
               <Button variant="secondary" size="icon" onClick={() => void openWidget(false)}>
                 <X />
@@ -227,11 +227,11 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
               Ask Advisor
             </Button>
           )}
-          <SheetContent side="bottom" className="h-[92vh] p-0 sm:max-w-none">
+          <SheetContent side="bottom" className="h-[78vh] max-h-[720px] rounded-t-2xl p-0 sm:max-w-none">
             <SheetHeader className="border-b border-slate-200 px-4 py-3">
               <SheetTitle>AI Product Advisor</SheetTitle>
             </SheetHeader>
-            <div className="h-[calc(92vh-57px)]">
+            <div className="h-[calc(78vh-57px)] max-h-[663px]">
               <ChatPanel
                 messages={messages}
                 suggestions={suggestions}

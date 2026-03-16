@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedApplications } from "@/lib/api";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 
@@ -29,6 +30,7 @@ export default async function ApplicationsPage() {
 
   return (
     <>
+      <ChatWidget contextPage="/applications" contextEntityType="application" />
       <StructuredData
         data={buildBreadcrumbSchema([
           { name: "Home", url: SITE_URL },
