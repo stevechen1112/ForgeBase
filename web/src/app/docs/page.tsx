@@ -23,7 +23,7 @@ export default function DocsPage() {
             <span className="text-gray-600">Technical Docs</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-900">Technical Docs</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">Documentation access is organized around product pages, compliance pages, and RFQ workflows.</p>
+          <p className="mt-3 max-w-2xl text-gray-600">Documentation access is organized around product pages, compliance pages, and RFQ workflows so buyers can request the right files at the right stage.</p>
         </div>
       </section>
       <section className="py-14">
@@ -34,6 +34,14 @@ export default function DocsPage() {
               <p className="mt-3 text-sm leading-relaxed text-gray-600">{doc.desc}</p>
             </div>
           ))}
+        </div>
+        <div className="mx-auto mt-8 max-w-5xl px-6">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6">
+            <h2 className="text-lg font-semibold text-blue-900">Document access note</h2>
+            <p className="mt-2 text-sm leading-relaxed text-blue-800">
+              Some files are shared only after product scope or compliance relevance is confirmed, especially for OEM programs, customer-specific labeling, or audit-sensitive requests.
+            </p>
+          </div>
         </div>
       </section>
     </main>

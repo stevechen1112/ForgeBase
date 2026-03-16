@@ -8,16 +8,16 @@ import { PRODUCTS_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
 
 export const metadata: Metadata = {
   title: "Products",
-  description: "Browse all product categories. Find precision-engineered components for your industry.",
+  description: "Browse NorthForge hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 const HIGHLIGHTS = [
-  { label: "500+ SKUs", desc: "In-stock & make-to-order" },
-  { label: "ISO 9001", desc: "Certified manufacturing" },
-  { label: "Custom OEM", desc: "Private label available" },
-  { label: "Fast Shipping", desc: "Global logistics network" },
+  { label: "30+ Core SKUs", desc: "Demo catalog range" },
+  { label: "ISO 9001", desc: "Workflow-driven quality control" },
+  { label: "OEM / ODM", desc: "Private-label and packaging support" },
+  { label: "Mixed-SKU Kits", desc: "Assortments and drawer systems" },
 ];
 
 export default async function ProductsPage() {
@@ -48,8 +48,8 @@ export default async function ProductsPage() {
           </nav>
           <h1 className="relative text-4xl font-extrabold">Product Catalogue</h1>
           <p className="relative mt-3 max-w-xl text-lg text-blue-200 leading-relaxed">
-            Precision-engineered hardware and industrial components — sourced, certified, and
-            delivered to your door.
+            Browse the NorthForge tool families used in distributor catalogs, industrial maintenance supply,
+            electrical work, and private-label toolkit programs.
           </p>
         </div>
       </section>
@@ -89,9 +89,9 @@ export default async function ProductsPage() {
               <svg className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
               </svg>
-              <p className="text-sm">Product categories coming soon.</p>
+              <p className="text-sm">No published categories are available in this environment yet.</p>
               <Link href="/contact" className="text-sm font-semibold text-blue-700 hover:underline">
-                Contact us for a custom quote →
+                Contact sales for category guidance →
               </Link>
             </div>
           ) : (
@@ -142,7 +142,7 @@ export default async function ProductsPage() {
             <div>
               <h3 className="text-lg font-bold text-gray-900">Need a custom specification?</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Our OEM team works with non-standard dimensions, special materials, and private-label packaging.
+                Our OEM team supports specification review, branding, molded cases, insert cards, and export-ready packaging details.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row">

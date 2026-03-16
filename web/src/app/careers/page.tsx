@@ -24,7 +24,7 @@ export default function CareersPage() {
             <span className="text-gray-600">Careers</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-900">Careers</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">We are building a team across sales, quality, manufacturing, and export operations.</p>
+          <p className="mt-3 max-w-2xl text-gray-600">NorthForge hires across sales, quality, packaging, manufacturing coordination, and export operations to support real B2B tool programs.</p>
         </div>
       </section>
       <section className="py-14">
@@ -39,7 +39,7 @@ export default function CareersPage() {
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Apply by Email</h2>
-            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to careers@northforge-tools.com. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
+            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to careers@northforgetools.com. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
           </div>
         </div>
       </section>

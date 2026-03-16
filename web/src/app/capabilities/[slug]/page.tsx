@@ -50,6 +50,12 @@ export default async function CapabilityDetailPage({ params }: Props) {
       <section className="py-14">
         <div className="container mx-auto max-w-5xl px-6 grid gap-8 lg:grid-cols-2">
           <div>
+            <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <h2 className="text-base font-semibold text-blue-900">Commercial Benefit</h2>
+              <p className="mt-2 text-sm leading-relaxed text-blue-800">
+                This capability matters because it affects how consistently a buyer can move from approved sample to repeat production, shipment documentation, and downstream channel delivery.
+              </p>
+            </div>
             <div className="prose prose-gray max-w-none text-gray-700 whitespace-pre-line">
               {capability.detail || capability.short_description}
             </div>
@@ -57,10 +63,27 @@ export default async function CapabilityDetailPage({ params }: Props) {
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Capability Snapshot</h2>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between gap-4"><dt className="text-gray-500">Category</dt><dd className="font-medium text-gray-700">{capability.category_tag || "General"}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-gray-500">Locale</dt><dd className="font-medium text-gray-700">{capability.locale}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-gray-500">Status</dt><dd className="font-medium text-gray-700">{capability.status}</dd></div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Focus area</dt>
+                <dd className="font-medium text-gray-700 capitalize">{capability.category_tag || "General"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Relevant at</dt>
+                <dd className="font-medium text-gray-700">RFQ &amp; sample stage</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Applies to</dt>
+                <dd className="font-medium text-gray-700">All export programs</dd>
+              </div>
             </dl>
+            <div className="mt-6 space-y-3 border-t border-gray-200 pt-6">
+              <p className="text-sm leading-relaxed text-gray-600">
+                Use this capability as a discussion point when you need clearer packaging execution, better spec review, or more stable repeat-order control.
+              </p>
+              <Link href="/contact" className="inline-flex rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
+                Discuss This Capability
+              </Link>
+            </div>
           </div>
         </div>
       </section>

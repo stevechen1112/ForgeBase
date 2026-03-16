@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { MessageCircle, X } from "lucide-react";
 
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -36,6 +36,8 @@ interface MessageResponse {
     suggested_action: "none" | "rfq" | "contact";
     handoff_ready: boolean;
     handoff_prefill: Record<string, unknown>;
+    needs_clarification?: boolean;
+    clarifying_question?: string | null;
   };
 }
 
@@ -86,6 +88,15 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
   const [handoffUrl, setHandoffUrl] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const m = window.matchMedia("(min-width: 640px)");
+    setIsDesktop(m.matches);
+    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    m.addEventListener("change", listener);
+    return () => m.removeEventListener("change", listener);
+  }, []);
 
   const apiBase = useMemo(() => getApiBase(), []);
 
@@ -193,23 +204,25 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
 
   return (
     <>
-      <div className="fixed bottom-5 right-5 z-50 hidden md:block">
-        {isOpen ? (
-          <div className="h-[min(560px,calc(100vh-96px))] w-[min(380px,calc(100vw-32px))]">
-            <div className="mb-3 flex justify-end">
-              <Button variant="secondary" size="icon" onClick={() => void openWidget(false)}>
-                <X />
+      <div className="fixed bottom-5 right-5 z-50 hidden sm:block">
+        {isOpen && isDesktop ? (
+          <div className="flex flex-col h-[min(560px,calc(100vh-96px))] w-[min(360px,calc(100vw-32px))] lg:w-[380px]">
+            <div className="mb-2 flex justify-end shrink-0">
+              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md" onClick={() => void openWidget(false)}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
-            <ChatPanel
-              messages={messages}
-              suggestions={suggestions}
-              isBusy={isBusy}
-              error={error}
-              handoffUrl={handoffUrl}
-              onSuggestionClick={handleSubmit}
-              onSubmit={handleSubmit}
-            />
+            <div className="flex-1 min-h-0">
+              <ChatPanel
+                messages={messages}
+                suggestions={suggestions}
+                isBusy={isBusy}
+                error={error}
+                handoffUrl={handoffUrl}
+                onSuggestionClick={handleSubmit}
+                onSubmit={handleSubmit}
+              />
+            </div>
           </div>
         ) : (
           <Button className="h-14 rounded-full px-5 shadow-xl" onClick={() => void openWidget(true)}>
@@ -219,8 +232,8 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
         )}
       </div>
 
-      <div className="fixed bottom-4 right-4 z-50 md:hidden">
-        <Sheet open={isOpen} onOpenChange={(open) => void openWidget(open)}>
+      <div className="fixed bottom-4 right-4 z-50 sm:hidden">
+        <Sheet open={isOpen && !isDesktop} onOpenChange={(open) => void openWidget(open)}>
           {!isOpen && (
             <Button className="h-14 rounded-full px-5 shadow-xl" onClick={() => void openWidget(true)}>
               <MessageCircle className="mr-1 h-5 w-5" />

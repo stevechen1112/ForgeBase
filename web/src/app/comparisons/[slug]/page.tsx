@@ -79,8 +79,8 @@ export default async function ComparisonDetailPage({ params }: Props) {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-gray-600">Dimension</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">NorthForge</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Alternative</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Option A</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Option B</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -104,13 +104,43 @@ export default async function ComparisonDetailPage({ params }: Props) {
           {/* Conclusion */}
           {topic.conclusion && (
             <div className="rounded-xl bg-blue-50 border border-blue-100 p-6">
-              <h2 className="text-base font-semibold text-blue-800 mb-2">Our Recommendation</h2>
+              <h2 className="text-base font-semibold text-blue-800 mb-2">Buyer Takeaway</h2>
               <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-line">{topic.conclusion}</p>
             </div>
           )}
 
-          <div>
-            <Link href="/comparisons" className="text-sm text-blue-600 hover:underline">← All comparisons</Link>
+          {/* Recommended for / When to RFQ */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Recommended for</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Buyers who have narrowed down format options and need a clearer basis for supplier discussions, specification alignment, or private-label program planning. Use this comparison as a reference point when briefing your team or building an RFQ scope.
+              </p>
+            </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <h2 className="text-sm font-semibold text-blue-900">When to move to RFQ</h2>
+              <p className="mt-2 text-sm leading-relaxed text-blue-800">
+                Once you have a preferred direction from this comparison, include key parameters in your RFQ: target quantity, OEM scope, preferred market, and required compliance standard. NorthForge can shortlist the right SKU or material spec from there.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-5">
+            <Link
+              href="/rfq"
+              className="rounded-lg bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
+            >
+              Submit Your RFQ →
+            </Link>
+            <Link
+              href="/contact"
+              className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Ask a Sourcing Question
+            </Link>
+            <Link href="/comparisons" className="ml-auto text-sm text-blue-600 hover:underline">
+              ← All comparisons
+            </Link>
           </div>
         </div>
       </section>

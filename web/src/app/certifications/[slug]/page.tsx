@@ -58,6 +58,12 @@ export default async function CertificationDetailPage({ params }: Props) {
             )}
           </div>
           <div>
+            <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <h2 className="text-base font-semibold text-blue-900">Why buyers ask for this</h2>
+              <p className="mt-2 text-sm leading-relaxed text-blue-800">
+                Certifications and compliance records help importers, distributors, and private-label brands confirm whether a supplier can support target-market requirements, customer audits, and shipment paperwork.
+              </p>
+            </div>
             <div className="prose prose-gray max-w-none text-gray-700 whitespace-pre-line">
               {certification.description || "Certification details will be updated soon."}
             </div>
@@ -72,6 +78,11 @@ export default async function CertificationDetailPage({ params }: Props) {
                 Download Certificate
               </a>
             )}
+            <div className="mt-6">
+              <Link href="/contact" className="text-sm font-semibold text-blue-700 hover:underline">
+                Ask how this applies to your program →
+              </Link>
+            </div>
           </div>
         </div>
       </section>

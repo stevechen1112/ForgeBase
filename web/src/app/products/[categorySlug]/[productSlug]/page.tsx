@@ -23,13 +23,15 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { ChatWidget } from "@/components/chat/ChatWidget";
-import { getProductImage } from "@/lib/demoAssets";
+import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
 
 type Props = { params: Promise<{ categorySlug: string; productSlug: string }> };
 
 const SITE_URL = getSiteUrl();
-const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
+  ? "NorthForge Tools"
+  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
@@ -196,6 +198,11 @@ export default async function ProductDetailPage({ params }: Props) {
               <p className="text-sm font-mono text-gray-400">{product.model_number}</p>
               <h1 className="mt-1 text-3xl font-bold text-gray-800">{product.product_name}</h1>
               <p className="mt-4 text-gray-600 leading-relaxed">{product.short_description}</p>
+              <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <p className="text-sm leading-relaxed text-blue-900">
+                  This page is structured for buyers who need to evaluate model fit, specification clarity, related applications, and supporting documents before moving into quote discussion.
+                </p>
+              </div>
 
               {/* CTA */}
               <ProductCTAButtons
@@ -223,6 +230,58 @@ export default async function ProductDetailPage({ params }: Props) {
               />
             </div>
           )}
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={QUALITY_INSPECTION_IMAGE}
+                alt="NorthForge quality inspection workflow"
+                className="h-56 w-full object-cover"
+              />
+              <div className="p-5">
+                <h2 className="text-base font-semibold text-gray-900">Inspection Discipline</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                  For repeat orders, buyers usually care less about brochure claims than about whether inspection points, measurement method, and sample-to-production alignment are controlled the same way every time.
+                </p>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={CUSTOM_PACKAGING_IMAGE}
+                alt="NorthForge private-label packaging support"
+                className="h-56 w-full object-cover"
+              />
+              <div className="p-5">
+                <h2 className="text-base font-semibold text-gray-900">OEM Packaging Support</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                  This model can be discussed with insert cards, logo marking, barcode labels, molded cases, and retail-ready packing requirements if the program goes beyond standard supply.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Packaging Readiness</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Use RFQ notes to confirm label content, insert cards, molded cases, carton marks, and other private-label packaging details tied to this item.
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Specification Control</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Buyers should align the critical dimensions, torque range, material, finish, and inspection checkpoints before sample approval.
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Program Context</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                This SKU can be discussed as a standalone item, a recurring catalog line, or part of a mixed-SKU toolkit or drawer-set program.
+              </p>
+            </div>
+          </div>
 
           {/* Specifications table */}
           {specs && specs.length > 0 && (
@@ -349,6 +408,50 @@ export default async function ProductDetailPage({ params }: Props) {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Pre-RFQ Advisory & CTA */}
+      <section className="bg-blue-50 border-t border-blue-100 py-12">
+        <div className="container mx-auto max-w-5xl px-6">
+          <h2 className="text-xl font-semibold text-gray-900">Before You Submit Your RFQ</h2>
+          <p className="mt-2 max-w-2xl text-sm text-gray-600">
+            Having these details ready helps NorthForge respond with accurate pricing, feasibility, and documentation scope in the first reply.
+          </p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { label: "Quantity per SKU", detail: "Initial order and annual volume estimate" },
+              { label: "OEM scope", detail: "Logo marking, packaging format, barcode, insert cards" },
+              { label: "Target market & compliance", detail: "Country, channel, and required standards (ISO, RoHS, REACH, CE)" },
+              { label: "Key specifications", detail: "Torque class, material, surface finish, size variants" },
+              { label: "Sample or direct order", detail: "Sample-first flow vs. direct production order" },
+              { label: "Program type", detail: "Standalone SKU, recurring catalog line, or mixed-SKU kit program" },
+            ].map((item) => (
+              <li key={item.label} className="flex gap-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+                <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              href={`/rfq?product=${encodeURIComponent(product.model_number ?? product.product_name)}`}
+              className="rounded-lg bg-blue-700 px-7 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
+            >
+              Submit RFQ for This Product →
+            </Link>
+            <Link
+              href="/contact"
+              className="rounded-lg border border-gray-300 bg-white px-7 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Ask a Question First
+            </Link>
+          </div>
         </div>
       </section>
     </>

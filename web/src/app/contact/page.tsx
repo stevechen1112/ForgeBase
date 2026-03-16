@@ -5,38 +5,43 @@ import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 
 export const metadata: Metadata = {
-  title: "Contact Us",
+  title: "Contact NorthForge Tools",
   description:
-    "Get in touch with our team to discuss your requirements, request a quote, or ask about our products.",
+    "Contact NorthForge Tools to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
+  ? "NorthForge Tools"
+  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
 const OFFICES = [
   {
-    city: "Taipei HQ",
-    address: "12F, No. 88, Xinyi Road, Xinyi District, Taipei 110",
-    phone: "+886-2-1234-5678",
+    city: "Taichung Manufacturing Coordination",
+    address: "Taichung, Taiwan",
+    phone: "+886-4-3700-2218",
     hours: "Mon–Fri 09:00–18:00 CST",
   },
   {
-    city: "Shenzhen Factory",
-    address: "Building B, Longhua Science Park, Shenzhen 518109",
-    phone: "+86-755-8888-9999",
-    hours: "Mon–Sat 08:30–17:30 CST",
+    city: "Taipei Export Sales Desk",
+    address: "Taipei, Taiwan",
+    phone: "+886-2-7709-8891",
+    hours: "Mon–Fri 09:00–18:00 CST",
   },
 ];
 
 const REASONS = [
-  { label: "Product Enquiry",   desc: "Pricing, MOQ, lead times" },
-  { label: "OEM / ODM Service", desc: "Custom design & private label" },
-  { label: "Technical Support", desc: "Specs, data sheets, standards" },
-  { label: "Partnership",       desc: "Distributors & agents welcome" },
+  { label: "Catalog or Repeat Supply", desc: "Pricing, MOQ, lead times, and repeat-order planning" },
+  { label: "OEM / Private Label", desc: "Logo, packaging, barcode, case, and assortment discussions" },
+  { label: "Technical Clarification", desc: "Torque, insulation, material, finish, and use-case review" },
+  { label: "Toolkit Program Planning", desc: "Mixed-SKU sets, drawer systems, and export-ready bundles" },
 ];
 
 export default function ContactPage() {
-  const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@forgebase.com";
-  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "+886-2-1234-5678";
+  const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.includes("forgebase")
+    ? "sales@northforgetools.com"
+    : (process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@northforgetools.com");
+  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "+886-4-3700-2218";
 
   return (
     <>
@@ -56,10 +61,10 @@ export default function ContactPage() {
             <span className="mx-1.5">/</span>
             <span>Contact</span>
           </nav>
-          <h1 className="text-4xl font-extrabold">Get in Touch</h1>
+          <h1 className="text-4xl font-extrabold">Talk to {SITE_NAME}</h1>
           <p className="mt-3 max-w-xl text-lg text-blue-200 leading-relaxed">
-            Questions about products, pricing, or partnerships? Our sales team responds
-            within&nbsp;1 business day.
+            Use this channel for sourcing discussions, product clarification, private-label planning,
+            and toolkit program enquiries. Qualified messages are reviewed within 1 business day.
           </p>
 
           {/* Quick contact chips */}
@@ -96,7 +101,7 @@ export default function ContactPage() {
 
               {/* Why contact us */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">How Can We Help?</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Best Reasons to Contact NorthForge</h2>
                 <ul className="mt-4 space-y-3">
                   {REASONS.map((r) => (
                     <li key={r.label} className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -153,11 +158,11 @@ export default function ContactPage() {
                   <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-blue-800">Response Guarantee</span>
+                  <span className="text-sm font-semibold text-blue-800">What Helps Us Reply Faster</span>
                 </div>
                 <p className="mt-2 text-xs text-blue-700 leading-relaxed">
-                  Every enquiry is acknowledged within 4 hours (business hours). Full response and
-                  quote within 1 business day — guaranteed.
+                  Include the tool category, approximate volume, target market, and whether you need OEM packaging or compliance documents.
+                  The clearer the request, the faster we can route it correctly.
                 </p>
               </div>
 
@@ -168,7 +173,7 @@ export default function ContactPage() {
               <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
                 <h2 className="mb-1 text-xl font-bold text-gray-900">Send an Enquiry</h2>
                 <p className="mb-6 text-sm text-gray-500">
-                  Fill in the form below. All fields marked * are required.
+                  Use the form for general business enquiries. If you already have quantities, specifications, or packaging requirements, the RFQ flow is better.
                 </p>
                 <ContactForm />
               </div>

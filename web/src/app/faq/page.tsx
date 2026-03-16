@@ -9,7 +9,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "Find answers to common questions about our products, certifications, MOQ, lead times, and technical specifications.",
+    "Find answers to common questions about NorthForge MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
@@ -51,7 +51,7 @@ export default async function FAQPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Frequently Asked Questions</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            Everything you need to know about our products, quality standards, and ordering process.
+            This FAQ is built for buyers who need clearer answers on ordering flow, sampling, packaging, documentation, and repeat-order execution before reaching out.
           </p>
 
           {/* Tag filter links */}
@@ -86,6 +86,33 @@ export default async function FAQPage() {
               </div>
             ))
           )}
+
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6">
+            <h2 className="text-lg font-semibold text-blue-900">Ready for the next step?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-blue-800">
+              Use FAQ for general policy questions, Contact for exploratory business discussions, and RFQ when you have product scope, quantity, packaging, or market requirements ready to send through.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/rfq"
+                className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
+              >
+                Submit RFQ →
+              </Link>
+              <Link
+                href="/contact"
+                className="rounded-lg border border-blue-300 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                Ask a Question
+              </Link>
+              <Link
+                href="/applications"
+                className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Browse by Application
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </>

@@ -7,28 +7,30 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ABOUT_HERO_IMAGE } from "@/lib/demoAssets";
 
 export const metadata: Metadata = {
-  title: "About Us",
+  title: "About NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
   description:
-    "Learn about our manufacturing heritage, capabilities, and commitment to global quality standards.",
+    "Learn about NorthForge Tools, a Taiwan-based OEM/ODM hand tool manufacturer focused on quality control, export-ready execution, and private-label tool programs.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
+  ? "NorthForge Tools"
+  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
 const TIMELINE = [
-  { year: "2003", event: "Founded in Taipei, Taiwan with a focus on precision fastener exports." },
-  { year: "2008", event: "Opened our first factory in Shenzhen; headcount reached 120 employees." },
-  { year: "2012", event: "Achieved ISO 9001:2008 certification. Began exporting to European markets." },
-  { year: "2016", event: "Launched OEM / ODM programme and private-label packaging service." },
-  { year: "2019", event: "Expanded product catalogue to 500+ SKUs across 12 product categories." },
-  { year: "2022", event: "Upgraded to ISO 9001:2015 and established offices in Germany and Australia." },
-  { year: "2024", event: "Now serving 40+ countries with a team of 280+ dedicated professionals." },
+  { year: "2001", event: "Company founded in Taichung with a focus on export-ready hand tool programs." },
+  { year: "2004", event: "Expanded into socket and ratchet-related exports for distributor and workshop channels." },
+  { year: "2007", event: "Added finished hand tool assembly capability to improve sample-to-production control." },
+  { year: "2011", event: "Launched OEM toolkit packaging service for private-label assortment programs." },
+  { year: "2014", event: "Expanded insulated-tool coverage for electrical and utility-oriented buyers." },
+  { year: "2017", event: "Formalized torque verification workflow for controlled fastening programs." },
+  { year: "2023", event: "Optimized kit assembly and export packaging operations for mixed-SKU programs." },
 ];
 
-const VALUES = [
+const PRODUCT_LINES = [
   {
-    title: "Quality First",
-    desc: "Every batch is tested against strict internal standards before leaving our facility. We never compromise on quality to meet a deadline.",
+    title: "Torque and Socket Tools",
+    desc: "Built for automotive service, industrial maintenance, and controlled fastening programs where repeatable torque and dependable fit matter.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
@@ -36,8 +38,8 @@ const VALUES = [
     ),
   },
   {
-    title: "Partnership",
-    desc: "We treat every client as a long-term partner, not a transaction. Your growth is our growth.",
+    title: "Insulated Electrical Tools",
+    desc: "Professional insulated tool systems for electrical contractors, utilities, and safety-sensitive maintenance teams.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -45,8 +47,8 @@ const VALUES = [
     ),
   },
   {
-    title: "Innovation",
-    desc: "Continuous investment in tooling, processes, and technology ensures we stay ahead of industry demands.",
+    title: "Workshop and Striking Tools",
+    desc: "Workshop-ready hammers, mallets, pry bars, and punch sets designed for daily mechanical use rather than one-off retail novelty.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
@@ -54,8 +56,8 @@ const VALUES = [
     ),
   },
   {
-    title: "Transparency",
-    desc: "Open communication, clear pricing, and honest timelines. No surprises — ever.",
+    title: "Automotive and Toolkit Programs",
+    desc: "NorthForge supports service-tool assortments, mechanic drawer sets, electrical kits, and other programs that combine tools, packaging, and documentation.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -65,11 +67,23 @@ const VALUES = [
   },
 ];
 
-const TEAM = [
-  { name: "David Chen", role: "CEO & Founder", initials: "DC", bg: "bg-blue-700" },
-  { name: "Linda Wu",   role: "Head of Quality Assurance", initials: "LW", bg: "bg-indigo-600" },
-  { name: "James Park", role: "Global Sales Director", initials: "JP", bg: "bg-slate-700" },
-  { name: "Sarah Müller", role: "European Operations Manager", initials: "SM", bg: "bg-violet-700" },
+const OPERATIONAL_STRENGTHS = [
+  {
+    title: "Engineering Review",
+    desc: "Standard items can move quickly, but custom items still require responsible review. NorthForge supports specification clarification, selection guidance, and selected customization planning before mass production begins.",
+  },
+  {
+    title: "Quality Workflow",
+    desc: "Incoming material checks, dimensional verification, selected hardness validation, torque-related performance control, and pre-packing inspections are used to reduce avoidable variation.",
+  },
+  {
+    title: "Packaging and OEM Readiness",
+    desc: "Retail packaging, molded cases, EVA foam organization, barcode labels, instruction inserts, and carton markings are treated as part of the product program rather than afterthoughts.",
+  },
+  {
+    title: "Export Communication",
+    desc: "NorthForge positions communication clarity as part of the offer because document mistakes and shipment ambiguity carry real cost for importers and distributors.",
+  },
 ];
 
 export default async function AboutPage() {
@@ -106,8 +120,8 @@ export default async function AboutPage() {
           </nav>
           <h1 className="relative text-4xl font-extrabold">About {SITE_NAME}</h1>
           <p className="relative mt-3 max-w-2xl text-lg text-blue-200 leading-relaxed">
-            Over two decades of precision manufacturing experience, serving industrial buyers in 40+
-            countries with ISO-certified quality and unmatched reliability.
+            Built for buyers who need more than a supplier. NorthForge supports professional hand tool programs with stronger process control,
+            private-label readiness, and dependable communication.
           </p>
         </div>
       </section>
@@ -117,10 +131,10 @@ export default async function AboutPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-2 divide-x divide-y divide-gray-100 sm:grid-cols-4 sm:divide-y-0">
             {[
-              { value: "40+",  label: "Countries Served" },
-              { value: "280+", label: "Team Members" },
-              { value: "500+", label: "Product SKUs" },
-              { value: "2003", label: "Founded" },
+              { value: "20+", label: "Years in Export Tooling" },
+              { value: "5", label: "Core Product Families" },
+              { value: "40+", label: "Countries Served" },
+              { value: "OEM / ODM", label: "Private-Label Ready" },
             ].map((s) => (
               <div key={s.label} className="flex flex-col items-center py-8 text-center">
                 <span className="text-3xl font-extrabold text-blue-700">{s.value}</span>
@@ -137,16 +151,21 @@ export default async function AboutPage() {
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
               <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Our Story</span>
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">Built on Precision, Driven by Trust</h2>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">Built for Buyers Who Need More Than a Factory</h2>
               <p className="mt-4 leading-relaxed text-gray-600">
-                Founded in 2003, {SITE_NAME} started as a small trading company focused on connecting
-                Taiwan&apos;s manufacturing excellence with overseas buyers. Over two decades, we grew into a
-                vertically integrated manufacturer with our own factories, quality labs, and logistics network.
+                NorthForge Tools Co., Ltd. was built around a simple commercial reality: many buyers can find factories,
+                but far fewer can find manufacturers that keep product, packaging, and shipment details together consistently over time.
+                That gap is where NorthForge competes.
               </p>
               <p className="mt-4 leading-relaxed text-gray-600">
-                Today we design, manufacture, and ship precision hardware and industrial components to
-                distributors, OEMs, and retailers in more than 40 countries — with industry-leading lead
-                times and a near-zero defect rate maintained year after year.
+                The company supports tool brands, distributors, and industrial buyers who need a practical manufacturing partner rather than a low-visibility supply source.
+                Its strength is not one hero product. Its strength is the ability to support a repeatable B2B tool program with clearer engineering communication,
+                more stable production control, and better export discipline.
+              </p>
+              <p className="mt-4 leading-relaxed text-gray-600">
+                Founder Ethan K. Liao entered the tooling and export sector after years of working with overseas buyers frustrated by preventable supplier problems:
+                unclear revision control, packaging inconsistency, weak sample-to-production alignment, and poor shipment communication.
+                NorthForge was established to close that gap.
               </p>
               <Link
                 href="/contact"
@@ -176,11 +195,11 @@ export default async function AboutPage() {
       <section className="bg-gray-50 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">What We Stand For</span>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">Our Core Values</h2>
+            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">What We Make</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">Professional Tool Lines for Repeat Programs</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUES.map((v) => (
+            {PRODUCT_LINES.map((v) => (
               <div key={v.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                   {v.icon}
@@ -219,17 +238,14 @@ export default async function AboutPage() {
       <section className="bg-gray-50 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">The People Behind {SITE_NAME}</span>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">Leadership Team</h2>
+            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Operational Strengths</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">How NorthForge Reduces Buyer Friction</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {TEAM.map((member) => (
-              <div key={member.name} className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                <div className={`flex h-16 w-16 items-center justify-center rounded-full text-lg font-bold text-white ${member.bg}`}>
-                  {member.initials}
-                </div>
-                <h3 className="mt-4 text-sm font-semibold text-gray-900">{member.name}</h3>
-                <p className="mt-1 text-xs text-gray-500">{member.role}</p>
+            {OPERATIONAL_STRENGTHS.map((item) => (
+              <div key={item.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-base font-semibold text-gray-900">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-500">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -290,7 +306,8 @@ export default async function AboutPage() {
         <div className="mx-auto max-w-4xl px-6 text-center">
           <h2 className="text-3xl font-bold">Ready to Work Together?</h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-blue-200 leading-relaxed">
-            Join 500+ businesses worldwide who trust {SITE_NAME} for their manufacturing needs.
+            If you are building a professional hand tool line, a service-tool assortment, or a private-label toolkit program,
+            NorthForge can help structure a cleaner sourcing workflow from product selection to shipment execution.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link

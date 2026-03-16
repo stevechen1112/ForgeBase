@@ -6,7 +6,7 @@ import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/Structur
 export const metadata: Metadata = {
   title: "Product Comparisons",
   description:
-    "Detailed side-by-side comparisons to help you choose the right product for your application.",
+    "Comparison guides for hand tool buyers evaluating material, format, and sourcing tradeoffs before product selection or RFQ.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
@@ -33,7 +33,7 @@ export default async function ComparisonsPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Product Comparisons</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            Compare products side-by-side to find the best fit for your project requirements.
+            These guides are written for buyers who need faster decision support on tool format, material, compliance fit, and sourcing practicality.
           </p>
         </div>
       </section>

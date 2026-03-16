@@ -4,7 +4,6 @@
  */
 import type {
   ListResponse,
-  ItemResponse,
   ProductCategory,
   Product,
   Application,
@@ -17,32 +16,79 @@ import type {
 
 const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Server Components: no caching by default — use Next.js `fetch` cache options
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${BASE}/api/v1${path}`;
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    next: { revalidate: 60 },  // ISR: revalidate every 60s
-    ...options,
-  });
-  if (!res.ok) {
-    throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
-  }
-  return res.json();
+const warnedPaths = new Set<string>();
+let apiAvailabilityPromise: Promise<boolean> | null = null;
+
+function logApiFallback(path: string, error: unknown) {
+  if (warnedPaths.has(path)) return;
+  warnedPaths.add(path);
+  console.warn(`[api] Falling back for ${path}`, error);
 }
+
+async function isApiAvailable(): Promise<boolean> {
+  if (!apiAvailabilityPromise) {
+    apiAvailabilityPromise = fetch(`${BASE}/health`, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 60 },
+    })
+      .then((res) => res.ok)
+      .catch((error) => {
+        logApiFallback("/health", error);
+        return false;
+      });
+  }
+
+  return apiAvailabilityPromise;
+}
+
+// Server Components: no caching by default — use Next.js `fetch` cache options
+async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Promise<T> {
+  const url = `${BASE}/api/v1${path}`;
+  const available = await isApiAvailable();
+  if (!available) {
+    return fallback;
+  }
+
+  try {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 60 },  // ISR: revalidate every 60s
+      ...options,
+    });
+    if (!res.ok) {
+      throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  } catch (error) {
+    logApiFallback(path, error);
+    return fallback;
+  }
+}
+
+const emptyListResponse = <T>(data: T[] = []): ListResponse<T> => ({
+  data,
+  meta: {
+    total: data.length,
+    page: 1,
+    page_size: data.length || 1,
+    total_pages: data.length > 0 ? 1 : 0,
+  },
+});
 
 // ── Public content API ────────────────────────────────────────────────────────
 
 export async function getPublishedCategories(locale = "en"): Promise<ProductCategory[]> {
   const res = await apiFetch<ListResponse<ProductCategory>>(
-    `/content/categories?status=published&locale=${locale}&page_size=100`
+    `/content/categories?status=published&locale=${locale}&page_size=100`,
+    emptyListResponse<ProductCategory>()
   );
   return res.data;
 }
 
 export async function getCategoryBySlug(slug: string): Promise<ProductCategory | null> {
   const res = await apiFetch<ListResponse<ProductCategory>>(
-    `/content/categories?slug=${slug}&page_size=1`
+    `/content/categories?slug=${slug}&page_size=1`,
+    emptyListResponse<ProductCategory>()
   );
   return res.data[0] ?? null;
 }
@@ -62,12 +108,13 @@ export async function getProductsByCategory(
     page_size: String(pageSize),
   });
   if (q) params.set("q", q);
-  return apiFetch<ListResponse<Product>>(`/content/products?${params.toString()}`);
+  return apiFetch<ListResponse<Product>>(`/content/products?${params.toString()}`, emptyListResponse<Product>());
 }
 
 export async function getProductBySlug(slug: string, locale = "en"): Promise<Product | null> {
   const res = await apiFetch<ListResponse<Product>>(
-    `/content/products?slug=${slug}&locale=${locale}&page_size=1`
+    `/content/products?slug=${slug}&locale=${locale}&page_size=1`,
+    emptyListResponse<Product>()
   );
   return res.data[0] ?? null;
 }
@@ -78,7 +125,8 @@ export async function getPublishedProducts(
   pageSize = 24
 ): Promise<ListResponse<Product>> {
   return apiFetch<ListResponse<Product>>(
-    `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`
+    `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    emptyListResponse<Product>()
   );
 }
 
@@ -89,14 +137,16 @@ export async function getAllPublishedProducts(
   pageSize = 100
 ): Promise<ListResponse<Product>> {
   return apiFetch<ListResponse<Product>>(
-    `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`
+    `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    emptyListResponse<Product>()
   );
 }
 
 /** Fetch featured (is_featured=true) published products. */
 export async function getFeaturedProducts(locale = "en"): Promise<Product[]> {
   const res = await apiFetch<ListResponse<Product>>(
-    `/content/products?status=published&featured=true&locale=${locale}&page_size=8`
+    `/content/products?status=published&featured=true&locale=${locale}&page_size=8`,
+    emptyListResponse<Product>()
   );
   return res.data;
 }
@@ -108,7 +158,8 @@ export async function getAllPublishedApplications(
   pageSize = 100
 ): Promise<ListResponse<Application>> {
   return apiFetch<ListResponse<Application>>(
-    `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`
+    `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    emptyListResponse<Application>()
   );
 }
 
@@ -118,41 +169,47 @@ export async function getPublishedApplications(
   pageSize = 20
 ): Promise<ListResponse<Application>> {
   return apiFetch<ListResponse<Application>>(
-    `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`
+    `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    emptyListResponse<Application>()
   );
 }
 
 export async function getApplicationBySlug(slug: string, locale = "en"): Promise<Application | null> {
   const res = await apiFetch<ListResponse<Application>>(
-    `/content/applications?slug=${slug}&locale=${locale}&page_size=1`
+    `/content/applications?slug=${slug}&locale=${locale}&page_size=1`,
+    emptyListResponse<Application>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedCertifications(locale = "en"): Promise<Certification[]> {
   const res = await apiFetch<ListResponse<Certification>>(
-    `/content/certifications?status=published&locale=${locale}&page_size=50`
+    `/content/certifications?status=published&locale=${locale}&page_size=50`,
+    emptyListResponse<Certification>()
   );
   return res.data;
 }
 
 export async function getCertificationBySlug(slug: string, locale = "en"): Promise<Certification | null> {
   const res = await apiFetch<ListResponse<Certification>>(
-    `/content/certifications?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`
+    `/content/certifications?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`,
+    emptyListResponse<Certification>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedCapabilities(locale = "en"): Promise<Capability[]> {
   const res = await apiFetch<ListResponse<Capability>>(
-    `/content/capabilities?status=published&locale=${locale}&page_size=30`
+    `/content/capabilities?status=published&locale=${locale}&page_size=30`,
+    emptyListResponse<Capability>()
   );
   return res.data;
 }
 
 export async function getCapabilityBySlug(slug: string, locale = "en"): Promise<Capability | null> {
   const res = await apiFetch<ListResponse<Capability>>(
-    `/content/capabilities?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`
+    `/content/capabilities?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`,
+    emptyListResponse<Capability>()
   );
   return res.data[0] ?? null;
 }
@@ -163,28 +220,32 @@ export async function getPublishedFAQs(
 ): Promise<FAQItem[]> {
   const tag = categoryTag ? `&category_tag=${categoryTag}` : "";
   const res = await apiFetch<ListResponse<FAQItem>>(
-    `/content/faqs?status=published&locale=${locale}&page_size=50${tag}`
+    `/content/faqs?status=published&locale=${locale}&page_size=50${tag}`,
+    emptyListResponse<FAQItem>()
   );
   return res.data;
 }
 
 export async function getCTAByKey(key: string, locale = "en"): Promise<CTA | null> {
   const res = await apiFetch<ListResponse<CTA>>(
-    `/content/ctas?cta_key=${key}&locale=${locale}&page_size=1`
+    `/content/ctas?cta_key=${key}&locale=${locale}&page_size=1`,
+    emptyListResponse<CTA>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedComparisons(locale = "en"): Promise<ComparisonTopic[]> {
   const res = await apiFetch<ListResponse<ComparisonTopic>>(
-    `/content/comparisons?status=published&locale=${locale}&page_size=50`
+    `/content/comparisons?status=published&locale=${locale}&page_size=50`,
+    emptyListResponse<ComparisonTopic>()
   );
   return res.data;
 }
 
 export async function getComparisonBySlug(slug: string): Promise<ComparisonTopic | null> {
   const res = await apiFetch<ListResponse<ComparisonTopic>>(
-    `/content/comparisons?slug=${encodeURIComponent(slug)}&status=published&page_size=1`
+    `/content/comparisons?slug=${encodeURIComponent(slug)}&status=published&page_size=1`,
+    emptyListResponse<ComparisonTopic>()
   );
   return res.data[0] ?? null;
 }
@@ -227,7 +288,8 @@ export async function getProductRelatedApplications(
   productId: string
 ): Promise<PublicRelatedApplication[]> {
   return apiFetch<PublicRelatedApplication[]>(
-    `/content/public/products/${productId}/applications`
+    `/content/public/products/${productId}/applications`,
+    []
   );
 }
 
@@ -235,7 +297,8 @@ export async function getApplicationRelatedProducts(
   applicationId: string
 ): Promise<PublicRelatedProduct[]> {
   return apiFetch<PublicRelatedProduct[]>(
-    `/content/public/applications/${applicationId}/products`
+    `/content/public/applications/${applicationId}/products`,
+    []
   );
 }
 
@@ -243,7 +306,8 @@ export async function getProductRelatedCertifications(
   productId: string
 ): Promise<PublicRelatedCertification[]> {
   return apiFetch<PublicRelatedCertification[]>(
-    `/content/public/products/${productId}/certifications`
+    `/content/public/products/${productId}/certifications`,
+    []
   );
 }
 
@@ -251,7 +315,8 @@ export async function getProductRelatedFAQs(
   productId: string
 ): Promise<PublicRelatedFAQ[]> {
   return apiFetch<PublicRelatedFAQ[]>(
-    `/content/public/products/${productId}/faqs`
+    `/content/public/products/${productId}/faqs`,
+    []
   );
 }
 
@@ -263,18 +328,19 @@ export interface LocaleVariant {
 }
 
 export async function getProductLocales(slug: string): Promise<LocaleVariant[]> {
-  return apiFetch<LocaleVariant[]>(`/content/public/products/${slug}/locales`);
+  return apiFetch<LocaleVariant[]>(`/content/public/products/${slug}/locales`, []);
 }
 
 export async function getApplicationLocales(slug: string): Promise<LocaleVariant[]> {
-  return apiFetch<LocaleVariant[]>(`/content/public/applications/${slug}/locales`);
+  return apiFetch<LocaleVariant[]>(`/content/public/applications/${slug}/locales`, []);
 }
 
 export async function getProductAlternatives(
   productId: string
 ): Promise<PublicRelatedProduct[]> {
   return apiFetch<PublicRelatedProduct[]>(
-    `/content/public/products/${productId}/alternatives`
+    `/content/public/products/${productId}/alternatives`,
+    []
   );
 }
 
@@ -291,17 +357,18 @@ export interface IndexedDoc {
 }
 
 export async function getIndexedDocuments(): Promise<IndexedDoc[]> {
-  return apiFetch<IndexedDoc[]>("/content/assets/public/indexed-docs");
+  return apiFetch<IndexedDoc[]>("/content/assets/public/indexed-docs", []);
 }
 
 export async function getProductIndexedDocs(productId: string): Promise<IndexedDoc[]> {
-  return apiFetch<IndexedDoc[]>(`/content/assets/public/indexed-docs?product_id=${productId}`);
+  return apiFetch<IndexedDoc[]>(`/content/assets/public/indexed-docs?product_id=${productId}`, []);
 }
 
 export async function getApplicationRelatedFAQs(
   applicationId: string
 ): Promise<PublicRelatedFAQ[]> {
   return apiFetch<PublicRelatedFAQ[]>(
-    `/content/public/applications/${applicationId}/faqs`
+    `/content/public/applications/${applicationId}/faqs`,
+    []
   );
 }

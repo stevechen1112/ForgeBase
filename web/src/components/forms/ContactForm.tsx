@@ -26,7 +26,7 @@ const HOW_OPTIONS = [
 export function ContactForm() {
   const [form, setForm] = useState({
     full_name: "", email: "", company_name: "", phone: "",
-    country: "", how_did_you_find_us: "", message: "",
+    country: "", job_title: "", how_did_you_find_us: "", message: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -84,7 +84,7 @@ export function ContactForm() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="company_name">Company</Label>
-          <Input id="company_name" name="company_name" value={form.company_name} onChange={handleChange} placeholder="Your company name" />
+          <Input id="company_name" name="company_name" value={form.company_name} onChange={handleChange} placeholder="Distributor, importer, brand, or factory name" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="country">Country</Label>
@@ -92,9 +92,20 @@ export function ContactForm() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="job_title">Job Title</Label>
+          <Input id="job_title" name="job_title" value={form.job_title} onChange={handleChange} placeholder="e.g. Procurement Manager" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Phone / WhatsApp</Label>
+          <Input id="phone" name="phone" value={form.phone} onChange={handleChange} placeholder="Optional, for faster follow-up" />
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="message">Message <span className="text-destructive">*</span></Label>
-        <Textarea id="message" name="message" required rows={4} value={form.message} onChange={handleChange} placeholder="Tell us about your requirements..." />
+        <Textarea id="message" name="message" required rows={4} value={form.message} onChange={handleChange} placeholder="Tell us what tool line, application, packaging need, or sourcing challenge you want to discuss..." />
       </div>
 
       <div className="space-y-1.5">
@@ -108,7 +119,7 @@ export function ContactForm() {
 
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {submitting ? "Sending…" : "Send Message"}
+        {submitting ? "Sending…" : "Send Enquiry"}
       </Button>
     </form>
   );

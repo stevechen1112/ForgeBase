@@ -11,7 +11,7 @@ type Props = {
 
 /**
  * Breadcrumb — renders schema.org BreadcrumbList structured data inline.
- * Usage: <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Products", href: "/products" }, { label: "Fasteners" }]} />
+ * Usage: <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Products", href: "/products" }, { label: "Torque Tools" }]} />
  */
 export function Breadcrumb({ items }: Props) {
   const jsonLd = {

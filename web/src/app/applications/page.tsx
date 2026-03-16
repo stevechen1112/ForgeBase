@@ -8,7 +8,7 @@ import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/Structur
 export const metadata: Metadata = {
   title: "Industry Applications",
   description:
-    "Explore how our products are used across industries — from automotive to electronics to construction.",
+    "Explore NorthForge application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
@@ -48,7 +48,8 @@ export default async function ApplicationsPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Industry Applications</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            Discover how our solutions address real-world challenges across key industries.
+            These pages are designed to help buyers connect real use cases with the right hand-tool families,
+            packaging formats, and sourcing concerns before moving into RFQ.
           </p>
         </div>
       </section>

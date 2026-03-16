@@ -16,8 +16,11 @@ const SELECT_CLS = "flex h-10 w-full rounded-md border border-input bg-backgroun
 const HOW_OPTIONS = [
   { value: "", label: "How did you find us?" },
   { value: "google", label: "Google Search" },
-  { value: "exhibition", label: "Exhibition" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "trade_show", label: "Trade Show / Exhibition" },
   { value: "referral", label: "Referral" },
+  { value: "direct", label: "Direct / Already knew" },
+  { value: "email", label: "Email Newsletter" },
   { value: "other", label: "Other" },
 ];
 
@@ -112,7 +115,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
         <h2 className="text-xl font-bold text-green-800 mb-2">RFQ Submitted Successfully</h2>
         <p className="text-green-700 mb-1">Your reference number: <strong>{rfqNumber}</strong></p>
-        <p className="text-sm text-green-600">Our team will review your request and get back to you within 1–2 business days.</p>
+        <p className="text-sm text-green-600">Our team will review your request and reply within 1 business day if the specification details are complete.</p>
       </div>
     );
   }
@@ -154,19 +157,19 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
 
       <div className="space-y-1.5">
         <Label htmlFor="quantity">Quantity Required</Label>
-        <Input id="quantity" name="quantity" value={form.quantity} onChange={handleChange} placeholder="e.g. 500 pcs, 1000 sets" />
+        <Input id="quantity" name="quantity" value={form.quantity} onChange={handleChange} placeholder="e.g. 500 pcs, 1200 sets, annual blanket order" />
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="specifications">Technical Specifications / Requirements</Label>
         <Textarea
           id="specifications" name="specifications" value={form.specifications} onChange={handleChange} rows={4}
-          placeholder="Describe your dimensional requirements, materials, pressure ratings, or any other specs..."
+          placeholder="Share the tool type, target model, size range, torque requirement, insulation class, finish, packaging, logo, or any reference drawing you already have."
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Delivery Timeline</Label>
+        <Label>Target Purchase Timeline</Label>
         <select name="timeline" value={form.timeline} onChange={handleChange} className={SELECT_CLS}>
           {TIMELINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -176,7 +179,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         <Label htmlFor="message">Additional Message</Label>
         <Textarea
           id="message" name="message" value={form.message} onChange={handleChange} rows={3}
-          placeholder="Any other information that would help us prepare a more accurate quotation..."
+          placeholder="Tell us about your target market, current sourcing issue, sample timing, or any packaging and documentation expectations."
         />
       </div>
 
@@ -207,7 +210,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
 
       <Button type="submit" size="lg" className="w-full" disabled={submitting || !form.consent}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {submitting ? "Submitting…" : "Submit RFQ Request"}
+        {submitting ? "Submitting…" : "Submit RFQ"}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">

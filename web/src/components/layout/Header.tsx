@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown, Phone, FileText } from "lucide-react";
+import { Menu, Phone, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -30,7 +30,9 @@ export function Header() {
 
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
+    ? "NorthForge Tools"
+    : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
   return (
     <header
@@ -114,7 +116,7 @@ export function Header() {
         <SheetContent side="right" className="w-[300px] p-0">
           <SheetHeader className="flex flex-row items-center gap-3 border-b px-5 py-4">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
-              FB
+              NF
             </div>
             <SheetTitle className="text-sm font-semibold">{siteName}</SheetTitle>
           </SheetHeader>

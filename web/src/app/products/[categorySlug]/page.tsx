@@ -97,6 +97,27 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       {/* Product grid */}
       <section className="py-12">
         <div className="container mx-auto max-w-5xl px-6">
+          <div className="mb-8 grid gap-4 lg:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Buyer Focus</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Category pages are meant to help importers and distributors narrow down the right tool family before discussing SKU mix, packaging, and documentation.
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Typical Questions</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Buyers usually compare usage fit, target market, quality control expectation, and whether standard supply or customization is the better path.
+              </p>
+            </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <h2 className="text-sm font-semibold text-blue-900">Need a faster answer?</h2>
+              <p className="mt-2 text-sm leading-relaxed text-blue-800">
+                If you already know your quantity, packaging need, or target market, move directly to RFQ and include the category context.
+              </p>
+            </div>
+          </div>
+
           {/* Filter bar + noindex notice */}
           <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
             <FacetedFilterBar placeholder={`Search in ${category.category_name}…`} />

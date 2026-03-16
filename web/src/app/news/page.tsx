@@ -23,7 +23,7 @@ export default function NewsPage() {
             <span className="text-gray-600">News & Updates</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-900">News & Updates</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">Recent updates on product development, manufacturing improvements, and export operations.</p>
+          <p className="mt-3 max-w-2xl text-gray-600">Recent updates on product development, quality workflow, packaging capability, and export execution relevant to buyers and distributor programs.</p>
         </div>
       </section>
       <section className="py-14">

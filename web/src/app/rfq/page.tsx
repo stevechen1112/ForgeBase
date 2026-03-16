@@ -9,11 +9,13 @@ import type { Metadata } from "next";
 import { RFQForm } from "@/components/forms/RFQForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 
-const BRAND = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+const BRAND = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
+  ? "NorthForge Tools"
+  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
 export const metadata: Metadata = {
   title: `Request a Quotation — ${BRAND}`,
-  description: "Submit your RFQ for OEM seals, custom gaskets, and precision components. Get a competitive quote within 1–2 business days.",
+  description: "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day.",
   robots: { index: false, follow: false }, // noindex — private conversion page
 };
 
@@ -34,12 +36,12 @@ export default async function RFQPage({ searchParams }: Props) {
           {/* Header */}
           <div className="mb-10 text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              Request a Quotation
+              Request a Tool Program Quotation
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Fill in your requirements below. Our technical sales team will
-              review your request and respond with a competitive quote within
-              <strong> 1–2 business days</strong>.
+              Share your product scope, packaging needs, and sourcing timeline.
+              Our team will review the details and respond with the right next step within
+              <strong> 1 business day</strong>.
             </p>
           </div>
 
@@ -47,15 +49,15 @@ export default async function RFQPage({ searchParams }: Props) {
             {/* Trust sidebar */}
             <aside className="lg:col-span-1 space-y-6">
               <div className="rounded-lg bg-white border border-gray-200 p-5">
-                <h2 className="font-semibold text-gray-800 mb-4">Why choose us?</h2>
+                <h2 className="font-semibold text-gray-800 mb-4">What this RFQ is built for</h2>
                 <ul className="space-y-3 text-sm text-gray-600">
                   {[
-                    "ISO 9001:2015 certified manufacturing",
-                    "OEM & custom specifications accepted",
-                    "Competitive MOQ starting from 100 pcs",
-                    "Global shipping to 50+ countries",
-                    "Technical support from senior engineers",
-                    "NDA available on request",
+                    "Standard tool sourcing and recurring distributor supply",
+                    "Private-label packaging, barcode, and molded-case programs",
+                    "Mixed-SKU toolkit builds and drawer-set assortments",
+                    "Specification review for torque, insulation, material, and finish requirements",
+                    "Documentation support for export and compliance-sensitive orders",
+                    "NDA requests for confidential OEM discussions",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2">
                       <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -70,7 +72,7 @@ export default async function RFQPage({ searchParams }: Props) {
               <div className="rounded-lg bg-blue-50 border border-blue-200 p-5">
                 <h2 className="font-semibold text-blue-800 mb-2">Need help?</h2>
                 <p className="text-sm text-blue-700 mb-3">
-                  Not sure what specifications to request?
+                  If you only know the application and target market, NorthForge can help narrow down the right tool family and packaging path.
                 </p>
                 <a
                   href="/contact"
@@ -83,7 +85,7 @@ export default async function RFQPage({ searchParams }: Props) {
               {/* Response time guarantee */}
               <div className="rounded-lg bg-green-50 border border-green-200 p-5 text-center">
                 <div className="text-2xl font-bold text-green-700">24–48h</div>
-                <div className="text-sm text-green-600 mt-1">Average response time</div>
+                <div className="text-sm text-green-600 mt-1">Typical quote-routing window</div>
                 <div className="text-xs text-green-500 mt-2">
                   Mon – Fri, 9:00 – 18:00 CST
                 </div>

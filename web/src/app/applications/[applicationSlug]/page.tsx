@@ -12,6 +12,7 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
+import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
 
 type Props = { params: Promise<{ applicationSlug: string }> };
 
@@ -50,6 +51,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
     getApplicationRelatedProducts(application.id).catch(() => []),
     getApplicationRelatedFAQs(application.id).catch(() => []),
   ]);
+  const heroImage = getApplicationImage(application.slug, application.hero_image_url);
 
   return (
     <>
@@ -74,16 +76,16 @@ export default async function ApplicationDetailPage({ params }: Props) {
       <section
         className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-600 text-white py-16"
         style={
-          application.hero_image_url
+          heroImage
             ? {
-                backgroundImage: `url(${application.hero_image_url})`,
+                backgroundImage: `url(${heroImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }
             : undefined
         }
       >
-        {application.hero_image_url && (
+        {heroImage && (
           <div className="absolute inset-0 bg-slate-900/70" aria-hidden="true" />
         )}
         <div className="relative container mx-auto max-w-5xl px-6">
@@ -110,6 +112,18 @@ export default async function ApplicationDetailPage({ params }: Props) {
       {/* Challenge & Solution */}
       <section className="py-14">
         <div className="container mx-auto max-w-5xl px-6">
+          <div className="mb-8 grid gap-4 md:grid-cols-3">
+            {[
+              "What operating environment the tool must survive",
+              "Whether the buyer needs standard supply or a private-label assortment",
+              "What packaging, labeling, or documentation must travel with the order",
+            ].map((item) => (
+              <div key={item} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">
+                {item}
+              </div>
+            ))}
+          </div>
+
           {(application.challenge || application.solution) && (
             <div className="grid gap-8 lg:grid-cols-2">
               {application.challenge && (
@@ -133,17 +147,78 @@ export default async function ApplicationDetailPage({ params }: Props) {
             </div>
           )}
 
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={QUALITY_INSPECTION_IMAGE}
+                alt="NorthForge quality inspection workflow"
+                className="h-56 w-full object-cover"
+              />
+              <div className="p-5">
+                <h2 className="text-base font-semibold text-gray-900">Verification Before Scale-Up</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                  Buyers evaluating this application usually need confidence that repeat-use performance, inspection checkpoints, and sample approval criteria are controlled before mass production starts.
+                </p>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={CUSTOM_PACKAGING_IMAGE}
+                alt="NorthForge OEM and private-label packaging support"
+                className="h-56 w-full object-cover"
+              />
+              <div className="p-5">
+                <h2 className="text-base font-semibold text-gray-900">Packaging and Program Fit</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                  If this use case needs private-label cartons, molded cases, barcode labels, or assortment planning, NorthForge treats those as part of the sourcing program rather than an afterthought.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sourcing Considerations */}
+          <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+            <h2 className="text-base font-semibold text-gray-900">What buyers typically confirm before RFQ</h2>
+            <p className="mt-1 text-sm text-gray-500">Having this scope ready helps NorthForge respond faster and match the right product mix to your program.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                { label: "Tool performance requirements", detail: "Torque range, insulation class, material hardness, or grip finish tied to the operating environment." },
+                { label: "Standard supply or OEM / private-label", detail: "Whether logo stamping, custom packaging, barcode labels, or insertion cards are part of this program." },
+                { label: "Mixed-SKU or assortment scope", detail: "If spanning a toolkit, service kit, or branded assortment, include target SKU count and common size range." },
+                { label: "Target market and compliance docs", detail: "Country, channel type, and the specific standards required: ISO, CE support, RoHS / REACH, or third-party test reports." },
+              ].map((item) => (
+                <div key={item.label} className="flex gap-3">
+                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* CTA */}
-          <div className="mt-10 flex flex-wrap gap-4">
+          <div className="mt-6 flex flex-wrap gap-4">
             <Link
-              href="/contact"
+              href={`/rfq?application_id=${application.id}`}
               className="rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
             >
-              Discuss Your Requirements
+              Request Application-Specific Quote
+            </Link>
+            <Link
+              href="/contact"
+              className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Plan OEM / Private-Label Scope
             </Link>
             <Link
               href="/applications"
-              className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="rounded-lg border border-gray-200 px-6 py-3 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
             >
               ← All Applications
             </Link>
@@ -155,7 +230,10 @@ export default async function ApplicationDetailPage({ params }: Props) {
       {relatedProducts.length > 0 && (
         <section className="bg-gray-50 py-14">
           <div className="container mx-auto max-w-5xl px-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Compatible Products</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Recommended Product Families</h2>
+            <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-500">
+              These linked items are relevant starting points for buyers evaluating fit, sample scope, or assortment planning for this application.
+            </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProducts.map((product) => (
                 <Link
@@ -163,6 +241,22 @@ export default async function ApplicationDetailPage({ params }: Props) {
                   href={product.category_slug ? `/products/${product.category_slug}/${product.slug}` : "/products"}
                   className="group rounded-xl border border-gray-200 bg-white p-5 hover:border-blue-300 hover:shadow-md transition-all"
                 >
+                  <div className="mb-4 overflow-hidden rounded-lg bg-slate-100 aspect-[4/3]">
+                    {product.model_number ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getProductImage({ model_number: product.model_number }, product.category_slug) ?? undefined}
+                        alt={product.product_name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-300">
+                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   {product.model_number && (
                     <p className="text-xs font-mono text-gray-400">{product.model_number}</p>
                   )}

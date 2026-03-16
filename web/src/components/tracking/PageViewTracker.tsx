@@ -53,7 +53,7 @@ export function PageViewTracker({ pageType, pageId, eventName, extra = {} }: Pro
 
     const name: EventName = eventName ?? PAGE_TYPE_TO_EVENT[pageType] ?? "page_view";
     track(name, { page_type: pageType, page_id: pageId, ...extra });
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps — intentionally fires once
+  }, [eventName, extra, pageId, pageType]);
 
   return null; // renders nothing
 }

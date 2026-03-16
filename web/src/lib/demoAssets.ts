@@ -5,6 +5,8 @@ const GENERATED_BASE = "/demo/handtool-company/assets/generated";
 export const HOME_HERO_IMAGE = `${GENERATED_BASE}/homepage-hero-northforge-manufacturer.png`;
 export const ABOUT_HERO_IMAGE = `${GENERATED_BASE}/about-factory-hero-northforge.png`;
 export const PRODUCTS_HERO_IMAGE = `${GENERATED_BASE}/category-toolkits-storage-hero.png`;
+export const QUALITY_INSPECTION_IMAGE = `${GENERATED_BASE}/capability-quality-inspection.png`;
+export const CUSTOM_PACKAGING_IMAGE = `${GENERATED_BASE}/capability-custom-packaging-oem.png`;
 
 const CATEGORY_HERO_BY_SLUG: Record<string, string> = {
   "torque-and-socket-tools": `${GENERATED_BASE}/category-torque-socket-tools-hero.png`,

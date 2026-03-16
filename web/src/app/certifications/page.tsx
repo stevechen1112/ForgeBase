@@ -8,7 +8,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 export const metadata: Metadata = {
   title: "Certifications & Quality",
   description:
-    "Our internationally recognised certifications and quality management standards.",
+    "Review NorthForge quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
@@ -36,7 +36,7 @@ export default async function CertificationsPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Quality &amp; Certifications</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            Every product we manufacture meets rigorous international quality and safety standards.
+            This section is intended for buyers who need to verify how NorthForge handles quality workflow, material compliance, and document support during export execution.
           </p>
         </div>
       </section>
@@ -55,6 +55,53 @@ export default async function CertificationsPage() {
               ))}
             </div>
           )}
+
+          {/* Documentation availability breakdown */}
+          <div className="mt-12 rounded-2xl border border-gray-200 bg-white p-7">
+            <h2 className="text-lg font-semibold text-gray-900">Document Availability at a Glance</h2>
+            <p className="mt-1 text-sm text-gray-500 max-w-2xl">
+              Buyers frequently ask which documents are available, when, and under what conditions. Below is a practical summary.
+            </p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  type: "System certifications",
+                  detail: "Facility-level certifications (e.g. ISO 9001) are available as PDF copy upon request and can be included in your order documentation package.",
+                  note: "Available for all programs",
+                  color: "border-green-100 bg-green-50",
+                  badge: "bg-green-100 text-green-700",
+                },
+                {
+                  type: "Product compliance docs",
+                  detail: "RoHS declarations, REACH statements, material test reports, and CE support documents are generated per SKU or product family based on destination market.",
+                  note: "Generated per order scope",
+                  color: "border-blue-100 bg-blue-50",
+                  badge: "bg-blue-100 text-blue-700",
+                },
+                {
+                  type: "Export documentation",
+                  detail: "Packing lists, carton marks, barcode accuracy control, and certificate-of-origin coordination are part of the standard export program.",
+                  note: "Included in standard export",
+                  color: "border-gray-100 bg-gray-50",
+                  badge: "bg-gray-200 text-gray-700",
+                },
+              ].map((item) => (
+                <div key={item.type} className={`rounded-xl border p-5 ${item.color}`}>
+                  <h3 className="text-sm font-semibold text-gray-800">{item.type}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-gray-600">{item.detail}</p>
+                  <span className={`mt-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${item.badge}`}>
+                    {item.note}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 text-sm text-gray-500">
+              Document scope varies by product family and destination market.{" "}
+              <Link href="/contact" className="font-medium text-blue-600 hover:underline">
+                Contact us to confirm availability for your SKU and market.
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -63,9 +110,8 @@ export default async function CertificationsPage() {
         <div className="container mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-2xl font-bold text-gray-800">Our Commitment to Quality</h2>
           <p className="mt-4 text-gray-600 leading-relaxed">
-            We follow a rigorous quality management process from raw material sourcing to final
-            inspection. Our manufacturing facilities are regularly audited by independent third
-            parties to ensure full compliance with international standards.
+            NorthForge treats quality and compliance as operational support for real orders: incoming checks,
+            selected performance verification, packaging control, document accuracy, and third-party inspection coordination when programs require it.
           </p>
           <Link
             href="/contact"
