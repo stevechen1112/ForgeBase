@@ -11,7 +11,20 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.drop_constraint("chat_sessions_session_id_fkey", "chat_sessions", type_="foreignkey")
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'chat_sessions_session_id_fkey'
+            ) THEN
+                ALTER TABLE chat_sessions DROP CONSTRAINT chat_sessions_session_id_fkey;
+            END IF;
+        END $$;
+        """
+    )
 
 
 def downgrade() -> None:
