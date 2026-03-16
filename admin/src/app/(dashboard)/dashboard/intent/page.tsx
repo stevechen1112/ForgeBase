@@ -9,14 +9,13 @@ import { RefreshCw, Users, Flame, TrendingUp, Thermometer } from "lucide-react";
 import { API_BASE } from "@/lib/api/client";
 
 type Visitor = {
-  id: string;
-  visitor_uuid: string;
+  visitor_id: string;
   intent_score: number;
-  intent_stage: string;
+  intent_stage: string; // API returns lowercase: "cold"|"warm"|"hot"|"sales_ready"
   first_seen: string;
   last_seen: string;
-  page_views: number;
-  events_count: number;
+  total_page_views: number;
+  total_visits: number;
 };
 
 type Contact = {
@@ -28,11 +27,27 @@ type Contact = {
   created_at: string;
 };
 
+// API returns lowercase stage names; map to display labels
+const STAGE_DISPLAY: Record<string, string> = {
+  sales_ready: "Sales-Ready",
+  hot: "Hot",
+  warm: "Warm",
+  cold: "Cold",
+};
+
 const STAGE_COLOR: Record<string, string> = {
-  "Sales-Ready": "bg-red-100 text-red-700",
-  Hot: "bg-orange-100 text-orange-700",
-  Warm: "bg-yellow-100 text-yellow-800",
-  Cold: "bg-gray-100 text-gray-600",
+  sales_ready: "bg-red-100 text-red-700",
+  hot: "bg-orange-100 text-orange-700",
+  warm: "bg-yellow-100 text-yellow-800",
+  cold: "bg-gray-100 text-gray-600",
+};
+
+// Map display labels (title-case) back to API keys
+const DISPLAY_TO_KEY: Record<string, string> = {
+  "Sales-Ready": "sales_ready",
+  Hot: "hot",
+  Warm: "warm",
+  Cold: "cold",
 };
 
 export default function IntentPage() {
@@ -65,7 +80,7 @@ export default function IntentPage() {
   useEffect(() => { load(); }, [load]);
 
   const stageCounts = visitors.reduce<Record<string, number>>((acc, v) => {
-    const s = v.intent_stage ?? "Cold";
+    const s = v.intent_stage ?? "cold"; // API returns lowercase
     acc[s] = (acc[s] ?? 0) + 1;
     return acc;
   }, {});
@@ -92,18 +107,21 @@ export default function IntentPage() {
 
       {/* Stage Summary Cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {["Cold", "Warm", "Hot", "Sales-Ready"].map(s => (
+        {["Cold", "Warm", "Hot", "Sales-Ready"].map(s => {
+          const key = DISPLAY_TO_KEY[s];
+          return (
           <Card key={s}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{s}</span>
-                <Badge className={STAGE_COLOR[s] ?? ""}>{stageCounts[s] ?? 0}</Badge>
+                <Badge className={STAGE_COLOR[key] ?? ""}>{stageCounts[key] ?? 0}</Badge>
               </div>
-              <p className="mt-2 text-3xl font-bold">{stageCounts[s] ?? 0}</p>
+              <p className="mt-2 text-3xl font-bold">{stageCounts[key] ?? 0}</p>
               <p className="text-xs text-muted-foreground">訪客</p>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -124,18 +142,20 @@ export default function IntentPage() {
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">UUID</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">Stage</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">分數</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">事件</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">瀏覽頁數</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {topVisitors.map(v => (
-                    <tr key={v.id} className="hover:bg-muted/30">
-                      <td className="px-3 py-2 font-mono text-xs">{v.visitor_uuid?.slice(0, 8)}…</td>
+                    <tr key={v.visitor_id} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 font-mono text-xs">{v.visitor_id?.slice(0, 8)}…</td>
                       <td className="px-3 py-2 text-center">
-                        <Badge className={`text-xs ${STAGE_COLOR[v.intent_stage] ?? ""}`}>{v.intent_stage ?? "Cold"}</Badge>
+                        <Badge className={`text-xs ${STAGE_COLOR[v.intent_stage] ?? ""}`}>
+                          {STAGE_DISPLAY[v.intent_stage] ?? v.intent_stage}
+                        </Badge>
                       </td>
                       <td className="px-3 py-2 text-right font-bold">{v.intent_score ?? 0}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">{v.events_count ?? 0}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">{v.total_page_views ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>
