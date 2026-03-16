@@ -27,21 +27,42 @@ const APPLICATION_IMAGE_BY_SLUG: Record<string, string> = {
 
 const PRODUCT_IMAGE_BY_MODEL: Record<string, string> = {
   // Torque & Socket Tools
-  "NFT-TW380": `${GENERATED_BASE}/product-nft-tw380-main.png`,
-  "NFT-TW500": `${GENERATED_BASE}/product-nft-tw500-main.png`,
+  "NFT-TW250":   `${GENERATED_BASE}/product-nft-tw250-main.png`,
+  "NFT-TW380":   `${GENERATED_BASE}/product-nft-tw380-main.png`,
+  "NFT-TW500":   `${GENERATED_BASE}/product-nft-tw500-main.png`,
+  "NFT-TWA120":  `${GENERATED_BASE}/product-nft-twa120-main.png`,
+  "NFT-RH372":   `${GENERATED_BASE}/product-nft-rh372-main.png`,
+  "NFT-RH390F":  `${GENERATED_BASE}/product-nft-rh390f-main.png`,
+  "NFT-SS094":   `${GENERATED_BASE}/product-nft-ss094-main.png`,
+  "NFT-SS137":   `${GENERATED_BASE}/product-nft-ss137-main.png`,
   // Insulated Electrical Tools
-  "NFT-ID006": `${GENERATED_BASE}/product-nft-id006-main.png`,
-  "NFT-EK018": `${GENERATED_BASE}/product-nft-ek018-main.png`,
-  "NFT-IP200": `${GENERATED_BASE}/product-nft-ip200-main.png`,
+  "NFT-ID006":   `${GENERATED_BASE}/product-nft-id006-main.png`,
+  "NFT-ID013":   `${GENERATED_BASE}/product-nft-id013-main.png`,
+  "NFT-IP200":   `${GENERATED_BASE}/product-nft-ip200-main.png`,
+  "NFT-IP160N":  `${GENERATED_BASE}/product-nft-ip160n-main.png`,
+  "NFT-IP165D":  `${GENERATED_BASE}/product-nft-ip165d-main.png`,
+  "NFT-EK018":   `${GENERATED_BASE}/product-nft-ek018-main.png`,
   // Striking & Workshop Tools
-  "NFT-DH045": `${GENERATED_BASE}/product-nft-dh045-main.png`,
+  "NFT-DH045":   `${GENERATED_BASE}/product-nft-dh045-main.png`,
+  "NFT-DH060":   `${GENERATED_BASE}/product-nft-dh060-main.png`,
+  "NFT-SM40":    `${GENERATED_BASE}/product-nft-sm40-main.png`,
+  "NFT-EH24":    `${GENERATED_BASE}/product-nft-eh24-main.png`,
+  "NFT-PB4S":    `${GENERATED_BASE}/product-nft-pb4s-main.png`,
+  "NFT-CS6P":    `${GENERATED_BASE}/product-nft-cs6p-main.png`,
   // Automotive Service Tools
-  "NFT-AMBC7": `${GENERATED_BASE}/product-nft-ambc7-main.png`,
-  "NFT-AMSP5": `${GENERATED_BASE}/product-nft-amsp5-main.png`,
+  "NFT-AM12F":   `${GENERATED_BASE}/product-nft-am12f-main.png`,
+  "NFT-AMBC7":   `${GENERATED_BASE}/product-nft-ambc7-main.png`,
+  "NFT-AMSP5":   `${GENERATED_BASE}/product-nft-amsp5-main.png`,
+  "NFT-AMPU3":   `${GENERATED_BASE}/product-nft-ampu3-main.png`,
+  "NFT-AMHTM":   `${GENERATED_BASE}/product-nft-amhtm-main.png`,
+  "NFT-AMTR8":   `${GENERATED_BASE}/product-nft-amtr8-main.png`,
   // Custom Toolkits & Storage
-  "NFT-KTBC89": `${GENERATED_BASE}/product-nft-ktbc89-main.png`,
-  "NFT-KTMEV1": `${GENERATED_BASE}/product-nft-ktmev1-main.png`,
-  "NFT-KTFM42": `${GENERATED_BASE}/product-nft-ktfm42-main.png`,
+  "NFT-KTMEV1":  `${GENERATED_BASE}/product-nft-ktmev1-main.png`,
+  "NFT-KTBC89":  `${GENERATED_BASE}/product-nft-ktbc89-main.png`,
+  "NFT-KTEC24":  `${GENERATED_BASE}/product-nft-ktec24-main.png`,
+  "NFT-KTWS128": `${GENERATED_BASE}/product-nft-ktws128-main.png`,
+  "NFT-KTPLR56": `${GENERATED_BASE}/product-nft-ktplr56-main.png`,
+  "NFT-KTFM42":  `${GENERATED_BASE}/product-nft-ktfm42-main.png`,
 };
 
 export function getCategoryHeroImage(slug: string, fallback?: string | null): string | null {
