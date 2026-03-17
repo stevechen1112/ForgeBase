@@ -1,12 +1,13 @@
 import type { Product, ProductCategory } from "@/types/content";
 
 const GENERATED_BASE = "/demo/handtool-company/assets/generated";
+const V = "?v=2"; // cache-buster: bump to force browser refresh
 
-export const HOME_HERO_IMAGE = `${GENERATED_BASE}/homepage-hero-northforge-manufacturer.png`;
-export const ABOUT_HERO_IMAGE = `${GENERATED_BASE}/about-factory-hero-northforge.png`;
-export const PRODUCTS_HERO_IMAGE = `${GENERATED_BASE}/category-toolkits-storage-hero.png`;
-export const QUALITY_INSPECTION_IMAGE = `${GENERATED_BASE}/capability-quality-inspection.png`;
-export const CUSTOM_PACKAGING_IMAGE = `${GENERATED_BASE}/capability-custom-packaging-oem.png`;
+export const HOME_HERO_IMAGE = `${GENERATED_BASE}/homepage-hero-northforge-manufacturer.png${V}`;
+export const ABOUT_HERO_IMAGE = `${GENERATED_BASE}/about-factory-hero-northforge.png${V}`;
+export const PRODUCTS_HERO_IMAGE = `${GENERATED_BASE}/category-toolkits-storage-hero.png${V}`;
+export const QUALITY_INSPECTION_IMAGE = `${GENERATED_BASE}/capability-quality-inspection.png${V}`;
+export const CUSTOM_PACKAGING_IMAGE = `${GENERATED_BASE}/capability-custom-packaging-oem.png${V}`;
 
 const CATEGORY_HERO_BY_SLUG: Record<string, string> = {
   "torque-and-socket-tools": `${GENERATED_BASE}/category-torque-socket-tools-hero.png`,
@@ -66,7 +67,8 @@ const PRODUCT_IMAGE_BY_MODEL: Record<string, string> = {
 };
 
 export function getCategoryHeroImage(slug: string, fallback?: string | null): string | null {
-  return CATEGORY_HERO_BY_SLUG[slug] ?? fallback ?? null;
+  const img = CATEGORY_HERO_BY_SLUG[slug] ?? fallback ?? null;
+  return img ? `${img}${V}` : null;
 }
 
 export function getCategoryCardImage(category: Pick<ProductCategory, "slug" | "image_url">): string | null {
@@ -74,9 +76,12 @@ export function getCategoryCardImage(category: Pick<ProductCategory, "slug" | "i
 }
 
 export function getApplicationImage(slug: string, fallback?: string | null): string | null {
-  return APPLICATION_IMAGE_BY_SLUG[slug] ?? fallback ?? null;
+  const img = APPLICATION_IMAGE_BY_SLUG[slug] ?? fallback ?? null;
+  return img ? `${img}${V}` : null;
 }
 
 export function getProductImage(product: Pick<Product, "model_number">, categorySlug?: string): string | null {
-  return PRODUCT_IMAGE_BY_MODEL[product.model_number] ?? (categorySlug ? getCategoryHeroImage(categorySlug) : null);
+  const img = PRODUCT_IMAGE_BY_MODEL[product.model_number] ?? null;
+  if (img) return `${img}${V}`;
+  return categorySlug ? getCategoryHeroImage(categorySlug) : null;
 }
