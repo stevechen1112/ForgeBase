@@ -43,7 +43,10 @@ export default function PagesListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">頁面管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">頁面管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理靜態落地頁與內容頁，支援多語版本與 SEO metadata 個別設定</p>
+        </div>
         <Button asChild><Link href="/dashboard/pages/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增頁面</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/pages" onDelete={handleDelete} isDeleting={deleting} />

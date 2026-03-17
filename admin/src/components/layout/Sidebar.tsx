@@ -6,7 +6,7 @@ import {
   Mail, Linkedin, Search, Sparkles, Bot, RefreshCcw, AtSign, FlaskConical,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench, Globe,
   MousePointerClick, PenLine, Image, Lock, Link2, Map, File, ClipboardList,
-  Inbox, Users, Plug, LogOut, ChevronUp, Bell, Settings, Filter,
+  Inbox, Users, Plug, LogOut, ChevronUp, Bell, Settings, Filter, PieChart,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +42,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "內容成效", href: "/dashboard/content-performance", icon: FileText },
       { label: "頁面分析", href: "/dashboard/page-analytics", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
+      { label: "頁面流量", href: "/dashboard/analytics/pages", icon: PieChart },
+      { label: "策略地圖成效", href: "/dashboard/analytics/strategy", icon: Map },
       { label: "受眾 Segments", href: "/dashboard/segments", icon: Target },
       { label: "帳戶識別", href: "/dashboard/accounts", icon: Building2 },
     ],

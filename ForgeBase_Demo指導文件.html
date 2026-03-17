@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ForgeBase_Demo指導文件</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<h1 id="forgebase-demo-指導文件">ForgeBase Demo 指導文件</h1>
+<h3 id="外銷製造商官網成長系統-客戶展示腳本">外銷製造商官網成長系統 —
+客戶展示腳本</h3>
+<blockquote>
+<p><strong>使用說明</strong>：本文件依「展示流程」編排，每個段落包含展示操作步驟、展示重點與建議話術。
+預估完整 Demo 時間：<strong>75–100
+分鐘</strong>（可依客戶興趣裁剪）。</p>
+<p>服務網址： - 前台官網 → <code>https://mitselect.com</code> - 管理後台
+→ <code>https://mitselect.com/backend</code> - API 文件 →
+<code>https://mitselect.com/api/docs</code></p>
+</blockquote>
+<hr />
+<h2 id="demo-前置準備必讀">⚙️ Demo 前置準備（必讀）</h2>
+<h3 id="demo-的運作原理">Demo 的運作原理</h3>
+<p><strong>這個 Demo 不是靜態 UI
+展示</strong>。前台官網的每一次點擊、瀏覽都會即時寫入後台資料庫，管理後台即時呈現。換句話說：</p>
+<blockquote>
+<p>你從前台扮演買家來瀏覽，後台就會出現對應的事件、分數變化、訪客記錄。</p>
+</blockquote>
+<p>但「剛清空的後台」效果很差——訪客列表空白、RFQ
+收件箱是零，完全無法說明系統在做什麼。正確的做法是：</p>
+<pre><code>[Demo 前] 跑 Seed 腳本 → 後台已有歷史軌跡（看起來系統已在運作）
+[Demo 當下] 現場瀏覽前台 → 後台即時出現新事件（現場感）</code></pre>
+<hr />
+<h3 id="步驟一確認服務正常">步驟一：確認服務正常</h3>
+<p>服務已部署於雲端，無需本地啟動。直接瀏覽器確認以下三個網址可正常存取：</p>
+<ul>
+<li>前台官網：<code>https://mitselect.com</code></li>
+<li>管理後台：<code>https://mitselect.com/backend</code></li>
+<li>API 文件：<code>https://mitselect.com/api/docs</code></li>
+</ul>
+<hr />
+<h3
+id="步驟二匯入內容資料產品應用等">步驟二：匯入內容資料（產品、應用等）</h3>
+<blockquote>
+<p><strong>內容資料已匯入雲端，可略過此步驟。</strong></p>
+</blockquote>
+<p>前台已有真實的產品、應用場景、認證等頁面內容可直接展示。</p>
+<hr />
+<h3
+id="步驟三注入模擬訪客行為demo-狀態準備">步驟三：注入模擬訪客行為（Demo
+狀態準備）</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /Users/yuchuchen/Desktop/ForgeBase</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/demo_seed_and_verify.py <span class="at">--mode</span> demo <span class="dt">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--email</span> admin@forgebase.com <span class="at">--password</span> ForgeBase2026</span></code></pre></div>
+<p>執行後後台會出現：</p>
+<table>
+<thead>
+<tr>
+<th>資料類型</th>
+<th>數量</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tracking Events</td>
+<td>~1,400+ 筆</td>
+<td>橫跨過去 30 天，模擬真實流量分布</td>
+</tr>
+<tr>
+<td>Unique Visitors</td>
+<td>~120 個</td>
+<td>含 Hot / Warm / Cold 各比例</td>
+</tr>
+<tr>
+<td>Sessions</td>
+<td>~210 個</td>
+<td>每個 session 3–9 個事件</td>
+</tr>
+<tr>
+<td>聯絡表單</td>
+<td>4 筆</td>
+<td>各帶 visitor_id，可追溯來源</td>
+</tr>
+<tr>
+<td>RFQ 詢價單</td>
+<td>6 筆</td>
+<td>帶產品關聯、優先級自動判定</td>
+</tr>
+</tbody>
+</table>
+<p><strong>後台帳號</strong>：<code>admin@forgebase.com</code> /
+<code>ForgeBase2026</code></p>
+<hr />
+<h3 id="步驟四demo-當下的現場感操作">步驟四：Demo
+當下的「現場感」操作</h3>
+<p>Demo
+期間最有說服力的時刻：<strong>客戶親眼看到系統即時記錄行為</strong>。</p>
+<ol type="1">
+<li>打開一個<strong>新的無痕視窗</strong>（<code>⌘ + Shift + N</code>），開啟
+<code>https://mitselect.com</code></li>
+<li>瀏覽幾個產品頁、展開一個 FAQ、點擊 CTA 按鈕</li>
+<li>切回管理後台 → 追蹤 → 事件列表 → 畫面重新整理</li>
+<li><strong>剛才的行為立即出現在後台</strong>，並帶著 intent
+分數變化</li>
+</ol>
+<blockquote>
+<p>進階：同時開 2 個無痕視窗代表「2 位不同買家」，展示後台同時出現不同
+visitor_id 的記錄。</p>
+</blockquote>
+<hr />
+<hr />
+<h2 id="行銷漏斗快速索引demo-規劃用">行銷漏斗快速索引（Demo
+規劃用）</h2>
+<blockquote>
+<p>如依<strong>買家旅程</strong>而非系統模組規劃展示順序，可用此表快速對應。</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>漏斗階段</th>
+<th>買家狀態</th>
+<th>ForgeBase 機制</th>
+<th>Demo 章節</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Awareness</strong></td>
+<td>Google 搜尋關鍵字</td>
+<td>Page Brief + AI生成 + SEO稽核工具</td>
+<td>1-3、1-4、1-5</td>
+</tr>
+<tr>
+<td><strong>Discovery</strong></td>
+<td>第一次進官網</td>
+<td>前台頁型、產品/應用/比較頁</td>
+<td>1-1</td>
+</tr>
+<tr>
+<td><strong>Engagement</strong></td>
+<td>細看、展開FAQ</td>
+<td>First-party事件追蹤</td>
+<td>2-1</td>
+</tr>
+<tr>
+<td><strong>Interest</strong></td>
+<td>回訪、下載規格書</td>
+<td>Download Gate、意圖評分、衰減</td>
+<td>2-2、3-2</td>
+</tr>
+<tr>
+<td><strong>Consideration</strong></td>
+<td>高意圖互動</td>
+<td>Dynamic CTA（個人化）、ML評分</td>
+<td>2-2、3-7</td>
+</tr>
+<tr>
+<td><strong>Retargeting</strong></td>
+<td>離站後廣告觸達</td>
+<td>受眾同步（Google/Meta/LinkedIn）</td>
+<td>3-6</td>
+</tr>
+<tr>
+<td><strong>Intent Signal</strong></td>
+<td>業務情報</td>
+<td>帳戶智能（哪家公司在看）</td>
+<td>2-4</td>
+</tr>
+<tr>
+<td><strong>Conversion</strong></td>
+<td>送出 RFQ</td>
+<td>RFQ流程、業務Alert、CRM同步</td>
+<td>3-1、3-3、3-4</td>
+</tr>
+<tr>
+<td><strong>Nurture</strong></td>
+<td>尚未轉換者</td>
+<td>Nurture序列 + ESP郵件</td>
+<td>3-8</td>
+</tr>
+<tr>
+<td><strong>Optimize</strong></td>
+<td>持續改善</td>
+<td>分析儀表板、SEO稽核、A/B Test</td>
+<td>第四部分</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>建議話術（漏斗開場白）：
+「我用一個真實的工業買家旅程走一遍這個系統——從他在 Google
+搜尋你的產品，到你的業務接到有意義的詢盤，這中間每一步 ForgeBase
+都在做什麼。」</p>
+</blockquote>
+<hr />
+<h2 id="demo-開場5-分鐘">Demo 開場（5 分鐘）</h2>
+<h3 id="核心主張">核心主張</h3>
+<blockquote>
+<p>「我們不是幫製造商做漂亮官網，而是把官網變成能<strong>捕捉需求、辨識意圖、推進詢價</strong>的實用型成長系統。」</p>
+</blockquote>
+<h3 id="三層架構說明圖開場白用">三層架構說明圖（開場白用）</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│  Capture Layer — 讓目標買家能搜尋到、理解、引用你的頁面   │
+│  - 頁型模板  - AI 內容生成  - SEO 基礎設施               │
+├─────────────────────────────────────────────────────────┤
+│  Intent Layer — 辨識誰在看、看什麼、意圖有多強           │
+│  - First-party 事件追蹤  - 意圖評分  - 受眾分類          │
+├─────────────────────────────────────────────────────────┤
+│  Conversion Layer — 把高意圖流量推進到詢盤與業務跟進      │
+│  - RFQ 流程  - 再行銷受眾  - Nurture  - 業務 Alert       │
+└─────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>建議話術</strong>： &gt;
+「傳統官網三層都是空的——搜尋不到你、看不出誰有興趣、表單送出後業務也沒有行動依據。我們把這三層都填滿，而且全部原生在官網上，不需要再疊一堆第三方工具。」</p>
+<hr />
+<h2 id="第一部分capture-layer-內容與頁面系統20-分鐘">第一部分：Capture
+Layer — 內容與頁面系統（20 分鐘）</h2>
+<h3 id="前台官網整體瀏覽">1-1 前台官網整體瀏覽</h3>
+<p><strong>操作</strong>：開啟 <code>https://mitselect.com</code></p>
+<p><strong>展示重點</strong>： - 首頁
+Hero、產品分類卡片、應用場景摘要、認證展示 -
+<strong>主推產品區塊</strong>（「Featured Products」）—
+當後台有任一產品被標記為主推時自動出現，優先展示高優先度產品 -
+麵包屑（Breadcrumb）自動產生 - 導覽到產品分類頁 <code>/products/</code>
+- 導覽到單一產品詳頁 <code>/products/{category}/{product}/</code></p>
+<p><strong>建議話術</strong>： &gt;
+「這是訪客看到的前台。每一頁都是依標準化頁型建出來的，不是自由排版，這樣
+SEO 的 structured data、breadcrumb、internal link
+才能自動運作。首頁的主推產品區塊是後台控制的——業務想把哪個產品推到第一眼，不需要改程式，在後台點一下星星就完成。」</p>
+<hr />
+<h3 id="管理後台-產品資料管理">1-2 管理後台 — 產品資料管理</h3>
+<p><strong>操作</strong>：切換到
+<code>https://mitselect.com/backend</code> → 登入 → 產品管理</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>產品列表</strong> —
+可依分類、狀態（草稿/已發布/封存）篩選</li>
+<li><strong>⭐ 主推產品切換</strong> —
+每筆產品旁有星星按鈕，點一下即標記為「主推」（金色星星），前台首頁的
+Featured Products
+區塊立即反映；再點一下取消。無需儲存按鈕，即時生效。</li>
+<li><strong>新增或開啟一個產品</strong>，展示欄位：
+<ul>
+<li>產品名稱、型號（model_number）</li>
+<li>規格鍵值對編輯器（名稱 + 值 + 單位）</li>
+<li>圖片上傳（支援多張）</li>
+<li>富文字產品說明</li>
+<li>所屬分類選擇</li>
+</ul></li>
+<li><strong>Entity 關聯面板</strong> — 展示可直接在產品上設定：
+<ul>
+<li>關聯應用場景</li>
+<li>關聯認證</li>
+<li>關聯 FAQ</li>
+<li>設定替代料號（雙向自動建立）</li>
+</ul></li>
+</ol>
+<p><strong>建議話術</strong>： &gt;
+「產品資料不只是填名稱和規格。我們讓每個產品都能關聯到它適用的應用場景、認證、FAQ，這些關聯會自動產生頁面上的內連，也是
+AI 生成文案時的知識來源。孤立的資料在這個系統裡沒辦法發揮作用。」</p>
+<hr />
+<h3 id="內容策略地圖page-brief-系統">1-3 內容策略地圖（Page Brief
+系統）</h3>
+<p><strong>操作</strong>：管理後台 → 內容策略 → Page Brief 列表</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><p><strong>Page Brief 狀態流程</strong>：</p>
+<pre><code>草稿 → 審核通過 → 生成中 → 已完成 → 已發布</code></pre></li>
+<li><p><strong>開啟一個既有 Brief</strong>，展示欄位：</p>
+<ul>
+<li>頁面類型（產品詳頁 / 應用頁 / FAQ 頁…）</li>
+<li>目標市場（美國、德國、日本…）</li>
+<li>目標客群（採購、工程師、代理商…）</li>
+<li>搜尋意圖（比較型、規格型、採購型…）</li>
+<li>主要關鍵字群</li>
+<li>Primary CTA 指定</li>
+</ul></li>
+</ol>
+<p><strong>建議話術</strong>： &gt; 「在 AI
+生成任何文案之前，我們強制要求先定義這一頁為什麼存在。目標市場是誰、要捕捉什麼搜尋意圖、這一頁的轉換目標是什麼。不允許先生成再期待流量，這樣的設計讓每一頁都有商業目的。」</p>
+<hr />
+<h3 id="ai-內容生成">1-4 AI 內容生成</h3>
+<p><strong>操作</strong>：管理後台 → 找到一個 Approved 狀態的 Page Brief
+→ 點擊「生成初稿」</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li>AI 根據 Brief + 產品規格資料生成結構化初稿，包含：
+<ul>
+<li>SEO title（60 字上限，關鍵字置前）/ meta description（155
+字，含行動短語）</li>
+<li>產品全文說明（依 Brief 目標字數，含 H2/H3
+標題結構與關鍵字佈局）</li>
+<li>FAQ 建議（3–5 個，問句格式符合 Google PAA 篩選規則）</li>
+<li>CTA 主標題 / 副標題</li>
+<li><strong>內連建議（internal_link_suggestions）</strong>：AI
+同步建議此頁應連結到哪些相關產品、分類或應用頁，附建議錨文字與理由</li>
+</ul></li>
+<li><strong>每個欄位旁邊有狀態標記</strong>：<code>AI 生成</code> /
+<code>已人工審核</code> / <code>人工撰寫</code></li>
+<li><strong>可逐欄修改</strong>，也可「重新生成」整段</li>
+</ol>
+<p><strong>建議話術</strong>： &gt; 「AI
+不是用來一鍵發布的，是用來降低內容建置成本的加速器。生成出來的是初稿，每個欄位都有審核狀態，強制人工確認後才能發布上線。」</p>
+<blockquote>
+<p>「生成的文案從一開始就內建 SEO 品質標準——標題不超過 60 字、meta
+description 有行動短語、內文有清楚的 H2 結構、FAQ 問句格式符合 Google
+PAA 規則。這不是人工事後補救，是生成時就直接做對。」</p>
+</blockquote>
+<p><strong>展示 AI 生成限制</strong>： &gt; 「我們不提供自由
+prompt——因為那樣生成的文案品質不穩定、跟業務目標脫節。這個系統的 AI
+只在有 Brief 和結構化資料的基礎上運作。」</p>
+<hr />
+<h3 id="頁面發布與-seo-基礎設施">1-5 頁面發布與 SEO 基礎設施</h3>
+<p><strong>操作</strong>：管理後台 → 頁面管理 → 選一個完成的頁面 →
+發布</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>發布後前台自動上線</strong> — 訪問對應 URL</li>
+<li><strong>SEO 自動輸出</strong>，在瀏覽器開發工具 Sources / Elements
+確認：
+<ul>
+<li><code>&lt;title&gt;</code> 與
+<code>&lt;meta name="description"&gt;</code> 正確填入</li>
+<li><code>&lt;link rel="canonical"&gt;</code> 自動生成</li>
+<li>JSON-LD Structured Data（<code>Product</code> schema 或
+<code>FAQPage</code> schema）</li>
+</ul></li>
+<li><strong>取消發布（Unpublish）</strong>：
+<ul>
+<li>頁面狀態回到草稿</li>
+<li><code>noindex</code> 自動加回，搜尋引擎不會二次索引</li>
+</ul></li>
+</ol>
+<p><strong>建議話術</strong>： &gt; 「技術 SEO
+是基礎設施，不應該是人工設定的。canonical、structured data、noindex
+這些全部系統自動處理，內容人員只需要專注在文案品質上。」</p>
+<hr />
+<h3 id="預覽功能草稿預覽">1-6 預覽功能（草稿預覽）</h3>
+<p><strong>操作</strong>：管理後台 → 找一個草稿狀態的頁面 →
+點「產生預覽連結」</p>
+<p><strong>展示重點</strong>： - 系統產生一個有時效性的預覽 Token（1
+小時有效） - 複製連結在前台開啟 → 顯示醒目的 <code>⚠ PREVIEW MODE</code>
+警示橫幅 - Token 過期後再開啟 → 自動導向 404，不會洩漏草稿內容</p>
+<p><strong>建議話術</strong>： &gt;
+「內容還在草稿時，客戶或主管想先看效果，可以用這個安全預覽連結，時效過了就失效，不用擔心沒完成的頁面被搜尋引擎抓到。」</p>
+<hr />
+<h3 id="seo-稽核工具">1-7 SEO 稽核工具</h3>
+<p><strong>操作</strong>：管理後台 → SEO 稽核</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>總覽 Dashboard</strong>：全站 SEO 健康分數</li>
+<li><strong>On-Page 稽核</strong>：逐頁列出缺少 meta description、title
+過長／過短、h1 缺失等問題</li>
+<li><strong>關鍵字蠶食偵測（Cannibalization）</strong>：自動找出多個頁面搶同一關鍵字的問題，建議整并或差異化方向</li>
+<li><strong>機會列表（Opportunities）</strong>：依流量潛力排列尚未最佳化的頁面，並提供可執行的建議</li>
+<li><strong>一鍵最佳化（AI Optimize）</strong>：對選定頁面執行 AI
+改善（title、meta description、內文建議）</li>
+</ol>
+<p><strong>建議話術</strong>： &gt;
+「大部分製造商的官網有幾十個產品頁，手動管理 SEO 根本做不到。這個 SEO
+稽核工具會主動告訴你哪些頁面有問題、哪些頁面有機會，而且你自己的頁面在搶同一個關鍵字這種蠶食問題，人工根本找不到，系統自動監控。」</p>
+<hr />
+<h2 id="第二部分intent-layer-訪客意圖追蹤18-分鐘">第二部分：Intent Layer
+— 訪客意圖追蹤（18 分鐘）</h2>
+<h3 id="first-party-事件追蹤">2-1 First-Party 事件追蹤</h3>
+<p><strong>操作</strong>：開啟前台任一頁面，同時在管理後台 → 追蹤 →
+事件列表 → 即時重新整理</p>
+<p><strong>展示重點</strong>：</p>
+<p>展示以下事件自動被記錄（不需要 GA）：</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>自動觸發的事件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>進入首頁</td>
+<td><code>page_view</code></td>
+</tr>
+<tr>
+<td>進入產品分類頁</td>
+<td><code>category_view</code></td>
+</tr>
+<tr>
+<td>點擊進入產品詳頁</td>
+<td><code>product_view</code>（附帶 product_id）</td>
+</tr>
+<tr>
+<td>點擊展開 FAQ</td>
+<td><code>faq_expand</code></td>
+</tr>
+<tr>
+<td>點擊下載規格書</td>
+<td><code>spec_download</code></td>
+</tr>
+<tr>
+<td>點擊 CTA 按鈕</td>
+<td><code>cta_click</code></td>
+</tr>
+<tr>
+<td>開始填寫 RFQ</td>
+<td><code>rfq_start</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>建議話術</strong>： &gt; 「這是我們自己的 first-party
+事件，不是 Google Analytics 的 session。這些事件帶著
+visitor_id、product_id、page_type，讓我們能算出每個訪客的商業意圖分數，而不只是看頁面停留時間。」</p>
+<hr />
+<h3 id="意圖評分系統intent-scoring">2-2 意圖評分系統（Intent
+Scoring）</h3>
+<p><strong>操作</strong>：管理後台 → 追蹤 → 訪客列表（依分數排序）</p>
+<p><strong>展示重點</strong>：</p>
+<p>評分規則即時展示：</p>
+<table>
+<thead>
+<tr>
+<th>行為</th>
+<th>分數</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>瀏覽產品詳頁</td>
+<td>+3（重複瀏覽 +2）</td>
+</tr>
+<tr>
+<td>瀏覽應用頁</td>
+<td>+4</td>
+</tr>
+<tr>
+<td>展開 FAQ</td>
+<td>+6（展開 3+ 個 +4）</td>
+</tr>
+<tr>
+<td>查看比較頁</td>
+<td>+6</td>
+</tr>
+<tr>
+<td>下載規格書</td>
+<td>+8</td>
+</tr>
+<tr>
+<td>點 Primary CTA</td>
+<td>+8</td>
+</tr>
+<tr>
+<td>開始填 RFQ</td>
+<td>+15</td>
+</tr>
+<tr>
+<td><strong>送出 RFQ</strong></td>
+<td><strong>+30</strong></td>
+</tr>
+<tr>
+<td>7 天內回訪</td>
+<td>+6</td>
+</tr>
+</tbody>
+</table>
+<p><strong>意圖階段（Intent Stage）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>分數</th>
+<th>階段</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0–9</td>
+<td>❄️ Cold</td>
+<td>只是瀏覽</td>
+</tr>
+<tr>
+<td>10–29</td>
+<td>🟡 Warm</td>
+<td>有互動行為，進入再行銷</td>
+</tr>
+<tr>
+<td>30–59</td>
+<td>🔥 Hot</td>
+<td>明確產品興趣，觸發業務 Alert</td>
+</tr>
+<tr>
+<td>60+</td>
+<td>✅ Sales-Ready</td>
+<td>直接跟進，通知業務優先處理</td>
+</tr>
+</tbody>
+</table>
+<p><strong>展示衰減機制</strong>： &gt; 「分數不是只增不減。7
+天沒有活動，分數乘以 0.8；14 天乘以 0.5；30 天乘以 0.2；60
+天歸零。這樣業務名單永遠是最新鮮的。」</p>
+<hr />
+<h3 id="訪客詳頁visitor-timeline">2-3 訪客詳頁（Visitor Timeline）</h3>
+<p><strong>操作</strong>：管理後台 → 追蹤 → 點進一個 Hot 或 Sales-Ready
+的訪客</p>
+<p><strong>展示重點</strong>： - 事件時間軸：看他這幾次 session
+都看了哪些產品、哪些應用、有沒有展開 FAQ - 當前 intent_score 與
+intent_stage - 關聯的 Contact（若曾填過表單） - 來源頁 source_page
+記錄（知道他是從哪個行銷活動或搜尋關鍵字進來）</p>
+<p><strong>建議話術</strong>： &gt;
+「業務不需要靠直覺猜客戶要什麼。這個時間軸直接告訴你：這個人看了哪個產品分類、在哪個應用頁停留最久、下載過規格書。業務跟進時就有具體的談話切入點。」</p>
+<hr />
+<h3 id="帳戶智能account-intelligence-b2b-核心賣點">2-4 帳戶智能（Account
+Intelligence）⭐ B2B 核心賣點</h3>
+<p><strong>操作</strong>：管理後台 → 帳戶 →
+帳戶列表（依活動日期排序）</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>公司層級追蹤</strong>：系統不只追蹤「一個訪客」，而是追蹤「一家公司」的多個瀏覽者行為加總</li>
+<li><strong>IP 反查公司</strong>：對未填資料的匿名訪客，系統可依 IP
+位置推測公司名稱與產業</li>
+<li><strong>帳戶 Insight 面板</strong>（點進一個帳戶）：
+<ul>
+<li>該公司共有幾位不同訪客造訪</li>
+<li>累計瀏覽了哪些產品類別</li>
+<li>最高意圖訪客的 intent_score</li>
+<li>是否已有關聯的 Contact 或 RFQ</li>
+</ul></li>
+<li><strong>帳戶層級
+Enrichment</strong>：可呼叫外部資料庫補充公司規模、產業、所在地</li>
+</ol>
+<p><strong>建議話術</strong>： &gt; 「工業 B2B
+的採購決策不是一個人做的。一家德國汽車零件廠可能有採購、工程師、主管三個人分別在不同時間看你的頁面——我們能把這些軌跡歸到同一個帳戶。業務不只能看到訪客，還能看到『哪家公司』這個月反覆造訪、還沒詢價。這就是業務主動出擊的依據。」</p>
+<hr />
+<h2 id="第三部分conversion-layer-詢盤閉環25-分鐘">第三部分：Conversion
+Layer — 詢盤閉環（25 分鐘）</h2>
+<h3 id="rfq-詢價前台流程">3-1 RFQ 詢價前台流程</h3>
+<p><strong>操作</strong>：開啟前台
+<code>https://mitselect.com/request-quote</code> 或從產品頁點擊詢價
+CTA</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>從產品頁進入
+RFQ</strong>：產品欄位自動帶入（無需重複選擇）</li>
+<li><strong>表單欄位</strong>：姓名、公司、Email、國家、職稱、感興趣產品、應用場景、數量、規格需求、採購時程</li>
+<li><strong>同意聲明</strong>（必填）</li>
+<li><strong>表單草稿自動儲存</strong>：中途關閉瀏覽器，重新打開草稿還在</li>
+<li><strong>送出後確認頁</strong>：顯示 RFQ
+編號（<code>RFQ-20260315-001</code>）</li>
+</ol>
+<p><strong>建議話術</strong>： &gt;
+「從產品頁直接點詢價，產品欄位自動帶入，降低填表摩擦。表單會記住草稿，買家不怕中途打斷。送出後業務端馬上會收到通知。」</p>
+<hr />
+<h3 id="下載門欄download-gate">3-2 下載門欄（Download Gate）</h3>
+<p><strong>操作</strong>：前台產品頁 → 找到規格書下載按鈕 → 點擊</p>
+<p><strong>展示重點</strong>： 1. 跳出 Modal
+要求留下基本聯絡資料（姓名、Email、公司） 2. 送出後直接提供下載連結 3.
+後台自動建立/更新 Contact 記錄 4. <code>spec_download</code>
+事件同步寫入，intent 分數 +8</p>
+<p><strong>建議話術</strong>： &gt;
+「下載規格書是高意圖行為，我們把它變成一個留資機會。填完資料才能下載，而且系統自動記下他下載的是哪個產品的文件，這個訊號直接反映在意圖分數上。」</p>
+<hr />
+<h3 id="管理後台-rfq-收件箱">3-3 管理後台 — RFQ 收件箱</h3>
+<p><strong>操作</strong>：管理後台 → 轉換 → RFQ 列表</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><p><strong>RFQ 狀態追蹤</strong>：</p>
+<pre><code>新建 → 已指派 → 處理中 → 已報價 → 成交 / 失單 / 過期</code></pre></li>
+<li><p><strong>指派業務</strong>：點擊 RFQ → 指派給對應業務人員</p></li>
+<li><p><strong>優先度標記</strong>：意圖分數 ≥ 30 的 RFQ
+自動標記高優先（🔥）</p></li>
+<li><p><strong>開啟 RFQ 詳頁</strong>，展示完整資訊：</p>
+<ul>
+<li>聯絡人資料 + 公司</li>
+<li>感興趣的產品列表</li>
+<li>應用場景</li>
+<li>採購時程</li>
+<li>送出時的意圖分數（<code>intent_score: 42, stage: Hot</code>）</li>
+<li>來源頁（<code>source_page: /products/hydraulic-seals/model-x100/?ref=product</code>）</li>
+<li><strong>業務追蹤欄位</strong>：<code>第一回應時間</code>（first_response_at）、<code>報價送出時間</code>（quote_sent_at）、<code>失單原因</code>（lost_reason）—
+業務可在詳頁直接填記，不需要另開 CRM</li>
+</ul></li>
+</ol>
+<p><strong>建議話術</strong>： &gt; 「業務打開一個
+RFQ，不只看到表單資料，還能看到這個人的意圖分數是 42（Hot
+階段），而且他是從哪個產品頁點過來的。跟進時完全不是盲猜。報價送出了就記一下時間，失單了就留一個原因——這些資料最後會反映在轉換儀表板的平均回應時長和失單原因分析上。」</p>
+<hr />
+<h3 id="自動通知機制">3-4 自動通知機制</h3>
+<p><strong>展示重點（說明流程，不一定要現場觸發）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>觸發條件</th>
+<th>通知方式</th>
+<th>接收者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>新 RFQ 建立</td>
+<td>Email + 系統內通知</td>
+<td>被指派業務</td>
+</tr>
+<tr>
+<td>RFQ 意圖分數 ≥ 30</td>
+<td>高優先 Email（特別標記）</td>
+<td>業務 + Admin</td>
+</tr>
+<tr>
+<td>RFQ 超過 24h 未處理</td>
+<td>Email 提醒</td>
+<td>業務</td>
+</tr>
+<tr>
+<td>RFQ 超過 48h 未處理</td>
+<td>Email 升級</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td>訪客進入 Hot 階段</td>
+<td>系統 Alert</td>
+<td>業務</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="contact-聯絡人管理與去重">3-5 Contact 聯絡人管理與去重</h3>
+<p><strong>操作</strong>：管理後台 → 追蹤 → 聯絡人列表 →
+點開一個聯絡人</p>
+<p><strong>展示重點</strong>： - 同一 Email 多次送表單 →
+自動去重（更新，不新增） - 聯絡人詳頁顯示： - 歷史提交的所有 RFQ
+與聯絡表單 - 來源頁紀錄（<code>source_page</code> 含完整 query string）
+- 當前 intent_score 與 intent_stage - 下載過的文件列表</p>
+<hr />
+<h3 id="再行銷受眾同步ads-audience">3-6 再行銷受眾同步（Ads
+Audience）</h3>
+<p><strong>操作</strong>：管理後台 → 整合 → 受眾同步</p>
+<p><strong>展示受眾類型</strong>：</p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 45%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th>受眾</th>
+<th>同步條件</th>
+<th>平台</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>High-Intent Visitors</td>
+<td><code>intent_stage = Hot / Sales-Ready</code> + 有 Email</td>
+<td>Google Ads Customer Match</td>
+</tr>
+<tr>
+<td>Product Interest</td>
+<td>瀏覽特定分類 ≥ 3 頁 + 有 Email</td>
+<td>Google Ads</td>
+</tr>
+<tr>
+<td>RFQ Submitted</td>
+<td>已送出 RFQ</td>
+<td>Meta Custom Audience</td>
+</tr>
+<tr>
+<td>Return Visitors</td>
+<td><code>return_visit</code> 事件 + 有 Email</td>
+<td>Meta / Google</td>
+</tr>
+<tr>
+<td>LinkedIn Account List</td>
+<td>高意圖公司名單</td>
+<td>LinkedIn Matched Audiences（Phase 2）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Meta Conversions API 事件映射</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>系統事件</th>
+<th>→ Meta 事件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>product_view</code></td>
+<td>ViewContent</td>
+</tr>
+<tr>
+<td><code>rfq_start</code></td>
+<td>InitiateCheckout</td>
+</tr>
+<tr>
+<td><code>rfq_submit</code></td>
+<td>Lead</td>
+</tr>
+<tr>
+<td><code>spec_download</code></td>
+<td>AddToCart</td>
+</tr>
+</tbody>
+</table>
+<p><strong>建議話術</strong>： &gt; 「工業 B2B
+買家極少第一次來就詢價。我們把高意圖訪客自動丟進廣告再行銷名單，讓
+Google / Meta
+在他們下次上網時持續出現。這個名單不是人工維護的，是系統根據意圖分數每日自動更新。」</p>
+<hr />
+<h3 id="dynamic-cta個人化行動呼籲">3-7 Dynamic
+CTA（個人化行動呼籲）</h3>
+<p><strong>操作</strong>：管理後台 → CTAs → 檢視 CTA 列表 → 開啟任一 CTA
+編輯</p>
+<p><strong>展示重點</strong>：</p>
+<p>系統根據訪客當前的意圖階段，在同一個頁面展示不同的 CTA：</p>
+<table>
+<thead>
+<tr>
+<th>訪客狀態</th>
+<th>看到的 CTA</th>
+<th>邏輯</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cold（第一次造訪）</td>
+<td>「下載規格書」</td>
+<td>低門檻留資，先捕捉信號</td>
+</tr>
+<tr>
+<td>Warm（已有互動記錄）</td>
+<td>「查看完整規格比較」</td>
+<td>引導深度探索</td>
+</tr>
+<tr>
+<td>Hot（高分訪客）</td>
+<td>「立即詢價」+ 表單前置帶入</td>
+<td>縮短轉換路徑</td>
+</tr>
+<tr>
+<td>Sales-Ready</td>
+<td>「預約工程師諮詢」</td>
+<td>升級接觸層級</td>
+</tr>
+</tbody>
+</table>
+<p><strong>後台展示重點</strong>（v0.18 新增）： - CTA
+編輯表單中的「<strong>目標意圖階段</strong>」欄位（<code>target_intent_stage</code>）—
+下拉選單可設定 <code>any / cold / warm / hot / sales_ready</code> -
+建立兩個同 <code>cta_key</code> 的 CTA，一個設 <code>cold</code>、一個設
+<code>hot</code>，前台會依訪客分數自動選擇顯示哪一個 -
+展示步驟：後台建好規則 → 前台刷新頁面 → 意圖不同的訪客看到不同的 CTA
+文案</p>
+<p><strong>建議話術</strong>： &gt; 「傳統靜態網頁所有人看到一樣的
+CTA。ForgeBase 的 Dynamic CTA
+會根據這個訪客之前的行為——他已經下載過規格書了、他看了三個產品分類——給他看最符合他當下需求的行動呼籲。你在後台設定每個
+CTA 鎖定哪個意圖階段，不需要改程式，行銷人員自己就能操作。」</p>
+<hr />
+<h3 id="nurture-email-序列培育尚未轉換的聯絡人">3-8 Nurture Email
+序列（培育尚未轉換的聯絡人）</h3>
+<p><strong>操作</strong>：管理後台 → Nurture → 序列列表 →
+點「新增序列」或開啟現有序列</p>
+<p><strong>展示重點</strong>：</p>
+<ol type="1">
+<li><strong>序列設定</strong>（<code>/backend/dashboard/nurture/new</code>
+或 <code>/backend/dashboard/nurture/[id]</code>）：
+<ul>
+<li>序列名稱（例如「液壓密封件冷啜」）</li>
+<li>觸發條件：<code>intent_stage = Warm</code> + 14 天未提交 RFQ</li>
+<li>步驟列表：每個步驟含延遲天數、郵件主旨、正文</li>
+<li>步驟可動態新增/刪除/排序</li>
+</ul></li>
+<li><strong>ESP 整合</strong>（管理後台 → ESP 狀態）：
+<ul>
+<li>連結 Mailchimp 或 SendGrid 帳號</li>
+<li>同步聯絡人至對應 List</li>
+<li>查看發送統計（開信率、點擊率）</li>
+</ul></li>
+<li><strong>意圖回流</strong>：Contact 在 Nurture 郵件中點擊連結回到官網
+→ 事件重新觸發 → 分數繼續累積</li>
+</ol>
+<p><strong>建議話術</strong>： &gt;
+「填了下載表單但沒有詢價的聯絡人，不是該放棄的。他進入培育序列，系統在接下來的幾週發幾封針對他感興趣的產品的說明信。他只要點進來繼續瀏覽，意圖分數就繼續往上跑，下次進入
+Hot 就會再度觸發業務 Alert。」</p>
+<hr />
+<h2 id="第四部分分析儀表板10-分鐘">第四部分：分析儀表板（10 分鐘）</h2>
+<h3 id="內容成效儀表板">4-1 內容成效儀表板</h3>
+<p><strong>操作</strong>：管理後台 → 分析 → 內容成效</p>
+<p><strong>展示重點</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>各頁面的 page_view 數</td>
+<td>哪些產品頁流量最高</td>
+</tr>
+<tr>
+<td>各頁面的高意圖互動率</td>
+<td>哪些頁面帶來高分訪客</td>
+</tr>
+<tr>
+<td>spec_download 次數</td>
+<td>哪些規格書最受歡迎</td>
+</tr>
+<tr>
+<td>cta_click → rfq_submit 這條路徑的轉換率</td>
+<td>哪個頁面的 CTA 效果最好</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="漏斗分析funnel-analytics-v0.18-新增">4-2 漏斗分析（Funnel
+Analytics）⭐ v0.18 新增</h3>
+<p><strong>操作</strong>：管理後台 → 分析 →
+漏斗（<code>/backend/dashboard/analytics/funnel</code>）</p>
+<p><strong>展示重點</strong>： -
+完整漏斗視覺化：<code>到達 → 有互動 → 下載/高意圖 → 開始 RFQ → 送出 RFQ</code>
+- 每個漏斗層的人數與轉換率 -
+最大流失點一眼看出（例如「有互動但沒有下載規格書」這層流失 73%） -
+可作為改善切入點的依據：流失最多的那層，優先加強 CTA 或降低門檻</p>
+<p><strong>建議話術</strong>： &gt;
+「這個漏斗圖直接告訴你問題在哪裡。如果大量訪客在『有互動但未下載』那層流失，代表規格書的入口
+CTA 需要調整，或者下載門檻太高。這樣的決策依據是數據，不是感覺。」</p>
+<hr />
+<h3 id="intent-儀表板">4-3 Intent 儀表板</h3>
+<p><strong>操作</strong>：管理後台 → 分析 → 意圖總覽</p>
+<p><strong>展示重點</strong>： - 依 intent_stage 的訪客分佈漏斗：Cold →
+Warm → Hot → Sales-Ready - 今日新增 Hot 訪客數 -
+高意圖訪客最感興趣的產品分類 Top 5 - 訪客從 Cold → Hot 的平均天數</p>
+<hr />
+<h3 id="rfq-轉換儀表板">4-4 RFQ 轉換儀表板</h3>
+<p><strong>操作</strong>：管理後台 → 分析 → 轉換</p>
+<p><strong>展示重點</strong>： - RFQ 數量趨勢（週 / 月） - RFQ
+來源分佈（哪個產品頁、哪個廣告活動帶來最多詢盤） - RFQ 各狀態數量（新建
+/ 指派 / 已報價 / 成交） - 平均從 RFQ 建立到第一個業務回應的時間</p>
+<hr />
+<h2 id="第五部分整合能力5-分鐘說明">第五部分：整合能力（5
+分鐘說明）</h2>
+<h3 id="ga4-並行追蹤">5-1 GA4 並行追蹤</h3>
+<p><strong>建議話術</strong>： &gt; 「所有 ForgeBase 的 first-party
+事件，也會同步對應地發送到 GA4，例如
+<code>product_view → view_item</code>、<code>rfq_submit → generate_lead</code>。GA4
+是輔助報表用，但業務邏輯和意圖評分的核心跑在我們自己的資料上，不依賴
+GA4。」</p>
+<h3 id="crm-同步hubspot-為例">5-2 CRM 同步（HubSpot 為例）</h3>
+<p><strong>展示重點</strong>： - RFQ 送出 → 自動建立/更新 HubSpot
+Contact + Deal - Contact 欄位映射：姓名、Email、公司、國家、職稱 - Deal
+含 intent_score、products_of_interest、source_page 等自訂欄位 -
+同步方向：Phase 1 為系統 → CRM 單向</p>
+<h3 id="webhook">5-3 Webhook</h3>
+<p><strong>展示重點</strong>：</p>
+<p>支援的 Webhook 事件（即時觸發）：</p>
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>觸發時機</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rfq.created</code></td>
+<td>新 RFQ 建立</td>
+</tr>
+<tr>
+<td><code>rfq.status_changed</code></td>
+<td>RFQ 狀態變更</td>
+</tr>
+<tr>
+<td><code>contact.created</code></td>
+<td>新聯絡人</td>
+</tr>
+<tr>
+<td><code>contact.intent_stage_changed</code></td>
+<td>意圖階段改變</td>
+</tr>
+<tr>
+<td><code>visitor.became_hot</code></td>
+<td>訪客進入 Hot 階段</td>
+</tr>
+</tbody>
+</table>
+<p>Webhook payload 含 HMAC-SHA256 簽章，失敗自動重試三次。</p>
+<hr />
+<h2
+id="第六部分客制與延伸討論視需求">第六部分：客制與延伸討論（視需求）</h2>
+<h3 id="可展示但視客戶需求決定的功能">可展示但視客戶需求決定的功能</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>功能</th>
+<th>說明</th>
+<th>對應客群</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>多語管理（Phase 2）</td>
+<td>英文 / 中文 / 德文 / 日文各自維護</td>
+<td>有多語市場的製造商</td>
+</tr>
+<tr>
+<td>A/B Test 框架</td>
+<td>CTA 文案 / 頁面版本測試</td>
+<td>已有一定流量的客戶</td>
+</tr>
+<tr>
+<td>Nurture Email 自動化（Phase 2）</td>
+<td>依意圖階段觸發 email 序列</td>
+<td>有 email 名單的客戶</td>
+</tr>
+<tr>
+<td>AI RFQ 分析與回覆草稿（Phase 3）</td>
+<td>AI 分析 RFQ 內容，協助業務擬定回覆</td>
+<td>業務量大的客戶</td>
+</tr>
+<tr>
+<td>Salesforce 整合（Phase 2+）</td>
+<td>雙向 CRM 同步</td>
+<td>已用 SF 的大型製造商</td>
+</tr>
+<tr>
+<td>LinkedIn Matched Audiences</td>
+<td>公司帳戶級再行銷</td>
+<td>高客單價 B2B</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="demo-常見-qa">Demo 常見 Q&amp;A</h2>
+<p><strong>Q：這和一般 CMS（WordPress / Webflow）有什麼不同？</strong>
+&gt; A：一般 CMS 只管前台頁面，沒有意圖追蹤、沒有 RFQ
+閉環、沒有再行銷受眾同步。ForgeBase 是把 Capture、Intent、Conversion
+三層整合在一個系統裡，官網本身就是業務工具，不只是型錄。</p>
+<p><strong>Q：AI 生成的內容品質可靠嗎？</strong> &gt; A：AI
+生成的是「基於規格資料的結構化初稿」，不是憑空捏造的文案。每個欄位有審核狀態標記，未經人工確認不能發布。這個設計確保品質底線，同時把建置時間縮短
+60–70%。</p>
+<p><strong>Q：我們不會 SEO，系統能自己處理嗎？</strong> &gt; A：技術 SEO
+部分（canonical、structured
+data、sitemap、robots、breadcrumb）全自動。內容 SEO
+部分（關鍵字、意圖對齊）由 Page Brief 系統引導操作，不需要有 SEO
+背景。</p>
+<p><strong>Q：系統收到的詢盤資料安全嗎？</strong> &gt;
+A：所有資料存在你們自己的資料庫，不走任何第三方平台。Webhook 有 HMAC
+簽章。訪客識別用 first-party cookie，不依賴第三方 cookie。</p>
+<p><strong>Q：可以先從局部導入嗎？</strong> &gt;
+A：可以。支援三種導入模式： &gt; 1.
+<strong>標準導入</strong>：全站一次上線 &gt; 2.
+<strong>過渡導入</strong>：用子網域先接管 RFQ / 產品頁 &gt; 3.
+<strong>嵌入式導入</strong>：在現有網站插入表單、追蹤元件，先驗證成效</p>
+<hr />
+<h2 id="demo-結尾建議話術">Demo 結尾建議話術</h2>
+<blockquote>
+<p>「我們今天看的是一個完整的官網成長系統，從頁面上線、搜尋曝光、訪客意圖辨識，到詢價閉環和再行銷。每一層都是工業
+B2B 最需要、但傳統官網最缺的能力。</p>
+<p>下一步可以用你們現有的產品資料跑一個
+Pilot——我們建幾個產品頁、一個應用頁、把詢價流程接上來，你們就能看到實際效果，不需要等全站上線。」</p>
+</blockquote>
+<hr />
+<p><em>文件版本：v0.18 / 2026-03-15 | 對應系統：ForgeBase Phase 1a + 1b
++ v0.18 growth site 增強（已上線功能）</em></p>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-rh390f",
+    "filename": "product-nft-rh390f-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for Flex-Head Ratchet Handle with model number NFT-RH390F. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "e6K4aeuuO4T31e8P2v_K2Ac",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 85,
+    "candidatesTokenCount": 1584,
+    "totalTokenCount": 1669,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 85
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

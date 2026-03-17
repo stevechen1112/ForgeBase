@@ -63,7 +63,10 @@ export default function CapabilitiesListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">廠能介紹管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">廠能介紹管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理工廠技術能力與製造服務，展示於官網廠能介紹頁，強化買家信任度</p>
+        </div>
         <Button asChild><Link href="/dashboard/capabilities/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增廠能</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/capabilities" onDelete={handleDelete} isDeleting={deleting} />

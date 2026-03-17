@@ -1,0 +1,80 @@
+[
+  {
+    "label": "category",
+    "context_page": "/products/torque-and-socket-tools",
+    "turns": [
+      {
+        "user": "We distribute torque tools in Europe. Which sub-types here are best for workshop service kits, and do you support OEM packaging?",
+        "assistant": {
+          "reply": "For workshop service kits, the best-fit sub-types on this page are:\n- Adjustable click-type torque wrenches: suitable for repeat tightening tasks in workshop use. Example: TW-500, 1/2 in drive, 40–210 Nm, ±4% accuracy.\n- Metric socket tool sets: suitable for service carts and bundled workshop kits. Example: SK-94M, 94-piece metric set with blow-molded case.\n- Digital torque adapters: useful where retrofit torque verification is needed in field service or maintenance programs. Example: DTA-120, 1/2 in drive, 30–200 Nm, LCD display.\n\nYes, OEM/private label support is available. Based on the page information, this includes logo marking, custom packaging, and specification alignment for OEM and private label programs.\n\nFor Europe, CE-related documentation can be supplied for selected torque tools where applicable, but this is not confirmed for every item on this category page.\n\nOne key question before I narrow this further: What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "needs_clarification": true,
+          "clarifying_question": "What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "suggested_action": "rfq",
+          "handoff_reason": "quantity",
+          "prefill": {}
+        }
+      },
+      {
+        "user": "We want a mid-range assortment first, not the most expensive option. Which 2 to 3 SKUs would you shortlist and what MOQ details should we prepare?",
+        "assistant": {
+          "reply": "For a mid-range workshop assortment, I would shortlist these 3 SKUs from this page:\n1. TW-500 — 1/2 in Drive Industrial Torque Wrench: good core item for repeat workshop tightening; 40–210 Nm, ±4% accuracy.\n2. SK-94M — 94-Piece Metric Socket Tool Set: practical bundle item for service carts and workshop kits; matte chrome, blow-molded case.\n3. DTA-120 — Digital Torque Adapter: useful add-on for retrofit torque verification; 30–200 Nm, LCD display.\n\nIf you want to keep the first assortment tighter at 2 SKUs, I would start with TW-500 + SK-94M, then add DTA-120 as a second-phase item.\n\nFor MOQ preparation, the page confirms that MOQ depends on:\n- whether the order is standard or OEM/private label\n- product configuration\n- packaging requirements\n\nTo prepare an efficient RFQ, you should have these MOQ-related details ready per SKU:\n- target order quantity\n- whether this is standard supply or OEM/private label\n- logo marking requirement\n- packaging scope (standard case/box vs custom packaging)\n- any specification alignment requests\n- Europe market/compliance documentation needs, since CE-related documentation is available for selected torque tools where applicable, not confirmed for every item\n\nExact MOQ numbers are not confirmed on this category page and would need RFQ review.\n\nOne key question before I narrow this further: Will this first order be standard supply or OEM/private label with custom logo/packaging?",
+          "needs_clarification": true,
+          "clarifying_question": "Will this first order be standard supply or OEM/private label with custom logo/packaging?",
+          "suggested_action": "rfq",
+          "handoff_reason": "rfq_ready",
+          "prefill": {}
+        }
+      },
+      {
+        "user": "Before RFQ, what exact details do you still need from us to confirm fit and private-label scope?",
+        "assistant": {
+          "reply": "To confirm product fit and private-label scope for this category, we still need these details from you:\n- Program type: confirm this is OEM/private label rather than standard supply\n- SKU scope: which shortlisted items you want included first (for example TW-500, SK-94M, DTA-120)\n- Estimated quantity per SKU: needed because MOQ depends on order type, configuration, and packaging\n- Branding scope: logo marking requirement\n- Packaging scope: standard packaging vs custom packaging, and any case/box requirements\n- Specification alignment: any requested changes to standard specs\n- Europe market/compliance needs: any required CE-related documentation, noting this is only confirmed for selected torque tools where applicable\n\nWhat is not confirmed on this page:\n- Exact MOQ by SKU\n- Whether CE-related documentation applies to every shortlisted item\n- Any final private-label feasibility for your exact packaging/configuration until RFQ review\n\nIf you send the above in one list, it should be enough to assess fit and define the private-label scope for the first RFQ round.\n\nOne key question before I narrow this further: For the private-label scope, do you need logo marking only, or custom packaging as well?",
+          "needs_clarification": true,
+          "clarifying_question": "For the private-label scope, do you need logo marking only, or custom packaging as well?",
+          "suggested_action": "rfq",
+          "handoff_reason": "packaging_scope",
+          "prefill": {}
+        }
+      }
+    ]
+  },
+  {
+    "label": "application",
+    "context_page": "/applications/automotive-aftermarket-service",
+    "turns": [
+      {
+        "user": "We want to build a mid-range automotive aftermarket assortment for distributors. Which products should we start with?",
+        "assistant": {
+          "reply": "For a mid-range automotive aftermarket assortment for distributors, a practical starting bundle would be:\n\n1. 94-Piece Metric Socket Tool Set (SK-94M)\n- Good core assortment for general service use and distributor resale\n- 94 pieces\n- Matte chrome finish\n- Blow-molded case\n\n2. 72-Tooth Reversible Ratchet Handle (RH-72)\n- Useful for confined automotive maintenance access\n- 3/8 in drive\n- 72-tooth mechanism\n- Chrome vanadium steel\n\n3. 1/2 in Drive Industrial Torque Wrench (TW-500)\n- Strong fit for repeat workshop tightening\n- Torque range: 40-210 Nm\n- Accuracy: +/-4%\n- Chrome vanadium steel\n\nThis combination covers three core needs in automotive service programs: socket coverage, daily ratcheting, and torque-controlled fastening. It also aligns well with workshop use, distributor bundles, and branded service assortments.\n\nNorthForge also supports OEM/private label programs, including logo marking, custom packaging, and specification alignment if you want to build a distributor-specific range.\n\nMOQ is not confirmed here because it depends on product configuration, packaging, and whether the order is standard or OEM.\n\nOne key question before I narrow this further: Are you evaluating a standard supply range, or an OEM/private-label program?",
+          "needs_clarification": true,
+          "clarifying_question": "Are you evaluating a standard supply range, or an OEM/private-label program?",
+          "suggested_action": "none",
+          "handoff_reason": null,
+          "prefill": {}
+        }
+      },
+      {
+        "user": "Good. We also need private-label packaging and stable workshop durability. Which product in this set best covers torque-critical service work, and what should we confirm before RFQ?",
+        "assistant": {
+          "reply": "For torque-critical service work, the best fit in this set is the 1/2 in Drive Industrial Torque Wrench (TW-500).\n\nWhy it fits:\n- Designed for repeat workshop tightening\n- Torque range: 40–210 Nm\n- Accuracy: +/-4%\n- Chrome vanadium steel construction\n\nGiven your need for private-label packaging and stable workshop durability, the main points to confirm before RFQ are:\n- Private-label scope: logo marking and custom packaging requirements\n- Specification alignment: whether the TW-500 standard spec is acceptable or needs adjustment for your program\n- Assortment structure: whether the torque wrench will be sold standalone or bundled with socket/ratchet items\n- MOQ: not confirmed here, because it depends on configuration, packaging, and OEM/private-label setup\n\nNorthForge does support OEM/private label programs, including logo marking, custom packaging, and specification alignment. ISO 9001 (SGS) certification is also available for quality management consistency.\n\nTo move cleanly into RFQ, the one key missing commercial detail is your packaging scope.\n\nOne key question before I narrow this further: What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "needs_clarification": true,
+          "clarifying_question": "What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "suggested_action": "rfq",
+          "handoff_reason": "quantity",
+          "prefill": {}
+        }
+      },
+      {
+        "user": "Please summarize the recommended starter bundle and the RFQ inputs you need from us.",
+        "assistant": {
+          "reply": "Recommended starter bundle for a mid-range automotive aftermarket distributor program:\n1. SK-94M — 94-Piece Metric Socket Tool Set\n- Core metric service assortment for distributor resale and workshop use\n- 94 pieces\n- Matte chrome finish\n- Blow-molded case\n\n2. RH-72 — 72-Tooth Reversible Ratchet Handle\n- Good fit for confined automotive maintenance access\n- 3/8 in drive\n- 72-tooth mechanism\n- Chrome vanadium steel\n\n3. TW-500 — 1/2 in Drive Industrial Torque Wrench\n- Best fit for torque-critical service work\n- 40–210 Nm torque range\n- +/-4% accuracy\n- Chrome vanadium steel\n\nRFQ inputs needed from you:\n- Program type: OEM/private-label program\n- Product scope: confirm whether you want all three items in the first RFQ\n- Branding/packaging scope: logo marking and custom packaging requirements\n- Specification alignment: confirm whether standard specs are acceptable or if adjustments are needed\n- Assortment format: standalone items or bundled service assortment\n- Quantity/MOQ target: needed because MOQ depends on product configuration, packaging, and whether the order is standard or OEM\n\nNorthForge supports OEM/private label orders with logo marking, custom packaging, and specification alignment. ISO 9001 (SGS) quality management certification is available.\n\nThe one key commercial detail still missing is your estimated quantity for the first RFQ round.\n\nOne key question before I narrow this further: What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "needs_clarification": true,
+          "clarifying_question": "What estimated quantity or MOQ target should I use for the first RFQ round?",
+          "suggested_action": "rfq",
+          "handoff_reason": "quantity",
+          "prefill": {}
+        }
+      }
+    ]
+  }
+]

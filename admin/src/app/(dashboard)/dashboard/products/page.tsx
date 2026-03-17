@@ -89,7 +89,10 @@ export default function ProductsListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">商品管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">商品管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理所有商品資料，包含多語 SEO 標題、規格說明、圖片與分類綁定</p>
+        </div>
         <div className="flex items-center gap-3">
           <select
             value={localeFilter}

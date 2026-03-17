@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-am12f",
+    "filename": "product-nft-am12f-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for Adjustable Oil Filter Wrench Set with model number NFT-AM12F. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "gKO4aZl9jrS-vQ-T6-PYCw",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 84,
+    "candidatesTokenCount": 1567,
+    "totalTokenCount": 1651,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 84
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

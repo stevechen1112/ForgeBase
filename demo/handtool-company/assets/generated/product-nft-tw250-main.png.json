@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-tw250",
+    "filename": "product-nft-tw250-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for 1/4 in Drive Micrometer Torque Wrench with model number NFT-TW250. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "QKK4aer0Bd2m1e8PvO6N2Q8",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 89,
+    "candidatesTokenCount": 1569,
+    "totalTokenCount": 1658,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 89
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

@@ -57,6 +57,8 @@ class ChatMessageReplyData(BaseModel):
     reply: str
     sources: list[ChatSource]
     suggested_action: Literal["none", "rfq", "contact"] = "none"
+    needs_clarification: bool = False
+    clarifying_question: Optional[str] = None
     handoff_ready: bool = False
     handoff_prefill: dict[str, Any] = {}
 

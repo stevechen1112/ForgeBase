@@ -62,7 +62,10 @@ export default function CertificationsListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">認證管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">認證管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理 ISO、RoHS、CE 等品質認證資料，展示於前台認證頁並支援 PDF 下載</p>
+        </div>
         <Button asChild><Link href="/dashboard/certifications/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增認證</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/certifications" onDelete={handleDelete} isDeleting={deleting} />

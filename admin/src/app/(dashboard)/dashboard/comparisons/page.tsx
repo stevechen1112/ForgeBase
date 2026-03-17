@@ -60,7 +60,10 @@ export default function ComparisonsListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">競品比較</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">競品比較</h1>
+          <p className="mt-1 text-sm text-muted-foreground">維護競品比較主題，讓訪客清楚了解產品相對優勢，提升詢價意願</p>
+        </div>
         <Button asChild><Link href="/dashboard/comparisons/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增競品比較</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/comparisons" onDelete={handleDelete} isDeleting={deleting} />

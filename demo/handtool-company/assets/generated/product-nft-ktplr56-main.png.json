@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ktplr56",
+    "filename": "product-nft-ktplr56-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for Private-Label Retail Hand Tool Set with model number NFT-KTPLR56. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "BaS4adqtFtPB1e8P-aHSsQg",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 86,
+    "candidatesTokenCount": 1611,
+    "totalTokenCount": 1697,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 86
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

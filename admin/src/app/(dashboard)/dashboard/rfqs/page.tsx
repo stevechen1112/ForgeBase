@@ -73,7 +73,7 @@ export default function RFQsListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">RFQ Requests</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Manage incoming quotation requests</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理所有入站詢價單，依狀態、負責業務篩選並追蹤跟進進度</p>
         </div>
       </div>
 

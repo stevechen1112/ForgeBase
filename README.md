@@ -216,9 +216,8 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 ```bash
 # 重新部署前端（兩個前端流程相同）
 cd /opt/forgebase/app/web   # 或 admin
+npm ci --prefer-offline
 npm run build
-cp -r .next/static .next/standalone/.next/static
-cp -r public .next/standalone/public
 systemctl restart forgebase-web   # 或 forgebase-admin
 ```
 
@@ -226,7 +225,10 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 
 - **HTTPS Mixed Content**：`NEXT_PUBLIC_API_URL` 必須設為 `https://mitselect.com`（不可用 HTTP 或 IP），否則瀏覽器會封鎖所有 API 請求
 - **nginx `/backend` 路由**：`location /backend {`（無 trailing slash），`proxy_pass http://127.0.0.1:3001`（也無 trailing slash）— 兩端都有 `/` 會導致 404
+- **Next.js standalone 靜態資產**：前後台都依賴 `postbuild` 自動執行 `scripts/prepare-next-standalone.sh`，重建 `.next/standalone/public` 與 `.next/standalone/.next/static` 的 symlink；不要再手動 `cp -r public` 或 `cp -r .next/static`
 - **GitHub Actions CI/CD**：需在 GitHub → Settings → Secrets 設定 `DEPLOY_HOST=172.234.81.223` 與 `DEPLOY_SSH_KEY`
+
+更完整的部署檢查與維運紅線，請見 `ForgeBase_部署與維運注意事項.md`。
 
 ---
 
@@ -238,6 +240,7 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
 | [ForgeBase_完整開發計畫.md](ForgeBase_完整開發計畫.md) | 開發里程碑計畫 |
 | [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
+| [ForgeBase_部署與維運注意事項.md](ForgeBase_部署與維運注意事項.md) | production 部署、standalone 資產檢查與維運紅線 |
 | [ForgeBase_前後台改造說明.md](ForgeBase_前後台改造說明.md) | 本次改造評估與工作項目（程式碼實查版）|
 
 ---

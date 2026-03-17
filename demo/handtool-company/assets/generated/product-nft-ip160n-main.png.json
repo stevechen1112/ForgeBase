@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "product-nft-ip160n",
+    "filename": "product-nft-ip160n-main.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a realistic product image for 160 mm Insulated Long Nose Pliers with model number NFT-IP160N. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/png",
+  "response_id": "6aK4acCHIvWcosUP69LFyAE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 90,
+    "candidatesTokenCount": 1585,
+    "totalTokenCount": 1675,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 90
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

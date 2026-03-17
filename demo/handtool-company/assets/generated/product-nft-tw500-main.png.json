@@ -8,12 +8,12 @@
   },
   "model": "gemini-3.1-flash-image-preview",
   "mime_type": "image/png",
-  "response_id": "Xy64ab65JKGn1e8PjOGhMA",
+  "response_id": "xJ-4aaqQB46c1e8P85CjoQo",
   "model_version": "gemini-3.1-flash-image-preview",
   "usage_metadata": {
     "promptTokenCount": 94,
-    "candidatesTokenCount": 1573,
-    "totalTokenCount": 1667,
+    "candidatesTokenCount": 1623,
+    "totalTokenCount": 1717,
     "promptTokensDetails": [
       {
         "modality": "TEXT",

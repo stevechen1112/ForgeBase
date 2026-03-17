@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "postbuild": "../scripts/prepare-next-standalone.sh .",
     "start": "next start --port 3001",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

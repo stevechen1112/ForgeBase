@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import uuid
 from typing import Any, Optional
 from urllib.parse import urlencode
@@ -20,6 +21,14 @@ from app.models.product_category import ProductCategory
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
+from app.services.chat_orchestrator import finalize_generated_chat_response
+from app.services.chat_policy import infer_clarifying_question as _infer_clarifying_question
+from app.services.chat_response_utils import (
+    contains_any as _contains_any,
+    has_quantity_signal as _has_quantity_signal,
+    merge_reply_and_clarifying_question as _merge_reply_and_clarifying_question,
+    normalize_question as _normalize_question,
+)
 from app.services.intent_scoring import calculate_score_delta, get_intent_stage
 
 logger = logging.getLogger(__name__)
@@ -103,6 +112,48 @@ def _trim_text(value: Optional[str], max_chars: int = 800) -> str:
     return text[: max_chars - 3].rstrip() + "..."
 
 
+def _strip_html(value: Optional[str]) -> str:
+    if not value:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", value)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _format_product_snapshot(product: Product, *, max_specs: int = 4) -> str:
+    specs = _safe_json_loads(product.specifications)
+    spec_parts: list[str] = []
+    if isinstance(specs, list):
+        for item in specs[:max_specs]:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name") or "").strip()
+            value = str(item.get("value") or "").strip()
+            unit = str(item.get("unit") or "").strip()
+            joined_value = f"{value} {unit}".strip()
+            if name and joined_value:
+                spec_parts.append(f"{name}: {joined_value}")
+    elif isinstance(specs, dict):
+        for key, value in list(specs.items())[:max_specs]:
+            spec_parts.append(f"{key}: {value}")
+
+    spec_text = "; ".join(spec_parts) if spec_parts else "N/A"
+    return (
+        f"{product.product_name}"
+        f" (model: {product.model_number}; "
+        f"summary: {_trim_text(_strip_html(product.short_description), 140)}; "
+        f"specs: {_trim_text(spec_text, 180)})"
+    )
+
+
+def _format_faq_snapshot(faq: FAQItem) -> str:
+    return f"Q: {faq.question} A: {_trim_text(_strip_html(faq.answer), 220)}"
+
+
+def _format_cert_snapshot(cert: Certification) -> str:
+    issuer = cert.issuer or "Issuer not listed"
+    return f"{cert.cert_name} ({issuer}): {_trim_text(_strip_html(cert.description), 160)}"
+
+
 def _detect_handoff(user_question: str, reply: str) -> tuple[str, bool]:
     combined = f"{user_question} {reply}".lower()
     handoff_terms = [
@@ -154,9 +205,10 @@ def _build_system_prompt() -> str:
         "2. Never invent pricing, lead time, legal compliance, or unsupported claims.\n"
         "3. If information is missing, say it is not confirmed and suggest RFQ or contact.\n"
         "4. Keep answers concise, practical, and professional.\n"
-        "5. Ask only one clarifying question at a time when needed.\n"
-        "6. If the buyer shows clear purchase intent, shift toward preparing an RFQ.\n"
-        "7. Always return valid JSON matching the requested schema."
+        "5. If the buyer asks a broad category or application question without enough commercial detail, answer briefly and then ask exactly one clarifying question.\n"
+        "6. Prioritize clarifying gaps in this order: program type (standard vs OEM/private label), quantity/MOQ, branding/packaging scope, market/compliance requirement.\n"
+        "7. If the buyer shows clear purchase intent and the missing detail is small, keep moving toward RFQ while still asking one key clarification when useful.\n"
+        "8. Always return valid JSON matching the requested schema."
     )
 
 
@@ -192,6 +244,8 @@ RECENT CHAT HISTORY:
 
 USER QUESTION:
 {user_question}
+
+If one key commercial detail is still missing, set needs_clarification=true and provide exactly one high-value clarifying_question.
 
 Return JSON with keys:
 {{
@@ -336,8 +390,17 @@ class ChatService:
             user_question=content,
         )
 
+        payload = finalize_generated_chat_response(
+            user_question=content,
+            context_entity_type=chat_session.context_entity_type or "unknown",
+            recent_messages=recent_messages,
+            payload=payload,
+        )
+
         reply = payload.get("reply") or "I don't have confirmed information for that yet. The fastest next step is to submit an RFQ or contact request."
         suggested_action = payload.get("suggested_action") or "none"
+        needs_clarification = bool(payload.get("needs_clarification"))
+        clarifying_question = _normalize_question(payload.get("clarifying_question"))
         handoff_prefill = payload.get("prefill") or {}
         if not handoff_prefill:
             handoff_prefill = _build_handoff_prefill(
@@ -368,6 +431,8 @@ class ChatService:
             "reply": reply,
             "sources": sources,
             "suggested_action": suggested_action,
+            "needs_clarification": needs_clarification,
+            "clarifying_question": clarifying_question,
             "handoff_ready": handoff_ready or suggested_action == "rfq",
             "handoff_prefill": handoff_prefill,
         }
@@ -464,7 +529,6 @@ class ChatService:
                 return "", []
 
             category_name = product.category.category_name if product.category else ""
-            specs = _safe_json_loads(product.specifications)
             faq_summary_parts = []
             cert_summary_parts = []
 
@@ -478,7 +542,7 @@ class ChatService:
             )
 
             for faq in product.faqs[:3]:
-                faq_summary_parts.append(f"Q: {faq.question} A: {_trim_text(faq.answer, 220)}")
+                faq_summary_parts.append(_format_faq_snapshot(faq))
                 sources.append(
                     {
                         "type": "faq",
@@ -489,7 +553,7 @@ class ChatService:
                 )
 
             for cert in product.certifications[:3]:
-                cert_summary_parts.append(f"{cert.cert_name}: {_trim_text(cert.description, 180)}")
+                cert_summary_parts.append(_format_cert_snapshot(cert))
                 sources.append(
                     {
                         "type": "certification",
@@ -503,9 +567,9 @@ class ChatService:
                 f"Product name: {product.product_name}\n"
                 f"Model number: {product.model_number}\n"
                 f"Category: {category_name}\n"
-                f"Short description: {_trim_text(product.short_description, 220)}\n"
-                f"Full description: {_trim_text(product.full_description, 600)}\n"
-                f"Specifications: {_trim_text(json.dumps(specs, ensure_ascii=False) if specs else str(product.specifications), 500)}\n"
+                f"Short description: {_trim_text(_strip_html(product.short_description), 220)}\n"
+                f"Full description: {_trim_text(_strip_html(product.full_description), 600)}\n"
+                f"Specifications: {_trim_text(_format_product_snapshot(product, max_specs=6), 500)}\n"
                 f"Related FAQs: {' | '.join(faq_summary_parts) if faq_summary_parts else 'N/A'}\n"
                 f"Related certifications: {' | '.join(cert_summary_parts) if cert_summary_parts else 'N/A'}"
             )
@@ -515,14 +579,21 @@ class ChatService:
             statement = (
                 select(ProductCategory)
                 .where(ProductCategory.id == chat_session.context_entity_id)
-                .options(selectinload(ProductCategory.products))
+                .options(
+                    selectinload(ProductCategory.products).selectinload(Product.certifications),
+                    selectinload(ProductCategory.products).selectinload(Product.faqs),
+                )
             )
             category = (await self.db.exec(statement)).first()
             if category:
-                related_products = category.products[:5]
-                product_names = []
+                related_products = category.products[:6]
+                product_summaries = []
+                faq_summary_parts: list[str] = []
+                cert_summary_parts: list[str] = []
+                seen_faq_ids: set[uuid.UUID] = set()
+                seen_cert_ids: set[uuid.UUID] = set()
                 for product in related_products:
-                    product_names.append(product.product_name)
+                    product_summaries.append(_format_product_snapshot(product))
                     sources.append(
                         {
                             "type": "product",
@@ -531,11 +602,40 @@ class ChatService:
                             "url": f"/products/{category.slug}/{product.slug}",
                         }
                     )
+                    for faq in product.faqs[:2]:
+                        if faq.id in seen_faq_ids:
+                            continue
+                        seen_faq_ids.add(faq.id)
+                        faq_summary_parts.append(_format_faq_snapshot(faq))
+                        sources.append(
+                            {
+                                "type": "faq",
+                                "id": str(faq.id),
+                                "name": faq.question,
+                                "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+                            }
+                        )
+                    for cert in product.certifications[:2]:
+                        if cert.id in seen_cert_ids:
+                            continue
+                        seen_cert_ids.add(cert.id)
+                        cert_summary_parts.append(_format_cert_snapshot(cert))
+                        sources.append(
+                            {
+                                "type": "certification",
+                                "id": str(cert.id),
+                                "name": cert.cert_name,
+                                "url": f"/certifications/{cert.slug}",
+                            }
+                        )
 
                 entity_summary = (
                     f"Category name: {category.category_name}\n"
-                    f"Description: {_trim_text(category.description, 400)}\n"
-                    f"Example products: {' | '.join(product_names) if product_names else 'N/A'}"
+                    f"SEO description: {_trim_text(category.seo_description, 180)}\n"
+                    f"Description: {_trim_text(_strip_html(category.description), 400)}\n"
+                    f"Representative products: {' | '.join(product_summaries) if product_summaries else 'N/A'}\n"
+                    f"Common FAQs: {' | '.join(faq_summary_parts) if faq_summary_parts else 'N/A'}\n"
+                    f"Common certifications: {' | '.join(cert_summary_parts) if cert_summary_parts else 'N/A'}"
                 )
                 return entity_summary, sources
 
@@ -544,25 +644,61 @@ class ChatService:
                 select(Application)
                 .where(Application.id == chat_session.context_entity_id)
                 .options(
-                    selectinload(Application.products),
+                    selectinload(Application.products).selectinload(Product.category),
+                    selectinload(Application.products).selectinload(Product.certifications),
+                    selectinload(Application.products).selectinload(Product.faqs),
                     selectinload(Application.faqs),
                 )
             )
             application = (await self.db.exec(statement)).first()
             if application:
-                product_names = []
-                for product in application.products[:4]:
-                    product_names.append(product.product_name)
+                product_summaries = []
+                faq_summary_parts: list[str] = []
+                cert_summary_parts: list[str] = []
+                seen_faq_ids: set[uuid.UUID] = set()
+                seen_cert_ids: set[uuid.UUID] = set()
+                for product in application.products[:5]:
+                    category_name = product.category.category_name if product.category else "Uncategorized"
+                    product_summaries.append(f"[{category_name}] {_format_product_snapshot(product)}")
                     sources.append(
                         {
                             "type": "product",
                             "id": str(product.id),
                             "name": product.product_name,
-                            "url": chat_session.context_page or "/products",
+                            "url": f"/products/{product.category.slug}/{product.slug}" if product.category else "/products",
                         }
                     )
+                    for faq in product.faqs[:1]:
+                        if faq.id in seen_faq_ids:
+                            continue
+                        seen_faq_ids.add(faq.id)
+                        faq_summary_parts.append(_format_faq_snapshot(faq))
+                        sources.append(
+                            {
+                                "type": "faq",
+                                "id": str(faq.id),
+                                "name": faq.question,
+                                "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+                            }
+                        )
+                    for cert in product.certifications[:2]:
+                        if cert.id in seen_cert_ids:
+                            continue
+                        seen_cert_ids.add(cert.id)
+                        cert_summary_parts.append(_format_cert_snapshot(cert))
+                        sources.append(
+                            {
+                                "type": "certification",
+                                "id": str(cert.id),
+                                "name": cert.cert_name,
+                                "url": f"/certifications/{cert.slug}",
+                            }
+                        )
 
                 for faq in application.faqs[:3]:
+                    if faq.id not in seen_faq_ids:
+                        seen_faq_ids.add(faq.id)
+                        faq_summary_parts.append(_format_faq_snapshot(faq))
                     sources.append(
                         {
                             "type": "faq",
@@ -575,10 +711,13 @@ class ChatService:
                 entity_summary = (
                     f"Application name: {application.application_name}\n"
                     f"Industry: {application.industry}\n"
-                    f"Description: {_trim_text(application.description, 400)}\n"
-                    f"Challenge: {_trim_text(application.challenge, 240)}\n"
-                    f"Solution: {_trim_text(application.solution, 240)}\n"
-                    f"Related products: {' | '.join(product_names) if product_names else 'N/A'}"
+                    f"SEO description: {_trim_text(application.seo_description, 180)}\n"
+                    f"Description: {_trim_text(_strip_html(application.description), 400)}\n"
+                    f"Buyer challenge: {_trim_text(_strip_html(application.challenge), 260)}\n"
+                    f"Recommended solution direction: {_trim_text(_strip_html(application.solution), 260)}\n"
+                    f"Related products: {' | '.join(product_summaries) if product_summaries else 'N/A'}\n"
+                    f"Relevant FAQs: {' | '.join(faq_summary_parts) if faq_summary_parts else 'N/A'}\n"
+                    f"Relevant certifications: {' | '.join(cert_summary_parts) if cert_summary_parts else 'N/A'}"
                 )
                 return entity_summary, sources
 
@@ -587,7 +726,7 @@ class ChatService:
         faqs = list((await self.db.exec(faq_statement)).all())[:5]
         faq_lines = []
         for faq in faqs:
-            faq_lines.append(f"Q: {faq.question} A: {_trim_text(faq.answer, 220)}")
+            faq_lines.append(_format_faq_snapshot(faq))
             sources.append(
                 {
                     "type": "faq",

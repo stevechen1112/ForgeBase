@@ -56,7 +56,10 @@ export default function BriefsListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">內容摘要 (Briefs)</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">內容摘要 (Briefs)</h1>
+          <p className="mt-1 text-sm text-muted-foreground">為 AI 寫作提供前置規劃，定義目標關鍵字、受眾與內容策略方向</p>
+        </div>
         <Button asChild><Link href="/dashboard/briefs/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增摘要</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/briefs" onDelete={handleDelete} isDeleting={deleting} />

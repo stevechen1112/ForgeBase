@@ -60,7 +60,10 @@ export default function FAQsListPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">FAQ 管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">FAQ 管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">維護常見問題庫，支援商品頁與場景頁內嵌顯示，並產生 SEO 結構化標記</p>
+        </div>
         <Button asChild><Link href="/dashboard/faqs/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增 FAQ</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/faqs" onDelete={handleDelete} isDeleting={deleting} />

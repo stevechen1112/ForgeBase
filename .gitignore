@@ -23,6 +23,7 @@ node_modules/
 .nuxt/
 out/
 dist/
+*.tsbuildinfo
 
 # OS
 .DS_Store

@@ -68,7 +68,7 @@ export default function CategoriesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">商品分類</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理所有產品分類</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理商品分類樹狀結構，分類直接影響前台導覽選單與商品 URL 路徑</p>
         </div>
         <Button asChild><Link href="/dashboard/categories/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增分類</Link></Button>
       </div>
