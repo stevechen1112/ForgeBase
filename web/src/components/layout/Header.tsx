@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, Phone, FileText } from "lucide-react";
+import { useLocale } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
+import { Menu, Phone, FileText, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +19,7 @@ const NAV_LINKS = [
 
 export function Header() {
   const pathname = usePathname();
+  const locale = useLocale();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scrolled, setScrolled]   = useState(false);
 
@@ -85,6 +86,13 @@ export function Header() {
 
         {/* ─── Desktop CTAs ─── */}
         <div className="hidden items-center gap-2 md:flex">
+          {/* Language switcher */}
+          <Button variant="ghost" size="sm" asChild className="gap-1 text-muted-foreground hover:text-foreground px-2">
+            <Link href={pathname} locale={locale === "en" ? "zh-TW" : "en"}>
+              <Globe className="h-3.5 w-3.5" />
+              {locale === "en" ? "繁中" : "EN"}
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground">
             <Link href="/rfq">
               <FileText className="h-3.5 w-3.5" />

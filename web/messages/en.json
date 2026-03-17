@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "products": "Products",
+    "applications": "Applications",
+    "certifications": "Certifications",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "cta": {
+    "getQuote": "Get a Quote",
+    "contactUs": "Contact Us",
+    "viewAll": "View All",
+    "download": "Download",
+    "learnMore": "Learn More",
+    "requestQuote": "Request a Quote",
+    "sendMessage": "Send Message",
+    "submitRFQ": "Submit RFQ"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "backToList": "← Back",
+    "soldBy": "Sold by",
+    "modelNumber": "Model No.",
+    "category": "Category",
+    "all": "All",
+    "search": "Search",
+    "searchPlaceholder": "Search products...",
+    "relatedProducts": "Related Products",
+    "relatedApplications": "Related Applications",
+    "specifications": "Specifications",
+    "downloads": "Downloads",
+    "faq": "FAQ",
+    "certifications": "Certifications",
+    "capabilities": "Capabilities",
+    "comparisons": "Comparisons",
+    "news": "News",
+    "careers": "Careers",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "cookiePolicy": "Cookie Policy"
+  },
+  "footer": {
+    "tagline": "OEM hand tool manufacturer based in Taiwan.",
+    "copyright": "All rights reserved."
+  }
+}
