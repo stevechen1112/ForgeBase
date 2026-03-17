@@ -15,6 +15,7 @@ import type {
 } from "@/types/content";
 
 const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const DEFAULT_CONTENT_LOCALE = "en";
 
 const warnedPaths = new Set<string>();
 let apiAvailabilityPromise: Promise<boolean> | null = null;
@@ -23,6 +24,28 @@ function logApiFallback(path: string, error: unknown) {
   if (warnedPaths.has(path)) return;
   warnedPaths.add(path);
   console.warn(`[api] Falling back for ${path}`, error);
+}
+
+function withLocale(path: string, locale: string): string {
+  const [pathname, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  params.set("locale", locale);
+  const nextQuery = params.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+}
+
+async function apiListFetchWithLocaleFallback<T>(
+  path: string,
+  locale: string,
+  fallback: ListResponse<T>,
+  options?: RequestInit
+): Promise<ListResponse<T>> {
+  const response = await apiFetch<ListResponse<T>>(path, fallback, options);
+  if (locale === DEFAULT_CONTENT_LOCALE || response.data.length > 0) {
+    return response;
+  }
+
+  return apiFetch<ListResponse<T>>(withLocale(path, DEFAULT_CONTENT_LOCALE), fallback, options);
 }
 
 async function isApiAvailable(): Promise<boolean> {
@@ -78,8 +101,9 @@ const emptyListResponse = <T>(data: T[] = []): ListResponse<T> => ({
 // ── Public content API ────────────────────────────────────────────────────────
 
 export async function getPublishedCategories(locale = "en"): Promise<ProductCategory[]> {
-  const res = await apiFetch<ListResponse<ProductCategory>>(
+  const res = await apiListFetchWithLocaleFallback<ProductCategory>(
     `/content/categories?status=published&locale=${locale}&page_size=100`,
+    locale,
     emptyListResponse<ProductCategory>()
   );
   return res.data;
@@ -108,12 +132,17 @@ export async function getProductsByCategory(
     page_size: String(pageSize),
   });
   if (q) params.set("q", q);
-  return apiFetch<ListResponse<Product>>(`/content/products?${params.toString()}`, emptyListResponse<Product>());
+  return apiListFetchWithLocaleFallback<Product>(
+    `/content/products?${params.toString()}`,
+    locale,
+    emptyListResponse<Product>()
+  );
 }
 
 export async function getProductBySlug(slug: string, locale = "en"): Promise<Product | null> {
-  const res = await apiFetch<ListResponse<Product>>(
+  const res = await apiListFetchWithLocaleFallback<Product>(
     `/content/products?slug=${slug}&locale=${locale}&page_size=1`,
+    locale,
     emptyListResponse<Product>()
   );
   return res.data[0] ?? null;
@@ -124,8 +153,9 @@ export async function getPublishedProducts(
   page = 1,
   pageSize = 24
 ): Promise<ListResponse<Product>> {
-  return apiFetch<ListResponse<Product>>(
+  return apiListFetchWithLocaleFallback<Product>(
     `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    locale,
     emptyListResponse<Product>()
   );
 }
@@ -136,16 +166,18 @@ export async function getAllPublishedProducts(
   page = 1,
   pageSize = 100
 ): Promise<ListResponse<Product>> {
-  return apiFetch<ListResponse<Product>>(
+  return apiListFetchWithLocaleFallback<Product>(
     `/content/products?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    locale,
     emptyListResponse<Product>()
   );
 }
 
 /** Fetch featured (is_featured=true) published products. */
 export async function getFeaturedProducts(locale = "en"): Promise<Product[]> {
-  const res = await apiFetch<ListResponse<Product>>(
+  const res = await apiListFetchWithLocaleFallback<Product>(
     `/content/products?status=published&featured=true&locale=${locale}&page_size=8`,
+    locale,
     emptyListResponse<Product>()
   );
   return res.data;
@@ -157,8 +189,9 @@ export async function getAllPublishedApplications(
   page = 1,
   pageSize = 100
 ): Promise<ListResponse<Application>> {
-  return apiFetch<ListResponse<Application>>(
+  return apiListFetchWithLocaleFallback<Application>(
     `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    locale,
     emptyListResponse<Application>()
   );
 }
@@ -168,47 +201,53 @@ export async function getPublishedApplications(
   page = 1,
   pageSize = 20
 ): Promise<ListResponse<Application>> {
-  return apiFetch<ListResponse<Application>>(
+  return apiListFetchWithLocaleFallback<Application>(
     `/content/applications?status=published&locale=${locale}&page=${page}&page_size=${pageSize}`,
+    locale,
     emptyListResponse<Application>()
   );
 }
 
 export async function getApplicationBySlug(slug: string, locale = "en"): Promise<Application | null> {
-  const res = await apiFetch<ListResponse<Application>>(
+  const res = await apiListFetchWithLocaleFallback<Application>(
     `/content/applications?slug=${slug}&locale=${locale}&page_size=1`,
+    locale,
     emptyListResponse<Application>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedCertifications(locale = "en"): Promise<Certification[]> {
-  const res = await apiFetch<ListResponse<Certification>>(
+  const res = await apiListFetchWithLocaleFallback<Certification>(
     `/content/certifications?status=published&locale=${locale}&page_size=50`,
+    locale,
     emptyListResponse<Certification>()
   );
   return res.data;
 }
 
 export async function getCertificationBySlug(slug: string, locale = "en"): Promise<Certification | null> {
-  const res = await apiFetch<ListResponse<Certification>>(
+  const res = await apiListFetchWithLocaleFallback<Certification>(
     `/content/certifications?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`,
+    locale,
     emptyListResponse<Certification>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedCapabilities(locale = "en"): Promise<Capability[]> {
-  const res = await apiFetch<ListResponse<Capability>>(
+  const res = await apiListFetchWithLocaleFallback<Capability>(
     `/content/capabilities?status=published&locale=${locale}&page_size=30`,
+    locale,
     emptyListResponse<Capability>()
   );
   return res.data;
 }
 
 export async function getCapabilityBySlug(slug: string, locale = "en"): Promise<Capability | null> {
-  const res = await apiFetch<ListResponse<Capability>>(
+  const res = await apiListFetchWithLocaleFallback<Capability>(
     `/content/capabilities?status=published&locale=${locale}&slug=${encodeURIComponent(slug)}&page_size=1`,
+    locale,
     emptyListResponse<Capability>()
   );
   return res.data[0] ?? null;
@@ -219,24 +258,27 @@ export async function getPublishedFAQs(
   categoryTag?: string
 ): Promise<FAQItem[]> {
   const tag = categoryTag ? `&category_tag=${categoryTag}` : "";
-  const res = await apiFetch<ListResponse<FAQItem>>(
+  const res = await apiListFetchWithLocaleFallback<FAQItem>(
     `/content/faqs?status=published&locale=${locale}&page_size=50${tag}`,
+    locale,
     emptyListResponse<FAQItem>()
   );
   return res.data;
 }
 
 export async function getCTAByKey(key: string, locale = "en"): Promise<CTA | null> {
-  const res = await apiFetch<ListResponse<CTA>>(
+  const res = await apiListFetchWithLocaleFallback<CTA>(
     `/content/ctas?cta_key=${key}&locale=${locale}&page_size=1`,
+    locale,
     emptyListResponse<CTA>()
   );
   return res.data[0] ?? null;
 }
 
 export async function getPublishedComparisons(locale = "en"): Promise<ComparisonTopic[]> {
-  const res = await apiFetch<ListResponse<ComparisonTopic>>(
+  const res = await apiListFetchWithLocaleFallback<ComparisonTopic>(
     `/content/comparisons?status=published&locale=${locale}&page_size=50`,
+    locale,
     emptyListResponse<ComparisonTopic>()
   );
   return res.data;
