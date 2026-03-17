@@ -9,6 +9,9 @@ export const routing = defineRouting({
 
   // 'as-needed': 預設語言不加前綴，其他語言加前綴
   localePrefix: "as-needed",
+
+  // 生產站首頁固定保留英文根路徑 `/`，避免依瀏覽器語言自動跳轉造成代理錯誤
+  localeDetection: false,
 });
 
 export type Locale = (typeof routing.locales)[number];
