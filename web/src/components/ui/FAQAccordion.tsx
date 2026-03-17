@@ -35,9 +35,11 @@ export function FAQAccordion({ items }: Props) {
             />
           </button>
           {openIndex === i && (
-            <div className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-              {item.answer}
-            </div>
+            <div
+              className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+              // answer is richtext HTML authored in the admin CMS (not user input)
+              dangerouslySetInnerHTML={{ __html: item.answer }}
+            />
           )}
         </div>
       ))}
