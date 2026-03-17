@@ -99,13 +99,39 @@ function specForFilename(filename: string): VisualSpec {
 
   if (baseName.startsWith("product-")) {
     const model = baseName.replace("product-", "").replace(/-main$/, "").toUpperCase();
+    // Assign palette by category prefix, using model code for deterministic variant
+    const code = model.replace("NFT-", "");
+    const prefix = code.replace(/[^A-Z]/g, "").slice(0, 2);
+    type Palette = { eyebrow: string; accent: string; secondary: string; panel: string };
+    const PALETTES: Record<string, Palette[]> = {
+      // Torque & Socket: steel blue
+      TW: [{ eyebrow: "Torque Wrench", accent: "#1d4ed8", secondary: "#0f172a", panel: "#dbeafe" }],
+      RH: [{ eyebrow: "Ratchet Handle", accent: "#2563eb", secondary: "#1e3a8a", panel: "#eff6ff" }],
+      SS: [{ eyebrow: "Socket Set", accent: "#0284c7", secondary: "#0c4a6e", panel: "#e0f2fe" }],
+      // Insulated Electrical: amber/VDE yellow
+      ID: [{ eyebrow: "Insulated Driver", accent: "#b45309", secondary: "#78350f", panel: "#fef3c7" }],
+      IP: [{ eyebrow: "Insulated Pliers", accent: "#d97706", secondary: "#92400e", panel: "#fffbeb" }],
+      EK: [{ eyebrow: "Electrical Kit", accent: "#ca8a04", secondary: "#713f12", panel: "#fefce8" }],
+      // Striking & Workshop: red/crimson
+      DH: [{ eyebrow: "Dead Blow Hammer", accent: "#dc2626", secondary: "#7f1d1d", panel: "#fee2e2" }],
+      SM: [{ eyebrow: "Soft-Face Mallet", accent: "#b91c1c", secondary: "#450a0a", panel: "#fecaca" }],
+      EH: [{ eyebrow: "Engineer's Hammer", accent: "#e11d48", secondary: "#881337", panel: "#ffe4e6" }],
+      PB: [{ eyebrow: "Pry Bar Set", accent: "#be123c", secondary: "#4c0519", panel: "#fce7f3" }],
+      CS: [{ eyebrow: "Chisel & Punch", accent: "#9f1239", secondary: "#500724", panel: "#fdf2f8" }],
+      // Automotive: teal/green
+      AM: [{ eyebrow: "Automotive Tool", accent: "#0f766e", secondary: "#134e4a", panel: "#ccfbf1" }],
+      // Toolkits & Storage: purple/indigo
+      KT: [{ eyebrow: "Toolkit", accent: "#7c3aed", secondary: "#3b0764", panel: "#ede9fe" }],
+    };
+    const paletteEntry = PALETTES[prefix] ?? [{ eyebrow: "Product Visual", accent: "#ea580c", secondary: "#7c2d12", panel: "#ffedd5" }];
+    const pal = paletteEntry[0];
     return {
-      eyebrow: "Product Visual",
+      eyebrow: pal.eyebrow,
       title: model,
       subtitle: "Demo rendering for product-card, detail-page, and related-program presentation.",
-      accent: "#ea580c",
-      secondary: "#7c2d12",
-      panel: "#ffedd5",
+      accent: pal.accent,
+      secondary: pal.secondary,
+      panel: pal.panel,
     };
   }
 

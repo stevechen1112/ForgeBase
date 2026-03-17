@@ -1,6 +1,6 @@
 {
   "profile": "northforge-demo",
-  "description": "Full demo image batch for NorthForge Tools — covers homepage, about, all categories, all applications, and key product images.",
+  "description": "Full demo image batch for NorthForge Tools \u2014 covers homepage, about, all categories, all applications, and key product images.",
   "jobs": [
     {
       "id": "homepage-hero",
@@ -91,7 +91,7 @@
       "filename": "application-field-service-mobile.png",
       "aspect_ratio": "16:9",
       "image_size": "1K",
-      "prompt": "Create a realistic hero image for field service and mobile maintenance work. Show a portable tool kit laid open — a blow-molded case or professional field bag containing organized hand tools: insulated screwdrivers, combination pliers, socket sets, a torque wrench, and measuring instruments. The environment suggests on-site service work: a maintenance vehicle, industrial facility exterior, or utility setting. Clean and professional, not rugged-for-drama. Practical tool selection visible, organized layout, durable case construction evident."
+      "prompt": "Create a realistic hero image for field service and mobile maintenance work. Show a portable tool kit laid open \u2014 a blow-molded case or professional field bag containing organized hand tools: insulated screwdrivers, combination pliers, socket sets, a torque wrench, and measuring instruments. The environment suggests on-site service work: a maintenance vehicle, industrial facility exterior, or utility setting. Clean and professional, not rugged-for-drama. Practical tool selection visible, organized layout, durable case construction evident."
     },
     {
       "id": "product-nft-tw380",
@@ -140,7 +140,7 @@
       "filename": "product-nft-ambc7-main.png",
       "aspect_ratio": "4:3",
       "image_size": "1K",
-      "prompt": "Create a realistic product image for a Brake Caliper Service Kit model NFT-AMBC7. Show the kit contents arranged neatly — brake caliper wind-back tools, pistons compressor, adapters — either in a blow-molded case or laid out on a neutral surface. Professional automotive service tool presentation for a B2B manufacturer website. Clean composition, metal finish detail visible, no consumer packaging styling."
+      "prompt": "Create a realistic product image for a Brake Caliper Service Kit model NFT-AMBC7. Show the kit contents arranged neatly \u2014 brake caliper wind-back tools, pistons compressor, adapters \u2014 either in a blow-molded case or laid out on a neutral surface. Professional automotive service tool presentation for a B2B manufacturer website. Clean composition, metal finish detail visible, no consumer packaging styling."
     },
     {
       "id": "product-nft-amsp5",
@@ -183,6 +183,153 @@
       "aspect_ratio": "16:9",
       "image_size": "1K",
       "prompt": "Create a realistic B2B image for a quality inspection and precision manufacturing section. Show a well-lit quality control station in a hand tool factory: measurement instruments, calibration tools, a torque wrench being verified on a torque tester, and inspection documentation visible on a clipboard or screen. The environment should feel systematic, precise, and export-compliance-oriented. Neutral industrial setting, no dramatization, clear technical credibility."
+    },
+    {
+      "id": "product-nft-tw250",
+      "filename": "product-nft-tw250-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 1/4 in Drive Micrometer Torque Wrench with model number NFT-TW250. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-twa120",
+      "filename": "product-nft-twa120-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Digital Torque Adapter with model number NFT-TWA120. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-rh372",
+      "filename": "product-nft-rh372-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 72-Tooth Reversible Ratchet Handle with model number NFT-RH372. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-rh390f",
+      "filename": "product-nft-rh390f-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Flex-Head Ratchet Handle with model number NFT-RH390F. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ss094",
+      "filename": "product-nft-ss094-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 94-Piece Metric Socket Tool Set with model number NFT-SS094. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ss137",
+      "filename": "product-nft-ss137-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 137-Piece Industrial Socket and Bit Set with model number NFT-SS137. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-id013",
+      "filename": "product-nft-id013-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 13-Piece Insulated Precision Driver Kit with model number NFT-ID013. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ip160n",
+      "filename": "product-nft-ip160n-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 160 mm Insulated Long Nose Pliers with model number NFT-IP160N. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ip165d",
+      "filename": "product-nft-ip165d-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 165 mm Insulated Diagonal Cutter with model number NFT-IP165D. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-dh060",
+      "filename": "product-nft-dh060-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 60 mm Heavy-Duty Dead Blow Hammer with model number NFT-DH060. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-sm40",
+      "filename": "product-nft-sm40-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 40 oz Soft-Face Mallet with model number NFT-SM40. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-eh24",
+      "filename": "product-nft-eh24-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 24 oz Engineer's Hammer with model number NFT-EH24. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-pb4s",
+      "filename": "product-nft-pb4s-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 4-Piece Pry Bar Set with model number NFT-PB4S. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-cs6p",
+      "filename": "product-nft-cs6p-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 6-Piece Cold Chisel and Punch Set with model number NFT-CS6P. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-am12f",
+      "filename": "product-nft-am12f-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Adjustable Oil Filter Wrench Set with model number NFT-AM12F. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ampu3",
+      "filename": "product-nft-ampu3-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 3-Jaw Puller Assortment with model number NFT-AMPU3. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-amhtm",
+      "filename": "product-nft-amhtm-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Hex and Torx Master Socket Kit with model number NFT-AMHTM. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-amtr8",
+      "filename": "product-nft-amtr8-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 8-Piece Trim Removal Tool Set with model number NFT-AMTR8. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ktec24",
+      "filename": "product-nft-ktec24-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Electrical Contractor Toolkit with model number NFT-KTEC24. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ktws128",
+      "filename": "product-nft-ktws128-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for 128-Piece Workshop Starter Tool Kit with model number NFT-KTWS128. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
+    },
+    {
+      "id": "product-nft-ktplr56",
+      "filename": "product-nft-ktplr56-main.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a realistic product image for Private-Label Retail Hand Tool Set with model number NFT-KTPLR56. Show the product isolated on a clean neutral industrial background, with sharp detail on grip texture, finish, mechanism, and professional build quality. This is for a B2B OEM hand tool manufacturer website, so the tone should be credible, technical, and export-oriented. Avoid flashy retail packaging unless explicitly requested."
     }
   ]
 }
