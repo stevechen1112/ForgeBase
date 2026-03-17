@@ -131,17 +131,19 @@ export default async function ApplicationDetailPage({ params }: Props) {
                   <h2 className="text-lg font-semibold text-orange-800 mb-3">
                     The Challenge
                   </h2>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {application.challenge}
-                  </p>
+                  <div
+                    className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4"
+                    dangerouslySetInnerHTML={{ __html: application.challenge }}
+                  />
                 </div>
               )}
               {application.solution && (
                 <div className="rounded-xl border border-green-100 bg-green-50 p-6">
                   <h2 className="text-lg font-semibold text-green-800 mb-3">Our Solution</h2>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {application.solution}
-                  </p>
+                  <div
+                    className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4"
+                    dangerouslySetInnerHTML={{ __html: application.solution }}
+                  />
                 </div>
               )}
             </div>

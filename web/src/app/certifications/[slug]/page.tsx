@@ -64,9 +64,10 @@ export default async function CertificationDetailPage({ params }: Props) {
                 Certifications and compliance records help importers, distributors, and private-label brands confirm whether a supplier can support target-market requirements, customer audits, and shipment paperwork.
               </p>
             </div>
-            <div className="prose prose-gray max-w-none text-gray-700 whitespace-pre-line">
-              {certification.description || "Certification details will be updated soon."}
-            </div>
+            <div
+              className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+              dangerouslySetInnerHTML={{ __html: certification.description || "Certification details will be updated soon." }}
+            />
             <dl className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">Certificate No.</dt><dd className="font-medium text-gray-700">{certification.cert_number || "—"}</dd></div>
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">Locale</dt><dd className="font-medium text-gray-700">{certification.locale}</dd></div>

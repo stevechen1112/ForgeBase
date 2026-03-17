@@ -56,9 +56,10 @@ export default async function CapabilityDetailPage({ params }: Props) {
                 This capability matters because it affects how consistently a buyer can move from approved sample to repeat production, shipment documentation, and downstream channel delivery.
               </p>
             </div>
-            <div className="prose prose-gray max-w-none text-gray-700 whitespace-pre-line">
-              {capability.detail || capability.short_description}
-            </div>
+            <div
+              className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+              dangerouslySetInnerHTML={{ __html: capability.detail || capability.short_description }}
+            />
           </div>
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Capability Snapshot</h2>
