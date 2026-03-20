@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -168,11 +169,12 @@ export default function ConversionsPage() {
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">優先度</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">指派給</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">建立時間</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-muted/30">
+                  <tr key={r.id} className={`hover:bg-muted/30 ${!r.assigned_to ? "bg-orange-50/40" : ""}`}>
                     <td className="px-4 py-2 font-mono font-medium">{r.rfq_number}</td>
                     <td className="px-4 py-2">
                       <Badge className={`text-xs ${STATUS_COLOR[r.status] ?? ""}`}>
@@ -186,6 +188,18 @@ export default function ConversionsPage() {
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{fmt(r.created_at)}</td>
+                    <td className="px-4 py-2 text-right">
+                      <Link
+                        href={`/backend/dashboard/rfqs/${r.id}`}
+                        className={`text-xs font-medium transition-colors ${
+                          !r.assigned_to
+                            ? "text-orange-600 hover:text-orange-800 underline underline-offset-2"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {!r.assigned_to ? "去指派 →" : "查看"}
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
