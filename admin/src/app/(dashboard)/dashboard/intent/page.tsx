@@ -27,12 +27,6 @@ type Contact = {
   created_at: string;
 };
 
-type FunnelStage = { stage: string; visitors: number };
-type FunnelData = {
-  funnel_stages: FunnelStage[];
-  totals: { visitors: number; rfqs: number };
-};
-
 // API returns lowercase stage names; map to display labels
 const STAGE_DISPLAY: Record<string, string> = {
   sales_ready: "Sales-Ready",
@@ -54,7 +48,6 @@ export default function IntentPage() {
   // topVisitors: top 10 by score (API already sorts DESC)
   const [topVisitors, setTopVisitors] = useState<Visitor[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,24 +56,20 @@ export default function IntentPage() {
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [vRes, cRes, fRes] = await Promise.all([
+      const [vRes, cRes] = await Promise.all([
         // Only need top 10 — API already sorts by score DESC
         fetch(`${API_BASE}/tracking/visitors?limit=10`, { headers }),
         fetch(`${API_BASE}/tracking/contacts?page_size=50`, { headers }),
-        // Use funnel API with large window to get accurate all-time stage distribution
-        fetch(`${API_BASE}/tracking/analytics/funnel?days=365`, { headers }),
       ]);
-      if (!vRes.ok || !cRes.ok || !fRes.ok) {
-        const errRes = !vRes.ok ? vRes : !cRes.ok ? cRes : fRes;
+      if (!vRes.ok || !cRes.ok) {
+        const errRes = !vRes.ok ? vRes : cRes;
         const errJson = await errRes.json().catch(() => ({}));
         throw new Error(errJson.error ?? `API error ${errRes.status}`);
       }
       const vData = await vRes.json();
       const cData = await cRes.json();
-      const fData = await fRes.json();
       setTopVisitors(Array.isArray(vData) ? vData : vData.items ?? []);
       setContacts(Array.isArray(cData) ? cData : cData.items ?? []);
-      setFunnel(fData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -90,18 +79,20 @@ export default function IntentPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Stage counts from funnel API (accurate, all visitors)
-  const stageCounts = Object.fromEntries(
-    (funnel?.funnel_stages ?? []).map((s) => [s.stage, s.visitors])
-  );
-  const totalVisitors = funnel?.totals?.visitors ?? 0;
+  // Per-visitor KPIs derived from top-10 list
+  const topScore = topVisitors[0]?.intent_score ?? 0;
+  const avgScore = topVisitors.length
+    ? Math.round(topVisitors.reduce((s, v) => s + (v.intent_score ?? 0), 0) / topVisitors.length)
+    : 0;
+  const salesReadyCount = topVisitors.filter((v) => v.intent_stage === "sales_ready").length;
+  const identifiedCount = contacts.length;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Intent 意圖分析</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">即時訪客意圖分數與買家 Stage 分佈</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">追蹤高意圖個別訪客，找出最值得跟進的潛在買家</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -114,20 +105,36 @@ export default function IntentPage() {
         </Alert>
       )}
 
-      {/* Stage Summary Cards */}
+      {/* Actionable KPI Cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {(["cold", "warm", "hot", "sales_ready"] as const).map(key => (
-          <Card key={key}>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{STAGE_DISPLAY[key]}</span>
-                <Badge className={STAGE_COLOR[key] ?? ""}>{stageCounts[key] ?? 0}</Badge>
-              </div>
-              <p className="mt-2 text-3xl font-bold">{stageCounts[key] ?? 0}</p>
-              <p className="text-xs text-muted-foreground">訪客</p>
-            </CardContent>
-          </Card>
-        ))}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">最高意圖分數</p>
+            <p className="mt-2 text-3xl font-bold">{topScore}</p>
+            <p className="text-xs text-muted-foreground">Top 1 訪客</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Top 10 平均分數</p>
+            <p className="mt-2 text-3xl font-bold">{avgScore}</p>
+            <p className="text-xs text-muted-foreground">高意圖訪客均值</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Sales-Ready（Top 10）</p>
+            <p className="mt-2 text-3xl font-bold">{salesReadyCount}</p>
+            <p className="text-xs text-muted-foreground">可立即跟進</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">已識別聯絡人</p>
+            <p className="mt-2 text-3xl font-bold">{identifiedCount}</p>
+            <p className="text-xs text-muted-foreground">留下資料的訪客</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -208,8 +215,8 @@ export default function IntentPage() {
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />總訪客：{totalVisitors}</span>
-        <span className="flex items-center gap-1"><Thermometer className="h-4 w-4" />已識別：{contacts.length}</span>
+        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />顯示 Top {topVisitors.length} 高意圖訪客</span>
+        <span className="flex items-center gap-1"><Thermometer className="h-4 w-4" />已識別聯絡人：{identifiedCount}</span>
       </div>
     </div>
   );
