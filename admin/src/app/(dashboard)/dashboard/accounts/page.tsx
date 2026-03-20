@@ -66,7 +66,7 @@ export default function AccountsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">帳戶識別</h1>
+          <h1 className="text-2xl font-bold tracking-tight">企業訪客識別</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">通過 IP 反查識別潛在公司帳戶，共 {total} 筆</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
