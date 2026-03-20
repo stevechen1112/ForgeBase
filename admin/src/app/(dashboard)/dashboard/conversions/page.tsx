@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, FileText, AlertCircle, UserCheck, UserX } from "lucide-react";
+import { RefreshCw, FileText, AlertCircle } from "lucide-react";
 import { API_BASE } from "@/lib/api/client";
 
 type RFQ = {
@@ -20,25 +20,14 @@ type RFQ = {
   created_at: string;
 };
 
-// priority: "urgent" | "high" | "normal"
-const PRIORITY_LABEL: Record<string, string> = {
-  urgent: "緊急",
-  high: "高",
-  normal: "一般",
-};
+const PRIORITY_LABEL: Record<string, string> = { urgent: "緊急", high: "高", normal: "一般" };
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: "bg-red-100 text-red-700",
   high: "bg-orange-100 text-orange-700",
   normal: "bg-gray-100 text-gray-600",
 };
-
-// status: "new" | "reviewed" | "quoted" | "closed" | "rejected"
 const STATUS_LABEL: Record<string, string> = {
-  new: "未報價",
-  reviewed: "審核中",
-  quoted: "已報價",
-  closed: "已結案",
-  rejected: "已拒絕",
+  new: "未報價", reviewed: "審核中", quoted: "已報價", closed: "已結案", rejected: "已拒絕",
 };
 const STATUS_COLOR: Record<string, string> = {
   new: "bg-orange-100 text-orange-700",
@@ -47,12 +36,13 @@ const STATUS_COLOR: Record<string, string> = {
   closed: "bg-gray-100 text-gray-600",
   rejected: "bg-red-100 text-red-700",
 };
-
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2 };
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
+
+type Tab = "pending" | "all";
 
 export default function ConversionsPage() {
   const { state } = useAuth();
@@ -60,6 +50,7 @@ export default function ConversionsPage() {
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("pending");
 
   const load = useCallback(() => {
     if (!token) return;
@@ -73,16 +64,16 @@ export default function ConversionsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const unquoted = rfqs.filter(r => r.status === "new" || r.status === "reviewed");
-  const quoted   = rfqs.filter(r => r.status === "quoted");
+  const unquoted   = rfqs.filter(r => r.status === "new" || r.status === "reviewed");
+  const quoted     = rfqs.filter(r => r.status === "quoted");
   const unassigned = rfqs.filter(r => !r.assigned_to);
-  const assigned   = rfqs.filter(r => !!r.assigned_to);
 
-  // Sorted table: urgent → high → normal, then newest first
-  const sortedRfqs = [...rfqs].sort((a, b) => {
+  const byPriorityDate = (a: RFQ, b: RFQ) => {
     const pd = (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
     return pd !== 0 ? pd : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  };
+
+  const rows = [...(tab === "pending" ? unquoted : rfqs)].sort(byPriorityDate);
 
   return (
     <div>
@@ -102,7 +93,6 @@ export default function ConversionsPage() {
         </Alert>
       )}
 
-      {/* Summary KPI Cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
           <CardContent className="pt-4 pb-4">
@@ -132,76 +122,43 @@ export default function ConversionsPage() {
         </Card>
       </div>
 
-      {/* Action Reminder Cards */}
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        {/* 未報價明細 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-              未報價詢價單
-              {unquoted.length > 0 && (
-                <Badge className="ml-auto bg-orange-100 text-orange-700">{unquoted.length} 待處理</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {unquoted.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">✓ 無待處理詢價單</p>
-            ) : (
-              <div className="space-y-2">
-                {unquoted
-                  .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9))
-                  .map(r => (
-                    <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                      <span className="font-mono font-medium">{r.rfq_number}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs ${PRIORITY_COLOR[r.priority] ?? ""}`}>
-                          {PRIORITY_LABEL[r.priority] ?? r.priority}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{fmt(r.created_at)}</span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 指派狀況 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <UserX className="h-4 w-4 text-red-500" />
-              指派狀況
-              {unassigned.length > 0 && (
-                <Badge className="ml-auto bg-red-100 text-red-700">{unassigned.length} 未指派</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-3 flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-              <span className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5 text-green-600" />已指派</span>
-              <span className="font-bold">{assigned.length}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-              <span className="flex items-center gap-1.5"><UserX className="h-3.5 w-3.5 text-red-500" />未指派</span>
-              <span className={`font-bold ${unassigned.length > 0 ? "text-red-600" : ""}`}>{unassigned.length}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* RFQ Table — sorted by priority then date */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-muted-foreground" />所有詢價紀錄
-          </CardTitle>
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4 text-muted-foreground" />詢價紀錄
+            </CardTitle>
+            <div className="flex overflow-hidden rounded-md border text-sm">
+              <button
+                onClick={() => setTab("pending")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
+                  tab === "pending" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <AlertCircle className="h-3.5 w-3.5" />
+                未報價
+                {unquoted.length > 0 && (
+                  <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-bold leading-none ${
+                    tab === "pending" ? "bg-white/20" : "bg-orange-100 text-orange-700"
+                  }`}>{unquoted.length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setTab("all")}
+                className={`px-3 py-1.5 transition-colors ${
+                  tab === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                全部{rfqs.length > 0 && <span className="ml-1 text-xs opacity-70">{rfqs.length}</span>}
+              </button>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {sortedRfqs.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">尚無 RFQ 資料</p>
+        <CardContent className="p-0 pt-2">
+          {rows.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {tab === "pending" ? "✓ 目前無待處理詢價單" : "尚無 RFQ 資料"}
+            </p>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -214,7 +171,7 @@ export default function ConversionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {sortedRfqs.map(r => (
+                {rows.map(r => (
                   <tr key={r.id} className="hover:bg-muted/30">
                     <td className="px-4 py-2 font-mono font-medium">{r.rfq_number}</td>
                     <td className="px-4 py-2">
