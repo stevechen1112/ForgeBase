@@ -27,6 +27,12 @@ type Contact = {
   created_at: string;
 };
 
+type FunnelStage = { stage: string; visitors: number };
+type FunnelData = {
+  funnel_stages: FunnelStage[];
+  totals: { visitors: number; rfqs: number };
+};
+
 // API returns lowercase stage names; map to display labels
 const STAGE_DISPLAY: Record<string, string> = {
   sales_ready: "Sales-Ready",
@@ -42,19 +48,13 @@ const STAGE_COLOR: Record<string, string> = {
   cold: "bg-gray-100 text-gray-600",
 };
 
-// Map display labels (title-case) back to API keys
-const DISPLAY_TO_KEY: Record<string, string> = {
-  "Sales-Ready": "sales_ready",
-  Hot: "hot",
-  Warm: "warm",
-  Cold: "cold",
-};
-
 export default function IntentPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  // topVisitors: top 10 by score (API already sorts DESC)
+  const [topVisitors, setTopVisitors] = useState<Visitor[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,14 +62,19 @@ export default function IntentPage() {
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [vRes, cRes] = await Promise.all([
-        fetch(`${API_BASE}/tracking/visitors?page_size=50`, { headers }),
+      const [vRes, cRes, fRes] = await Promise.all([
+        // Only need top 10 — API already sorts by score DESC
+        fetch(`${API_BASE}/tracking/visitors?limit=10`, { headers }),
         fetch(`${API_BASE}/tracking/contacts?page_size=50`, { headers }),
+        // Use funnel API with large window to get accurate all-time stage distribution
+        fetch(`${API_BASE}/tracking/analytics/funnel?days=365`, { headers }),
       ]);
       const vData = await vRes.json();
       const cData = await cRes.json();
-      setVisitors(Array.isArray(vData) ? vData : vData.items ?? []);
+      const fData = await fRes.json();
+      setTopVisitors(Array.isArray(vData) ? vData : vData.items ?? []);
       setContacts(Array.isArray(cData) ? cData : cData.items ?? []);
+      setFunnel(fData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,13 +84,11 @@ export default function IntentPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const stageCounts = visitors.reduce<Record<string, number>>((acc, v) => {
-    const s = v.intent_stage ?? "cold"; // API returns lowercase
-    acc[s] = (acc[s] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  const topVisitors = [...visitors].sort((a, b) => (b.intent_score ?? 0) - (a.intent_score ?? 0)).slice(0, 10);
+  // Stage counts from funnel API (accurate, all visitors)
+  const stageCounts = Object.fromEntries(
+    (funnel?.funnel_stages ?? []).map((s) => [s.stage, s.visitors])
+  );
+  const totalVisitors = funnel?.totals.visitors ?? 0;
 
   return (
     <div>
@@ -107,21 +110,18 @@ export default function IntentPage() {
 
       {/* Stage Summary Cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {["Cold", "Warm", "Hot", "Sales-Ready"].map(s => {
-          const key = DISPLAY_TO_KEY[s];
-          return (
-          <Card key={s}>
+        {(["cold", "warm", "hot", "sales_ready"] as const).map(key => (
+          <Card key={key}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{s}</span>
+                <span className="text-sm text-muted-foreground">{STAGE_DISPLAY[key]}</span>
                 <Badge className={STAGE_COLOR[key] ?? ""}>{stageCounts[key] ?? 0}</Badge>
               </div>
               <p className="mt-2 text-3xl font-bold">{stageCounts[key] ?? 0}</p>
               <p className="text-xs text-muted-foreground">訪客</p>
             </CardContent>
           </Card>
-          );
-        })}
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -139,7 +139,7 @@ export default function IntentPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">UUID</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客 ID</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">Stage</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">分數</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">瀏覽頁數</th>
@@ -202,7 +202,7 @@ export default function IntentPage() {
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />總訪客：{visitors.length}</span>
+        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />總訪客：{totalVisitors}</span>
         <span className="flex items-center gap-1"><Thermometer className="h-4 w-4" />已識別：{contacts.length}</span>
       </div>
     </div>
