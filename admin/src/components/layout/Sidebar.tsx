@@ -41,7 +41,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "轉換分析", href: "/dashboard/conversions", icon: TrendingUp },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
-      { label: "策略地圖成效", href: "/dashboard/analytics/strategy", icon: Map },
       { label: "受眾 Segments", href: "/dashboard/segments", icon: Target },
       { label: "帳戶識別", href: "/dashboard/accounts", icon: Building2 },
     ],
