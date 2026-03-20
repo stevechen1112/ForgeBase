@@ -64,6 +64,7 @@ export default function FunnelDashboard() {
   }, [token, days]);
 
   const maxVisitors = data ? Math.max(...data.funnel_stages.map((s) => s.visitors), 1) : 1;
+  const total_visitors = data ? data.totals.visitors : 0;
 
   return (
     <div className="space-y-6">
@@ -124,26 +125,32 @@ export default function FunnelDashboard() {
             </Card>
           </div>
 
-          {/* Funnel stages bar chart */}
+          {/* Intent stage distribution */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">意圖階段分佈</CardTitle>
+              <CardTitle className="text-base">訪客意圖分佈</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                目前各意圖階段的訪客人數快照，反映訪客累積行為得分（非線性漏斗）
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.funnel_stages.map((s) => (
-                <div key={s.stage} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>{STAGE_LABELS[s.stage] || s.stage}</span>
-                    <span className="font-medium">{s.visitors}</span>
+              {data.funnel_stages.map((s) => {
+                const pct = total_visitors > 0 ? Math.round(s.visitors / total_visitors * 100) : 0;
+                return (
+                  <div key={s.stage} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>{STAGE_LABELS[s.stage] || s.stage}</span>
+                      <span className="font-medium">{s.visitors} <span className="text-xs text-muted-foreground">({pct}%)</span></span>
+                    </div>
+                    <div className="h-6 w-full rounded bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded ${STAGE_COLORS[s.stage] || "bg-gray-500"} transition-all`}
+                        style={{ width: `${(s.visitors / maxVisitors) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-6 w-full rounded bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded ${STAGE_COLORS[s.stage] || "bg-gray-500"} transition-all`}
-                      style={{ width: `${(s.visitors / maxVisitors) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 
