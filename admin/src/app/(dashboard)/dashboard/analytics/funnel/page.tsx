@@ -70,7 +70,7 @@ export default function FunnelDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">行銷漏斗分析</h1>
+          <h1 className="text-2xl font-bold">行銷漏斗</h1>
           <p className="mt-1 text-sm text-muted-foreground">可視化訪客從到訪、互動到 RFQ 詢價的完整轉換漏斗</p>
         </div>
         <select

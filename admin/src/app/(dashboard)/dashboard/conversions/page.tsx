@@ -94,7 +94,7 @@ export default function ConversionsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">詢價單管理</h1>
+          <h1 className="text-2xl font-bold tracking-tight">詢價單追蹤</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">待處理詢價提醒與報價狀態追蹤</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
