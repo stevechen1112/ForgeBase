@@ -59,6 +59,7 @@ export default function IntentPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!token) return; // Wait until authenticated
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -69,6 +70,11 @@ export default function IntentPage() {
         // Use funnel API with large window to get accurate all-time stage distribution
         fetch(`${API_BASE}/tracking/analytics/funnel?days=365`, { headers }),
       ]);
+      if (!vRes.ok || !cRes.ok || !fRes.ok) {
+        const errRes = !vRes.ok ? vRes : !cRes.ok ? cRes : fRes;
+        const errJson = await errRes.json().catch(() => ({}));
+        throw new Error(errJson.error ?? `API error ${errRes.status}`);
+      }
       const vData = await vRes.json();
       const cData = await cRes.json();
       const fData = await fRes.json();
@@ -88,7 +94,7 @@ export default function IntentPage() {
   const stageCounts = Object.fromEntries(
     (funnel?.funnel_stages ?? []).map((s) => [s.stage, s.visitors])
   );
-  const totalVisitors = funnel?.totals.visitors ?? 0;
+  const totalVisitors = funnel?.totals?.visitors ?? 0;
 
   return (
     <div>
@@ -133,7 +139,7 @@ export default function IntentPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {visitors.length === 0 ? (
+            {topVisitors.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">尚無訪客資料</p>
             ) : (
               <table className="w-full text-sm">

@@ -57,14 +57,14 @@ export default function FunnelDashboard() {
     fetch(`${API_BASE}/tracking/analytics/funnel?days=${days}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`API ${r.status}`))))
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token, days]);
 
-  const maxVisitors = data ? Math.max(...data.funnel_stages.map((s) => s.visitors), 1) : 1;
-  const total_visitors = data ? data.totals.visitors : 0;
+  const maxVisitors = data ? Math.max(...(data.funnel_stages ?? []).map((s) => s.visitors), 1) : 1;
+  const total_visitors = data ? data.totals?.visitors ?? 0 : 0;
 
   return (
     <div className="space-y-6">
