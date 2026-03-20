@@ -43,6 +43,20 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+function daysAgo(d: string) {
+  return Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
+}
+
+function WaitBadge({ createdAt }: { createdAt: string }) {
+  const days = daysAgo(createdAt);
+  const label = days === 0 ? "今天" : `${days} 天`;
+  const cls =
+    days >= 4 ? "bg-red-100 text-red-700" :
+    days >= 2 ? "bg-yellow-100 text-yellow-700" :
+    "bg-gray-100 text-gray-500";
+  return <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;
+}
+
 type Tab = "pending" | "all";
 
 export default function ConversionsPage() {
@@ -168,7 +182,8 @@ export default function ConversionsPage() {
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">狀態</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">優先度</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">指派給</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">建立時間</th>
+                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">提交時間</th>
+                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">等待</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -188,6 +203,7 @@ export default function ConversionsPage() {
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{fmt(r.created_at)}</td>
+                    <td className="px-4 py-2"><WaitBadge createdAt={r.created_at} /></td>
                     <td className="px-4 py-2 text-right">
                       <Link
                         href={`/dashboard/rfqs/${r.id}`}
