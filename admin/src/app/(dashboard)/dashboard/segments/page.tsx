@@ -47,8 +47,8 @@ export default function SegmentsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">受眾 Segments</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">動態受眾分群，依行為規則自動歸類潛在客戶</p>
+          <h1 className="text-2xl font-bold tracking-tight">自訂受眾</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依行為條件定義目標族群，用於 Nurture 引擎與廣告投放</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
