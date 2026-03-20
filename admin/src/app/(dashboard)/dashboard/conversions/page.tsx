@@ -190,7 +190,7 @@ export default function ConversionsPage() {
                     <td className="px-4 py-2 text-muted-foreground">{fmt(r.created_at)}</td>
                     <td className="px-4 py-2 text-right">
                       <Link
-                        href={`/backend/dashboard/rfqs/${r.id}`}
+                        href={`/dashboard/rfqs/${r.id}`}
                         className={`text-xs font-medium transition-colors ${
                           !r.assigned_to
                             ? "text-orange-600 hover:text-orange-800 underline underline-offset-2"
