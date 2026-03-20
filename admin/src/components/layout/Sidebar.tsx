@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Brain, TrendingUp, FileText, BarChart2, Target, Building2,
+  LayoutDashboard, Brain, FileText, BarChart2, Target, Building2,
   Mail, Linkedin, Search, Sparkles, Bot, RefreshCcw, AtSign, FlaskConical,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench, Globe,
   MousePointerClick, PenLine, Image, Lock, Link2, Map, File, ClipboardList,
@@ -38,7 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "行銷分析",
     items: [
       { label: "Intent 分析", href: "/dashboard/intent", icon: Brain },
-      { label: "轉換分析", href: "/dashboard/conversions", icon: TrendingUp },
+      { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
       { label: "受眾 Segments", href: "/dashboard/segments", icon: Target },
