@@ -37,7 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "行銷分析",
     items: [
-      { label: "Intent 分析", href: "/dashboard/intent", icon: Brain },
+      { label: "意圖分析", href: "/dashboard/intent", icon: Brain },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },

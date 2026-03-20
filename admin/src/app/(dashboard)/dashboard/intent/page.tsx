@@ -91,7 +91,7 @@ export default function IntentPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Intent 意圖分析</h1>
+          <h1 className="text-2xl font-bold tracking-tight">意圖分析</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">追蹤高意圖個別訪客，找出最值得跟進的潛在買家</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
