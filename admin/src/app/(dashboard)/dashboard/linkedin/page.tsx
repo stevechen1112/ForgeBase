@@ -60,6 +60,7 @@ export default function LinkedInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [liConfigured, setLiConfigured] = useState<boolean | null>(null);
 
   // Create dialog state
   const [open, setOpen] = useState(false);
@@ -88,7 +89,14 @@ export default function LinkedInPage() {
       .catch(() => {});
   }, [token]);
 
-  useEffect(() => { load(); loadSegments(); }, [load, loadSegments]);
+  const checkLinkedInConfig = useCallback(() => {
+    fetch(`${API_BASE}/esp/status`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setLiConfigured(d.linkedin_configured ?? false))
+      .catch(() => setLiConfigured(false));
+  }, [token]);
+
+  useEffect(() => { load(); loadSegments(); checkLinkedInConfig(); }, [load, loadSegments, checkLinkedInConfig]);
 
   const handleSync = async (id: string) => {
     setSyncing(id);
@@ -153,6 +161,20 @@ export default function LinkedInPage() {
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {liConfigured === false && (
+        <Alert className="mb-4 border-yellow-300 bg-yellow-50 text-yellow-900">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="ml-2">
+            <span className="font-semibold">LinkedIn 尚未串接。</span>{" "}
+            同步功能需要在伺服器設定兩個環境變數：
+            <code className="mx-1 rounded bg-yellow-100 px-1 text-xs">LINKEDIN_ACCESS_TOKEN</code>
+            與
+            <code className="mx-1 rounded bg-yellow-100 px-1 text-xs">LINKEDIN_AD_ACCOUNT_ID</code>。
+            設定完成後此提示會自動消失。
+          </AlertDescription>
         </Alert>
       )}
 

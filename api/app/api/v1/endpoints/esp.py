@@ -64,6 +64,7 @@ async def get_esp_status(_admin=Depends(get_current_admin)):
         "resend_configured": bool(settings.RESEND_API_KEY),
         "sendgrid_configured": bool(settings.SENDGRID_API_KEY),
         "mailchimp_configured": bool(settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_AUDIENCE_ID),
+        "linkedin_configured": bool(settings.LINKEDIN_ACCESS_TOKEN and settings.LINKEDIN_AD_ACCOUNT_ID),
     }
 
 
