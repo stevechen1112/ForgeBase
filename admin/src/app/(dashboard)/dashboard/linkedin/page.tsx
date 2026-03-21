@@ -49,7 +49,7 @@ export default function LinkedInPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">LinkedIn Audience</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">將高意圖受眾分群同步至 LinkedIn，用於投放精準広告</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">將高意圖受眾分群同步至 LinkedIn，用於投放精準廣告</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>

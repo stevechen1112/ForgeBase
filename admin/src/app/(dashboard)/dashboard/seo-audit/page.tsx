@@ -11,6 +11,17 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const STATUS_LABEL: Record<string, string> = {
+  healthy: "健康",
+  "needs-work": "需優化",
+  critical: "嚴重問題",
+};
+const CONFIDENCE_LABEL: Record<string, string> = {
+  high: "高",
+  medium: "中",
+  low: "低",
+};
+
 export default function SEOAuditPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -113,7 +124,7 @@ export default function SEOAuditPage() {
                         <TableCell>{entity.entity_type}</TableCell>
                         <TableCell>
                           <div className="font-medium">{entity.score}</div>
-                          <Badge variant={entity.status === "healthy" ? "default" : entity.status === "needs-work" ? "secondary" : "destructive"}>{entity.status}</Badge>
+                          <Badge variant={entity.status === "healthy" ? "default" : entity.status === "needs-work" ? "secondary" : "destructive"}>{STATUS_LABEL[entity.status] ?? entity.status}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{entity.top_issue}</TableCell>
                       </TableRow>
@@ -150,7 +161,7 @@ export default function SEOAuditPage() {
                         <div className="text-xs text-muted-foreground">{item.target_type}</div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{item.reason}</TableCell>
-                      <TableCell><Badge variant="outline">{item.confidence}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{CONFIDENCE_LABEL[item.confidence] ?? item.confidence}</Badge></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

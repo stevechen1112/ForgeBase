@@ -45,7 +45,7 @@ export default function EspPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">ESP 郵件設定</h1>
+          <h1 className="text-2xl font-bold tracking-tight">ESP 設定</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">電子郵件服務商配置與發送狀態監控</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>

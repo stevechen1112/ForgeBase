@@ -58,12 +58,19 @@ export default function ABTestsPage() {
     return acc;
   }, {});
 
+  const STATUS_LABEL: Record<string, string> = {
+    running: "進行中",
+    paused: "已暫停",
+    ended: "已結束",
+    draft: "草稿",
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">A/B 測試</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">測試頁面標題、CTA 文字、布局變形對轉換率的影響</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">測試頁面標題、CTA 文字、版面配置對轉換率的影響</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -86,7 +93,7 @@ export default function ABTestsPage() {
           {["running", "paused", "ended", "draft"].map(s => (
             <Card key={s}>
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-muted-foreground capitalize">{s}</p>
+                <p className="text-sm text-muted-foreground">{STATUS_LABEL[s] ?? s}</p>
                 <p className="mt-1 text-3xl font-bold">{statusCounts[s] ?? 0}</p>
               </CardContent>
             </Card>
