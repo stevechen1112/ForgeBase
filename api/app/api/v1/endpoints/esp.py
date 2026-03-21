@@ -66,6 +66,8 @@ async def get_esp_status(_admin=Depends(get_current_admin)):
         "sendgrid_configured": bool(settings.SENDGRID_API_KEY),
         "mailchimp_configured": bool(settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_AUDIENCE_ID),
         "linkedin_configured": await li_configured(),
+        "from_email": settings.EMAIL_FROM,
+        "from_name": settings.EMAIL_FROM_NAME,
     }
 
 
