@@ -213,9 +213,13 @@ export default function SequenceDetailPage() {
             <CardTitle className="text-base">郵件步驟 ({steps.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {steps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">尚未建立步驟</p>
-            ) : (
+            {steps.length === 0 && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+                <p className="font-medium">序列已建立！下一步：新增第一封信 👇</p>
+                <p className="mt-0.5 text-blue-700/80">填寫下方表單，設定主旨與內容。符合觸發條件的訪客進入序列後，系統會依步驟順序自動寄出郵件。</p>
+              </div>
+            )}
+            {steps.length > 0 && (
               <div className="space-y-3">
                 {steps.sort((a, b) => a.step_order - b.step_order).map((step, idx) => (
                   <div key={step.id} className="flex items-start gap-3 rounded-lg border p-3">
@@ -249,14 +253,15 @@ export default function SequenceDetailPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">內容 (HTML)</Label>
+                <Label className="text-xs">信件內文</Label>
                 <textarea
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none font-mono"
-                  rows={3}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  rows={5}
                   value={newStepBody}
                   onChange={(e) => setNewStepBody(e.target.value)}
-                  placeholder="<p>您好 {{contact_name}}…</p>"
+                  placeholder={`您好 {{contact_name}}，\n\n感謝您關注我們的產品系列，附上規格手冊供您參考。\n\n如有任何問題，歡迎隨時聯繫。\n\n{{sender_name}}`}
                 />
+                <p className="text-xs text-muted-foreground">可用變數：{'{{contact_name}}'} 聯絡人姓名、{'{{sender_name}}'} 發件人名稱。支援 HTML 格式。</p>
               </div>
               <Button size="sm" disabled={addingStep || !newStepSubject.trim()} onClick={addStep}>
                 {addingStep && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
