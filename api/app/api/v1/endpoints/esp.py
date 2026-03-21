@@ -59,12 +59,13 @@ class SyncContactsResult(BaseModel):
 @router.get("/status")
 async def get_esp_status(_admin=Depends(get_current_admin)):
     """Return which ESPs are configured and the active transactional provider."""
+    from app.services.linkedin_service import is_configured as li_configured
     return {
         "active_provider": settings.ESP_PROVIDER,
         "resend_configured": bool(settings.RESEND_API_KEY),
         "sendgrid_configured": bool(settings.SENDGRID_API_KEY),
         "mailchimp_configured": bool(settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_AUDIENCE_ID),
-        "linkedin_configured": bool(settings.LINKEDIN_ACCESS_TOKEN and settings.LINKEDIN_AD_ACCOUNT_ID),
+        "linkedin_configured": await li_configured(),
     }
 
 

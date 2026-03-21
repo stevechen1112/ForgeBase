@@ -169,11 +169,11 @@ export default function LinkedInPage() {
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="ml-2">
             <span className="font-semibold">LinkedIn 尚未串接。</span>{" "}
-            同步功能需要在伺服器設定兩個環境變數：
-            <code className="mx-1 rounded bg-yellow-100 px-1 text-xs">LINKEDIN_ACCESS_TOKEN</code>
-            與
-            <code className="mx-1 rounded bg-yellow-100 px-1 text-xs">LINKEDIN_AD_ACCOUNT_ID</code>。
-            設定完成後此提示會自動消失。
+            請前往{" "}
+            <a href="/backend/dashboard/integrations" className="underline font-medium hover:text-yellow-800">
+              整合設定
+            </a>{" "}
+            輸入 LinkedIn Access Token 與 Ad Account ID。
           </AlertDescription>
         </Alert>
       )}

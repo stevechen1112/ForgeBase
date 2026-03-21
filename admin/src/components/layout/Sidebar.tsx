@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "A/B 測試", href: "/dashboard/ab-tests", icon: FlaskConical },
       { label: "CRM 整合", href: "/dashboard/crm", icon: RefreshCcw },
       { label: "ESP 設定", href: "/dashboard/esp", icon: AtSign },
+      { label: "整合設定", href: "/dashboard/integrations", icon: Plug },
     ],
   },
   {

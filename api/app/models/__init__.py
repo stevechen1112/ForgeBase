@@ -33,6 +33,7 @@ from app.models.linkedin_audience import LinkedInAudience
 from app.models.crm_sync_log import CrmSyncLog
 from app.models.ab_test import ABTest, ABTestView
 from app.models.chat import ChatSession, ChatMessage
+from app.models.integration_credential import IntegrationCredential
 
 __all__ = [
     "ProductApplicationLink",

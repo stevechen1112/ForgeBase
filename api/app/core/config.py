@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     MAILCHIMP_API_KEY: str = ""              # Format: "<key>-<dc>" e.g. "abc123-us1"
     MAILCHIMP_AUDIENCE_ID: str = ""          # Mailchimp Audience / List ID
 
+    # Encryption — used for storing integration credentials in DB
+    # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    ENCRYPTION_MASTER_KEY: str = ""
+
     # App
     APP_ENV: str = "development"
     APP_URL: str = "http://localhost:8000"

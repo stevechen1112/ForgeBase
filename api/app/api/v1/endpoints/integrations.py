@@ -1,14 +1,28 @@
 """
-Integration Status API — 1b.5.6
+Integration Credentials API
 
-GET /api/v1/admin/integrations/status  — returns config status of all integrations
-                                          (reads env vars, no writes)
+GET    /api/v1/admin/integrations/status            — env-var status of all integrations
+GET    /api/v1/admin/integrations/{service}         — list credential keys stored in DB for a service
+PUT    /api/v1/admin/integrations/{service}/{key}   — create or update an encrypted credential
+DELETE /api/v1/admin/integrations/{service}/{key}   — remove a credential from DB
+
+Credentials are AES-encrypted (Fernet) before being stored in integration_credentials table.
+Values are NEVER returned in plaintext — GET endpoints return only key names + masked preview.
 """
-import os
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+import os
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import require_content_editor
+from app.core.encryption import decrypt, encrypt
+from app.db.session import get_session
+from app.models.integration_credential import IntegrationCredential
 from app.models.user import User
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -77,3 +91,105 @@ async def get_integrations_status(
             "host":       os.getenv("SMTP_HOST") or None,
         },
     }
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+async def _get_credential(db: AsyncSession, service: str, key: str,
+                          tenant_id: Optional[str] = None) -> Optional[IntegrationCredential]:
+    stmt = select(IntegrationCredential).where(
+        IntegrationCredential.service == service,
+        IntegrationCredential.credential_key == key,
+        IntegrationCredential.tenant_id == tenant_id,
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+def _masked(value: str, keep: int = 6) -> str:
+    return value[:keep] + "••••••" if len(value) > keep else "••••••"
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
+
+class CredentialUpsert(BaseModel):
+    value: str
+    tenant_id: Optional[str] = None  # None = global / single-tenant
+
+
+# ── Credential CRUD ───────────────────────────────────────────────────────────
+
+@router.get("/integrations/{service}")
+async def list_service_credentials(
+    service: str,
+    tenant_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    """
+    Return which credential keys are configured for a service.
+    Values are masked — never returned in plaintext.
+    """
+    stmt = select(IntegrationCredential).where(
+        IntegrationCredential.service == service,
+        IntegrationCredential.tenant_id == tenant_id,
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    return [
+        {
+            "key": row.credential_key,
+            "configured": True,
+            "preview": _masked(decrypt(row.encrypted_value)),
+            "updated_at": row.updated_at,
+        }
+        for row in rows
+    ]
+
+
+@router.put("/integrations/{service}/{key}", status_code=status.HTTP_200_OK)
+async def upsert_credential(
+    service: str,
+    key: str,
+    body: CredentialUpsert,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    """Create or update an encrypted credential."""
+    if not body.value.strip():
+        raise HTTPException(status_code=422, detail="value must not be empty")
+
+    encrypted = encrypt(body.value.strip())
+    row = await _get_credential(db, service, key, body.tenant_id)
+
+    from app.core.datetime import utcnow_naive
+    if row:
+        row.encrypted_value = encrypted
+        row.updated_at = utcnow_naive()
+    else:
+        row = IntegrationCredential(
+            service=service,
+            credential_key=key,
+            encrypted_value=encrypted,
+            tenant_id=body.tenant_id,
+        )
+
+    db.add(row)
+    await db.commit()
+    return {"service": service, "key": key, "configured": True}
+
+
+@router.delete("/integrations/{service}/{key}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_credential(
+    service: str,
+    key: str,
+    tenant_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    """Remove a credential from the DB. The env-var fallback still applies."""
+    row = await _get_credential(db, service, key, tenant_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    await db.delete(row)
+    await db.commit()
+
