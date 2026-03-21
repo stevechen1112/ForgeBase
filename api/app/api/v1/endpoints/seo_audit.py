@@ -111,7 +111,7 @@ def _top_issue(audit: dict[str, Any]) -> str:
     for check in audit.get("checks", []):
         if check["status"] != "good":
             return check["message"]
-    return "目前沒有高優先問題。"
+    return "—"
 
 
 @router.post("/evaluate")

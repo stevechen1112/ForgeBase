@@ -33,17 +33,19 @@ export default function SEOAuditPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(null);
-    Promise.all([
+    Promise.allSettled([
       seoWorkbenchApi.health(token),
       seoWorkbenchApi.links(token),
       seoWorkbenchApi.revenue(token),
     ])
-      .then(([healthResponse, linksResponse, revenueResponse]) => {
-        setHealth(healthResponse);
-        setLinks(linksResponse);
-        setRevenue(revenueResponse);
+      .then(([healthResult, linksResult, revenueResult]) => {
+        if (healthResult.status === "fulfilled") setHealth(healthResult.value);
+        if (linksResult.status === "fulfilled") setLinks(linksResult.value);
+        if (revenueResult.status === "fulfilled") setRevenue(revenueResult.value);
+        const firstErr = [healthResult, linksResult, revenueResult]
+          .find((r): r is PromiseRejectedResult => r.status === "rejected");
+        if (firstErr) setError(firstErr.reason?.message ?? "資料載入失敗");
       })
-      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -115,7 +117,10 @@ export default function SEOAuditPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {health?.entities.map((entity) => (
+                    {!health?.entities?.length && (
+                      <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">尚無已發佈內容可進行診斷</TableCell></TableRow>
+                    )}
+                    {health?.entities?.map((entity) => (
                       <TableRow key={`${entity.entity_type}-${entity.id}`}>
                         <TableCell>
                           <div className="font-medium">{entity.name}</div>
@@ -150,7 +155,10 @@ export default function SEOAuditPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {links?.suggestions.map((item, index) => (
+                    {!links?.suggestions?.length && (
+                      <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">尚無內鏈建議（需先建立產品與分類的關聯）</TableCell></TableRow>
+                    )}
+                  {links?.suggestions?.map((item, index) => (
                     <TableRow key={`${item.source_url}-${item.target_url}-${index}`}>
                       <TableCell>
                         <div className="font-medium">{item.source_name}</div>
@@ -191,7 +199,10 @@ export default function SEOAuditPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {revenue?.top_converters.map((row) => (
+                    {!revenue?.top_converters?.length && (
+                      <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">近 30 天尚無轉換記錄</TableCell></TableRow>
+                    )}
+                    {revenue?.top_converters?.map((row) => (
                       <TableRow key={`${row.page_type}-${row.page_id}`}>
                         <TableCell>
                           <div className="font-medium">{row.page_name}</div>
@@ -219,7 +230,10 @@ export default function SEOAuditPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {revenue?.underperformers.map((row) => (
+                    {!revenue?.underperformers?.length && (
+                      <TableRow><TableCell colSpan={3} className="py-6 text-center text-sm text-muted-foreground">尚無高流量未轉換記錄</TableCell></TableRow>
+                    )}
+                    {revenue?.underperformers?.map((row) => (
                       <TableRow key={`${row.page_type}-${row.page_id}`}>
                         <TableCell>
                           <div className="font-medium">{row.page_name}</div>
