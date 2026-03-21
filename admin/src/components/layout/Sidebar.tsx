@@ -51,8 +51,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Nurture 引擎", href: "/dashboard/nurture", icon: Mail },
       { label: "LinkedIn Audience", href: "/dashboard/linkedin", icon: Linkedin },
       { label: "A/B 測試", href: "/dashboard/ab-tests", icon: FlaskConical },
-      { label: "CRM 整合", href: "/dashboard/crm", icon: RefreshCcw },
-      { label: "ESP 設定", href: "/dashboard/esp", icon: AtSign },
       { label: "整合設定", href: "/dashboard/integrations", icon: Plug },
     ],
   },
@@ -101,7 +99,6 @@ const NAV_GROUPS: NavGroup[] = [
     title: "系統",
     items: [
       { label: "使用者管理", href: "/dashboard/users", icon: Users, adminOnly: true },
-      { label: "整合設定", href: "/dashboard/settings/integrations", icon: Plug, adminOnly: true },
     ],
   },
 ];

@@ -7,15 +7,96 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, XCircle, Linkedin, ExternalLink, Eye, EyeOff, Save, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  CheckCircle2, XCircle, Linkedin, ExternalLink, Eye, EyeOff, Save, Trash2,
+  RefreshCcw, Mail, Search, UploadCloud, Send, ChevronDown,
+} from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 type CredentialStatus = { key: string; configured: boolean; preview?: string };
 
-function useCredentials(service: string, keys: string[], token: string) {
+type FieldDef = {
+  key: string;
+  label: string;
+  placeholder: string;
+  isSecret?: boolean;
+  isTextarea?: boolean;
+};
+
+type SyncLog = {
+  id: string;
+  direction: string;
+  entity_type: string;
+  status: string;
+  error_message?: string;
+  payload_summary?: string;
+  synced_at: string;
+};
+
+type EspStatus = {
+  active_provider: string;
+  resend_configured: boolean;
+  sendgrid_configured: boolean;
+  mailchimp_configured: boolean;
+  from_email: string;
+  from_name: string;
+};
+
+type ProviderStats = {
+  member_count?: number;
+  subscriber_count?: number;
+  unsubscribed_count?: number;
+  [key: string]: unknown;
+};
+
+// ── Field configs (module-level to keep reference stable) ─────────────────────
+
+const LINKEDIN_FIELDS: FieldDef[] = [
+  { key: "access_token", label: "Access Token", placeholder: "填入新的 Token 以覆蓋現有值", isSecret: true },
+  { key: "ad_account_id", label: "Ad Account ID", placeholder: "例：123456789" },
+];
+
+const SALESFORCE_FIELDS: FieldDef[] = [
+  { key: "client_id", label: "OAuth Client ID", placeholder: "Connected App Consumer Key", isSecret: true },
+  { key: "client_secret", label: "OAuth Client Secret", placeholder: "Connected App Consumer Secret", isSecret: true },
+  { key: "username", label: "Username", placeholder: "your@org.salesforce.com" },
+  { key: "password", label: "Password", placeholder: "Salesforce 帳號密碼", isSecret: true },
+  { key: "security_token", label: "Security Token", placeholder: "重設密碼時取得的 Token", isSecret: true },
+  { key: "instance_url", label: "Instance URL", placeholder: "https://yourorg.my.salesforce.com" },
+];
+
+const RESEND_FIELDS: FieldDef[] = [
+  { key: "api_key", label: "API Key", placeholder: "re_xxxxxxxxxxxx", isSecret: true },
+];
+
+const SENDGRID_FIELDS: FieldDef[] = [
+  { key: "api_key", label: "API Key", placeholder: "SG.xxxxxxxxxxxx", isSecret: true },
+  { key: "list_id", label: "Marketing List ID", placeholder: "SendGrid 行銷清單 ID" },
+];
+
+const MAILCHIMP_FIELDS: FieldDef[] = [
+  { key: "api_key", label: "API Key", placeholder: "xxxxxxxxxxxx-us1", isSecret: true },
+  { key: "audience_id", label: "Audience ID", placeholder: "Mailchimp Audience / List ID" },
+];
+
+const GSC_FIELDS: FieldDef[] = [
+  { key: "site_url", label: "Site URL", placeholder: "https://your-domain.com/" },
+  { key: "service_account_key_json", label: "Service Account Key JSON", placeholder: '{"type":"service_account","project_id":"..."}', isTextarea: true },
+];
+
+// ── useCredentials hook ────────────────────────────────────────────────────────
+
+function useCredentials(service: string, fields: FieldDef[], token: string) {
   const [status, setStatus] = useState<Record<string, boolean>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const keyStr = fields.map(f => f.key).join(",");
 
   const reload = useCallback(async () => {
     try {
@@ -26,69 +107,249 @@ function useCredentials(service: string, keys: string[], token: string) {
       const data: CredentialStatus[] = await res.json();
       const s: Record<string, boolean> = {};
       const p: Record<string, string> = {};
-      for (const k of keys) { s[k] = false; }
+      for (const k of keyStr.split(",")) { s[k] = false; }
       for (const item of data) { s[item.key] = item.configured; p[item.key] = item.preview ?? ""; }
       setStatus(s);
       setPreviews(p);
     } catch { /* ignore */ }
-  }, [service, token, keys.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [service, token, keyStr]);
 
   useEffect(() => { if (token) reload(); }, [reload, token]);
   return { status, previews, reload };
 }
 
-// ── LinkedIn section ─────────────────────────────────────────────────────────
+// ── CredentialForm ─────────────────────────────────────────────────────────────
 
-function LinkedInSection({ token }: { token: string }) {
-  const keys = ["access_token", "ad_account_id"];
-  const { status, previews, reload } = useCredentials("linkedin", keys, token);
-  const [values, setValues] = useState({ access_token: "", ad_account_id: "" });
-  const [show, setShow] = useState({ access_token: false, ad_account_id: false });
+function CredentialForm({ service, fields, token, status, previews, reload }: {
+  service: string;
+  fields: FieldDef[];
+  token: string;
+  status: Record<string, boolean>;
+  previews: Record<string, string>;
+  reload: () => void;
+}) {
+  const [values, setValues] = useState<Record<string, string>>(
+    Object.fromEntries(fields.map(f => [f.key, ""]))
+  );
+  const [show, setShow] = useState<Record<string, boolean>>(
+    Object.fromEntries(fields.map(f => [f.key, false]))
+  );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
-  const configured = status["access_token"] && status["ad_account_id"];
-
   const handleSave = async () => {
+    const pairs = fields.filter(f => values[f.key].trim()).map(f => [f.key, values[f.key].trim()] as [string, string]);
+    if (!pairs.length) { setSaveError("請至少填寫一個欄位"); return; }
     setSaving(true); setSaveError(null); setSaveOk(false);
     try {
-      const pairs: Array<[string, string]> = [];
-      if (values.access_token.trim()) pairs.push(["access_token", values.access_token.trim()]);
-      if (values.ad_account_id.trim()) pairs.push(["ad_account_id", values.ad_account_id.trim()]);
-      if (!pairs.length) { setSaveError("請至少填寫一個欄位"); return; }
-
       await Promise.all(pairs.map(([k, v]) =>
-        fetch(`${API_BASE}/admin/integrations/linkedin/${k}`, {
+        fetch(`${API_BASE}/admin/integrations/${service}/${k}`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ value: v }),
         })
       ));
-      setValues({ access_token: "", ad_account_id: "" });
+      setValues(Object.fromEntries(fields.map(f => [f.key, ""])));
       await reload();
       setSaveOk(true);
       setTimeout(() => setSaveOk(false), 3000);
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : "儲存失敗");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (key: string) => {
-    await fetch(`${API_BASE}/admin/integrations/linkedin/${key}`, {
+    await fetch(`${API_BASE}/admin/integrations/${service}/${key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     await reload();
   };
 
+  const hasAnyValue = fields.some(f => values[f.key].trim());
+
+  return (
+    <div className="space-y-4">
+      {/* Current status rows */}
+      <div className="grid gap-2 sm:grid-cols-2">
+        {fields.map(f => (
+          <div key={f.key} className="flex items-center justify-between rounded-md border px-3 py-2">
+            <div>
+              <p className="text-sm font-medium">{f.label}</p>
+              {status[f.key] && previews[f.key] && (
+                <p className="font-mono text-xs text-muted-foreground">{previews[f.key]}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {status[f.key]
+                ? <CheckCircle2 className="h-4 w-4 text-green-500" />
+                : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
+              {status[f.key] && (
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive"
+                  onClick={() => handleDelete(f.key)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input form */}
+      <div className="space-y-4 rounded-lg border border-dashed p-4">
+        <p className="text-sm font-medium">更新憑證</p>
+        {fields.map(f => (
+          <div key={f.key} className="space-y-1.5">
+            <Label className="text-xs">{f.label}</Label>
+            {f.isTextarea ? (
+              <Textarea
+                placeholder={f.placeholder}
+                value={values[f.key]}
+                onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                rows={4}
+                className="font-mono text-xs"
+              />
+            ) : (
+              <div className="relative">
+                <Input
+                  type={f.isSecret && !show[f.key] ? "password" : "text"}
+                  placeholder={f.placeholder}
+                  value={values[f.key]}
+                  onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                  className={`${f.isSecret ? "pr-9" : ""} font-mono text-sm`}
+                />
+                {f.isSecret && (
+                  <button type="button"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => setShow(s => ({ ...s, [f.key]: !s[f.key] }))}>
+                    {show[f.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {saveError && <p className="text-xs text-destructive">{saveError}</p>}
+        {saveOk && <p className="text-xs text-green-600">✓ 憑證已加密儲存</p>}
+        <Button size="sm" onClick={handleSave} disabled={saving || !hasAnyValue}>
+          <Save className="mr-2 h-4 w-4" />{saving ? "儲存中…" : "儲存"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── SyncButton ────────────────────────────────────────────────────────────────
+
+function SyncButton({ token, endpoint, label }: { token: string; endpoint: string; label: string }) {
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function doSync() {
+    setSyncing(true); setResult(null);
+    try {
+      const r = await fetch(`${API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail ?? r.statusText);
+      setResult(data.message ?? `完成：成功 ${data.success}，失敗 ${data.failed}，共 ${data.total} 筆`);
+    } catch (e: unknown) {
+      setResult(e instanceof Error ? e.message : "同步失敗");
+    } finally { setSyncing(false); }
+  }
+
+  return (
+    <div className="space-y-1">
+      <Button size="sm" variant="outline" onClick={doSync} disabled={syncing}>
+        <UploadCloud className="mr-2 h-4 w-4" />{syncing ? "同步中…" : label}
+      </Button>
+      {result && <p className="text-xs text-muted-foreground">{result}</p>}
+    </div>
+  );
+}
+
+// ── TestEmailDialog ───────────────────────────────────────────────────────────
+
+function TestEmailDialog({ token }: { token: string }) {
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState("");
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function send() {
+    if (!to.trim()) return;
+    setSending(true); setMsg(null);
+    try {
+      const r = await fetch(`${API_BASE}/esp/test-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ to: to.trim() }),
+      });
+      if (!r.ok) throw new Error((await r.json()).detail ?? r.statusText);
+      setMsg({ ok: true, text: "測試信已發送，請至收件匣確認" });
+    } catch (e: unknown) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : "發送失敗" });
+    } finally { setSending(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setMsg(null); setTo(""); } }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline"><Send className="mr-2 h-4 w-4" />發送測試信</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader><DialogTitle>發送測試信</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          {msg && <Alert variant={msg.ok ? "default" : "destructive"}><AlertDescription>{msg.text}</AlertDescription></Alert>}
+          <div className="space-y-1">
+            <Label>收件地址</Label>
+            <Input type="email" placeholder="your@email.com" value={to} onChange={e => setTo(e.target.value)} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>取消</Button>
+            <Button onClick={send} disabled={sending || !to.trim()}>{sending ? "發送中…" : "發送"}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── ProviderStats ─────────────────────────────────────────────────────────────
+
+function ProviderStats({ token, endpoint }: { token: string; endpoint: string }) {
+  const [stats, setStats] = useState<ProviderStats | null>(null);
+  useEffect(() => {
+    fetch(`${API_BASE}${endpoint}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null).then(d => d && setStats(d)).catch(() => null);
+  }, [token, endpoint]);
+
+  const count = stats?.member_count ?? stats?.subscriber_count;
+  if (count === undefined) return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      訂閱人數：<strong className="text-foreground">{count.toLocaleString()}</strong>
+      {stats?.unsubscribed_count !== undefined && (
+        <> ｜ 退訂：<strong className="text-foreground">{(stats.unsubscribed_count as number).toLocaleString()}</strong></>
+      )}
+    </p>
+  );
+}
+
+// ── LinkedIn Section ──────────────────────────────────────────────────────────
+
+function LinkedInSection({ token }: { token: string }) {
+  const { status, previews, reload } = useCredentials("linkedin", LINKEDIN_FIELDS, token);
+  const configured = status["access_token"] && status["ad_account_id"];
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Linkedin className="h-5 w-5 text-[#0077B5]" />
             <CardTitle className="text-base">LinkedIn Marketing API</CardTitle>
           </div>
@@ -96,115 +357,301 @@ function LinkedInSection({ token }: { token: string }) {
             {configured ? "已串接" : "未串接"}
           </Badge>
         </div>
-        <CardDescription>
-          將高意圖受眾同步至 LinkedIn Campaign Manager，用於投放 Matched Audience 精準廣告
-        </CardDescription>
+        <CardDescription>將高意圖受眾同步至 LinkedIn Campaign Manager，用於精準廣告投放</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-
-        {/* Current status */}
-        <div className="grid gap-2 sm:grid-cols-2">
-          {[
-            { key: "access_token", label: "Access Token" },
-            { key: "ad_account_id", label: "Ad Account ID" },
-          ].map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between rounded-md border px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">{label}</p>
-                {status[key] && previews[key] && (
-                  <p className="text-xs text-muted-foreground font-mono">{previews[key]}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {status[key]
-                  ? <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
-                {status[key] && (
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive"
-                    onClick={() => handleDelete(key)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Input form */}
-        <div className="rounded-lg border border-dashed p-4 space-y-4">
-          <p className="text-sm font-medium">更新憑證</p>
-          {[
-            { key: "access_token" as const, label: "LinkedIn Access Token", placeholder: "填入新的 Token 以覆蓋現有值" },
-            { key: "ad_account_id" as const, label: "Ad Account ID", placeholder: "例：123456789" },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key} className="space-y-1.5">
-              <Label className="text-xs">{label}</Label>
-              <div className="relative">
-                <Input
-                  type={show[key] ? "text" : "password"}
-                  placeholder={placeholder}
-                  value={values[key]}
-                  onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))}
-                  className="pr-9 font-mono text-sm"
-                />
-                <button
-                  type="button"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  onClick={() => setShow(s => ({ ...s, [key]: !s[key] }))}
-                >
-                  {show[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          ))}
-          {saveError && <p className="text-xs text-destructive">{saveError}</p>}
-          {saveOk && <p className="text-xs text-green-600">✓ 儲存成功，LinkedIn 同步功能已啟用</p>}
-          <Button size="sm" onClick={handleSave} disabled={saving || (!values.access_token && !values.ad_account_id)}>
-            <Save className="mr-2 h-4 w-4" />{saving ? "儲存中…" : "儲存"}
-          </Button>
-        </div>
-
-        {/* How-to guide */}
-        <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm space-y-3">
+        <CredentialForm service="linkedin" fields={LINKEDIN_FIELDS} token={token}
+          status={status} previews={previews} reload={reload} />
+        <div className="space-y-3 rounded-lg bg-muted/40 px-4 py-3 text-sm">
           <p className="font-medium">如何取得這兩個憑證</p>
-          <ol className="list-decimal list-inside space-y-2 text-muted-foreground text-xs leading-relaxed">
-            <li>
-              前往{" "}
-              <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer"
-                className="text-primary underline-offset-2 hover:underline inline-flex items-center gap-0.5">
-                LinkedIn Developer Apps <ExternalLink className="h-3 w-3" />
-              </a>{" "}
-              建立或選擇一個 App
+          <ol className="list-inside list-decimal space-y-2 text-xs leading-relaxed text-muted-foreground">
+            <li>前往 <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
+              LinkedIn Developer Apps <ExternalLink className="h-3 w-3" /></a> 建立或選擇 App
             </li>
-            <li>
-              在 App 設定的「Auth」頁簽，申請以下 OAuth 2.0 權限（scopes）：
-              <code className="ml-1 rounded bg-muted px-1">rw_dmp_segments</code>、
-              <code className="ml-1 rounded bg-muted px-1">r_ads</code>
-            </li>
-            <li>
-              完成 OAuth 授權流程後，取得 <strong>Access Token</strong>（有效期 60 天，可用 Refresh Token 更新）
-            </li>
-            <li>
-              前往{" "}
-              <a href="https://www.linkedin.com/campaignmanager/" target="_blank" rel="noopener noreferrer"
-                className="text-primary underline-offset-2 hover:underline inline-flex items-center gap-0.5">
-                Campaign Manager <ExternalLink className="h-3 w-3" />
-              </a>{" "}
-              → 點選廣告帳戶 → 網址列中的數字即為 <strong>Ad Account ID</strong>
-              <br />例：<code className="rounded bg-muted px-1">campaignmanager/accounts/123456789/</code> → ID 為 <code className="rounded bg-muted px-1">123456789</code>
+            <li>申請 OAuth 2.0 scopes：<code className="rounded bg-muted px-1">rw_dmp_segments</code>、<code className="rounded bg-muted px-1">r_ads</code></li>
+            <li>完成 OAuth 授權後取得 <strong>Access Token</strong>（有效期 60 天）</li>
+            <li>前往 <a href="https://www.linkedin.com/campaignmanager/" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
+              Campaign Manager <ExternalLink className="h-3 w-3" /></a> → 網址列數字即為 <strong>Ad Account ID</strong>
             </li>
           </ol>
-          <p className="text-xs text-muted-foreground pt-1">
-            儲存後憑證以 AES-256 加密存於資料庫，不以明文保存。
-          </p>
         </div>
-
       </CardContent>
     </Card>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Salesforce Section ────────────────────────────────────────────────────────
+
+const SF_STATUS_COLOR: Record<string, string> = {
+  success: "bg-green-100 text-green-700",
+  error: "bg-red-100 text-red-700",
+  skipped: "bg-gray-100 text-gray-600",
+};
+
+function SalesforceSection({ token }: { token: string }) {
+  const { status, previews, reload } = useCredentials("salesforce", SALESFORCE_FIELDS, token);
+  const configured = SALESFORCE_FIELDS.every(f => status[f.key]);
+  const [logs, setLogs] = useState<SyncLog[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
+
+  async function loadLogs() {
+    try {
+      const r = await fetch(`${API_BASE}/tracking/crm/sync-logs?limit=10`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) setLogs(await r.json());
+    } catch { /* ignore */ }
+  }
+
+  function toggleLogs() {
+    const next = !showLogs;
+    setShowLogs(next);
+    if (next) loadLogs();
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <RefreshCcw className="h-5 w-5 text-[#00A1E0]" />
+            <CardTitle className="text-base">Salesforce CRM</CardTitle>
+          </div>
+          <Badge className={configured ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
+            {configured ? "已串接" : "未串接"}
+          </Badge>
+        </div>
+        <CardDescription>雙向同步聯絡人與 RFQ，追蹤商機進度至 Closed Won / Lost</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <CredentialForm service="salesforce" fields={SALESFORCE_FIELDS} token={token}
+          status={status} previews={previews} reload={reload} />
+
+        <SyncButton token={token} endpoint="/tracking/crm/sf/bulk-sync-contacts"
+          label="全部聯絡人同步至 Salesforce" />
+
+        {/* Collapsible sync log */}
+        <div>
+          <button
+            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={toggleLogs}
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? "rotate-180" : ""}`} />
+            同步記錄（最近 10 筆）
+          </button>
+          {showLogs && (
+            <div className="mt-2 overflow-x-auto rounded border text-xs">
+              {logs.length === 0 ? (
+                <p className="py-4 text-center text-muted-foreground">尚無記錄</p>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">實體</th>
+                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">方向</th>
+                      <th className="px-3 py-1.5 text-center font-medium text-muted-foreground">狀態</th>
+                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">摘要</th>
+                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">時間</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {logs.map(l => (
+                      <tr key={l.id} className="hover:bg-muted/30">
+                        <td className="px-3 py-1.5">{l.entity_type}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">
+                          {l.direction === "push" ? "推送 →" : "← 拉取"}
+                        </td>
+                        <td className="px-3 py-1.5 text-center">
+                          <Badge className={`${SF_STATUS_COLOR[l.status] ?? "bg-gray-100 text-gray-600"} text-xs`}>
+                            {l.status === "success" ? "成功" : l.status === "error" ? "失敗" : "略過"}
+                          </Badge>
+                        </td>
+                        <td className="max-w-xs truncate px-3 py-1.5 text-muted-foreground">
+                          {l.status === "error"
+                            ? <span className="text-red-600">{l.error_message}</span>
+                            : l.payload_summary}
+                        </td>
+                        <td className="px-3 py-1.5 text-muted-foreground">
+                          {new Date(l.synced_at).toLocaleString("zh-TW")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Email Section ─────────────────────────────────────────────────────────────
+
+const EMAIL_PROVIDERS = [
+  {
+    key: "resend",
+    service: "resend",
+    label: "Resend",
+    desc: "Transactional 郵件（支援作為 active provider）",
+    configuredKey: "resend_configured" as const,
+    fields: RESEND_FIELDS,
+    statsEndpoint: null,
+    syncEndpoint: null,
+  },
+  {
+    key: "sendgrid",
+    service: "sendgrid",
+    label: "SendGrid",
+    desc: "Transactional + 行銷清單同步",
+    configuredKey: "sendgrid_configured" as const,
+    fields: SENDGRID_FIELDS,
+    statsEndpoint: "/esp/sendgrid/stats",
+    syncEndpoint: "/esp/sendgrid/sync-contacts",
+  },
+  {
+    key: "mailchimp",
+    service: "mailchimp",
+    label: "Mailchimp",
+    desc: "行銷自動化 & 電子報",
+    configuredKey: "mailchimp_configured" as const,
+    fields: MAILCHIMP_FIELDS,
+    statsEndpoint: "/esp/mailchimp/stats",
+    syncEndpoint: "/esp/mailchimp/sync-contacts",
+  },
+] as const;
+
+function EmailProviderSubsection({ token, provider, isActive, isConfigured }: {
+  token: string;
+  provider: typeof EMAIL_PROVIDERS[number];
+  isActive: boolean;
+  isConfigured: boolean;
+}) {
+  const { status, previews, reload } = useCredentials(provider.service, provider.fields as unknown as FieldDef[], token);
+
+  return (
+    <div className={`rounded-lg border p-4 ${isActive ? "border-primary/40 bg-primary/5" : ""}`}>
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <p className="font-semibold">{provider.label}</p>
+          <p className="text-xs text-muted-foreground">{provider.desc}</p>
+          {isConfigured && provider.statsEndpoint && (
+            <ProviderStats token={token} endpoint={provider.statsEndpoint} />
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge className={isConfigured ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
+            {isConfigured ? "已配置" : "未配置"}
+          </Badge>
+          {isActive && <Badge className="bg-blue-100 text-blue-700">使用中</Badge>}
+        </div>
+      </div>
+      <CredentialForm
+        service={provider.service}
+        fields={provider.fields as unknown as FieldDef[]}
+        token={token}
+        status={status}
+        previews={previews}
+        reload={reload}
+      />
+      {isConfigured && provider.syncEndpoint && (
+        <div className="mt-4">
+          <SyncButton token={token} endpoint={provider.syncEndpoint} label={`同步聯絡人至 ${provider.label}`} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailSection({ token }: { token: string }) {
+  const [espStatus, setEspStatus] = useState<EspStatus | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/esp/status`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(setEspStatus).catch(() => null);
+  }, [token]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <Mail className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Email 服務商</CardTitle>
+        </div>
+        <CardDescription>Transactional 與行銷郵件服務商憑證管理</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Active provider status */}
+        {espStatus && (
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium">目前寄信供應商</p>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold capitalize text-foreground">{espStatus.active_provider}</span>
+                {espStatus.from_email && (
+                  <> — 發件人：{espStatus.from_name} &lt;{espStatus.from_email}&gt;</>
+                )}
+              </p>
+            </div>
+            <TestEmailDialog token={token} />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {EMAIL_PROVIDERS.map(p => (
+            <EmailProviderSubsection
+              key={p.key}
+              token={token}
+              provider={p}
+              isActive={espStatus?.active_provider === p.key}
+              isConfigured={espStatus?.[p.configuredKey] ?? false}
+            />
+          ))}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          切換寄信供應商：在 <code className="rounded bg-muted px-1">.env</code> 中設定{" "}
+          <code className="rounded bg-muted px-1">ESP_PROVIDER</code> 為{" "}
+          <code className="rounded bg-muted px-1">"resend"</code> 或{" "}
+          <code className="rounded bg-muted px-1">"sendgrid"</code>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Google Search Console Section ─────────────────────────────────────────────
+
+function GscSection({ token }: { token: string }) {
+  const { status, previews, reload } = useCredentials("gsc", GSC_FIELDS, token);
+  const configured = GSC_FIELDS.every(f => status[f.key]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Search className="h-5 w-5 text-[#4285F4]" />
+            <CardTitle className="text-base">Google Search Console</CardTitle>
+          </div>
+          <Badge className={configured ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
+            {configured ? "已串接" : "未串接"}
+          </Badge>
+        </div>
+        <CardDescription>SEO 診斷所需的 Search Console 爬蟲流量與關鍵字排名數據</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CredentialForm service="gsc" fields={GSC_FIELDS} token={token}
+          status={status} previews={previews} reload={reload} />
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function IntegrationsPage() {
   const { state } = useAuth();
@@ -215,19 +662,22 @@ export default function IntegrationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">整合設定</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          管理第三方平台的 API 金鑰。憑證經 AES-256 加密後儲存於資料庫，未來支援多租戶時可依各組織獨立設定。
+          管理所有第三方平台 API 金鑰。憑證經 AES-256 加密後儲存於資料庫，支援多租戶隔離。
         </p>
       </div>
 
       <Alert className="mb-6 border-blue-200 bg-blue-50 text-blue-900">
         <AlertDescription className="text-xs">
           <span className="font-semibold">僅伺服器管理員可見。</span>{" "}
-          這些設定直接影響後端服務行為。在 SaaS 模式下，每個租戶的憑證彼此隔離，不會互相影響。
+          LinkedIn 憑證已支援從資料庫讀取；其他服務同時支援環境變數，DB 設定為多租戶 SaaS 預備。
         </AlertDescription>
       </Alert>
 
       <div className="space-y-6">
         <LinkedInSection token={token} />
+        <SalesforceSection token={token} />
+        <EmailSection token={token} />
+        <GscSection token={token} />
       </div>
     </div>
   );
