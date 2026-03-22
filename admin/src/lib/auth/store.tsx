@@ -68,6 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Global 401 handler — any API call with expired token triggers logout
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      localStorage.removeItem(STORAGE_KEY);
+      dispatch({ type: "LOGOUT" });
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
+
   const login = (tokenResponse: TokenResponse) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tokenResponse));
     dispatch({ type: "SET_AUTH", payload: tokenResponse });

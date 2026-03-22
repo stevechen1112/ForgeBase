@@ -30,6 +30,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
     throw new Error(err.detail || err.error || `HTTP ${res.status}`);
   }
@@ -48,6 +51,9 @@ async function requestForm<T>(path: string, formData: FormData, token?: string):
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
     throw new Error(err.detail || err.error || `HTTP ${res.status}`);
   }
