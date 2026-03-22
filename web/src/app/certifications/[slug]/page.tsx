@@ -8,6 +8,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 type Props = { params: Promise<{ slug: string }> };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const CERT_BADGE_VERSION = "20260318a";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -23,6 +24,9 @@ export default async function CertificationDetailPage({ params }: Props) {
   const { slug } = await params;
   const certification = await getCertificationBySlug(slug);
   if (!certification) notFound();
+  const badgeImageSrc = certification.badge_image_url
+    ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
+    : null;
 
   return (
     <>
@@ -50,9 +54,9 @@ export default async function CertificationDetailPage({ params }: Props) {
       <section className="py-14">
         <div className="container mx-auto max-w-4xl px-6 grid gap-8 lg:grid-cols-[220px,1fr]">
           <div className="rounded-xl border border-gray-200 bg-white p-6 flex items-center justify-center">
-            {certification.badge_image_url ? (
+            {badgeImageSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={certification.badge_image_url} alt={certification.cert_name} className="max-h-36 object-contain" />
+              <img src={badgeImageSrc} alt={certification.cert_name} className="max-h-36 object-contain" />
             ) : (
               <div className="text-sm text-gray-400">No badge image</div>
             )}

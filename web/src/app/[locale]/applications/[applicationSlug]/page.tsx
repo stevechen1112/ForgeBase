@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -11,12 +11,40 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
 type Props = { params: Promise<{ locale: string; applicationSlug: string }> };
 
 const SITE_URL = getSiteUrl();
+
+type CommonMessages = {
+  home: string;
+};
+
+type ApplicationDetailMessages = {
+  applications: string;
+  prompts: string[];
+  challenge: string;
+  solution: string;
+  verificationTitle: string;
+  verificationDescription: string;
+  packagingTitle: string;
+  packagingDescription: string;
+  sourcingTitle: string;
+  sourcingDescription: string;
+  sourcingItems: Array<{ label: string; detail: string }>;
+  quoteCta: string;
+  planCta: string;
+  allApplications: string;
+  relatedProductsTitle: string;
+  relatedProductsDescription: string;
+  viewProduct: string;
+  faqTitle: string;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, applicationSlug } = await params;
@@ -43,6 +71,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ApplicationDetailPage({ params }: Props) {
   const { locale, applicationSlug } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<ApplicationDetailMessages>("applicationDetail"),
+  ]);
   const application = await getApplicationBySlug(applicationSlug, locale);
   if (!application) notFound();
 
@@ -52,6 +85,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
     getApplicationRelatedFAQs(application.id).catch(() => []),
   ]);
   const heroImage = getApplicationImage(application.slug, application.hero_image_url);
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, [application, ...relatedProducts, ...relatedFaqs]);
 
   return (
     <>
@@ -63,8 +97,8 @@ export default async function ApplicationDetailPage({ params }: Props) {
       />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Applications", url: `${SITE_URL}/applications` },
+          { name: common.home, url: SITE_URL },
+          { name: copy.applications, url: `${SITE_URL}/applications` },
           {
             name: application.application_name,
             url: `${SITE_URL}/applications/${application.slug}`,
@@ -90,9 +124,9 @@ export default async function ApplicationDetailPage({ params }: Props) {
         )}
         <div className="relative container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-4 text-xs text-slate-300">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <Link href="/applications" className="hover:underline">Applications</Link>
+            <Link href="/applications" className="hover:underline">{copy.applications}</Link>
             <span className="mx-1">/</span>
             <span>{application.application_name}</span>
           </nav>
@@ -112,12 +146,9 @@ export default async function ApplicationDetailPage({ params }: Props) {
       {/* Challenge & Solution */}
       <section className="py-14">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="mb-8 grid gap-4 md:grid-cols-3">
-            {[
-              "What operating environment the tool must survive",
-              "Whether the buyer needs standard supply or a private-label assortment",
-              "What packaging, labeling, or documentation must travel with the order",
-            ].map((item) => (
+            {copy.prompts.map((item) => (
               <div key={item} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">
                 {item}
               </div>
@@ -129,7 +160,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               {application.challenge && (
                 <div className="rounded-xl border border-orange-100 bg-orange-50 p-6">
                   <h2 className="text-lg font-semibold text-orange-800 mb-3">
-                    The Challenge
+                    {copy.challenge}
                   </h2>
                   <div
                     className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4"
@@ -139,7 +170,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               )}
               {application.solution && (
                 <div className="rounded-xl border border-green-100 bg-green-50 p-6">
-                  <h2 className="text-lg font-semibold text-green-800 mb-3">Our Solution</h2>
+                  <h2 className="text-lg font-semibold text-green-800 mb-3">{copy.solution}</h2>
                   <div
                     className="text-gray-700 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4"
                     dangerouslySetInnerHTML={{ __html: application.solution }}
@@ -158,9 +189,9 @@ export default async function ApplicationDetailPage({ params }: Props) {
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
-                <h2 className="text-base font-semibold text-gray-900">Verification Before Scale-Up</h2>
+                <h2 className="text-base font-semibold text-gray-900">{copy.verificationTitle}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  Buyers evaluating this application usually need confidence that repeat-use performance, inspection checkpoints, and sample approval criteria are controlled before mass production starts.
+                  {copy.verificationDescription}
                 </p>
               </div>
             </div>
@@ -172,9 +203,9 @@ export default async function ApplicationDetailPage({ params }: Props) {
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
-                <h2 className="text-base font-semibold text-gray-900">Packaging and Program Fit</h2>
+                <h2 className="text-base font-semibold text-gray-900">{copy.packagingTitle}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  If this use case needs private-label cartons, molded cases, barcode labels, or assortment planning, NorthForge treats those as part of the sourcing program rather than an afterthought.
+                  {copy.packagingDescription}
                 </p>
               </div>
             </div>
@@ -182,15 +213,10 @@ export default async function ApplicationDetailPage({ params }: Props) {
 
           {/* Sourcing Considerations */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
-            <h2 className="text-base font-semibold text-gray-900">What buyers typically confirm before RFQ</h2>
-            <p className="mt-1 text-sm text-gray-500">Having this scope ready helps NorthForge respond faster and match the right product mix to your program.</p>
+            <h2 className="text-base font-semibold text-gray-900">{copy.sourcingTitle}</h2>
+            <p className="mt-1 text-sm text-gray-500">{copy.sourcingDescription}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {[
-                { label: "Tool performance requirements", detail: "Torque range, insulation class, material hardness, or grip finish tied to the operating environment." },
-                { label: "Standard supply or OEM / private-label", detail: "Whether logo stamping, custom packaging, barcode labels, or insertion cards are part of this program." },
-                { label: "Mixed-SKU or assortment scope", detail: "If spanning a toolkit, service kit, or branded assortment, include target SKU count and common size range." },
-                { label: "Target market and compliance docs", detail: "Country, channel type, and the specific standards required: ISO, CE support, RoHS / REACH, or third-party test reports." },
-              ].map((item) => (
+              {copy.sourcingItems.map((item) => (
                 <div key={item.label} className="flex gap-3">
                   <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -210,19 +236,19 @@ export default async function ApplicationDetailPage({ params }: Props) {
               href={`/rfq?application_id=${application.id}`}
               className="rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
             >
-              Request Application-Specific Quote
+              {copy.quoteCta}
             </Link>
             <Link
               href="/contact"
               className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Plan OEM / Private-Label Scope
+              {copy.planCta}
             </Link>
             <Link
               href="/applications"
               className="rounded-lg border border-gray-200 px-6 py-3 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
             >
-              ← All Applications
+              {copy.allApplications}
             </Link>
           </div>
         </div>
@@ -232,9 +258,9 @@ export default async function ApplicationDetailPage({ params }: Props) {
       {relatedProducts.length > 0 && (
         <section className="bg-gray-50 py-14">
           <div className="container mx-auto max-w-5xl px-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Recommended Product Families</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">{copy.relatedProductsTitle}</h2>
             <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-500">
-              These linked items are relevant starting points for buyers evaluating fit, sample scope, or assortment planning for this application.
+              {copy.relatedProductsDescription}
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProducts.map((product) => (
@@ -271,7 +297,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                     </p>
                   )}
                   <span className="mt-3 inline-block text-xs text-blue-600 group-hover:underline">
-                    View product →
+                    {copy.viewProduct}
                   </span>
                 </Link>
               ))}
@@ -285,7 +311,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
         <section className="py-14">
           <div className="container mx-auto max-w-5xl px-6">
             <h2 className="text-xl font-bold text-gray-800 mb-6">
-              Frequently Asked Questions
+              {copy.faqTitle}
             </h2>
             <FAQAccordion
               items={relatedFaqs.map((f) => ({

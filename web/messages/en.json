@@ -1,22 +1,8 @@
 {
-  "nav": {
-    "products": "Products",
-    "applications": "Applications",
-    "certifications": "Certifications",
-    "about": "About",
-    "contact": "Contact"
-  },
-  "cta": {
-    "getQuote": "Get a Quote",
-    "contactUs": "Contact Us",
-    "viewAll": "View All",
-    "download": "Download",
-    "learnMore": "Learn More",
-    "requestQuote": "Request a Quote",
-    "sendMessage": "Send Message",
-    "submitRFQ": "Submit RFQ"
-  },
   "common": {
+    "home": "Home",
+    "faq": "FAQ",
+    "questions": "questions",
     "loading": "Loading...",
     "noResults": "No results found",
     "backToList": "← Back",
@@ -30,7 +16,6 @@
     "relatedApplications": "Related Applications",
     "specifications": "Specifications",
     "downloads": "Downloads",
-    "faq": "FAQ",
     "certifications": "Certifications",
     "capabilities": "Capabilities",
     "comparisons": "Comparisons",
@@ -38,10 +23,675 @@
     "careers": "Careers",
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",
-    "cookiePolicy": "Cookie Policy"
+    "cookiePolicy": "Cookie Policy",
+    "localeFallbackTitle": "English fallback content in use",
+    "localeFallbackDescription": "Some records on this page are not translated into Traditional Chinese yet, so the English source content is shown temporarily."
+  },
+  "header": {
+    "rfq": "RFQ",
+    "submitRfq": "Submit RFQ",
+    "contact": "Contact Us",
+    "openMenu": "Open menu",
+    "partnerTitle": "Global Manufacturing Partner",
+    "partnerDescription": "Serving 40+ countries with one-stop B2B sourcing support.",
+    "langSwitch": "繁中",
+    "nav": {
+      "products": "Products",
+      "applications": "Applications",
+      "certifications": "Certifications",
+      "about": "About",
+      "contact": "Contact"
+    }
   },
   "footer": {
-    "tagline": "OEM hand tool manufacturer based in Taiwan.",
-    "copyright": "All rights reserved."
+    "description": "Precision manufacturing solutions trusted by industrial buyers in 40+ countries. ISO 9001 certified, 20+ years of experience.",
+    "builtWithPrecision": "Built with precision · Designed for growth",
+    "allRightsReserved": "All rights reserved.",
+    "certifications": ["ISO 9001:2015", "CE Certified", "RoHS Compliant", "SGS Audited"],
+    "sections": {
+      "products": {
+        "heading": "Products",
+        "catalog": "Product Catalog",
+        "applications": "By Application",
+        "rfq": "Request a Quote",
+        "custom": "Custom Solutions"
+      },
+      "company": {
+        "heading": "Company",
+        "about": "About Us",
+        "certifications": "Certifications",
+        "news": "News & Updates",
+        "careers": "Careers"
+      },
+      "support": {
+        "heading": "Support",
+        "faq": "FAQ",
+        "contact": "Contact Us",
+        "docs": "Technical Docs",
+        "dealers": "Dealer Locator"
+      },
+      "legal": {
+        "heading": "Legal",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "cookies": "Cookie Policy"
+      }
+    }
+  },
+  "chat": {
+    "desktopButton": "Ask Product Advisor",
+    "mobileButton": "Ask Advisor",
+    "title": "AI Product Advisor",
+    "subtitle": "Fast answers for specs, MOQ, certification, and OEM questions.",
+    "suggestedQuestions": "Suggested Questions",
+    "rfqReady": "RFQ Ready",
+    "rfqReadyDescription": "Your request is specific enough to move into quotation. Continue with a prefilled RFQ.",
+    "prepareRfq": "Prepare RFQ",
+    "thinking": "Thinking...",
+    "placeholder": "Ask about material, MOQ, OEM, or certification...",
+    "sendMessage": "Send message",
+    "sessionUnavailable": "The advisor is temporarily unavailable. Please try again shortly.",
+    "requestFailed": "The advisor could not complete that request. Please try again or continue with RFQ."
+  },
+  "forms": {
+    "howOptions": [
+      { "value": "", "label": "How did you find us? (optional)" },
+      { "value": "google", "label": "Google Search" },
+      { "value": "linkedin", "label": "LinkedIn" },
+      { "value": "trade_show", "label": "Trade Show / Exhibition" },
+      { "value": "referral", "label": "Referral" },
+      { "value": "direct", "label": "Direct / Already knew" },
+      { "value": "email", "label": "Email Newsletter" },
+      { "value": "other", "label": "Other" }
+    ],
+    "contact": {
+      "successTitle": "Message Sent!",
+      "successDescription": "Thank you for reaching out. We'll get back to you within one business day.",
+      "sending": "Sending...",
+      "submit": "Send Enquiry",
+      "submitFailed": "Submission failed. Please try again.",
+      "unexpectedError": "An unexpected error occurred.",
+      "labels": {
+        "fullName": "Name",
+        "email": "Email",
+        "company": "Company",
+        "country": "Country",
+        "jobTitle": "Job Title",
+        "phone": "Phone / WhatsApp",
+        "message": "Message",
+        "howFound": "How did you find us?"
+      },
+      "placeholders": {
+        "fullName": "Your full name",
+        "email": "your@email.com",
+        "company": "Distributor, importer, brand, or factory name",
+        "country": "e.g. United States",
+        "jobTitle": "e.g. Procurement Manager",
+        "phone": "Optional, for faster follow-up",
+        "message": "Tell us what tool line, application, packaging need, or sourcing challenge you want to discuss..."
+      }
+    },
+    "rfq": {
+      "howOptions": [
+        { "value": "", "label": "How did you find us?" },
+        { "value": "google", "label": "Google Search" },
+        { "value": "linkedin", "label": "LinkedIn" },
+        { "value": "trade_show", "label": "Trade Show / Exhibition" },
+        { "value": "referral", "label": "Referral" },
+        { "value": "direct", "label": "Direct / Already knew" },
+        { "value": "email", "label": "Email Newsletter" },
+        { "value": "other", "label": "Other" }
+      ],
+      "timelineOptions": [
+        { "value": "", "label": "Delivery Timeline" },
+        { "value": "immediate", "label": "Immediate" },
+        { "value": "1-3 months", "label": "1-3 months" },
+        { "value": "3-6 months", "label": "3-6 months" },
+        { "value": "evaluating", "label": "Evaluating" }
+      ],
+      "successTitle": "RFQ Submitted Successfully",
+      "referenceNumber": "Your reference number:",
+      "successDescription": "Our team will review your request and reply within 1 business day if the specification details are complete.",
+      "submitting": "Submitting...",
+      "submit": "Submit RFQ",
+      "footerNote": "By submitting this form you agree to our Privacy Policy. We will never share your data with third parties.",
+      "submitFailed": "Submission failed. Please try again.",
+      "unexpectedError": "An unexpected error occurred.",
+      "labels": {
+        "fullName": "Full Name",
+        "email": "Business Email",
+        "company": "Company Name",
+        "phone": "Phone / WhatsApp",
+        "country": "Country / Region",
+        "jobTitle": "Job Title",
+        "quantity": "Quantity Required",
+        "specifications": "Technical Specifications / Requirements",
+        "timeline": "Target Purchase Timeline",
+        "message": "Additional Message",
+        "howFound": "How did you find us?",
+        "consent": "I agree to the Privacy Policy and consent to the processing of my enquiry data. *"
+      },
+      "placeholders": {
+        "quantity": "e.g. 500 pcs, 1200 sets, annual blanket order",
+        "specifications": "Share the tool type, target model, size range, torque requirement, insulation class, finish, packaging, logo, or any reference drawing you already have.",
+        "message": "Tell us about your target market, current sourcing issue, sample timing, or any packaging and documentation expectations."
+      }
+    }
+  },
+  "contactPage": {
+    "metadata": {
+      "title": "Contact NorthForge Tools",
+      "description": "Contact NorthForge Tools to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements."
+    },
+    "breadcrumb": "Contact",
+    "title": "Talk to NorthForge Tools",
+    "description": "Use this channel for sourcing discussions, product clarification, private-label planning, and toolkit program enquiries. Qualified messages are reviewed within 1 business day.",
+    "reasonsTitle": "Best Reasons to Contact NorthForge",
+    "reasons": [
+      { "label": "Catalog or Repeat Supply", "desc": "Pricing, MOQ, lead times, and repeat-order planning" },
+      { "label": "OEM / Private Label", "desc": "Logo, packaging, barcode, case, and assortment discussions" },
+      { "label": "Technical Clarification", "desc": "Torque, insulation, material, finish, and use-case review" },
+      { "label": "Toolkit Program Planning", "desc": "Mixed-SKU sets, drawer systems, and export-ready bundles" }
+    ],
+    "officesTitle": "Our Offices",
+    "offices": [
+      { "city": "Taichung Manufacturing Coordination", "address": "Taichung, Taiwan", "phone": "+886-4-3700-2218", "hours": "Mon-Fri 09:00-18:00 CST" },
+      { "city": "Taipei Export Sales Desk", "address": "Taipei, Taiwan", "phone": "+886-2-7709-8891", "hours": "Mon-Fri 09:00-18:00 CST" }
+    ],
+    "responseTitle": "What Helps Us Reply Faster",
+    "responseDescription": "Include the tool category, approximate volume, target market, and whether you need OEM packaging or compliance documents. The clearer the request, the faster we can route it correctly.",
+    "formTitle": "Send an Enquiry",
+    "formDescription": "Use the form for general business enquiries. If you already have quantities, specifications, or packaging requirements, the RFQ flow is better.",
+    "quickLinksPrompt": "Looking for something specific?",
+    "quickLinks": {
+      "products": "Browse Products",
+      "certifications": "Certifications",
+      "rfq": "Request a Quote"
+    }
+  },
+  "rfqPage": {
+    "metadata": {
+      "title": "Request a Quotation",
+      "description": "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day."
+    },
+    "title": "Request a Tool Program Quotation",
+    "description": "Share your product scope, packaging needs, and sourcing timeline. Our team will review the details and respond with the right next step within 1 business day.",
+    "builtForTitle": "What this RFQ is built for",
+    "builtForItems": [
+      "Standard tool sourcing and recurring distributor supply",
+      "Private-label packaging, barcode, and molded-case programs",
+      "Mixed-SKU toolkit builds and drawer-set assortments",
+      "Specification review for torque, insulation, material, and finish requirements",
+      "Documentation support for export and compliance-sensitive orders",
+      "NDA requests for confidential OEM discussions"
+    ],
+    "helpTitle": "Need help?",
+    "helpDescription": "If you only know the application and target market, NorthForge can help narrow down the right tool family and packaging path.",
+    "helpCta": "Contact our engineers →",
+    "responseWindowLabel": "Typical quote-routing window",
+    "responseWindowTime": "24-48h",
+    "responseWindowHours": "Mon-Fri, 9:00-18:00 CST"
+  },
+  "faqPage": {
+    "metadata": {
+      "title": "Frequently Asked Questions",
+      "description": "Find answers to common questions about NorthForge MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation."
+    },
+    "breadcrumb": "FAQ",
+    "title": "Frequently Asked Questions",
+    "description": "This FAQ is built for buyers who need clearer answers on ordering flow, sampling, packaging, documentation, and repeat-order execution before reaching out.",
+    "emptyState": "No FAQs published yet.",
+    "ctaTitle": "Ready for the next step?",
+    "ctaDescription": "Use FAQ for general policy questions, Contact for exploratory business discussions, and RFQ when you have product scope, quantity, packaging, or market requirements ready to send through.",
+    "ctaButtons": {
+      "rfq": "Submit RFQ ->",
+      "contact": "Ask a Question",
+      "applications": "Browse by Application"
+    },
+    "allCategories": "<- All FAQ categories"
+  },
+  "docsPage": {
+    "metadata": {
+      "title": "Technical Docs",
+      "description": "Technical documentation, data sheets, and compliance documents for NorthForge products."
+    },
+    "breadcrumb": "Technical Docs",
+    "title": "Technical Docs",
+    "description": "Documentation access is organized around product pages, compliance pages, and RFQ workflows so buyers can request the right files at the right stage.",
+    "docs": [
+      { "title": "Product spec sheets", "desc": "Available from individual product pages through the download panel." },
+      { "title": "Compliance certificates", "desc": "Available from the certifications section, including ISO, RoHS, and REACH-related support files." },
+      { "title": "OEM documentation", "desc": "Shared during RFQ and sampling stages based on project requirements." }
+    ],
+    "noteTitle": "Document access note",
+    "noteDescription": "Some files are shared only after product scope or compliance relevance is confirmed, especially for OEM programs, customer-specific labeling, or audit-sensitive requests."
+  },
+  "careersPage": {
+    "metadata": {
+      "title": "Careers",
+      "description": "Career opportunities and hiring information for NorthForge Tools."
+    },
+    "breadcrumb": "Careers",
+    "title": "Careers",
+    "description": "NorthForge hires across sales, quality, packaging, manufacturing coordination, and export operations to support real B2B tool programs.",
+    "rolesTitle": "Current Focus Roles",
+    "openings": [
+      "International Sales Executive",
+      "Quality Assurance Engineer",
+      "OEM Project Coordinator",
+      "Packaging and Logistics Planner"
+    ],
+    "applyTitle": "Apply by Email",
+    "applyDescription": "Send your resume and role interest to careers@northforgetools.com. Include language skills, manufacturing experience, and export market exposure where relevant."
+  },
+  "newsPage": {
+    "metadata": {
+      "title": "News & Updates",
+      "description": "Latest company updates, manufacturing milestones, and product news from NorthForge Tools."
+    },
+    "breadcrumb": "News & Updates",
+    "title": "News & Updates",
+    "description": "Recent updates on product development, quality workflow, packaging capability, and export execution relevant to buyers and distributor programs.",
+    "items": [
+      { "date": "2026-02-10", "title": "NorthForge expands insulated tool line for utility buyers", "summary": "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
+      { "date": "2025-11-22", "title": "Factory calibration workflow upgraded for torque verification", "summary": "Additional calibration checkpoints introduced to improve repeatability in high-volume torque wrench programs." },
+      { "date": "2025-08-15", "title": "NorthForge adds mixed-SKU export packing support", "summary": "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." }
+    ]
+  },
+  "legal": {
+    "privacy": {
+      "metadata": { "title": "Privacy Policy", "description": "Privacy policy for NorthForge Tools website enquiries and document requests." },
+      "breadcrumb": "Privacy Policy",
+      "title": "Privacy Policy",
+      "paragraphs": [
+        "NorthForge Tools collects enquiry details, quotation requests, and document request information only for business response, sales follow-up, and customer support purposes.",
+        "Submitted information may include your name, company, email, phone number, country, and product interest. We do not sell personal data to third parties.",
+        "Information is retained only as long as needed for commercial communication, compliance, and recordkeeping. You may request correction or deletion by contacting sales@northforgetools.com."
+      ]
+    },
+    "terms": {
+      "metadata": { "title": "Terms of Service", "description": "Terms governing the use of the NorthForge Tools website and business enquiry channels." },
+      "breadcrumb": "Terms of Service",
+      "title": "Terms of Service",
+      "paragraphs": [
+        "This website is provided for product presentation, business enquiry, RFQ intake, and technical document access related to NorthForge Tools.",
+        "Specifications, availability, lead times, and pricing shown on the website are illustrative unless otherwise confirmed in a written quotation or sales agreement.",
+        "Use of this website does not create a supply contract. Final terms are governed by issued quotations, purchase orders, and mutually agreed commercial terms."
+      ]
+    },
+    "cookies": {
+      "metadata": { "title": "Cookie Policy", "description": "Cookie usage policy for the NorthForge Tools website." },
+      "breadcrumb": "Cookie Policy",
+      "title": "Cookie Policy",
+      "paragraphs": [
+        "NorthForge Tools uses essential website cookies and limited analytics storage to support navigation, form submissions, and basic performance measurement.",
+        "Cookies may be used to remember UI state, support request flows, and understand page usage trends. They are not used to sell behavioral data to third parties.",
+        "You can manage cookies through your browser settings. Disabling some cookies may affect site functionality such as form persistence or gated downloads."
+      ]
+    },
+    "dealers": {
+      "metadata": { "title": "Dealer Locator", "description": "Regional distributor and dealer support information for NorthForge Tools." },
+      "breadcrumb": "Dealer Locator",
+      "title": "Dealer Locator",
+      "intro": "NorthForge works with importers, distributors, and private-label partners across multiple regions, with routing based on product category, channel type, and market scope.",
+      "regionTitle": "Supported Regions",
+      "regions": [
+        "East Asia and Southeast Asia",
+        "European distribution partners",
+        "Australia and Oceania",
+        "Private-label importer programs in North America"
+      ],
+      "asideTitle": "Need a regional contact?",
+      "asideDescription": "Contact sales@northforgetools.com with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team."
+    }
+  },
+  "home": {
+    "metadata": {
+      "title": "NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
+      "description": "Taiwan-based OEM/ODM hand tool manufacturer specializing in torque tools, insulated tools, workshop tools, and private-label toolkit programs for distributors and tool brands."
+    },
+    "hero": {
+      "eyebrow": "Trusted Export Manufacturer for Professional Tool Programs",
+      "titleLine1": "Precision-Built Hand Tools for Brands,",
+      "titleLine2": "Distributors, and Industrial Buyers",
+      "description": "NorthForge Tools helps importers, private-label brands, and industrial distributors source torque tools, insulated tools, workshop tools, and custom toolkit programs with stronger quality control and cleaner export execution.",
+      "primaryCta": "Request a Quote",
+      "secondaryCta": "Browse Products →"
+    },
+    "stats": [
+      { "value": "20+", "label": "Years Export Experience" },
+      { "value": "30+", "label": "Core Demo SKUs" },
+      { "value": "40+", "label": "Countries Served" },
+      { "value": "98%", "label": "Shipment-Readiness KPI" }
+    ],
+    "featured": {
+      "eyebrow": "Featured",
+      "title": "Selected Tool Lines",
+      "description": "Representative SKUs across torque, insulated, workshop, automotive service, and toolkit programs.",
+      "cardCta": "View Details →",
+      "sectionCta": "Browse All Products"
+    },
+    "catalogue": {
+      "eyebrow": "Our Catalogue",
+      "title": "Product Categories",
+      "description": "Browse the core families NorthForge builds for distributor programs, private-label launches, and industrial buying teams.",
+      "sectionCta": "View Full Catalogue"
+    },
+    "why": {
+      "eyebrow": "Why NorthForge",
+      "title": "Built for Global Buyers",
+      "description": "Everything we do is designed to make your sourcing simpler, safer, and more profitable.",
+      "items": [
+        { "title": "Stable Repeat Orders", "desc": "NorthForge reduces drift between approved samples and recurring production through tighter drawing control, verification workflow, and packaging discipline." },
+        { "title": "OEM and Private Label Execution", "desc": "From logo application and insert cards to barcode labels and retail-ready assortments, NorthForge supports programs that need more than loose tools in cartons." },
+        { "title": "Documentation Discipline", "desc": "Export buyers need clean packing lists, carton marks, barcode accuracy, and compliance-support paperwork. NorthForge treats those details as part of the product program." },
+        { "title": "Mixed-SKU Program Flexibility", "desc": "The team is structured to support recurring mixed-SKU programs, toolkit builds, and distributor-ready assortments without enterprise-scale complexity." },
+        { "title": "Tool-Focused Product Scope", "desc": "The catalog is built around torque tools, insulated tools, workshop tools, automotive service tools, and custom toolkit programs for professional channels." },
+        { "title": "Compliance-Support Ready", "desc": "NorthForge supports ISO 9001 workflow, insulated-tool process discipline, RoHS and REACH documentation, and third-party inspection coordination when needed." }
+      ]
+    },
+    "applications": {
+      "eyebrow": "Industries",
+      "title": "Featured Applications",
+      "description": "NorthForge focuses on programs where repeatability, packaging control, and clean documentation matter as much as the tool itself.",
+      "sectionCta": "View all industries →"
+    },
+    "oem": {
+      "eyebrow": "OEM / ODM Flow",
+      "title": "How a Tool Program Moves Forward",
+      "description": "The process is designed to keep product, packaging, and shipment execution aligned from the first discussion through recurring orders.",
+      "steps": [
+        { "title": "Define Product Scope", "desc": "Clarify target market, usage scenario, and whether a standard catalog item or customization path makes more commercial sense." },
+        { "title": "Review Branding and Packaging", "desc": "Confirm logo application, insert cards, molded cases, barcode labels, and carton marking requirements before sampling." },
+        { "title": "Approve Samples and Key Specs", "desc": "Lock in critical details such as torque range, insulation class, hardness targets, finish, packaging format, and inspection points." },
+        { "title": "Move into Controlled Production", "desc": "Production, packing, export documentation, and shipment readiness are managed as one workflow so the program stays consistent after approval." }
+      ]
+    },
+    "certifications": {
+      "eyebrow": "Quality Assurance",
+      "title": "Certifications & Standards",
+      "description": "Compliance support is positioned as a working part of export execution, not a footer claim added after the tooling is done.",
+      "sectionCta": "View all certifications →"
+    },
+    "finalCta": {
+      "title": "Build a Cleaner, More Reliable Tool Program",
+      "description": "Whether you need recurring catalog supply, private-label packaging, or a custom toolkit assortment, NorthForge can help structure the right sourcing program for your market.",
+      "primaryCta": "Request a Quote",
+      "secondaryCta": "Contact Sales",
+      "note": "Response within 1 business day for qualified enquiries"
+    }
+  },
+  "products": {
+    "metadata": {
+      "title": "Products",
+      "description": "Browse NorthForge hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs."
+    },
+    "breadcrumb": "Products",
+    "heroTitle": "Product Catalogue",
+    "heroDescription": "Browse the NorthForge tool families used in distributor catalogs, industrial maintenance supply, electrical work, and private-label toolkit programs.",
+    "highlights": [
+      { "label": "30+ Core SKUs", "desc": "Demo catalog range" },
+      { "label": "ISO 9001", "desc": "Workflow-driven quality control" },
+      { "label": "OEM / ODM", "desc": "Private-label and packaging support" },
+      { "label": "Mixed-SKU Kits", "desc": "Assortments and drawer systems" }
+    ],
+    "browseLabel": "Browse by Category",
+    "categoriesTitle": "All Product Categories",
+    "contactCta": "Can't find what you need? ->",
+    "emptyState": "No published categories are available in this environment yet.",
+    "emptyCta": "Contact sales for category guidance ->",
+    "viewProducts": "View products",
+    "customTitle": "Need a custom specification?",
+    "customDescription": "Our OEM team supports specification review, branding, molded cases, insert cards, and export-ready packaging details.",
+    "customCta": "Request a Quote",
+    "talkCta": "Talk to Our Team"
+  },
+  "productCategory": {
+    "products": "Products",
+    "buyerFocusTitle": "Buyer Focus",
+    "buyerFocusDescription": "Category pages are meant to help importers and distributors narrow down the right tool family before discussing SKU mix, packaging, and documentation.",
+    "typicalQuestionsTitle": "Typical Questions",
+    "typicalQuestionsDescription": "Buyers usually compare usage fit, target market, quality control expectation, and whether standard supply or customization is the better path.",
+    "fasterAnswerTitle": "Need a faster answer?",
+    "fasterAnswerDescription": "If you already know your quantity, packaging need, or target market, move directly to RFQ and include the category context.",
+    "searchPlaceholder": "Search in",
+    "productCount": "product",
+    "productCountPlural": "products",
+    "matching": "matching",
+    "filteredNotice": "This filtered view is not indexed by search engines.",
+    "viewAllProducts": "View all products",
+    "noProducts": "No products in this category yet.",
+    "noProductsFound": "No products found for",
+    "prev": "<- Prev",
+    "next": "Next ->",
+    "page": "Page"
+  },
+  "productDetail": {
+    "products": "Products",
+    "introBox": "This page is structured for buyers who need to evaluate model fit, specification clarity, related applications, and supporting documents before moving into quote discussion.",
+    "overview": "Product Overview",
+    "inspectionTitle": "Inspection Discipline",
+    "inspectionDescription": "For repeat orders, buyers usually care less about brochure claims than about whether inspection points, measurement method, and sample-to-production alignment are controlled the same way every time.",
+    "packagingTitle": "OEM Packaging Support",
+    "packagingDescription": "This model can be discussed with insert cards, logo marking, barcode labels, molded cases, and retail-ready packing requirements if the program goes beyond standard supply.",
+    "readinessTitle": "Packaging Readiness",
+    "readinessDescription": "Use RFQ notes to confirm label content, insert cards, molded cases, carton marks, and other private-label packaging details tied to this item.",
+    "specControlTitle": "Specification Control",
+    "specControlDescription": "Buyers should align the critical dimensions, torque range, material, finish, and inspection checkpoints before sample approval.",
+    "contextTitle": "Program Context",
+    "contextDescription": "This SKU can be discussed as a standalone item, a recurring catalog line, or part of a mixed-SKU toolkit or drawer-set program.",
+    "specsTitle": "Specifications",
+    "faqTitle": "Frequently Asked Questions",
+    "appTitle": "Application Scenarios",
+    "appLearnMore": "Learn more ->",
+    "certTitle": "Certifications & Compliance",
+    "beforeRfqTitle": "Before You Submit Your RFQ",
+    "beforeRfqDescription": "Having these details ready helps NorthForge respond with accurate pricing, feasibility, and documentation scope in the first reply.",
+    "rfqItems": [
+      { "label": "Quantity per SKU", "detail": "Initial order and annual volume estimate" },
+      { "label": "OEM scope", "detail": "Logo marking, packaging format, barcode, insert cards" },
+      { "label": "Target market & compliance", "detail": "Country, channel, and required standards (ISO, RoHS, REACH, CE)" },
+      { "label": "Key specifications", "detail": "Torque class, material, surface finish, size variants" },
+      { "label": "Sample or direct order", "detail": "Sample-first flow vs. direct production order" },
+      { "label": "Program type", "detail": "Standalone SKU, recurring catalog line, or mixed-SKU kit program" }
+    ],
+    "submitRfq": "Submit RFQ for This Product ->",
+    "askFirst": "Ask a Question First"
+  },
+  "applications": {
+    "metadata": {
+      "title": "Industry Applications",
+      "description": "Explore NorthForge application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits."
+    },
+    "breadcrumb": "Applications",
+    "title": "Industry Applications",
+    "description": "These pages are designed to help buyers connect real use cases with the right hand-tool families, packaging formats, and sourcing concerns before moving into RFQ.",
+    "emptyState": "No applications published yet.",
+    "fallbackIndustry": "Other"
+  },
+  "applicationDetail": {
+    "applications": "Applications",
+    "prompts": [
+      "What operating environment the tool must survive",
+      "Whether the buyer needs standard supply or a private-label assortment",
+      "What packaging, labeling, or documentation must travel with the order"
+    ],
+    "challenge": "The Challenge",
+    "solution": "Our Solution",
+    "verificationTitle": "Verification Before Scale-Up",
+    "verificationDescription": "Buyers evaluating this application usually need confidence that repeat-use performance, inspection checkpoints, and sample approval criteria are controlled before mass production starts.",
+    "packagingTitle": "Packaging and Program Fit",
+    "packagingDescription": "If this use case needs private-label cartons, molded cases, barcode labels, or assortment planning, NorthForge treats those as part of the sourcing program rather than an afterthought.",
+    "sourcingTitle": "What buyers typically confirm before RFQ",
+    "sourcingDescription": "Having this scope ready helps NorthForge respond faster and match the right product mix to your program.",
+    "sourcingItems": [
+      { "label": "Tool performance requirements", "detail": "Torque range, insulation class, material hardness, or grip finish tied to the operating environment." },
+      { "label": "Standard supply or OEM / private-label", "detail": "Whether logo stamping, custom packaging, barcode labels, or insertion cards are part of this program." },
+      { "label": "Mixed-SKU or assortment scope", "detail": "If spanning a toolkit, service kit, or branded assortment, include target SKU count and common size range." },
+      { "label": "Target market and compliance docs", "detail": "Country, channel type, and the specific standards required: ISO, CE support, RoHS / REACH, or third-party test reports." }
+    ],
+    "quoteCta": "Request Application-Specific Quote",
+    "planCta": "Plan OEM / Private-Label Scope",
+    "allApplications": "<- All Applications",
+    "relatedProductsTitle": "Recommended Product Families",
+    "relatedProductsDescription": "These linked items are relevant starting points for buyers evaluating fit, sample scope, or assortment planning for this application.",
+    "viewProduct": "View product ->",
+    "faqTitle": "Frequently Asked Questions"
+  },
+  "certifications": {
+    "metadata": {
+      "title": "Certifications & Quality",
+      "description": "Review NorthForge quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination."
+    },
+    "breadcrumb": "Certifications",
+    "title": "Quality & Certifications",
+    "description": "This section is intended for buyers who need to verify how NorthForge handles quality workflow, material compliance, and document support during export execution.",
+    "emptyState": "No certifications published yet.",
+    "overviewTitle": "Document Availability at a Glance",
+    "overviewDescription": "Buyers frequently ask which documents are available, when, and under what conditions. Below is a practical summary.",
+    "items": [
+      { "type": "System certifications", "detail": "Facility-level certifications (e.g. ISO 9001) are available as PDF copy upon request and can be included in your order documentation package.", "note": "Available for all programs" },
+      { "type": "Product compliance docs", "detail": "RoHS declarations, REACH statements, material test reports, and CE support documents are generated per SKU or product family based on destination market.", "note": "Generated per order scope" },
+      { "type": "Export documentation", "detail": "Packing lists, carton marks, barcode accuracy control, and certificate-of-origin coordination are part of the standard export program.", "note": "Included in standard export" }
+    ],
+    "availabilityNote": "Document scope varies by product family and destination market.",
+    "availabilityCta": "Contact us to confirm availability for your SKU and market.",
+    "commitmentTitle": "Our Commitment to Quality",
+    "commitmentDescription": "NorthForge treats quality and compliance as operational support for real orders: incoming checks, selected performance verification, packaging control, document accuracy, and third-party inspection coordination when programs require it.",
+    "commitmentCta": "Request Quality Documentation"
+  },
+  "certificationDetail": {
+    "certifications": "Certifications",
+    "issuedBy": "Issued by",
+    "noBadge": "No badge image",
+    "whyTitle": "Why buyers ask for this",
+    "whyDescription": "Certifications and compliance records help importers, distributors, and private-label brands confirm whether a supplier can support target-market requirements, customer audits, and shipment paperwork.",
+    "fallbackDescription": "Certification details will be updated soon.",
+    "certificateNo": "Certificate No.",
+    "locale": "Locale",
+    "issued": "Issued",
+    "expires": "Expires",
+    "download": "Download Certificate",
+    "askHow": "Ask how this applies to your program ->"
+  },
+  "capabilities": {
+    "metadata": {
+      "title": "Manufacturing Capabilities",
+      "description": "Explore NorthForge capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support."
+    },
+    "breadcrumb": "Capabilities",
+    "title": "Manufacturing Capabilities",
+    "description": "These pages explain the operational strengths behind the NorthForge catalog so buyers can judge whether the supplier fits their commercial workflow, not just their tool list.",
+    "tags": ["OEM development", "Private-label packaging", "Torque verification", "Kit assembly", "Export documentation"],
+    "ctaTitle": "Not sure which capability matters most for your program?",
+    "ctaDescription": "Describe your sourcing scenario, toolkit build, private-label launch, or recurring distributor supply, and NorthForge can identify which capabilities are most relevant to your execution flow.",
+    "ctaPrimary": "Discuss Your Program",
+    "ctaSecondary": "Submit RFQ",
+    "buyerBenefit": {
+      "engineering": "Reduces revision cycles between buyer spec and production.",
+      "quality": "Gives repeat-order buyers a consistent inspection baseline.",
+      "packaging": "Supports OEM, private-label, and retail-ready delivery formats.",
+      "assembly": "Enables mixed-SKU kits and toolkit programs without enterprise complexity.",
+      "export": "Ensures shipment documentation accuracy for target markets.",
+      "testing": "Provides traceable torque and performance verification per batch."
+    }
+  },
+  "capabilityDetail": {
+    "capabilities": "Capabilities",
+    "commercialBenefit": "Commercial Benefit",
+    "commercialBenefitDescription": "This capability matters because it affects how consistently a buyer can move from approved sample to repeat production, shipment documentation, and downstream channel delivery.",
+    "snapshot": "Capability Snapshot",
+    "focusArea": "Focus area",
+    "relevantAt": "Relevant at",
+    "appliesTo": "Applies to",
+    "general": "General",
+    "relevantValue": "RFQ & sample stage",
+    "appliesValue": "All export programs",
+    "discussionDescription": "Use this capability as a discussion point when you need clearer packaging execution, better spec review, or more stable repeat-order control.",
+    "discuss": "Discuss This Capability"
+  },
+  "comparisons": {
+    "metadata": {
+      "title": "Product Comparisons",
+      "description": "Comparison guides for hand tool buyers evaluating material, format, and sourcing tradeoffs before product selection or RFQ."
+    },
+    "breadcrumb": "Comparisons",
+    "title": "Product Comparisons",
+    "description": "These guides are written for buyers who need faster decision support on tool format, material, compliance fit, and sourcing practicality.",
+    "emptyState": "No comparisons published yet.",
+    "readMore": "Read comparison ->"
+  },
+  "comparisonDetail": {
+    "comparisons": "Comparisons",
+    "dimension": "Dimension",
+    "optionA": "Option A",
+    "optionB": "Option B",
+    "detailsTitle": "Comparison Details",
+    "takeawayTitle": "Buyer Takeaway",
+    "recommendedTitle": "Recommended for",
+    "recommendedDescription": "Buyers who have narrowed down format options and need a clearer basis for supplier discussions, specification alignment, or private-label program planning. Use this comparison as a reference point when briefing your team or building an RFQ scope.",
+    "rfqTitle": "When to move to RFQ",
+    "rfqDescription": "Once you have a preferred direction from this comparison, include key parameters in your RFQ: target quantity, OEM scope, preferred market, and required compliance standard. NorthForge can shortlist the right SKU or material spec from there.",
+    "submitRfq": "Submit Your RFQ ->",
+    "askQuestion": "Ask a Sourcing Question",
+    "allComparisons": "<- All comparisons"
+  },
+  "about": {
+    "metadata": {
+      "title": "About NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
+      "description": "Learn about NorthForge Tools, a Taiwan-based OEM/ODM hand tool manufacturer focused on quality control, export-ready execution, and private-label tool programs."
+    },
+    "breadcrumb": "About",
+    "heroTitle": "About NorthForge Tools",
+    "heroDescription": "Built for buyers who need more than a supplier. NorthForge supports professional hand tool programs with stronger process control, private-label readiness, and dependable communication.",
+    "stats": [
+      { "value": "20+", "label": "Years in Export Tooling" },
+      { "value": "5", "label": "Core Product Families" },
+      { "value": "40+", "label": "Countries Served" },
+      { "value": "OEM / ODM", "label": "Private-Label Ready" }
+    ],
+    "ourStory": "Our Story",
+    "storyTitle": "Built for Buyers Who Need More Than a Factory",
+    "talkTeam": "Talk to Our Team",
+    "whatWeMake": "What We Make",
+    "productLinesTitle": "Professional Tool Lines for Repeat Programs",
+    "ourJourney": "Our Journey",
+    "milestones": "Milestones",
+    "strengthsEyebrow": "Operational Strengths",
+    "strengthsTitle": "How NorthForge Reduces Buyer Friction",
+    "capabilitiesEyebrow": "What We Do",
+    "capabilitiesTitle": "Manufacturing Capabilities",
+    "certificationsEyebrow": "Quality Assurance",
+    "certificationsTitle": "Certifications",
+    "ctaTitle": "Ready to Work Together?",
+    "ctaDescription": "If you are building a professional hand tool line, a service-tool assortment, or a private-label toolkit program, NorthForge can help structure a cleaner sourcing workflow from product selection to shipment execution.",
+    "contactTeam": "Contact Our Team",
+    "browseProducts": "Browse Products",
+    "productLines": [
+      { "title": "Torque Tools", "desc": "Torque wrenches, torque screwdrivers, torque multipliers, and beam-type torque tools for precision fastening in automotive, industrial, and utility programs." },
+      { "title": "Insulated Tools", "desc": "VDE-rated hand tools for live-line electrical work, utility maintenance, and installation programs requiring IEC 60900 compliance and color-coded safety identification." },
+      { "title": "Workshop & Hand Tools", "desc": "Ratchets, sockets, spanners, pliers, screwdrivers, and hex keys for professional workshop programs, maintenance kits, and mixed-SKU distributor assortments." },
+      { "title": "Custom Tool Programs", "desc": "Private-label toolkit builds, branded service assortments, drawer-set configurations, and OEM programs requiring documentation, packaging, and specification alignment." }
+    ],
+    "timeline": [
+      { "year": "2004", "event": "Founded with a focus on OEM torque and hand tool manufacturing for export markets" },
+      { "year": "2008", "event": "ISO 9001 certification achieved; formalized quality management for repeat-order programs" },
+      { "year": "2012", "event": "Insulated tool line launched with VDE-aligned process controls for utility and electrical channels" },
+      { "year": "2016", "event": "Expanded private-label packaging capability including molded cases, barcode labeling, and insert cards" },
+      { "year": "2019", "event": "Mixed-SKU kit assembly and drawer-set program capability introduced for distributor channels" },
+      { "year": "2023", "event": "Export documentation workflow upgraded to support multi-market compliance and third-party inspection coordination" }
+    ],
+    "operationalStrengths": [
+      { "title": "Repeat-Order Consistency", "desc": "Drawing control, packaging verification, and QC checkpoint alignment are maintained across production runs to reduce variance between approved sample and delivered product." },
+      { "title": "Private-Label and OEM Execution", "desc": "Logo marking, insert cards, molded cases, barcode labels, and retail-ready carton programs are supported as a standard part of program setup, not an add-on." },
+      { "title": "Compliance and Documentation Support", "desc": "ISO 9001 workflow, RoHS and REACH documentation, CE support files, and third-party inspection coordination are available to buyers with destination-market requirements." },
+      { "title": "Mixed-SKU and Kit Assembly", "desc": "Toolkit builds, drawer-set configurations, and branded assortment programs are supported without enterprise-level complexity, making NorthForge practical for mid-size distributor channels." }
+    ],
+    "storyParagraphs": [
+      "NorthForge was founded to serve buyers who need more from a supplier than the tool itself — consistent production quality, reliable documentation, and a packaging workflow that doesn't fall apart when the order scales.",
+      "Most of our early programs were built around torque tools and insulated hand tools for export markets with demanding specifications. Over time, we expanded to support private-label programs, mixed-SKU toolkit builds, and drawer-set assortments as buyer expectations grew.",
+      "We built our operational processes around the premise that the things buyers actually rely on — repeat-order predictability, accurate packing lists, and clean compliance paperwork — are not optional extras. They are the program."
+    ]
   }
 }
+

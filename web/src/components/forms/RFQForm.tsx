@@ -7,30 +7,49 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { useMessageNamespace } from "@/lib/messages";
+
+type OptionItem = {
+  value: string;
+  label: string;
+};
+
+type RFQFormMessages = {
+  howOptions: OptionItem[];
+  timelineOptions: OptionItem[];
+  successTitle: string;
+  referenceNumber: string;
+  successDescription: string;
+  submitting: string;
+  submit: string;
+  footerNote: string;
+  submitFailed: string;
+  unexpectedError: string;
+  labels: {
+    fullName: string;
+    email: string;
+    company: string;
+    phone: string;
+    country: string;
+    jobTitle: string;
+    quantity: string;
+    specifications: string;
+    timeline: string;
+    message: string;
+    howFound: string;
+    consent: string;
+  };
+  placeholders: {
+    quantity: string;
+    specifications: string;
+    message: string;
+  };
+};
 
 const DRAFT_KEY = "fb_rfq_draft";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 const SELECT_CLS = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
-
-const HOW_OPTIONS = [
-  { value: "", label: "How did you find us?" },
-  { value: "google", label: "Google Search" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "trade_show", label: "Trade Show / Exhibition" },
-  { value: "referral", label: "Referral" },
-  { value: "direct", label: "Direct / Already knew" },
-  { value: "email", label: "Email Newsletter" },
-  { value: "other", label: "Other" },
-];
-
-const TIMELINE_OPTIONS = [
-  { value: "", label: "Delivery Timeline" },
-  { value: "immediate", label: "Immediate" },
-  { value: "1-3 months", label: "1-3 months" },
-  { value: "3-6 months", label: "3-6 months" },
-  { value: "evaluating", label: "Evaluating" },
-];
 
 interface FormState {
   full_name: string; email: string; company_name: string; phone: string;
@@ -49,6 +68,7 @@ interface Props {
 }
 
 export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }: Props) {
+  const copy = useMessageNamespace<RFQFormMessages>("forms.rfq");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -100,12 +120,12 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Submission failed. Please try again.");
+      if (!res.ok) throw new Error(data.detail || copy.submitFailed);
       trackRFQSubmit();
       setRfqNumber(data.rfq_number); setSubmitted(true);
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : copy.unexpectedError);
     } finally { setSubmitting(false); }
   }
 
@@ -113,9 +133,9 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
     return (
       <div className="rounded-lg border border-green-200 bg-green-50 p-8 text-center">
         <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-        <h2 className="text-xl font-bold text-green-800 mb-2">RFQ Submitted Successfully</h2>
-        <p className="text-green-700 mb-1">Your reference number: <strong>{rfqNumber}</strong></p>
-        <p className="text-sm text-green-600">Our team will review your request and reply within 1 business day if the specification details are complete.</p>
+        <h2 className="text-xl font-bold text-green-800 mb-2">{copy.successTitle}</h2>
+        <p className="text-green-700 mb-1">{copy.referenceNumber} <strong>{rfqNumber}</strong></p>
+        <p className="text-sm text-green-600">{copy.successDescription}</p>
       </div>
     );
   }
@@ -124,69 +144,69 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="full_name">Full Name <span className="text-destructive">*</span></Label>
+          <Label htmlFor="full_name">{copy.labels.fullName} <span className="text-destructive">*</span></Label>
           <Input id="full_name" name="full_name" value={form.full_name} onChange={handleChange} required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="email">Business Email <span className="text-destructive">*</span></Label>
+          <Label htmlFor="email">{copy.labels.email} <span className="text-destructive">*</span></Label>
           <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} required />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="company_name">Company Name <span className="text-destructive">*</span></Label>
+          <Label htmlFor="company_name">{copy.labels.company} <span className="text-destructive">*</span></Label>
           <Input id="company_name" name="company_name" value={form.company_name} onChange={handleChange} required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="phone">Phone / WhatsApp</Label>
+          <Label htmlFor="phone">{copy.labels.phone}</Label>
           <Input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="country">Country / Region <span className="text-destructive">*</span></Label>
+          <Label htmlFor="country">{copy.labels.country} <span className="text-destructive">*</span></Label>
           <Input id="country" name="country" value={form.country} onChange={handleChange} required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="job_title">Job Title</Label>
+          <Label htmlFor="job_title">{copy.labels.jobTitle}</Label>
           <Input id="job_title" name="job_title" value={form.job_title} onChange={handleChange} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="quantity">Quantity Required</Label>
-        <Input id="quantity" name="quantity" value={form.quantity} onChange={handleChange} placeholder="e.g. 500 pcs, 1200 sets, annual blanket order" />
+        <Label htmlFor="quantity">{copy.labels.quantity}</Label>
+        <Input id="quantity" name="quantity" value={form.quantity} onChange={handleChange} placeholder={copy.placeholders.quantity} />
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="specifications">Technical Specifications / Requirements</Label>
+        <Label htmlFor="specifications">{copy.labels.specifications}</Label>
         <Textarea
           id="specifications" name="specifications" value={form.specifications} onChange={handleChange} rows={4}
-          placeholder="Share the tool type, target model, size range, torque requirement, insulation class, finish, packaging, logo, or any reference drawing you already have."
+          placeholder={copy.placeholders.specifications}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Target Purchase Timeline</Label>
+        <Label>{copy.labels.timeline}</Label>
         <select name="timeline" value={form.timeline} onChange={handleChange} className={SELECT_CLS}>
-          {TIMELINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {copy.timelineOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="message">Additional Message</Label>
+        <Label htmlFor="message">{copy.labels.message}</Label>
         <Textarea
           id="message" name="message" value={form.message} onChange={handleChange} rows={3}
-          placeholder="Tell us about your target market, current sourcing issue, sample timing, or any packaging and documentation expectations."
+          placeholder={copy.placeholders.message}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>How did you find us?</Label>
+        <Label>{copy.labels.howFound}</Label>
         <select name="how_did_you_find_us" value={form.how_did_you_find_us} onChange={handleChange} className={SELECT_CLS}>
-          {HOW_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {copy.howOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
@@ -205,16 +225,16 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
           required
           className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-ring"
         />
-        <span>I agree to the Privacy Policy and consent to the processing of my enquiry data. *</span>
+        <span>{copy.labels.consent}</span>
       </label>
 
       <Button type="submit" size="lg" className="w-full" disabled={submitting || !form.consent}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {submitting ? "Submitting…" : "Submit RFQ"}
+        {submitting ? copy.submitting : copy.submit}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">
-        By submitting this form you agree to our Privacy Policy. We will never share your data with third parties.
+        {copy.footerNote}
       </p>
     </form>
   );

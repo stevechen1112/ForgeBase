@@ -1,29 +1,52 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
-export const metadata: Metadata = {
-  title: "Cookie Policy",
-  description: "Cookie usage policy for the NorthForge Tools website.",
+type CommonMessages = {
+  home: string;
 };
 
-export default function CookiesPage() {
+type LegalPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  paragraphs?: string[];
+};
+
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await params;
+  return getMessageNamespace<LegalPageMessages>("legal.cookies").then((copy) => copy.metadata);
+}
+
+export default async function CookiesPage({ params }: Props) {
+  const { locale } = await params;
+  resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<LegalPageMessages>("legal.cookies"),
+  ]);
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">
         <div className="mx-auto max-w-4xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">Cookie Policy</span>
+            <span className="text-gray-600">{copy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-900">Cookie Policy</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{copy.title}</h1>
         </div>
       </section>
       <section className="py-14">
         <div className="prose prose-gray mx-auto max-w-4xl px-6">
-          <p>NorthForge Tools uses essential website cookies and limited analytics storage to support navigation, form submissions, and basic performance measurement.</p>
-          <p>Cookies may be used to remember UI state, support request flows, and understand page usage trends. They are not used to sell behavioral data to third parties.</p>
-          <p>You can manage cookies through your browser settings. Disabling some cookies may affect site functionality such as form persistence or gated downloads.</p>
+          {copy.paragraphs?.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
         </div>
       </section>
     </main>

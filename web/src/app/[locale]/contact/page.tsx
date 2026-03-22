@@ -1,43 +1,57 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
-export const metadata: Metadata = {
-  title: "Contact NorthForge Tools",
-  description:
-    "Contact NorthForge Tools to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.",
+type CommonMessages = {
+  home: string;
 };
+
+type ContactPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  reasonsTitle: string;
+  reasons: Array<{ label: string; desc: string }>;
+  officesTitle: string;
+  offices: Array<{ city: string; address: string; phone: string; hours: string }>;
+  responseTitle: string;
+  responseDescription: string;
+  formTitle: string;
+  formDescription: string;
+  quickLinksPrompt: string;
+  quickLinks: {
+    products: string;
+    certifications: string;
+    rfq: string;
+  };
+};
+
+interface Props {
+  params: Promise<{ locale: string }>;
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
   ? "NorthForge Tools"
   : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
-const OFFICES = [
-  {
-    city: "Taichung Manufacturing Coordination",
-    address: "Taichung, Taiwan",
-    phone: "+886-4-3700-2218",
-    hours: "Mon–Fri 09:00–18:00 CST",
-  },
-  {
-    city: "Taipei Export Sales Desk",
-    address: "Taipei, Taiwan",
-    phone: "+886-2-7709-8891",
-    hours: "Mon–Fri 09:00–18:00 CST",
-  },
-];
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await params;
+  return getMessageNamespace<ContactPageMessages>("contactPage").then((copy) => copy.metadata);
+}
 
-const REASONS = [
-  { label: "Catalog or Repeat Supply", desc: "Pricing, MOQ, lead times, and repeat-order planning" },
-  { label: "OEM / Private Label", desc: "Logo, packaging, barcode, case, and assortment discussions" },
-  { label: "Technical Clarification", desc: "Torque, insulation, material, finish, and use-case review" },
-  { label: "Toolkit Program Planning", desc: "Mixed-SKU sets, drawer systems, and export-ready bundles" },
-];
-
-export default function ContactPage() {
+export default async function ContactPage({ params }: Props) {
+  const { locale } = await params;
+  resolveLocale(locale);
+  const [copy, common] = await Promise.all([
+    getMessageNamespace<ContactPageMessages>("contactPage"),
+    getMessageNamespace<CommonMessages>("common"),
+  ]);
   const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.includes("forgebase")
     ? "sales@northforgetools.com"
     : (process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@northforgetools.com");
@@ -47,8 +61,8 @@ export default function ContactPage() {
     <>
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Contact", url: `${SITE_URL}/contact` },
+          { name: common.home, url: SITE_URL },
+          { name: copy.breadcrumb, url: `${SITE_URL}/contact` },
         ])}
       />
       <PageViewTracker pageType="contact" />
@@ -57,14 +71,13 @@ export default function ContactPage() {
       <section className="border-b border-gray-100 bg-gradient-to-br from-blue-950 to-blue-800 py-16 text-white">
         <div className="mx-auto max-w-6xl px-6">
           <nav aria-label="Breadcrumb" className="mb-4 text-xs text-blue-300">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1.5">/</span>
-            <span>Contact</span>
+            <span>{copy.breadcrumb}</span>
           </nav>
-          <h1 className="text-4xl font-extrabold">Talk to {SITE_NAME}</h1>
+          <h1 className="text-4xl font-extrabold">{copy.title || SITE_NAME}</h1>
           <p className="mt-3 max-w-xl text-lg text-blue-200 leading-relaxed">
-            Use this channel for sourcing discussions, product clarification, private-label planning,
-            and toolkit program enquiries. Qualified messages are reviewed within 1 business day.
+            {copy.description}
           </p>
 
           {/* Quick contact chips */}
@@ -101,9 +114,9 @@ export default function ContactPage() {
 
               {/* Why contact us */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Best Reasons to Contact NorthForge</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{copy.reasonsTitle}</h2>
                 <ul className="mt-4 space-y-3">
-                  {REASONS.map((r) => (
+                  {copy.reasons.map((r) => (
                     <li key={r.label} className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
                       <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -121,9 +134,9 @@ export default function ContactPage() {
 
               {/* Offices */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Our Offices</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{copy.officesTitle}</h2>
                 <div className="mt-4 space-y-4">
-                  {OFFICES.map((office) => (
+                  {copy.offices.map((office) => (
                     <div key={office.city} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
                       <h3 className="text-sm font-bold text-blue-700">{office.city}</h3>
                       <dl className="mt-2 space-y-1 text-sm text-gray-600">
@@ -158,11 +171,10 @@ export default function ContactPage() {
                   <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-blue-800">What Helps Us Reply Faster</span>
+                  <span className="text-sm font-semibold text-blue-800">{copy.responseTitle}</span>
                 </div>
                 <p className="mt-2 text-xs text-blue-700 leading-relaxed">
-                  Include the tool category, approximate volume, target market, and whether you need OEM packaging or compliance documents.
-                  The clearer the request, the faster we can route it correctly.
+                  {copy.responseDescription}
                 </p>
               </div>
 
@@ -171,9 +183,9 @@ export default function ContactPage() {
             {/* Right column (form) */}
             <div className="lg:col-span-3">
               <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-                <h2 className="mb-1 text-xl font-bold text-gray-900">Send an Enquiry</h2>
+                <h2 className="mb-1 text-xl font-bold text-gray-900">{copy.formTitle}</h2>
                 <p className="mb-6 text-sm text-gray-500">
-                  Use the form for general business enquiries. If you already have quantities, specifications, or packaging requirements, the RFQ flow is better.
+                  {copy.formDescription}
                 </p>
                 <ContactForm />
               </div>
@@ -188,17 +200,17 @@ export default function ContactPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-sm font-medium text-gray-700">
-              Looking for something specific?
+              {copy.quickLinksPrompt}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/products" className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-blue-300 hover:text-blue-700 transition-colors">
-                Browse Products
+                {copy.quickLinks.products}
               </Link>
               <Link href="/certifications" className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-blue-300 hover:text-blue-700 transition-colors">
-                Certifications
+                {copy.quickLinks.certifications}
               </Link>
               <Link href="/rfq" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
-                Request a Quote
+                {copy.quickLinks.rfq}
               </Link>
             </div>
           </div>

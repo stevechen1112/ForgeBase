@@ -1,22 +1,8 @@
 {
-  "nav": {
-    "products": "產品目錄",
-    "applications": "應用場景",
-    "certifications": "品質認證",
-    "about": "關於我們",
-    "contact": "聯絡我們"
-  },
-  "cta": {
-    "getQuote": "立即詢價",
-    "contactUs": "聯絡我們",
-    "viewAll": "查看全部",
-    "download": "下載",
-    "learnMore": "了解更多",
-    "requestQuote": "提交詢價單",
-    "sendMessage": "發送訊息",
-    "submitRFQ": "提交詢價"
-  },
   "common": {
+    "home": "首頁",
+    "faq": "常見問題",
+    "questions": "個問題",
     "loading": "載入中…",
     "noResults": "找不到相符結果",
     "backToList": "← 返回",
@@ -30,7 +16,6 @@
     "relatedApplications": "相關應用",
     "specifications": "規格說明",
     "downloads": "資料下載",
-    "faq": "常見問題",
     "certifications": "品質認證",
     "capabilities": "製造能力",
     "comparisons": "產品比較",
@@ -38,10 +23,674 @@
     "careers": "加入我們",
     "privacyPolicy": "隱私政策",
     "termsOfUse": "使用條款",
-    "cookiePolicy": "Cookie 政策"
+    "cookiePolicy": "Cookie 政策",
+    "localeFallbackTitle": "此頁部分內容暫以英文顯示",
+    "localeFallbackDescription": "這些資料目前尚未建立繁體中文版本，因此系統暫時顯示英文原文。"
+  },
+  "header": {
+    "rfq": "詢價",
+    "submitRfq": "送出詢價單",
+    "contact": "聯絡我們",
+    "openMenu": "開啟選單",
+    "partnerTitle": "全球製造合作夥伴",
+    "partnerDescription": "服務 40+ 國家，提供一站式 B2B 採購支援。",
+    "langSwitch": "EN",
+    "nav": {
+      "products": "產品",
+      "applications": "應用",
+      "certifications": "認證",
+      "about": "關於我們",
+      "contact": "聯絡"
+    }
   },
   "footer": {
-    "tagline": "台灣 OEM 手工具製造商。",
-    "copyright": "版權所有。"
+    "description": "深受 40+ 國家工業買家信賴的精密製造方案。通過 ISO 9001，擁有 20+ 年出口與專案執行經驗。",
+    "builtWithPrecision": "以精準製造為本，為成長型通路而設計",
+    "allRightsReserved": "版權所有。",
+    "certifications": ["ISO 9001:2015", "CE 認證", "RoHS 符合", "SGS 稽核"],
+    "sections": {
+      "products": {
+        "heading": "產品",
+        "catalog": "產品目錄",
+        "applications": "依應用分類",
+        "rfq": "立即詢價",
+        "custom": "客製方案"
+      },
+      "company": {
+        "heading": "公司",
+        "about": "關於我們",
+        "certifications": "品質認證",
+        "news": "最新消息",
+        "careers": "人才招募"
+      },
+      "support": {
+        "heading": "支援",
+        "faq": "常見問題",
+        "contact": "聯絡我們",
+        "docs": "技術文件",
+        "dealers": "經銷據點"
+      },
+      "legal": {
+        "heading": "法務",
+        "privacy": "隱私政策",
+        "terms": "服務條款",
+        "cookies": "Cookie 政策"
+      }
+    }
+  },
+  "chat": {
+    "desktopButton": "詢問產品顧問",
+    "mobileButton": "詢問顧問",
+    "title": "AI 產品顧問",
+    "subtitle": "快速回答規格、MOQ、認證與 OEM 相關問題。",
+    "suggestedQuestions": "建議問題",
+    "rfqReady": "可進入詢價",
+    "rfqReadyDescription": "你的需求已足夠明確，可直接進入報價流程並帶入預填 RFQ。",
+    "prepareRfq": "準備 RFQ",
+    "thinking": "思考中...",
+    "placeholder": "可詢問材質、MOQ、OEM、認證或包裝需求...",
+    "sendMessage": "送出訊息",
+    "sessionUnavailable": "顧問服務暫時無法使用，請稍後再試。",
+    "requestFailed": "顧問暫時無法完成這次請求，請稍後再試，或直接改走詢價流程。"
+  },
+  "forms": {
+    "howOptions": [
+      { "value": "", "label": "您如何得知我們？（選填）" },
+      { "value": "google", "label": "Google 搜尋" },
+      { "value": "linkedin", "label": "LinkedIn" },
+      { "value": "trade_show", "label": "展覽 / 展會" },
+      { "value": "referral", "label": "朋友推薦" },
+      { "value": "direct", "label": "直接拜訪 / 原本就知道" },
+      { "value": "email", "label": "電子報" },
+      { "value": "other", "label": "其他" }
+    ],
+    "contact": {
+      "successTitle": "訊息已送出",
+      "successDescription": "感謝你的來訊，我們會在 1 個工作天內回覆。",
+      "sending": "傳送中...",
+      "submit": "送出詢問",
+      "submitFailed": "送出失敗，請稍後再試。",
+      "unexpectedError": "發生未預期錯誤。",
+      "labels": {
+        "fullName": "姓名",
+        "email": "Email",
+        "company": "公司名稱",
+        "country": "國家 / 地區",
+        "jobTitle": "職稱",
+        "phone": "電話 / WhatsApp",
+        "message": "留言內容",
+        "howFound": "您如何得知我們？"
+      },
+      "placeholders": {
+        "fullName": "請輸入您的姓名",
+        "email": "your@email.com",
+        "company": "經銷商、進口商、品牌商或工廠名稱",
+        "country": "例如：台灣、United States",
+        "jobTitle": "例如：採購經理",
+        "phone": "選填，方便加快後續聯繫",
+        "message": "請告訴我們您想討論的工具品類、應用情境、包裝需求或採購問題..."
+      }
+    },
+    "rfq": {
+      "howOptions": [
+        { "value": "", "label": "您如何得知我們？" },
+        { "value": "google", "label": "Google 搜尋" },
+        { "value": "linkedin", "label": "LinkedIn" },
+        { "value": "trade_show", "label": "展覽 / 展會" },
+        { "value": "referral", "label": "朋友推薦" },
+        { "value": "direct", "label": "直接拜訪 / 原本就知道" },
+        { "value": "email", "label": "電子報" },
+        { "value": "other", "label": "其他" }
+      ],
+      "timelineOptions": [
+        { "value": "", "label": "預計交期" },
+        { "value": "immediate", "label": "立即" },
+        { "value": "1-3 months", "label": "1-3 個月" },
+        { "value": "3-6 months", "label": "3-6 個月" },
+        { "value": "evaluating", "label": "評估中" }
+      ],
+      "successTitle": "RFQ 已成功送出",
+      "referenceNumber": "您的參考編號：",
+      "successDescription": "我們會審查需求內容，若規格資訊完整，將於 1 個工作天內回覆。",
+      "submitting": "送出中...",
+      "submit": "提交 RFQ",
+      "footerNote": "送出表單即代表你同意我們的隱私政策。我們不會將你的資料提供給第三方。",
+      "submitFailed": "送出失敗，請稍後再試。",
+      "unexpectedError": "發生未預期錯誤。",
+      "labels": {
+        "fullName": "姓名",
+        "email": "商務 Email",
+        "company": "公司名稱",
+        "phone": "電話 / WhatsApp",
+        "country": "國家 / 地區",
+        "jobTitle": "職稱",
+        "quantity": "需求數量",
+        "specifications": "技術規格 / 需求說明",
+        "timeline": "預計採購時程",
+        "message": "補充說明",
+        "howFound": "您如何得知我們？",
+        "consent": "我同意隱私政策，並授權處理本次詢價資料。*"
+      },
+      "placeholders": {
+        "quantity": "例如：500 pcs、1200 sets、年度採購",
+        "specifications": "請提供工具類型、目標型號、尺寸範圍、扭力需求、絕緣等級、表面處理、包裝、Logo 或現有圖面參考。",
+        "message": "可補充目標市場、目前採購問題、打樣時程或對包裝與文件的期待。"
+      }
+    }
+  },
+  "contactPage": {
+    "metadata": {
+      "title": "聯絡 NorthForge Tools",
+      "description": "聯絡 NorthForge Tools 討論採購規劃、自有品牌包裝、工具組專案或出口導向手工具需求。"
+    },
+    "breadcrumb": "聯絡我們",
+    "title": "聯絡 NorthForge Tools",
+    "description": "此管道適合用於採購討論、產品釐清、自有品牌規劃與工具組專案洽詢。符合條件的詢問將在 1 個工作天內審閱回覆。",
+    "reasonsTitle": "最適合聯絡 NorthForge 的情境",
+    "reasons": [
+      { "label": "目錄品或持續供貨", "desc": "價格、MOQ、交期與補單規劃" },
+      { "label": "OEM / 自有品牌", "desc": "Logo、包裝、條碼、工具盒與組套方案" },
+      { "label": "技術規格確認", "desc": "扭力、絕緣、材質、表面處理與使用情境討論" },
+      { "label": "工具組專案規劃", "desc": "混 SKU 套組、抽屜系統與出口型組套需求" }
+    ],
+    "officesTitle": "聯絡窗口",
+    "offices": [
+      { "city": "台中製造協調窗口", "address": "台中，台灣", "phone": "+886-4-3700-2218", "hours": "週一至週五 09:00-18:00 CST" },
+      { "city": "台北出口業務窗口", "address": "台北，台灣", "phone": "+886-2-7709-8891", "hours": "週一至週五 09:00-18:00 CST" }
+    ],
+    "responseTitle": "讓我們更快回覆的資訊",
+    "responseDescription": "請盡量提供工具品類、預估數量、目標市場，以及是否需要 OEM 包裝或合規文件。需求越清楚，越能更快正確分流。",
+    "formTitle": "送出詢問",
+    "formDescription": "一般商務洽詢可使用此表單；若已具備數量、規格或包裝需求，建議直接走 RFQ 流程。",
+    "quickLinksPrompt": "想找更明確的入口？",
+    "quickLinks": {
+      "products": "瀏覽產品",
+      "certifications": "查看認證",
+      "rfq": "立即詢價"
+    }
+  },
+  "rfqPage": {
+    "metadata": {
+      "title": "提交詢價",
+      "description": "提交扭力工具、絕緣工具、工坊工具或自有品牌工具組 RFQ，於 1 個工作天內獲得合格回覆。"
+    },
+    "title": "提交工具專案詢價",
+    "description": "分享你的產品範圍、包裝需求與採購時程。我們會審查內容，並在 1 個工作天內回覆合適的下一步。",
+    "builtForTitle": "這份 RFQ 適用情境",
+    "builtForItems": [
+      "標準工具採購與持續型經銷供貨",
+      "自有品牌包裝、條碼與模塑盒專案",
+      "混 SKU 工具組與抽屜套組方案",
+      "扭力、絕緣、材質與表面處理規格檢討",
+      "出口與合規敏感訂單所需的文件支援",
+      "保密 OEM 討論所需的 NDA 流程"
+    ],
+    "helpTitle": "需要協助？",
+    "helpDescription": "如果你目前只確定應用情境與目標市場，NorthForge 可協助收斂合適的工具家族與包裝方向。",
+    "helpCta": "聯絡工程與業務窗口 →",
+    "responseWindowLabel": "一般報價分流時窗",
+    "responseWindowTime": "24-48h",
+    "responseWindowHours": "週一至週五 9:00-18:00 CST"
+  },
+  "faqPage": {
+    "metadata": {
+      "title": "常見問題",
+      "description": "快速查看 MOQ、交期、OEM 包裝、合規文件、打樣與技術資料相關常見問題。"
+    },
+    "breadcrumb": "常見問題",
+    "title": "常見問題",
+    "description": "這份 FAQ 是為需要先釐清下單流程、打樣、包裝、文件與補單執行方式的買家所整理。",
+    "emptyState": "目前尚未發布 FAQ。",
+    "ctaTitle": "準備進入下一步？",
+    "ctaDescription": "一般政策與流程問題可先看 FAQ；若要討論商務方向可用聯絡表單；若已準備好產品範圍、數量、包裝或市場需求，請直接送出 RFQ。",
+    "ctaButtons": {
+      "rfq": "提交 RFQ ->",
+      "contact": "提出問題",
+      "applications": "依應用瀏覽"
+    },
+    "allCategories": "<- 返回全部 FAQ 分類"
+  },
+  "docsPage": {
+    "metadata": {
+      "title": "技術文件",
+      "description": "NorthForge 產品的技術文件、資料表與合規相關文件。"
+    },
+    "breadcrumb": "技術文件",
+    "title": "技術文件",
+    "description": "文件取得依產品頁、合規頁與 RFQ 流程整理，讓買家在正確階段索取對應資料。",
+    "docs": [
+      { "title": "產品規格表", "desc": "可從各產品頁面的下載區取得。" },
+      { "title": "合規認證文件", "desc": "可於認證頁查看 ISO、RoHS 與 REACH 相關支援文件。" },
+      { "title": "OEM 專案文件", "desc": "依專案需求，於 RFQ 與打樣階段提供。" }
+    ],
+    "noteTitle": "文件取得說明",
+    "noteDescription": "部分文件僅在確認產品範圍或合規相關性後提供，特別是 OEM 專案、客戶專屬標示或稽核敏感需求。"
+  },
+  "careersPage": {
+    "metadata": {
+      "title": "人才招募",
+      "description": "NorthForge Tools 的職缺與招募資訊。"
+    },
+    "breadcrumb": "人才招募",
+    "title": "人才招募",
+    "description": "NorthForge 持續招募業務、品質、包裝、製造協調與出口營運人才，以支援真實的 B2B 工具專案。",
+    "rolesTitle": "目前重點職缺",
+    "openings": [
+      "國際業務專員",
+      "品質保證工程師",
+      "OEM 專案協調員",
+      "包裝與物流規劃專員"
+    ],
+    "applyTitle": "Email 應徵",
+    "applyDescription": "請將履歷與應徵職務寄至 careers@northforgetools.com，並附上語言能力、製造經驗與出口市場相關背景。"
+  },
+  "newsPage": {
+    "metadata": {
+      "title": "最新消息",
+      "description": "NorthForge Tools 的公司更新、製造里程碑與產品動態。"
+    },
+    "breadcrumb": "最新消息",
+    "title": "最新消息",
+    "description": "提供與產品開發、品質流程、包裝能力與出口執行相關的近期更新，方便買家與通路夥伴掌握。",
+    "items": [
+      { "date": "2026-02-10", "title": "NorthForge 擴充絕緣工具產品線，支援公用事業採購需求", "summary": "新增符合 VDE 導向的絕緣套組，適用承包商、公用事業與自有品牌專案。" },
+      { "date": "2025-11-22", "title": "扭力校正流程升級，強化驗證一致性", "summary": "新增校正檢查節點，以提升高量體扭力扳手專案的重複性與穩定性。" },
+      { "date": "2025-08-15", "title": "NorthForge 新增混 SKU 出口包裝支援", "summary": "整併式包裝流程現已支援經銷組套與多市場出貨規劃。" }
+    ]
+  },
+  "legal": {
+    "privacy": {
+      "metadata": { "title": "隱私政策", "description": "NorthForge Tools 網站洽詢與文件申請相關的隱私政策。" },
+      "breadcrumb": "隱私政策",
+      "title": "隱私政策",
+      "paragraphs": [
+        "NorthForge Tools 僅為了商務回覆、業務追蹤與客戶支援目的，蒐集詢問內容、報價需求與文件申請資訊。",
+        "提交資料可能包含姓名、公司、Email、電話、國家與產品興趣。我們不會將個人資料出售給第三方。",
+        "資料僅會在商務溝通、合規與留存管理所需期間內保存。你可來信 sales@northforgetools.com 要求更正或刪除。"
+      ]
+    },
+    "terms": {
+      "metadata": { "title": "服務條款", "description": "NorthForge Tools 網站與商務洽詢管道的使用條款。" },
+      "breadcrumb": "服務條款",
+      "title": "服務條款",
+      "paragraphs": [
+        "本網站用於展示產品、接收商務洽詢、RFQ 與技術文件申請，內容均與 NorthForge Tools 相關。",
+        "網站所示規格、供應狀態、交期與價格僅供參考，除非已於正式報價或銷售協議中另行確認。",
+        "使用本網站本身不構成供貨合約。最終條件仍以正式報價、採購單與雙方確認的商務條款為準。"
+      ]
+    },
+    "cookies": {
+      "metadata": { "title": "Cookie 政策", "description": "NorthForge Tools 網站的 Cookie 使用政策。" },
+      "breadcrumb": "Cookie 政策",
+      "title": "Cookie 政策",
+      "paragraphs": [
+        "NorthForge Tools 使用必要網站 Cookie 與有限的分析儲存機制，以支援導覽、表單提交與基本效能衡量。",
+        "Cookie 可能用於記住介面狀態、支援需求流程與了解頁面使用趨勢，不會用於向第三方出售行為資料。",
+        "你可透過瀏覽器設定管理 Cookie。停用部分 Cookie 可能影響表單暫存或下載權限等網站功能。"
+      ]
+    },
+    "dealers": {
+      "metadata": { "title": "經銷據點", "description": "NorthForge Tools 的區域經銷商與代理支援資訊。" },
+      "breadcrumb": "經銷據點",
+      "title": "經銷據點",
+      "intro": "NorthForge 與多個區域的進口商、經銷商與自有品牌夥伴合作，依產品類別、通路型態與市場範圍進行分流。",
+      "regionTitle": "支援區域",
+      "regions": [
+        "東亞與東南亞",
+        "歐洲經銷合作夥伴",
+        "澳洲與大洋洲",
+        "北美自有品牌進口專案"
+      ],
+      "asideTitle": "需要區域聯絡窗口？",
+      "asideDescription": "請將國家、市場通路與產品類別寄至 sales@northforgetools.com，我們會協助轉交對應的業務或經銷支援窗口。"
+    }
+  },
+  "home": {
+    "metadata": {
+      "title": "NorthForge Tools | 台灣 OEM 手工具製造商",
+      "description": "台灣 OEM/ODM 手工具製造商，專注於扭力工具、絕緣工具、工坊工具與客製工具組方案，服務經銷商與工具品牌。"
+    },
+    "hero": {
+      "eyebrow": "專為專業工具專案打造的出口製造夥伴",
+      "titleLine1": "為品牌商、經銷商與工業買家打造",
+      "titleLine2": "高一致性的專業手工具方案",
+      "description": "NorthForge Tools 協助進口商、自有品牌與工業通路採購扭力工具、絕緣工具、工坊工具與客製工具組，以更穩定的品質控管與更乾淨的出口流程推進專案。",
+      "primaryCta": "立即詢價",
+      "secondaryCta": "瀏覽產品 →"
+    },
+    "stats": [
+      { "value": "20+", "label": "年出口經驗" },
+      { "value": "30+", "label": "核心示範 SKU" },
+      { "value": "40+", "label": "服務國家數" },
+      { "value": "98%", "label": "出貨就緒 KPI" }
+    ],
+    "featured": {
+      "eyebrow": "精選系列",
+      "title": "代表性工具產品線",
+      "description": "涵蓋扭力、絕緣、工坊、汽修與工具組方案的代表型號。",
+      "cardCta": "查看詳情 →",
+      "sectionCta": "瀏覽全部產品"
+    },
+    "catalogue": {
+      "eyebrow": "產品目錄",
+      "title": "產品分類",
+      "description": "瀏覽 NorthForge 為經銷專案、自有品牌上市與工業採購團隊打造的核心產品家族。",
+      "sectionCta": "查看完整目錄"
+    },
+    "why": {
+      "eyebrow": "選擇 NorthForge 的理由",
+      "title": "為全球採購團隊而設計",
+      "description": "我們的流程設計目標，就是讓你的採購更簡單、更穩定，也更容易持續獲利。",
+      "items": [
+        { "title": "穩定的重複下單品質", "desc": "NorthForge 透過更嚴謹的圖面控管、驗證流程與包裝紀律，降低核樣後量產與後續補單之間的落差。" },
+        { "title": "OEM 與自有品牌執行能力", "desc": "從 Logo 呈現、內頁卡、條碼標籤到零售型組套，NorthForge 支援的不只是散裝工具出貨。" },
+        { "title": "文件與出口細節紀律", "desc": "出口買家需要乾淨的裝箱單、外箱標示、條碼準確性與合規支援文件；NorthForge 將這些視為產品專案的一部分。" },
+        { "title": "混 SKU 專案彈性", "desc": "團隊可支援持續性的混 SKU 專案、工具組建置與經銷通路組套，不必用企業級複雜度去換取執行能力。" },
+        { "title": "聚焦手工具產品範圍", "desc": "產品架構聚焦於扭力工具、絕緣工具、工坊工具、汽修工具與客製工具組，對應專業通路與出口市場。" },
+        { "title": "可支援合規導向專案", "desc": "NorthForge 可支援 ISO 9001 流程、絕緣工具製程紀律、RoHS/REACH 文件整理，以及第三方驗貨協調。" }
+      ]
+    },
+    "applications": {
+      "eyebrow": "應用場景",
+      "title": "重點應用領域",
+      "description": "NorthForge 聚焦在那些對一致性、包裝控管與文件完整度同樣重視的工具專案。",
+      "sectionCta": "查看全部應用場景 →"
+    },
+    "oem": {
+      "eyebrow": "OEM / ODM 流程",
+      "title": "一個工具專案如何穩定推進",
+      "description": "這套流程的目的是從首次討論到持續補單，都讓產品、包裝與出貨執行維持一致。",
+      "steps": [
+        { "title": "定義產品範圍", "desc": "先釐清目標市場、使用情境，以及該選擇標準品還是客製化方案，哪一條路更具商業效率。" },
+        { "title": "確認品牌與包裝需求", "desc": "在打樣前確認 Logo 呈現、內頁卡、塑盒、條碼標籤與外箱標示需求。" },
+        { "title": "核樣與鎖定關鍵規格", "desc": "把扭力範圍、絕緣等級、硬度目標、表面處理、包裝形式與檢驗重點一次鎖定。" },
+        { "title": "進入受控量產", "desc": "量產、包裝、出口文件與出貨準備作為同一套工作流管理，確保核樣後的專案一致性。" }
+      ]
+    },
+    "certifications": {
+      "eyebrow": "品質與驗證",
+      "title": "認證與標準",
+      "description": "合規支援在這裡不是收尾補上的行銷話術，而是出口執行流程中的實際工作項目。",
+      "sectionCta": "查看全部認證 →"
+    },
+    "finalCta": {
+      "title": "建立更乾淨、更穩定的工具供應方案",
+      "description": "不論你需要持續型目錄供貨、自有品牌包裝，或客製化工具組方案，NorthForge 都能協助你為目標市場建立更合適的採購模式。",
+      "primaryCta": "立即詢價",
+      "secondaryCta": "聯絡業務",
+      "note": "合格詢問可於 1 個工作天內回覆"
+    }
+  },
+  "products": {
+    "metadata": {
+      "title": "產品目錄",
+      "description": "瀏覽 NorthForge 手工具分類，涵蓋扭力工具、絕緣工具、工坊工具、汽修工具與工具組方案。"
+    },
+    "breadcrumb": "產品",
+    "heroTitle": "產品目錄",
+    "heroDescription": "瀏覽 NorthForge 產品家族，適用於經銷目錄、工業維護、電力作業與自有品牌工具組專案。",
+    "highlights": [
+      { "label": "30+ 核心 SKU", "desc": "示範型錄範圍" },
+      { "label": "ISO 9001", "desc": "流程導向品質控制" },
+      { "label": "OEM / ODM", "desc": "自有品牌與包裝支援" },
+      { "label": "混 SKU 套組", "desc": "組套與抽屜系統" }
+    ],
+    "browseLabel": "依分類瀏覽",
+    "categoriesTitle": "全部產品分類",
+    "contactCta": "找不到需要的項目？->",
+    "emptyState": "此環境目前尚無已發布的產品分類。",
+    "emptyCta": "聯絡業務協助分類建議 ->",
+    "viewProducts": "查看產品",
+    "customTitle": "需要客製規格？",
+    "customDescription": "我們的 OEM 團隊可協助規格檢討、品牌化、模塑工具盒、內卡與出口型包裝細節。",
+    "customCta": "立即詢價",
+    "talkCta": "聯絡團隊"
+  },
+  "productCategory": {
+    "products": "產品",
+    "buyerFocusTitle": "買方重點",
+    "buyerFocusDescription": "分類頁的目的是幫助進口商與經銷商先縮小合適的工具家族，再進一步討論 SKU 組合、包裝與文件需求。",
+    "typicalQuestionsTitle": "常見判斷問題",
+    "typicalQuestionsDescription": "買家通常會先比較使用情境、目標市場、品質控管預期，以及應該走標準供貨還是客製化方案。",
+    "fasterAnswerTitle": "想更快得到答案？",
+    "fasterAnswerDescription": "如果你已經知道數量、包裝需求或目標市場，可直接進入 RFQ，並帶上此分類背景。",
+    "searchPlaceholder": "搜尋分類",
+    "productCount": "項產品",
+    "productCountPlural": "項產品",
+    "matching": "符合",
+    "filteredNotice": "這個篩選檢視不會被搜尋引擎索引。",
+    "viewAllProducts": "查看全部產品",
+    "noProducts": "此分類目前尚無產品。",
+    "noProductsFound": "找不到符合條件的產品",
+    "prev": "<- 上一頁",
+    "next": "下一頁 ->",
+    "page": "第"
+  },
+  "productDetail": {
+    "products": "產品",
+    "introBox": "這個頁面是為需要在進入報價前，先評估型號適配性、規格清楚度、相關應用與支援文件的買家而設計。",
+    "overview": "產品概覽",
+    "inspectionTitle": "檢驗紀律",
+    "inspectionDescription": "對重複下單的買家來說，比起型錄話術，更重要的是檢驗點、量測方法與樣品到量產的一致性是否每次都能被穩定控管。",
+    "packagingTitle": "OEM 包裝支援",
+    "packagingDescription": "若此專案不只是標準供貨，這個型號可進一步討論內卡、Logo 標示、條碼標籤、模塑盒與零售就緒包裝需求。",
+    "readinessTitle": "包裝就緒度",
+    "readinessDescription": "可在 RFQ 備註中確認標籤內容、內卡、模塑盒、外箱標示與此品項對應的其他自有品牌包裝細節。",
+    "specControlTitle": "規格控管",
+    "specControlDescription": "買家應在樣品確認前先對齊關鍵尺寸、扭力範圍、材質、表面處理與檢驗節點。",
+    "contextTitle": "專案情境",
+    "contextDescription": "此 SKU 可作為單品討論，也可作為持續型目錄品，或納入混 SKU 工具組 / 抽屜套組專案。",
+    "specsTitle": "規格表",
+    "faqTitle": "常見問題",
+    "appTitle": "應用情境",
+    "appLearnMore": "查看更多 ->",
+    "certTitle": "認證與合規",
+    "beforeRfqTitle": "送出 RFQ 前建議準備",
+    "beforeRfqDescription": "若先備好以下資訊，NorthForge 在第一封回覆時就能更準確提供價格、可行性與文件範圍判斷。",
+    "rfqItems": [
+      { "label": "每個 SKU 的數量", "detail": "首批下單量與年度預估量" },
+      { "label": "OEM 範圍", "detail": "Logo 標示、包裝形式、條碼、內卡" },
+      { "label": "目標市場與合規要求", "detail": "國家、通路與所需標準（ISO、RoHS、REACH、CE）" },
+      { "label": "關鍵規格", "detail": "扭力等級、材質、表面處理與尺寸變體" },
+      { "label": "打樣或直接下單", "detail": "先打樣流程或直接進入量產訂單" },
+      { "label": "專案類型", "detail": "單品、持續型目錄品或混 SKU 工具組專案" }
+    ],
+    "submitRfq": "為此產品提交 RFQ ->",
+    "askFirst": "先提問"
+  },
+  "applications": {
+    "metadata": {
+      "title": "應用領域",
+      "description": "查看 NorthForge 在汽修、工業維護、電力作業、自有品牌工具專案與現場服務工具組上的應用頁。"
+    },
+    "breadcrumb": "應用",
+    "title": "應用領域",
+    "description": "這些頁面幫助買家把實際使用情境連回合適的手工具家族、包裝形式與採購考量，再進一步進入 RFQ。",
+    "emptyState": "目前尚無已發布的應用頁。",
+    "fallbackIndustry": "其他"
+  },
+  "applicationDetail": {
+    "applications": "應用",
+    "prompts": [
+      "工具必須承受的使用環境是什麼",
+      "買家需要標準供貨，還是自有品牌組套方案",
+      "哪些包裝、標示或文件必須隨貨提供"
+    ],
+    "challenge": "挑戰",
+    "solution": "我們的解法",
+    "verificationTitle": "量產前的驗證重點",
+    "verificationDescription": "評估此應用的買家通常需要先確認重複使用表現、檢驗節點與樣品核准標準能否在量產前被穩定控管。",
+    "packagingTitle": "包裝與專案適配",
+    "packagingDescription": "若此應用需要自有品牌紙盒、模塑盒、條碼標籤或組套規劃，NorthForge 會將其視為採購方案的一部分，而非事後補件。",
+    "sourcingTitle": "買家在 RFQ 前通常會先確認",
+    "sourcingDescription": "若能先備妥這些範圍資訊，NorthForge 就能更快回應並匹配適合你的產品組合。",
+    "sourcingItems": [
+      { "label": "工具性能要求", "detail": "與使用環境相關的扭力範圍、絕緣等級、材質硬度或握把表面需求。" },
+      { "label": "標準供貨或 OEM / 自有品牌", "detail": "是否需要 Logo 打標、客製包裝、條碼標籤或內卡。" },
+      { "label": "混 SKU 或組套範圍", "detail": "若涉及工具組、服務包或品牌組套，請提供目標 SKU 數與常見尺寸範圍。" },
+      { "label": "目標市場與合規文件", "detail": "國家、通路型態與所需標準，例如 ISO、CE 支援、RoHS / REACH 或第三方測試報告。" }
+    ],
+    "quoteCta": "索取此應用的專屬報價",
+    "planCta": "規劃 OEM / 自有品牌範圍",
+    "allApplications": "<- 返回全部應用",
+    "relatedProductsTitle": "建議產品家族",
+    "relatedProductsDescription": "以下連結品項可作為評估此應用適配性、打樣範圍或組套規劃的起點。",
+    "viewProduct": "查看產品 ->",
+    "faqTitle": "常見問題"
+  },
+  "certifications": {
+    "metadata": {
+      "title": "品質與認證",
+      "description": "查看 NorthForge 的品質與合規支援，包含 ISO 流程、RoHS 與 REACH 文件處理，以及檢驗協調方式。"
+    },
+    "breadcrumb": "認證",
+    "title": "品質與認證",
+    "description": "此區塊適合需要確認 NorthForge 如何處理品質流程、材料合規與出口文件支援的買家。",
+    "emptyState": "目前尚無已發布的認證資料。",
+    "overviewTitle": "文件可取得性總覽",
+    "overviewDescription": "買家常詢問哪些文件可提供、何時可提供，以及適用條件。以下是實務摘要。",
+    "items": [
+      { "type": "系統認證", "detail": "工廠層級認證文件（例如 ISO 9001）可依需求提供 PDF，並可納入訂單文件包。", "note": "所有專案皆可申請" },
+      { "type": "產品合規文件", "detail": "RoHS 聲明、REACH 聲明、材測報告與 CE 支援文件，會依 SKU 或產品家族及目的市場提供。", "note": "依訂單範圍產出" },
+      { "type": "出口文件", "detail": "裝箱單、外箱標示、條碼正確性控管與原產地證明協調，都屬於標準出口流程的一部分。", "note": "標準出口流程內含" }
+    ],
+    "availabilityNote": "文件範圍會依產品家族與目的市場而異。",
+    "availabilityCta": "聯絡我們確認你的 SKU 與市場可提供哪些文件。",
+    "commitmentTitle": "我們對品質的承諾",
+    "commitmentDescription": "NorthForge 將品質與合規視為真實訂單執行的一部分，包含來料檢查、關鍵性能驗證、包裝控管、文件準確性與必要時的第三方驗貨協調。",
+    "commitmentCta": "索取品質文件"
+  },
+  "certificationDetail": {
+    "certifications": "認證",
+    "issuedBy": "核發單位",
+    "noBadge": "目前無 badge 圖片",
+    "whyTitle": "買家為何會詢問這份文件",
+    "whyDescription": "認證與合規文件能幫助進口商、經銷商與自有品牌方確認供應商是否可支援目標市場要求、客戶稽核與出貨文件需求。",
+    "fallbackDescription": "認證內容將於後續補充。",
+    "certificateNo": "證書編號",
+    "locale": "語系",
+    "issued": "核發日期",
+    "expires": "到期日期",
+    "download": "下載證書",
+    "askHow": "詢問此認證如何套用到你的專案 ->"
+  },
+  "capabilities": {
+    "metadata": {
+      "title": "製造能力",
+      "description": "查看 NorthForge 的 OEM 開發、自有品牌包裝、扭力檢驗、套組組裝與出口文件支援能力。"
+    },
+    "breadcrumb": "能力",
+    "title": "製造能力",
+    "description": "這些頁面用來說明 NorthForge 目錄背後的營運能力，讓買家評估供應商是否符合其商務執行流程，而不只是看產品清單。",
+    "tags": ["OEM 開發", "自有品牌包裝", "扭力驗證", "套組組裝", "出口文件"],
+    "ctaTitle": "不確定哪項能力最關鍵？",
+    "ctaDescription": "描述你的採購情境，不論是工具組專案、自有品牌上市，或持續型經銷供貨，NorthForge 都可協助判斷哪些能力最相關。",
+    "ctaPrimary": "討論你的專案",
+    "ctaSecondary": "提交 RFQ",
+    "buyerBenefit": {
+      "engineering": "降低買方規格與量產之間的修正循環。",
+      "quality": "讓補單型買家有更一致的檢驗基準。",
+      "packaging": "支援 OEM、自有品牌與零售就緒交付格式。",
+      "assembly": "在不增加企業級複雜度下完成混 SKU 套組與工具組專案。",
+      "export": "確保目標市場所需的出貨文件正確性。",
+      "testing": "提供可追溯的扭力與性能批次驗證。"
+    }
+  },
+  "capabilityDetail": {
+    "capabilities": "能力",
+    "commercialBenefit": "商務價值",
+    "commercialBenefitDescription": "這項能力之所以重要，是因為它會直接影響買家從樣品確認、重複量產、出貨文件到下游交付的穩定性。",
+    "snapshot": "能力摘要",
+    "focusArea": "重點領域",
+    "relevantAt": "最相關階段",
+    "appliesTo": "適用範圍",
+    "general": "一般",
+    "relevantValue": "RFQ 與打樣階段",
+    "appliesValue": "所有出口專案",
+    "discussionDescription": "當你需要更清楚的包裝執行、規格審查或更穩定的補單控管時，可把這項能力作為討論重點。",
+    "discuss": "討論這項能力"
+  },
+  "comparisons": {
+    "metadata": {
+      "title": "產品比較",
+      "description": "提供手工具買家在選型或 RFQ 前評估材質、形式與採購取捨的比較指南。"
+    },
+    "breadcrumb": "比較",
+    "title": "產品比較",
+    "description": "這些指南適合需要更快判斷工具形式、材質、合規適配與採購實務性的買家。",
+    "emptyState": "目前尚無已發布的比較文章。",
+    "readMore": "查看比較 ->"
+  },
+  "comparisonDetail": {
+    "comparisons": "比較",
+    "dimension": "比較面向",
+    "optionA": "選項 A",
+    "optionB": "選項 B",
+    "detailsTitle": "比較細節",
+    "takeawayTitle": "買方重點結論",
+    "recommendedTitle": "適合誰看",
+    "recommendedDescription": "適合已縮小選項、需要更明確依據來進行供應商討論、規格對齊或自有品牌規劃的買家。可把這份比較作為團隊內部討論與 RFQ 建立的參考基礎。",
+    "rfqTitle": "何時應進入 RFQ",
+    "rfqDescription": "當你已從這份比較得到偏好方向後，請在 RFQ 中加入數量、OEM 範圍、目標市場與所需合規標準，NorthForge 才能更快收斂對應 SKU 或材質規格。",
+    "submitRfq": "提交 RFQ ->",
+    "askQuestion": "詢問採購問題",
+    "allComparisons": "<- 返回全部比較"
+  },
+  "about": {
+    "metadata": {
+      "title": "關於 NorthForge Tools | 台灣 OEM 手工具製造商",
+      "description": "認識 NorthForge Tools，一家專注品質控管、出口執行與自有品牌工具專案的台灣 OEM/ODM 手工具製造商。"
+    },
+    "breadcrumb": "關於我們",
+    "heroTitle": "關於 NorthForge Tools",
+    "heroDescription": "為需要的不只是供應商，而是可長期合作製造夥伴的買家而打造。NorthForge 以更強的流程控管、自有品牌就緒度與可靠溝通支援專業手工具專案。",
+    "stats": [
+      { "value": "20+", "label": "出口工具經驗年數" },
+      { "value": "5", "label": "核心產品家族" },
+      { "value": "40+", "label": "服務國家" },
+      { "value": "OEM / ODM", "label": "自有品牌就緒" }
+    ],
+    "ourStory": "我們的故事",
+    "storyTitle": "為需要的不只是工廠的買家而建立",
+    "talkTeam": "聯絡團隊",
+    "whatWeMake": "我們生產什麼",
+    "productLinesTitle": "適合重複型專案的專業工具產品線",
+    "ourJourney": "發展歷程",
+    "milestones": "里程碑",
+    "strengthsEyebrow": "營運優勢",
+    "strengthsTitle": "NorthForge 如何降低買方摩擦成本",
+    "capabilitiesEyebrow": "我們能做什麼",
+    "capabilitiesTitle": "製造能力",
+    "certificationsEyebrow": "品質保證",
+    "certificationsTitle": "認證",
+    "ctaTitle": "準備開始合作了嗎？",
+    "ctaDescription": "如果你正在建立專業手工具產品線、服務工具組，或自有品牌工具套組專案，NorthForge 可協助從選品到出貨執行，建立更乾淨的採購流程。",
+    "contactTeam": "聯絡團隊",
+    "browseProducts": "瀏覽產品",
+    "productLines": [
+      { "title": "扭力工具", "desc": "適用於汽修、工業與公用事業精密鎖固需求的扭力扳手、扭力起子、增力器與指針式扭力工具。" },
+      { "title": "絕緣工具", "desc": "符合帶電作業、公共設施維護與安裝專案需求的 VDE 等級手工具，支援 IEC 60900 製程紀律與顏色識別。" },
+      { "title": "工坊與手工具", "desc": "棘輪、套筒、扳手、鉗類、起子與六角工具，適用專業工坊專案、維修套件與混 SKU 經銷組合。" },
+      { "title": "客製工具專案", "desc": "支援自有品牌工具組、服務套件、抽屜組配置與需要文件、包裝及規格對齊的 OEM 專案。" }
+    ],
+    "timeline": [
+      { "year": "2004", "event": "以出口市場的 OEM 扭力工具與手工具製造為核心成立" },
+      { "year": "2008", "event": "取得 ISO 9001 認證，建立重複型訂單所需的品質管理流程" },
+      { "year": "2012", "event": "推出絕緣工具產品線，建立符合 VDE 導向的公用事業與電工通路流程控管" },
+      { "year": "2016", "event": "擴充自有品牌包裝能力，支援模塑盒、條碼標示與內卡" },
+      { "year": "2019", "event": "新增混 SKU 工具組與抽屜套組方案，服務經銷通路" },
+      { "year": "2023", "event": "升級出口文件流程，支援多市場合規與第三方驗貨協調" }
+    ],
+    "operationalStrengths": [
+      { "title": "重複下單一致性", "desc": "透過圖面控管、包裝驗證與 QC 節點對齊，降低核樣產品與實際交付之間的差異。" },
+      { "title": "自有品牌與 OEM 執行能力", "desc": "Logo 打標、內卡、模塑盒、條碼標籤與零售型外箱方案皆可納入標準專案設定，而非額外加購。" },
+      { "title": "合規與文件支援", "desc": "可支援 ISO 9001 流程、RoHS / REACH 文件、CE 支援文件與第三方驗貨協調，符合目標市場要求。" },
+      { "title": "混 SKU 與工具組組裝", "desc": "支援工具組、抽屜套組與品牌組合方案，不需企業級複雜度也能實際執行。" }
+    ],
+    "storyParagraphs": [
+      "NorthForge 的成立，是為了服務那些需要的不只是工具本身，而是穩定量產品質、可靠文件與不會隨著訂單放大而失控的包裝流程的買家。",
+      "我們最早的專案多圍繞在出口市場對扭力工具與絕緣工具的高規格需求。隨著買方要求提高，我們逐步擴展到自有品牌專案、混 SKU 工具組與抽屜套組。",
+      "我們始終以買家真正依賴的事情來設計流程：重複下單可預測性、正確裝箱單，以及乾淨完整的合規文件。這些不是附加價值，而是整個專案本身。"
+    ]
   }
 }

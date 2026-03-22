@@ -6,16 +6,34 @@ import { trackSpecDownload } from "@/lib/analytics";
 
 type Props = { certification: Certification };
 
+const CERT_BADGE_VERSION = "20260318a";
+
+function resolveLocale(locale: string) {
+  return locale === "zh-TW" ? "zh-TW" : "en";
+}
+
+function buildDetailHref(locale: string, slug: string) {
+  const localeKey = resolveLocale(locale);
+  const prefix = localeKey === "zh-TW" ? "/zh-TW" : "/en";
+  return `${prefix}/certifications/${slug}`;
+}
+
 export function CertificationBadge({ certification }: Props) {
-  const detailHref = `/certifications/${certification.slug}`;
+  const localeKey = resolveLocale(certification.locale);
+  const detailHref = buildDetailHref(certification.locale, certification.slug);
+  const badgeImageSrc = certification.badge_image_url
+    ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
+    : null;
+  const validUntilLabel = localeKey === "zh-TW" ? "有效至" : "Valid until";
+  const downloadLabel = localeKey === "zh-TW" ? "下載證書" : "Download Certificate";
 
   return (
     <div className="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-5 shadow-sm text-center">
       <Link href={detailHref} className="flex flex-col items-center">
-        {certification.badge_image_url ? (
+        {badgeImageSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={certification.badge_image_url}
+            src={badgeImageSrc}
             alt={certification.cert_name}
             className="mb-3 h-16 w-16 object-contain"
           />
@@ -45,7 +63,7 @@ export function CertificationBadge({ certification }: Props) {
       )}
       {certification.expires_at && (
         <p className="mt-1 text-xs text-gray-400">
-          Valid until {new Date(certification.expires_at).getFullYear()}
+          {validUntilLabel} {new Date(certification.expires_at).getFullYear()}
         </p>
       )}
       {certification.document_url && (
@@ -56,7 +74,7 @@ export function CertificationBadge({ certification }: Props) {
           className="mt-3 text-xs font-medium text-blue-600 hover:underline"
           onClick={() => trackSpecDownload(certification.id, certification.cert_name)}
         >
-          Download Certificate
+          {downloadLabel}
         </a>
       )}
     </div>

@@ -12,6 +12,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useMessageNamespace } from "@/lib/messages";
+
+type ChatWidgetMessages = {
+  desktopButton: string;
+  mobileButton: string;
+  title: string;
+  sessionUnavailable: string;
+  requestFailed: string;
+};
 
 type ContextEntityType = "product" | "faq" | "home" | "category" | "application";
 
@@ -81,6 +90,7 @@ function getApiBase(): string {
 }
 
 export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: ChatWidgetProps) {
+  const copy = useMessageNamespace<ChatWidgetMessages>("chat");
   const [isOpen, setIsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +142,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
       ]);
       return payload.data.chat_session_id;
     } catch {
-      setError("The advisor is temporarily unavailable. Please try again shortly.");
+      setError(copy.sessionUnavailable);
       return null;
     } finally {
       setIsBusy(false);
@@ -196,7 +206,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
         }
       }
     } catch {
-      setError("The advisor could not complete that request. Please try again or continue with RFQ.");
+      setError(copy.requestFailed);
     } finally {
       setIsBusy(false);
     }
@@ -227,7 +237,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
         ) : (
           <Button className="h-14 rounded-full px-5 shadow-xl" onClick={() => void openWidget(true)}>
             <MessageCircle className="mr-1 h-5 w-5" />
-            Ask Product Advisor
+            {copy.desktopButton}
           </Button>
         )}
       </div>
@@ -237,12 +247,12 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
           {!isOpen && (
             <Button className="h-14 rounded-full px-5 shadow-xl" onClick={() => void openWidget(true)}>
               <MessageCircle className="mr-1 h-5 w-5" />
-              Ask Advisor
+              {copy.mobileButton}
             </Button>
           )}
           <SheetContent side="bottom" className="h-[78vh] max-h-[720px] rounded-t-2xl p-0 sm:max-w-none">
             <SheetHeader className="border-b border-slate-200 px-4 py-3">
-              <SheetTitle>AI Product Advisor</SheetTitle>
+              <SheetTitle>{copy.title}</SheetTitle>
             </SheetHeader>
             <div className="h-[calc(78vh-57px)] max-h-[663px]">
               <ChatPanel

@@ -8,19 +8,38 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useMessageNamespace } from "@/lib/messages";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { label: "Products",       href: "/products" },
-  { label: "Applications",   href: "/applications" },
-  { label: "Certifications", href: "/certifications" },
-  { label: "About",          href: "/about" },
-  { label: "Contact",        href: "/contact" },
+type HeaderMessages = {
+  rfq: string;
+  submitRfq: string;
+  contact: string;
+  openMenu: string;
+  partnerTitle: string;
+  partnerDescription: string;
+  langSwitch: string;
+  nav: {
+    products: string;
+    applications: string;
+    certifications: string;
+    about: string;
+    contact: string;
+  };
+};
+
+const NAV_ITEMS: Array<{ href: string; key: keyof HeaderMessages["nav"] }> = [
+  { href: "/products", key: "products" },
+  { href: "/applications", key: "applications" },
+  { href: "/certifications", key: "certifications" },
+  { href: "/about", key: "about" },
+  { href: "/contact", key: "contact" },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const locale = useLocale();
+  const copy = useMessageNamespace<HeaderMessages>("header");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scrolled, setScrolled]   = useState(false);
   const localizedPath = pathname === "/" ? "" : pathname;
@@ -67,7 +86,7 @@ export function Header() {
 
         {/* ─── Desktop nav ─── */}
         <nav className="hidden items-center gap-0.5 md:flex">
-          {NAV_LINKS.map((link) => {
+          {NAV_ITEMS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
               <Link
@@ -80,7 +99,7 @@ export function Header() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {link.label}
+                {copy.nav[link.key]}
                 {active && (
                   <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-primary" />
                 )}
@@ -95,19 +114,19 @@ export function Header() {
           <Button variant="ghost" size="sm" asChild className="gap-1 text-muted-foreground hover:text-foreground px-2">
             <NextLink href={localeSwitchHref} hrefLang={locale === "en" ? "zh-TW" : "en"}>
               <Globe className="h-3.5 w-3.5" />
-              {locale === "en" ? "繁中" : "EN"}
+              {copy.langSwitch}
             </NextLink>
           </Button>
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground">
             <Link href="/rfq">
               <FileText className="h-3.5 w-3.5" />
-              詢價
+              {copy.rfq}
             </Link>
           </Button>
           <Button size="sm" asChild className="gap-1.5 shadow-sm">
             <Link href="/contact">
               <Phone className="h-3.5 w-3.5" />
-              聯絡我們
+              {copy.contact}
             </Link>
           </Button>
         </div>
@@ -117,7 +136,7 @@ export function Header() {
           variant="ghost"
           size="icon"
           className="md:hidden h-9 w-9"
-          aria-label="開啟選單"
+          aria-label={copy.openMenu}
           onClick={() => setSheetOpen(true)}
         >
           <Menu className="h-5 w-5" />
@@ -136,7 +155,7 @@ export function Header() {
 
           <nav className="px-3 py-4">
             <div className="space-y-0.5">
-              {NAV_LINKS.map((link) => {
+              {NAV_ITEMS.map((link) => {
                 const active = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
@@ -149,7 +168,7 @@ export function Header() {
                         : "text-foreground hover:bg-muted"
                     )}
                   >
-                    {link.label}
+                    {copy.nav[link.key]}
                     {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
                   </Link>
                 );
@@ -162,20 +181,20 @@ export function Header() {
               <Button variant="outline" className="w-full justify-start gap-2" asChild>
                 <Link href="/rfq">
                   <FileText className="h-4 w-4" />
-                  送出詢價單
+                  {copy.submitRfq}
                 </Link>
               </Button>
               <Button className="w-full justify-start gap-2" asChild>
                 <Link href="/contact">
                   <Phone className="h-4 w-4" />
-                  聯絡我們
+                  {copy.contact}
                 </Link>
               </Button>
             </div>
 
             <div className="mt-6 rounded-lg bg-muted p-4">
-              <p className="text-xs font-semibold text-foreground">全球製造合作夥伴</p>
-              <p className="mt-1 text-xs text-muted-foreground">服務 40+ 國家，提供一站式 B2B 採購解決方案</p>
+              <p className="text-xs font-semibold text-foreground">{copy.partnerTitle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{copy.partnerDescription}</p>
             </div>
           </nav>
         </SheetContent>

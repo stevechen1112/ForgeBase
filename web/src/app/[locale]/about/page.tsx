@@ -1,97 +1,74 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 import { getPublishedCapabilities, getPublishedCertifications } from "@/lib/api";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ABOUT_HERO_IMAGE } from "@/lib/demoAssets";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
-export const metadata: Metadata = {
-  title: "About NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
-  description:
-    "Learn about NorthForge Tools, a Taiwan-based OEM/ODM hand tool manufacturer focused on quality control, export-ready execution, and private-label tool programs.",
-};
+interface Props {
+  params: Promise<{ locale: string }>;
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
   ? "NorthForge Tools"
   : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
-const TIMELINE = [
-  { year: "2001", event: "Company founded in Taichung with a focus on export-ready hand tool programs." },
-  { year: "2004", event: "Expanded into socket and ratchet-related exports for distributor and workshop channels." },
-  { year: "2007", event: "Added finished hand tool assembly capability to improve sample-to-production control." },
-  { year: "2011", event: "Launched OEM toolkit packaging service for private-label assortment programs." },
-  { year: "2014", event: "Expanded insulated-tool coverage for electrical and utility-oriented buyers." },
-  { year: "2017", event: "Formalized torque verification workflow for controlled fastening programs." },
-  { year: "2023", event: "Optimized kit assembly and export packaging operations for mixed-SKU programs." },
-];
+type CommonMessages = {
+  home: string;
+};
 
-const PRODUCT_LINES = [
-  {
-    title: "Torque and Socket Tools",
-    desc: "Built for automotive service, industrial maintenance, and controlled fastening programs where repeatable torque and dependable fit matter.",
-    icon: (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Insulated Electrical Tools",
-    desc: "Professional insulated tool systems for electrical contractors, utilities, and safety-sensitive maintenance teams.",
-    icon: (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Workshop and Striking Tools",
-    desc: "Workshop-ready hammers, mallets, pry bars, and punch sets designed for daily mechanical use rather than one-off retail novelty.",
-    icon: (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-      </svg>
-    ),
-  },
-  {
-    title: "Automotive and Toolkit Programs",
-    desc: "NorthForge supports service-tool assortments, mechanic drawer sets, electrical kits, and other programs that combine tools, packaging, and documentation.",
-    icon: (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-];
+type AboutMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  heroTitle: string;
+  heroDescription: string;
+  stats: Array<{ value: string; label: string }>;
+  ourStory: string;
+  storyTitle: string;
+  talkTeam: string;
+  whatWeMake: string;
+  productLinesTitle: string;
+  ourJourney: string;
+  milestones: string;
+  strengthsEyebrow: string;
+  strengthsTitle: string;
+  capabilitiesEyebrow: string;
+  capabilitiesTitle: string;
+  certificationsEyebrow: string;
+  certificationsTitle: string;
+  ctaTitle: string;
+  ctaDescription: string;
+  contactTeam: string;
+  browseProducts: string;
+  productLines: Array<{ title: string; desc: string }>;
+  timeline: Array<{ year: string; event: string }>;
+  operationalStrengths: Array<{ title: string; desc: string }>;
+  storyParagraphs: string[];
+};
 
-const OPERATIONAL_STRENGTHS = [
-  {
-    title: "Engineering Review",
-    desc: "Standard items can move quickly, but custom items still require responsible review. NorthForge supports specification clarification, selection guidance, and selected customization planning before mass production begins.",
-  },
-  {
-    title: "Quality Workflow",
-    desc: "Incoming material checks, dimensional verification, selected hardness validation, torque-related performance control, and pre-packing inspections are used to reduce avoidable variation.",
-  },
-  {
-    title: "Packaging and OEM Readiness",
-    desc: "Retail packaging, molded cases, EVA foam organization, barcode labels, instruction inserts, and carton markings are treated as part of the product program rather than afterthoughts.",
-  },
-  {
-    title: "Export Communication",
-    desc: "NorthForge positions communication clarity as part of the offer because document mistakes and shipment ambiguity carry real cost for importers and distributors.",
-  },
-];
-
-export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  resolveLocale(locale);
+  return getMessageNamespace<AboutMessages>("about").then((copy) => copy.metadata);
+}
+
+export default async function AboutPage({ params }: Props) {
+  const { locale } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<AboutMessages>("about"),
+  ]);
   const [capabilities, certifications] = await Promise.all([
     getPublishedCapabilities(locale),
     getPublishedCertifications(locale),
   ]);
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, [...capabilities, ...certifications]);
 
   return (
     <>
@@ -101,8 +78,8 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "About", url: `${SITE_URL}/about` },
+          { name: common.home, url: SITE_URL },
+          { name: copy.breadcrumb, url: `${SITE_URL}/about` },
         ])}
       />
 
@@ -115,14 +92,13 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/50" />
         <div className="mx-auto max-w-6xl px-6">
           <nav aria-label="Breadcrumb" className="relative mb-4 text-xs text-blue-300">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1.5">/</span>
-            <span>About</span>
+            <span>{copy.breadcrumb}</span>
           </nav>
-          <h1 className="relative text-4xl font-extrabold">About {SITE_NAME}</h1>
+          <h1 className="relative text-4xl font-extrabold">{copy.heroTitle}</h1>
           <p className="relative mt-3 max-w-2xl text-lg text-blue-200 leading-relaxed">
-            Built for buyers who need more than a supplier. NorthForge supports professional hand tool programs with stronger process control,
-            private-label readiness, and dependable communication.
+            {copy.heroDescription}
           </p>
         </div>
       </section>
@@ -131,12 +107,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       <section className="border-b border-gray-100 bg-white">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-2 divide-x divide-y divide-gray-100 sm:grid-cols-4 sm:divide-y-0">
-            {[
-              { value: "20+", label: "Years in Export Tooling" },
-              { value: "5", label: "Core Product Families" },
-              { value: "40+", label: "Countries Served" },
-              { value: "OEM / ODM", label: "Private-Label Ready" },
-            ].map((s) => (
+            {copy.stats.map((s) => (
               <div key={s.label} className="flex flex-col items-center py-8 text-center">
                 <span className="text-3xl font-extrabold text-blue-700">{s.value}</span>
                 <span className="mt-1 text-sm text-gray-500">{s.label}</span>
@@ -151,28 +122,18 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Our Story</span>
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">Built for Buyers Who Need More Than a Factory</h2>
-              <p className="mt-4 leading-relaxed text-gray-600">
-                NorthForge Tools Co., Ltd. was built around a simple commercial reality: many buyers can find factories,
-                but far fewer can find manufacturers that keep product, packaging, and shipment details together consistently over time.
-                That gap is where NorthForge competes.
-              </p>
-              <p className="mt-4 leading-relaxed text-gray-600">
-                The company supports tool brands, distributors, and industrial buyers who need a practical manufacturing partner rather than a low-visibility supply source.
-                Its strength is not one hero product. Its strength is the ability to support a repeatable B2B tool program with clearer engineering communication,
-                more stable production control, and better export discipline.
-              </p>
-              <p className="mt-4 leading-relaxed text-gray-600">
-                Founder Ethan K. Liao entered the tooling and export sector after years of working with overseas buyers frustrated by preventable supplier problems:
-                unclear revision control, packaging inconsistency, weak sample-to-production alignment, and poor shipment communication.
-                NorthForge was established to close that gap.
-              </p>
+              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.ourStory}</span>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.storyTitle}</h2>
+              {copy.storyParagraphs.map((paragraph) => (
+                <p key={paragraph} className="mt-4 leading-relaxed text-gray-600">
+                  {paragraph}
+                </p>
+              ))}
               <Link
                 href="/contact"
                 className="mt-8 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
               >
-                Talk to Our Team
+                {copy.talkTeam}
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
@@ -195,16 +156,14 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       {/* ── Core values ── */}
       <section className="bg-gray-50 py-20">
         <div className="mx-auto max-w-6xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">What We Make</span>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">Professional Tool Lines for Repeat Programs</h2>
+            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.whatWeMake}</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.productLinesTitle}</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {PRODUCT_LINES.map((v) => (
+            {copy.productLines.map((v) => (
               <div key={v.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                  {v.icon}
-                </div>
                 <h3 className="mt-4 text-base font-semibold text-gray-900">{v.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">{v.desc}</p>
               </div>
@@ -217,11 +176,11 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       <section className="py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Our Journey</span>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">Milestones</h2>
+            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.ourJourney}</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.milestones}</h2>
           </div>
           <div className="relative mt-12 ml-4 border-l-2 border-blue-200 pl-8 sm:ml-24 space-y-8">
-            {TIMELINE.map((item) => (
+            {copy.timeline.map((item) => (
               <div key={item.year} className="relative">
                 {/* Dot */}
                 <div className="absolute -left-[2.6rem] flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-400 bg-white">
@@ -239,11 +198,11 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       <section className="bg-gray-50 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Operational Strengths</span>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">How NorthForge Reduces Buyer Friction</h2>
+            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.strengthsEyebrow}</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.strengthsTitle}</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {OPERATIONAL_STRENGTHS.map((item) => (
+            {copy.operationalStrengths.map((item) => (
               <div key={item.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">{item.desc}</p>
@@ -258,8 +217,8 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         <section className="py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="text-center">
-              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">What We Do</span>
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">Manufacturing Capabilities</h2>
+              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.capabilitiesEyebrow}</span>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.capabilitiesTitle}</h2>
             </div>
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {capabilities.map((cap) => (
@@ -290,8 +249,8 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         <section className="bg-gray-50 py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="text-center">
-              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">Quality Assurance</span>
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">Certifications</h2>
+              <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">{copy.certificationsEyebrow}</span>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">{copy.certificationsTitle}</h2>
             </div>
             <div className="mt-12 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {certifications.map((cert) => (
@@ -305,23 +264,22 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       {/* ── CTA ── */}
       <section className="bg-blue-900 py-20 text-white">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-3xl font-bold">Ready to Work Together?</h2>
+          <h2 className="text-3xl font-bold">{copy.ctaTitle}</h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-blue-200 leading-relaxed">
-            If you are building a professional hand tool line, a service-tool assortment, or a private-label toolkit program,
-            NorthForge can help structure a cleaner sourcing workflow from product selection to shipment execution.
+            {copy.ctaDescription}
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/contact"
               className="rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-blue-900 shadow-lg hover:bg-blue-50 transition-colors"
             >
-              Contact Our Team
+              {copy.contactTeam}
             </Link>
             <Link
               href="/products"
               className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
             >
-              Browse Products
+              {copy.browseProducts}
             </Link>
           </div>
         </div>

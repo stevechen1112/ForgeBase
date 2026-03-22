@@ -5,6 +5,12 @@ import { SendHorizonal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useMessageNamespace } from "@/lib/messages";
+
+type ChatInputMessages = {
+  placeholder: string;
+  sendMessage: string;
+};
 
 interface ChatInputProps {
   disabled?: boolean;
@@ -12,6 +18,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ disabled = false, onSubmit }: ChatInputProps) {
+  const copy = useMessageNamespace<ChatInputMessages>("chat");
   const [value, setValue] = useState("");
 
   async function handleSubmit() {
@@ -27,7 +34,7 @@ export function ChatInput({ disabled = false, onSubmit }: ChatInputProps) {
         <Textarea
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="Ask about material, MOQ, OEM, or certification..."
+          placeholder={copy.placeholder}
           className="min-h-[72px] resize-none border-slate-200"
           maxLength={500}
           disabled={disabled}
@@ -43,7 +50,7 @@ export function ChatInput({ disabled = false, onSubmit }: ChatInputProps) {
           size="icon"
           onClick={() => void handleSubmit()}
           disabled={disabled || !value.trim()}
-          aria-label="Send message"
+          aria-label={copy.sendMessage}
         >
           <SendHorizonal />
         </Button>

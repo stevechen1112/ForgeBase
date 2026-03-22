@@ -1,27 +1,53 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedApplications } from "@/lib/api";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
-export const metadata: Metadata = {
-  title: "Industry Applications",
-  description:
-    "Explore NorthForge application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.",
+type CommonMessages = {
+  home: string;
+};
+
+type ApplicationsPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  emptyState: string;
+  fallbackIndustry: string;
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
-export default async function ApplicationsPage({ params }: { params: Promise<{ locale: string }> }) {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const res = await getPublishedApplications(locale, 1, 50);
+  resolveLocale(locale);
+  return getMessageNamespace<ApplicationsPageMessages>("applications").then((copy) => copy.metadata);
+}
+
+export default async function ApplicationsPage({ params }: Props) {
+  const { locale } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const res = await getPublishedApplications(resolvedLocale, 1, 50);
   const applications = res.data;
+  const [pageCopy, common] = await Promise.all([
+    getMessageNamespace<ApplicationsPageMessages>("applications"),
+    getMessageNamespace<CommonMessages>("common"),
+  ]);
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, applications);
 
   // Group by industry
   const byIndustry = applications.reduce<Record<string, typeof applications>>(
     (acc, app) => {
-      const key = app.industry || "Other";
+      const key = app.industry || pageCopy.fallbackIndustry;
       if (!acc[key]) acc[key] = [];
       acc[key].push(app);
       return acc;
@@ -34,8 +60,8 @@ export default async function ApplicationsPage({ params }: { params: Promise<{ l
       <ChatWidget contextPage="/applications" contextEntityType="application" />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Applications", url: `${SITE_URL}/applications` },
+          { name: common.home, url: SITE_URL },
+          { name: pageCopy.breadcrumb, url: `${SITE_URL}/applications` },
         ])}
       />
 
@@ -43,14 +69,13 @@ export default async function ApplicationsPage({ params }: { params: Promise<{ l
       <section className="bg-gray-50 border-b border-gray-100 py-12">
         <div className="container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">Applications</span>
+            <span className="text-gray-600">{pageCopy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-800">Industry Applications</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{pageCopy.title}</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            These pages are designed to help buyers connect real use cases with the right hand-tool families,
-            packaging formats, and sourcing concerns before moving into RFQ.
+            {pageCopy.description}
           </p>
         </div>
       </section>
@@ -58,8 +83,9 @@ export default async function ApplicationsPage({ params }: { params: Promise<{ l
       {/* Content */}
       <section className="py-12">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           {applications.length === 0 ? (
-            <p className="text-center text-gray-500 py-16">No applications published yet.</p>
+            <p className="text-center text-gray-500 py-16">{pageCopy.emptyState}</p>
           ) : Object.keys(byIndustry).length > 1 ? (
             // Multi-industry grouped view
             Object.entries(byIndustry).map(([industry, apps]) => (

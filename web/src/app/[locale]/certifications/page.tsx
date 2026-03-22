@@ -1,29 +1,68 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedCertifications } from "@/lib/api";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
-export const metadata: Metadata = {
-  title: "Certifications & Quality",
-  description:
-    "Review NorthForge quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.",
+type CommonMessages = {
+  home: string;
+};
+
+type CertificationsPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  emptyState: string;
+  overviewTitle: string;
+  overviewDescription: string;
+  items: Array<{
+    type: string;
+    detail: string;
+    note: string;
+    color: string;
+    badge: string;
+  }>;
+  availabilityNote: string;
+  availabilityCta: string;
+  commitmentTitle: string;
+  commitmentDescription: string;
+  commitmentCta: string;
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
-export default async function CertificationsPage({ params }: { params: Promise<{ locale: string }> }) {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const certifications = await getPublishedCertifications(locale);
+  resolveLocale(locale);
+  return getMessageNamespace<CertificationsPageMessages>("certifications").then((copy) => copy.metadata);
+}
+
+export default async function CertificationsPage({ params }: Props) {
+  const { locale } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const certifications = await getPublishedCertifications(resolvedLocale);
+  const [pageCopy, common] = await Promise.all([
+    getMessageNamespace<CertificationsPageMessages>("certifications"),
+    getMessageNamespace<CommonMessages>("common"),
+  ]);
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, certifications);
 
   return (
     <>
       <PageViewTracker pageType="certification" />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Certifications", url: `${SITE_URL}/certifications` },
+          { name: common.home, url: SITE_URL },
+          { name: pageCopy.breadcrumb, url: `${SITE_URL}/certifications` },
         ])}
       />
 
@@ -31,13 +70,13 @@ export default async function CertificationsPage({ params }: { params: Promise<{
       <section className="bg-gray-50 border-b border-gray-100 py-12">
         <div className="container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">Certifications</span>
+            <span className="text-gray-600">{pageCopy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-800">Quality &amp; Certifications</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{pageCopy.title}</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            This section is intended for buyers who need to verify how NorthForge handles quality workflow, material compliance, and document support during export execution.
+            {pageCopy.description}
           </p>
         </div>
       </section>
@@ -45,9 +84,10 @@ export default async function CertificationsPage({ params }: { params: Promise<{
       {/* Certificates grid */}
       <section className="py-14">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           {certifications.length === 0 ? (
             <p className="text-center text-gray-500 py-16">
-              No certifications published yet.
+              {pageCopy.emptyState}
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
@@ -59,34 +99,12 @@ export default async function CertificationsPage({ params }: { params: Promise<{
 
           {/* Documentation availability breakdown */}
           <div className="mt-12 rounded-2xl border border-gray-200 bg-white p-7">
-            <h2 className="text-lg font-semibold text-gray-900">Document Availability at a Glance</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{pageCopy.overviewTitle}</h2>
             <p className="mt-1 text-sm text-gray-500 max-w-2xl">
-              Buyers frequently ask which documents are available, when, and under what conditions. Below is a practical summary.
+              {pageCopy.overviewDescription}
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              {[
-                {
-                  type: "System certifications",
-                  detail: "Facility-level certifications (e.g. ISO 9001) are available as PDF copy upon request and can be included in your order documentation package.",
-                  note: "Available for all programs",
-                  color: "border-green-100 bg-green-50",
-                  badge: "bg-green-100 text-green-700",
-                },
-                {
-                  type: "Product compliance docs",
-                  detail: "RoHS declarations, REACH statements, material test reports, and CE support documents are generated per SKU or product family based on destination market.",
-                  note: "Generated per order scope",
-                  color: "border-blue-100 bg-blue-50",
-                  badge: "bg-blue-100 text-blue-700",
-                },
-                {
-                  type: "Export documentation",
-                  detail: "Packing lists, carton marks, barcode accuracy control, and certificate-of-origin coordination are part of the standard export program.",
-                  note: "Included in standard export",
-                  color: "border-gray-100 bg-gray-50",
-                  badge: "bg-gray-200 text-gray-700",
-                },
-              ].map((item) => (
+              {pageCopy.items.map((item) => (
                 <div key={item.type} className={`rounded-xl border p-5 ${item.color}`}>
                   <h3 className="text-sm font-semibold text-gray-800">{item.type}</h3>
                   <p className="mt-2 text-xs leading-relaxed text-gray-600">{item.detail}</p>
@@ -97,9 +115,9 @@ export default async function CertificationsPage({ params }: { params: Promise<{
               ))}
             </div>
             <p className="mt-5 text-sm text-gray-500">
-              Document scope varies by product family and destination market.{" "}
+              {pageCopy.availabilityNote}{" "}
               <Link href="/contact" className="font-medium text-blue-600 hover:underline">
-                Contact us to confirm availability for your SKU and market.
+                {pageCopy.availabilityCta}
               </Link>
             </p>
           </div>
@@ -109,16 +127,15 @@ export default async function CertificationsPage({ params }: { params: Promise<{
       {/* Quality commitment section */}
       <section className="bg-blue-50 border-t border-blue-100 py-14">
         <div className="container mx-auto max-w-3xl px-6 text-center">
-          <h2 className="text-2xl font-bold text-gray-800">Our Commitment to Quality</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{pageCopy.commitmentTitle}</h2>
           <p className="mt-4 text-gray-600 leading-relaxed">
-            NorthForge treats quality and compliance as operational support for real orders: incoming checks,
-            selected performance verification, packaging control, document accuracy, and third-party inspection coordination when programs require it.
+            {pageCopy.commitmentDescription}
           </p>
           <Link
             href="/contact"
             className="mt-8 inline-block rounded-lg bg-blue-700 px-8 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
           >
-            Request Quality Documentation
+            {pageCopy.commitmentCta}
           </Link>
         </div>
       </section>

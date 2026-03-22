@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, UniqueConstraint
 from app.core.datetime import utcnow_naive
 from app.models.associations import ProductCertificationLink
 
@@ -11,10 +11,13 @@ if TYPE_CHECKING:
 
 class Certification(SQLModel, table=True):
     __tablename__ = "certifications"
+    __table_args__ = (
+        UniqueConstraint("slug", "locale", name="uq_certifications_slug_locale"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     cert_name: str = Field(max_length=100, index=True)   # e.g. "ISO 9001", "RoHS"
-    slug: str = Field(max_length=120, index=True, unique=True)
+    slug: str = Field(max_length=120, index=True)
     issuer: Optional[str] = Field(default=None, max_length=120)
     cert_number: Optional[str] = Field(default=None, max_length=80)
     issued_at: Optional[datetime] = Field(default=None)

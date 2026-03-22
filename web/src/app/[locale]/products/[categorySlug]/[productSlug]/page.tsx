@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -23,8 +23,11 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
 type Props = { params: Promise<{ locale: string; categorySlug: string; productSlug: string }> };
 
@@ -32,6 +35,36 @@ const SITE_URL = getSiteUrl();
 const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
   ? "NorthForge Tools"
   : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+
+type CommonMessages = {
+  home: string;
+};
+
+type ProductDetailMessages = {
+  products: string;
+  introBox: string;
+  overview: string;
+  inspectionTitle: string;
+  inspectionDescription: string;
+  packagingTitle: string;
+  packagingDescription: string;
+  readinessTitle: string;
+  readinessDescription: string;
+  specControlTitle: string;
+  specControlDescription: string;
+  contextTitle: string;
+  contextDescription: string;
+  specsTitle: string;
+  faqTitle: string;
+  appTitle: string;
+  appLearnMore: string;
+  certTitle: string;
+  beforeRfqTitle: string;
+  beforeRfqDescription: string;
+  rfqItems: Array<{ label: string; detail: string }>;
+  submitRfq: string;
+  askFirst: string;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, categorySlug, productSlug } = await params;
@@ -57,6 +90,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { locale, categorySlug, productSlug } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<ProductDetailMessages>("productDetail"),
+  ]);
 
   const [product, category] = await Promise.all([
     getProductBySlug(productSlug, locale),
@@ -97,6 +135,7 @@ export default async function ProductDetailPage({ params }: Props) {
   // Merge linked FAQs (deduplicated by question)
   const allFaqQuestions = new Set(faqs.map((f) => f.question));
   const extraFaqs = linkedFaqs.filter((f) => !allFaqQuestions.has(f.question));
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, [product, category, ...faqs, ...relatedApps, ...relatedCerts, ...extraFaqs]);
 
   const productUrl = `${SITE_URL}/products/${category.slug}/${product.slug}`;
   const productImage = getProductImage(product, category.slug);
@@ -114,8 +153,8 @@ export default async function ProductDetailPage({ params }: Props) {
       />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Products", url: `${SITE_URL}/products` },
+          { name: common.home, url: SITE_URL },
+          { name: copy.products, url: `${SITE_URL}/products` },
           { name: category.category_name, url: `${SITE_URL}/products/${category.slug}` },
           { name: product.product_name, url: productUrl },
         ])}
@@ -148,9 +187,9 @@ export default async function ProductDetailPage({ params }: Props) {
       <div className="bg-gray-50 border-b border-gray-100 py-4">
         <div className="container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <Link href="/products" className="hover:underline">Products</Link>
+            <Link href="/products" className="hover:underline">{copy.products}</Link>
             <span className="mx-1">/</span>
             <Link href={`/products/${category.slug}`} className="hover:underline">
               {category.category_name}
@@ -164,6 +203,7 @@ export default async function ProductDetailPage({ params }: Props) {
       {/* Main content */}
       <section className="py-12">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="grid gap-10 lg:grid-cols-2">
             {/* Left: image placeholder */}
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 aspect-square max-h-96 lg:max-h-full">
@@ -200,7 +240,7 @@ export default async function ProductDetailPage({ params }: Props) {
               <p className="mt-4 text-gray-600 leading-relaxed">{product.short_description}</p>
               <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4">
                 <p className="text-sm leading-relaxed text-blue-900">
-                  This page is structured for buyers who need to evaluate model fit, specification clarity, related applications, and supporting documents before moving into quote discussion.
+                  {copy.introBox}
                 </p>
               </div>
 
@@ -223,7 +263,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {/* Full description */}
           {product.full_description && (
             <div className="mt-12">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Product Overview</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{copy.overview}</h2>
               <div
                 className="prose prose-gray max-w-none text-gray-600 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: product.full_description }}
@@ -240,9 +280,9 @@ export default async function ProductDetailPage({ params }: Props) {
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
-                <h2 className="text-base font-semibold text-gray-900">Inspection Discipline</h2>
+                <h2 className="text-base font-semibold text-gray-900">{copy.inspectionTitle}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  For repeat orders, buyers usually care less about brochure claims than about whether inspection points, measurement method, and sample-to-production alignment are controlled the same way every time.
+                  {copy.inspectionDescription}
                 </p>
               </div>
             </div>
@@ -254,9 +294,9 @@ export default async function ProductDetailPage({ params }: Props) {
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
-                <h2 className="text-base font-semibold text-gray-900">OEM Packaging Support</h2>
+                <h2 className="text-base font-semibold text-gray-900">{copy.packagingTitle}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  This model can be discussed with insert cards, logo marking, barcode labels, molded cases, and retail-ready packing requirements if the program goes beyond standard supply.
+                  {copy.packagingDescription}
                 </p>
               </div>
             </div>
@@ -264,21 +304,21 @@ export default async function ProductDetailPage({ params }: Props) {
 
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Packaging Readiness</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{copy.readinessTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                Use RFQ notes to confirm label content, insert cards, molded cases, carton marks, and other private-label packaging details tied to this item.
+                {copy.readinessDescription}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Specification Control</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{copy.specControlTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                Buyers should align the critical dimensions, torque range, material, finish, and inspection checkpoints before sample approval.
+                {copy.specControlDescription}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Program Context</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{copy.contextTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                This SKU can be discussed as a standalone item, a recurring catalog line, or part of a mixed-SKU toolkit or drawer-set program.
+                {copy.contextDescription}
               </p>
             </div>
           </div>
@@ -286,7 +326,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {/* Specifications table */}
           {specs && specs.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Specifications</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{copy.specsTitle}</h2>
               <div className="overflow-hidden rounded-xl border border-gray-200">
                 <table className="w-full text-sm">
                   <tbody className="divide-y divide-gray-100">
@@ -306,7 +346,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {(faqs.length > 0 || extraFaqs.length > 0) && (
             <div className="mt-12">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Frequently Asked Questions
+                {copy.faqTitle}
               </h2>
               <FAQAccordion
                 items={[
@@ -334,7 +374,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {relatedApps.length > 0 && (
             <div className="mt-12">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Application Scenarios
+                {copy.appTitle}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedApps.map((app) => (
@@ -355,7 +395,7 @@ export default async function ProductDetailPage({ params }: Props) {
                       <p className="mt-2 text-sm text-gray-500 line-clamp-2">{app.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</p>
                     )}
                     <span className="mt-3 inline-block text-xs text-blue-600 group-hover:underline">
-                      Learn more →
+                      {copy.appLearnMore}
                     </span>
                   </Link>
                 ))}
@@ -367,7 +407,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {relatedCerts.length > 0 && (
             <div className="mt-12">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Certifications &amp; Compliance
+                {copy.certTitle}
               </h2>
               <div className="flex flex-wrap gap-3">
                 {relatedCerts.map((cert) => (
@@ -414,19 +454,12 @@ export default async function ProductDetailPage({ params }: Props) {
       {/* Pre-RFQ Advisory & CTA */}
       <section className="bg-blue-50 border-t border-blue-100 py-12">
         <div className="container mx-auto max-w-5xl px-6">
-          <h2 className="text-xl font-semibold text-gray-900">Before You Submit Your RFQ</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{copy.beforeRfqTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
-            Having these details ready helps NorthForge respond with accurate pricing, feasibility, and documentation scope in the first reply.
+            {copy.beforeRfqDescription}
           </p>
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { label: "Quantity per SKU", detail: "Initial order and annual volume estimate" },
-              { label: "OEM scope", detail: "Logo marking, packaging format, barcode, insert cards" },
-              { label: "Target market & compliance", detail: "Country, channel, and required standards (ISO, RoHS, REACH, CE)" },
-              { label: "Key specifications", detail: "Torque class, material, surface finish, size variants" },
-              { label: "Sample or direct order", detail: "Sample-first flow vs. direct production order" },
-              { label: "Program type", detail: "Standalone SKU, recurring catalog line, or mixed-SKU kit program" },
-            ].map((item) => (
+            {copy.rfqItems.map((item) => (
               <li key={item.label} className="flex gap-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
                 <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
@@ -443,13 +476,13 @@ export default async function ProductDetailPage({ params }: Props) {
               href={`/rfq?product=${encodeURIComponent(product.model_number ?? product.product_name)}`}
               className="rounded-lg bg-blue-700 px-7 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
             >
-              Submit RFQ for This Product →
+              {copy.submitRfq}
             </Link>
             <Link
               href="/contact"
               className="rounded-lg border border-gray-300 bg-white px-7 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Ask a Question First
+              {copy.askFirst}
             </Link>
           </div>
         </div>

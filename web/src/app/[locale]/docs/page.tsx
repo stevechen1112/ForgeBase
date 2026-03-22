@@ -1,34 +1,54 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
-export const metadata: Metadata = {
-  title: "Technical Docs",
-  description: "Technical documentation, data sheets, and compliance documents for NorthForge products.",
+type CommonMessages = {
+  home: string;
 };
 
-const DOCS = [
-  { title: "Product spec sheets", desc: "Available from individual product pages through the download panel." },
-  { title: "Compliance certificates", desc: "Available from the certifications section, including ISO, RoHS, and REACH-related support files." },
-  { title: "OEM documentation", desc: "Shared during RFQ and sampling stages based on project requirements." },
-];
+type DocsPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  docs: Array<{ title: string; desc: string }>;
+  noteTitle: string;
+  noteDescription: string;
+};
 
-export default function DocsPage() {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await params;
+  return getMessageNamespace<DocsPageMessages>("docsPage").then((copy) => copy.metadata);
+}
+
+export default async function DocsPage({ params }: Props) {
+  const { locale } = await params;
+  resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<DocsPageMessages>("docsPage"),
+  ]);
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">
         <div className="mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">Technical Docs</span>
+            <span className="text-gray-600">{copy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-900">Technical Docs</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">Documentation access is organized around product pages, compliance pages, and RFQ workflows so buyers can request the right files at the right stage.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{copy.title}</h1>
+          <p className="mt-3 max-w-2xl text-gray-600">{copy.description}</p>
         </div>
       </section>
       <section className="py-14">
         <div className="mx-auto max-w-5xl px-6 grid gap-6 md:grid-cols-3">
-          {DOCS.map((doc) => (
+          {copy.docs.map((doc) => (
             <div key={doc.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">{doc.title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-600">{doc.desc}</p>
@@ -37,9 +57,9 @@ export default function DocsPage() {
         </div>
         <div className="mx-auto mt-8 max-w-5xl px-6">
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6">
-            <h2 className="text-lg font-semibold text-blue-900">Document access note</h2>
+            <h2 className="text-lg font-semibold text-blue-900">{copy.noteTitle}</h2>
             <p className="mt-2 text-sm leading-relaxed text-blue-800">
-              Some files are shared only after product scope or compliance relevance is confirmed, especially for OEM programs, customer-specific labeling, or audit-sensitive requests.
+              {copy.noteDescription}
             </p>
           </div>
         </div>

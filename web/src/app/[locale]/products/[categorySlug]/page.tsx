@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCategoryBySlug, getProductsByCategory } from "@/lib/api";
@@ -8,6 +8,9 @@ import { FacetedFilterBar } from "@/components/ui/FacetedFilterBar";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getCategoryHeroImage } from "@/lib/demoAssets";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
 type Props = {
   params: Promise<{ locale: string; categorySlug: string }>;
@@ -15,6 +18,31 @@ type Props = {
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+
+type CommonMessages = {
+  home: string;
+};
+
+type ProductCategoryMessages = {
+  products: string;
+  buyerFocusTitle: string;
+  buyerFocusDescription: string;
+  typicalQuestionsTitle: string;
+  typicalQuestionsDescription: string;
+  fasterAnswerTitle: string;
+  fasterAnswerDescription: string;
+  searchPlaceholder: string;
+  productCount: string;
+  productCountPlural: string;
+  matching: string;
+  filteredNotice: string;
+  viewAllProducts: string;
+  noProducts: string;
+  noProductsFound: string;
+  prev: string;
+  next: string;
+  page: string;
+};
 
 /** 2.3.1 — any ?q= or ?page= param → noindex, canonical strips all params */
 function isFaceted(filters: Record<string, string | string[] | undefined>): boolean {
@@ -42,6 +70,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 export default async function CategoryPage({ params, searchParams }: Props) {
   const { locale, categorySlug } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<ProductCategoryMessages>("productCategory"),
+  ]);
   const filters = await searchParams;
 
   const category = await getCategoryBySlug(categorySlug);
@@ -53,6 +86,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const productRes = await getProductsByCategory(category.id, locale, page, 24, q);
   const products = productRes.data;
   const { total, total_pages } = productRes.meta;
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, [category, ...products]);
 
   const faceted = isFaceted(filters);
   const baseUrl = `/products/${category.slug}`;
@@ -64,8 +98,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       <ChatWidget contextPage={baseUrl} contextEntityType="category" contextEntityId={category.id} />
       <StructuredData
         data={buildBreadcrumbSchema([
-          { name: "Home", url: SITE_URL },
-          { name: "Products", url: `${SITE_URL}/products` },
+          { name: common.home, url: SITE_URL },
+          { name: copy.products, url: `${SITE_URL}/products` },
           { name: category.category_name, url: `${SITE_URL}/products/${category.slug}` },
         ])}
       />
@@ -81,9 +115,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/52" />
         <div className="container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="relative mb-3 text-xs text-blue-200/90">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <Link href="/products" className="hover:underline">Products</Link>
+            <Link href="/products" className="hover:underline">{copy.products}</Link>
             <span className="mx-1">/</span>
             <span className="text-white">{category.category_name}</span>
           </nav>
@@ -97,47 +131,48 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       {/* Product grid */}
       <section className="py-12">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="mb-8 grid gap-4 lg:grid-cols-3">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Buyer Focus</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{copy.buyerFocusTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                Category pages are meant to help importers and distributors narrow down the right tool family before discussing SKU mix, packaging, and documentation.
+                {copy.buyerFocusDescription}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Typical Questions</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{copy.typicalQuestionsTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                Buyers usually compare usage fit, target market, quality control expectation, and whether standard supply or customization is the better path.
+                {copy.typicalQuestionsDescription}
               </p>
             </div>
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-              <h2 className="text-sm font-semibold text-blue-900">Need a faster answer?</h2>
+              <h2 className="text-sm font-semibold text-blue-900">{copy.fasterAnswerTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-blue-800">
-                If you already know your quantity, packaging need, or target market, move directly to RFQ and include the category context.
+                {copy.fasterAnswerDescription}
               </p>
             </div>
           </div>
 
           {/* Filter bar + noindex notice */}
           <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-            <FacetedFilterBar placeholder={`Search in ${category.category_name}…`} />
+            <FacetedFilterBar placeholder={`${copy.searchPlaceholder} ${category.category_name}...`} />
             <p className="text-sm text-gray-400">
-              {total} product{total !== 1 ? "s" : ""}
-              {q ? ` matching "${q}"` : ""}
+              {total} {total !== 1 ? copy.productCountPlural : copy.productCount}
+              {q ? ` ${copy.matching} "${q}"` : ""}
             </p>
           </div>
 
           {/* noindex ribbon for faceted state */}
           {faceted && (
             <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-2 text-xs text-yellow-700">
-              This filtered view is not indexed by search engines.{" "}
-              <Link href={baseUrl} className="underline">View all products</Link>
+              {copy.filteredNotice}{" "}
+              <Link href={baseUrl} className="underline">{copy.viewAllProducts}</Link>
             </div>
           )}
 
           {products.length === 0 ? (
             <p className="text-center text-gray-500 py-16">
-              {q ? `No products found for "${q}".` : "No products in this category yet."}
+              {q ? `${copy.noProductsFound} "${q}"。` : copy.noProducts}
             </p>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -160,11 +195,11 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                   rel="prev"
                   className="px-4 py-2 rounded border text-sm hover:bg-gray-50"
                 >
-                  ← Prev
+                  {copy.prev}
                 </Link>
               )}
               <span className="px-4 py-2 text-sm text-gray-500">
-                Page {page} / {total_pages}
+                {copy.page} {page} / {total_pages}
               </span>
               {page < total_pages && (
                 <Link
@@ -172,7 +207,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                   rel="next"
                   className="px-4 py-2 rounded border text-sm hover:bg-gray-50"
                 >
-                  Next →
+                  {copy.next}
                 </Link>
               )}
             </nav>

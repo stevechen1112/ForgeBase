@@ -1,42 +1,20 @@
-import Link from "next/link";
+"use client";
 
-const FOOTER_LINKS = [
-  {
-    heading: "Products",
-    items: [
-      { label: "Product Catalog",   href: "/products" },
-      { label: "By Application",    href: "/applications" },
-      { label: "Request a Quote",   href: "/rfq" },
-      { label: "Custom Solutions",  href: "/contact" },
-    ],
-  },
-  {
-    heading: "Company",
-    items: [
-      { label: "About Us",          href: "/about" },
-      { label: "Certifications",    href: "/certifications" },
-      { label: "News & Updates",    href: "/news" },
-      { label: "Careers",           href: "/careers" },
-    ],
-  },
-  {
-    heading: "Support",
-    items: [
-      { label: "FAQ",               href: "/faq" },
-      { label: "Contact Us",        href: "/contact" },
-      { label: "Technical Docs",    href: "/docs" },
-      { label: "Dealer Locator",    href: "/dealers" },
-    ],
-  },
-  {
-    heading: "Legal",
-    items: [
-      { label: "Privacy Policy",    href: "/privacy" },
-      { label: "Terms of Service",  href: "/terms" },
-      { label: "Cookie Policy",     href: "/cookies" },
-    ],
-  },
-];
+import { Link } from "@/i18n/navigation";
+import { useMessageNamespace } from "@/lib/messages";
+
+type FooterMessages = {
+  description: string;
+  builtWithPrecision: string;
+  allRightsReserved: string;
+  certifications: string[];
+  sections: {
+    products: { heading: string; catalog: string; applications: string; rfq: string; custom: string };
+    company: { heading: string; about: string; certifications: string; news: string; careers: string };
+    support: { heading: string; faq: string; contact: string; docs: string; dealers: string };
+    legal: { heading: string; privacy: string; terms: string; cookies: string };
+  };
+};
 
 const SOCIAL_LINKS = [
   {
@@ -70,15 +48,52 @@ const SOCIAL_LINKS = [
 ];
 
 export function Footer() {
+  const copy = useMessageNamespace<FooterMessages>("footer");
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
   const year = new Date().getFullYear();
 
+  const sections = [
+    {
+      heading: copy.sections.products.heading,
+      items: [
+        { href: "/products", label: copy.sections.products.catalog },
+        { href: "/applications", label: copy.sections.products.applications },
+        { href: "/rfq", label: copy.sections.products.rfq },
+        { href: "/contact", label: copy.sections.products.custom },
+      ],
+    },
+    {
+      heading: copy.sections.company.heading,
+      items: [
+        { href: "/about", label: copy.sections.company.about },
+        { href: "/certifications", label: copy.sections.company.certifications },
+        { href: "/news", label: copy.sections.company.news },
+        { href: "/careers", label: copy.sections.company.careers },
+      ],
+    },
+    {
+      heading: copy.sections.support.heading,
+      items: [
+        { href: "/faq", label: copy.sections.support.faq },
+        { href: "/contact", label: copy.sections.support.contact },
+        { href: "/docs", label: copy.sections.support.docs },
+        { href: "/dealers", label: copy.sections.support.dealers },
+      ],
+    },
+    {
+      heading: copy.sections.legal.heading,
+      items: [
+        { href: "/privacy", label: copy.sections.legal.privacy },
+        { href: "/terms", label: copy.sections.legal.terms },
+        { href: "/cookies", label: copy.sections.legal.cookies },
+      ],
+    },
+  ];
+
   return (
     <footer className="border-t border-gray-200 bg-gray-900 text-gray-400">
-      {/* Main grid */}
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6">
-          {/* Brand — spans 2 cols on lg */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-[11px] font-bold text-white">
@@ -86,12 +101,8 @@ export function Footer() {
               </div>
               <span className="text-base font-bold text-white">{siteName}</span>
             </Link>
-            <p className="mt-3 text-sm leading-relaxed">
-              Precision manufacturing solutions trusted by industrial buyers in
-              40+ countries. ISO&nbsp;9001 certified, 20+ years of experience.
-            </p>
+            <p className="mt-3 text-sm leading-relaxed">{copy.description}</p>
 
-            {/* Contact snippet */}
             <ul className="mt-5 space-y-1.5 text-sm">
               <li className="flex items-center gap-2">
                 <svg className="h-4 w-4 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -107,23 +118,21 @@ export function Footer() {
               </li>
             </ul>
 
-            {/* Social icons */}
             <div className="mt-5 flex items-center gap-3">
-              {SOCIAL_LINKS.map((s) => (
+              {SOCIAL_LINKS.map((social) => (
                 <a
-                  key={s.label}
-                  href={s.href}
-                  aria-label={s.label}
-                  className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-800 text-gray-400 hover:bg-blue-700 hover:text-white transition-colors"
+                  key={social.label}
+                  href={social.href}
+                  aria-label={social.label}
+                  className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-800 text-gray-400 transition-colors hover:bg-blue-700 hover:text-white"
                 >
-                  {s.icon}
+                  {social.icon}
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Link columns */}
-          {FOOTER_LINKS.map((section) => (
+          {sections.map((section) => (
             <div key={section.heading}>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-300">
                 {section.heading}
@@ -131,10 +140,7 @@ export function Footer() {
               <ul className="mt-4 space-y-2">
                 {section.items.map((item) => (
                   <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="text-sm transition-colors hover:text-white"
-                    >
+                    <Link href={item.href} className="text-sm transition-colors hover:text-white">
                       {item.label}
                     </Link>
                   </li>
@@ -144,9 +150,8 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Certifications strip */}
         <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-gray-800 pt-8">
-          {["ISO 9001:2015", "CE Certified", "RoHS Compliant", "SGS Audited"].map((cert) => (
+          {copy.certifications.map((cert) => (
             <span
               key={cert}
               className="rounded-full border border-gray-700 px-3 py-1 text-xs font-medium text-gray-400"
@@ -156,14 +161,11 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom bar */}
         <div className="mt-6 flex flex-col items-center justify-between gap-2 border-t border-gray-800 pt-6 sm:flex-row">
           <p className="text-xs text-gray-500">
-            © {year} {siteName}. All rights reserved.
+            © {year} {siteName}. {copy.allRightsReserved}
           </p>
-          <p className="text-xs text-gray-600">
-            Built with precision · Designed for growth
-          </p>
+          <p className="text-xs text-gray-600">{copy.builtWithPrecision}</p>
         </div>
       </div>
     </footer>

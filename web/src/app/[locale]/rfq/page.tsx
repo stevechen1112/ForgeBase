@@ -6,25 +6,52 @@
  * noindex by default (private B2B conversion page).
  */
 import type { Metadata } from "next";
-import Link from "next/link";
 import { RFQForm } from "@/components/forms/RFQForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+
+type RFQPageMessages = {
+  metadata: {
+    title: string;
+    description: string;
+  };
+  title: string;
+  description: string;
+  builtForTitle: string;
+  builtForItems: string[];
+  helpTitle: string;
+  helpDescription: string;
+  helpCta: string;
+  responseWindowLabel: string;
+  responseWindowTime: string;
+  responseWindowHours: string;
+};
 
 const BRAND = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
   ? "NorthForge Tools"
   : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
 
-export const metadata: Metadata = {
-  title: `Request a Quotation — ${BRAND}`,
-  description: "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day.",
-  robots: { index: false, follow: false }, // noindex — private conversion page
-};
-
 interface Props {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ product_id?: string; application_id?: string }>;
 }
 
-export default async function RFQPage({ searchParams }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await params;
+  const copy = await getMessageNamespace<RFQPageMessages>("rfqPage");
+  return {
+    title: `${copy.metadata.title} - ${BRAND}`,
+    description: copy.metadata.description,
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function RFQPage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  resolveLocale(locale);
+  const copy = await getMessageNamespace<RFQPageMessages>("rfqPage");
   const sp = await searchParams;
   const productIds = sp.product_id ? [sp.product_id] : [];
   const applicationId = sp.application_id;
@@ -37,12 +64,10 @@ export default async function RFQPage({ searchParams }: Props) {
           {/* Header */}
           <div className="mb-10 text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              Request a Tool Program Quotation
+              {copy.title}
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Share your product scope, packaging needs, and sourcing timeline.
-              Our team will review the details and respond with the right next step within
-              <strong> 1 business day</strong>.
+              {copy.description}
             </p>
           </div>
 
@@ -50,16 +75,9 @@ export default async function RFQPage({ searchParams }: Props) {
             {/* Trust sidebar */}
             <aside className="lg:col-span-1 space-y-6">
               <div className="rounded-lg bg-white border border-gray-200 p-5">
-                <h2 className="font-semibold text-gray-800 mb-4">What this RFQ is built for</h2>
+                <h2 className="font-semibold text-gray-800 mb-4">{copy.builtForTitle}</h2>
                 <ul className="space-y-3 text-sm text-gray-600">
-                  {[
-                    "Standard tool sourcing and recurring distributor supply",
-                    "Private-label packaging, barcode, and molded-case programs",
-                    "Mixed-SKU toolkit builds and drawer-set assortments",
-                    "Specification review for torque, insulation, material, and finish requirements",
-                    "Documentation support for export and compliance-sensitive orders",
-                    "NDA requests for confidential OEM discussions",
-                  ].map((item) => (
+                  {copy.builtForItems.map((item) => (
                     <li key={item} className="flex items-start gap-2">
                       <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -71,24 +89,24 @@ export default async function RFQPage({ searchParams }: Props) {
               </div>
 
               <div className="rounded-lg bg-blue-50 border border-blue-200 p-5">
-                <h2 className="font-semibold text-blue-800 mb-2">Need help?</h2>
+                <h2 className="font-semibold text-blue-800 mb-2">{copy.helpTitle}</h2>
                 <p className="text-sm text-blue-700 mb-3">
-                  If you only know the application and target market, NorthForge can help narrow down the right tool family and packaging path.
+                  {copy.helpDescription}
                 </p>
                 <Link
                   href="/contact"
                   className="text-sm font-medium text-blue-600 underline hover:text-blue-800"
                 >
-                  Contact our engineers →
+                  {copy.helpCta}
                 </Link>
               </div>
 
               {/* Response time guarantee */}
               <div className="rounded-lg bg-green-50 border border-green-200 p-5 text-center">
-                <div className="text-2xl font-bold text-green-700">24–48h</div>
-                <div className="text-sm text-green-600 mt-1">Typical quote-routing window</div>
+                <div className="text-2xl font-bold text-green-700">{copy.responseWindowTime}</div>
+                <div className="text-sm text-green-600 mt-1">{copy.responseWindowLabel}</div>
                 <div className="text-xs text-green-500 mt-2">
-                  Mon – Fri, 9:00 – 18:00 CST
+                  {copy.responseWindowHours}
                 </div>
               </div>
             </aside>

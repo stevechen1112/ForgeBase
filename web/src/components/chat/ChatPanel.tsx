@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatMessage, type ChatMessageItem } from "@/components/chat/ChatMessage";
+import { useMessageNamespace } from "@/lib/messages";
+
+type ChatMessages = {
+  title: string;
+  subtitle: string;
+  suggestedQuestions: string;
+  rfqReady: string;
+  rfqReadyDescription: string;
+  prepareRfq: string;
+  thinking: string;
+};
 
 interface ChatPanelProps {
   title?: string;
@@ -22,8 +33,8 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
-  title = "AI Product Advisor",
-  subtitle = "Fast answers for specs, MOQ, certification, and OEM questions.",
+  title,
+  subtitle,
   messages,
   suggestions,
   isBusy,
@@ -32,6 +43,10 @@ export function ChatPanel({
   onSuggestionClick,
   onSubmit,
 }: ChatPanelProps) {
+  const copy = useMessageNamespace<ChatMessages>("chat");
+  const resolvedTitle = title ?? copy.title;
+  const resolvedSubtitle = subtitle ?? copy.subtitle;
+
   return (
     <Card className="flex h-full flex-col overflow-hidden border-slate-200 shadow-xl">
       <CardHeader className="border-b border-slate-200 bg-slate-950 px-4 py-4 text-white">
@@ -40,8 +55,8 @@ export function ChatPanel({
             <MessageSquareText className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base text-white">{title}</CardTitle>
-            <p className="mt-1 text-xs text-slate-300">{subtitle}</p>
+            <CardTitle className="text-base text-white">{resolvedTitle}</CardTitle>
+            <p className="mt-1 text-xs text-slate-300">{resolvedSubtitle}</p>
           </div>
         </div>
       </CardHeader>
@@ -55,7 +70,7 @@ export function ChatPanel({
           {messages.length <= 1 && suggestions.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                Suggested Questions
+                {copy.suggestedQuestions}
               </p>
               <div className="flex flex-wrap gap-2">
                 {suggestions.map((suggestion) => (
@@ -75,18 +90,18 @@ export function ChatPanel({
 
           {handoffUrl && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <Badge variant="success" className="mb-2">RFQ Ready</Badge>
+              <Badge variant="success" className="mb-2">{copy.rfqReady}</Badge>
               <p className="text-sm text-emerald-800">
-                Your request is specific enough to move into quotation. Continue with a prefilled RFQ.
+                {copy.rfqReadyDescription}
               </p>
               <Button asChild className="mt-3">
-                <Link href={handoffUrl}>Prepare RFQ</Link>
+                <Link href={handoffUrl}>{copy.prepareRfq}</Link>
               </Button>
             </div>
           )}
 
           {isBusy && (
-            <div className="text-sm text-slate-500">Thinking...</div>
+            <div className="text-sm text-slate-500">{copy.thinking}</div>
           )}
 
           {error && (

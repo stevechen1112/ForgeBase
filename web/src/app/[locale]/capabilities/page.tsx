@@ -1,48 +1,69 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedCapabilities } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
-export const metadata: Metadata = {
-  title: "Manufacturing Capabilities",
-  description: "Explore NorthForge capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support.",
+type CommonMessages = {
+  home: string;
+};
+
+type CapabilitiesPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  tags: string[];
+  ctaTitle: string;
+  ctaDescription: string;
+  ctaPrimary: string;
+  ctaSecondary: string;
+  buyerBenefit: Record<string, string>;
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
-// Maps common capability category tags to a short buyer-facing benefit statement
-const BUYER_BENEFIT: Record<string, string> = {
-  engineering: "Reduces revision cycles between buyer spec and production.",
-  quality: "Gives repeat-order buyers a consistent inspection baseline.",
-  packaging: "Supports OEM, private-label, and retail-ready delivery formats.",
-  assembly: "Enables mixed-SKU kits and toolkit programs without enterprise complexity.",
-  export: "Ensures shipment documentation accuracy for target markets.",
-  testing: "Provides traceable torque and performance verification per batch.",
-};
+interface Props {
+  params: Promise<{ locale: string }>;
+}
 
-export default async function CapabilitiesPage({ params }: { params: Promise<{ locale: string }> }) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const capabilities = await getPublishedCapabilities(locale);
+  resolveLocale(locale);
+  return getMessageNamespace<CapabilitiesPageMessages>("capabilities").then((copy) => copy.metadata);
+}
+
+export default async function CapabilitiesPage({ params }: Props) {
+  const { locale } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const capabilities = await getPublishedCapabilities(resolvedLocale);
+  const [pageCopy, common] = await Promise.all([
+    getMessageNamespace<CapabilitiesPageMessages>("capabilities"),
+    getMessageNamespace<CommonMessages>("common"),
+  ]);
+  const showLocaleFallback = hasLocaleFallback(resolvedLocale, capabilities);
 
   return (
     <>
       <PageViewTracker pageType="capability" />
-      <StructuredData data={buildBreadcrumbSchema([{ name: "Home", url: SITE_URL }, { name: "Capabilities", url: `${SITE_URL}/capabilities` }])} />
+      <StructuredData data={buildBreadcrumbSchema([{ name: common.home, url: SITE_URL }, { name: pageCopy.breadcrumb, url: `${SITE_URL}/capabilities` }])} />
 
       <section className="bg-gray-50 border-b border-gray-100 py-12">
         <div className="container mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">Capabilities</span>
+            <span className="text-gray-600">{pageCopy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-800">Manufacturing Capabilities</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{pageCopy.title}</h1>
           <p className="mt-2 max-w-2xl text-gray-500">
-            These pages explain the operational strengths behind the NorthForge catalog — so buyers can judge whether the supplier fits their commercial workflow, not just their tool list.
+            {pageCopy.description}
           </p>
           <div className="mt-5 flex flex-wrap gap-2 text-xs text-gray-400">
-            {["OEM development", "Private-label packaging", "Torque verification", "Kit assembly", "Export documentation"].map((tag) => (
+            {pageCopy.tags.map((tag) => (
               <span key={tag} className="rounded-full border border-gray-200 bg-white px-3 py-1">{tag}</span>
             ))}
           </div>
@@ -51,9 +72,10 @@ export default async function CapabilitiesPage({ params }: { params: Promise<{ l
 
       <section className="py-14">
         <div className="container mx-auto max-w-5xl px-6">
+          {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {capabilities.map((cap) => {
-              const buyerBenefit = cap.category_tag ? (BUYER_BENEFIT[cap.category_tag.toLowerCase()] ?? null) : null;
+              const buyerBenefit = cap.category_tag ? (pageCopy.buyerBenefit[cap.category_tag.toLowerCase() as keyof typeof pageCopy.buyerBenefit] ?? null) : null;
               return (
                 <Link key={cap.id} href={`/capabilities/${cap.slug}`} className="group rounded-xl border border-gray-200 bg-white p-5 hover:border-blue-300 hover:shadow-md transition-all">
                   {cap.category_tag && (
@@ -72,16 +94,16 @@ export default async function CapabilitiesPage({ params }: { params: Promise<{ l
           </div>
 
           <div className="mt-10 rounded-2xl border border-blue-100 bg-blue-50 p-6">
-            <h2 className="text-lg font-semibold text-blue-900">Not sure which capability matters most for your program?</h2>
+            <h2 className="text-lg font-semibold text-blue-900">{pageCopy.ctaTitle}</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-blue-800">
-              Describe your sourcing scenario — toolkit build, private-label launch, or recurring distributor supply — and NorthForge can identify which capabilities are most relevant to your execution flow.
+              {pageCopy.ctaDescription}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link href="/contact" className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
-                Discuss Your Program
+                {pageCopy.ctaPrimary}
               </Link>
               <Link href="/rfq" className="rounded-lg border border-blue-300 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
-                Submit RFQ
+                {pageCopy.ctaSecondary}
               </Link>
             </div>
           </div>

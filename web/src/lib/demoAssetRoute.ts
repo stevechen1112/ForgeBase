@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 const SVG_WIDTH = 1600;
 const SVG_HEIGHT = 900;
+const CERT_BADGE_SIZE = 960;
 
 export const MIME_BY_EXTENSION: Record<string, string> = {
   ".png": "image/png",
@@ -22,6 +23,15 @@ type VisualSpec = {
   accent: string;
   secondary: string;
   panel: string;
+};
+
+type CertificationBadgeVisual = {
+  title: string;
+  kicker: string;
+  shortCode: string;
+  accent: string;
+  secondary: string;
+  ring: string;
 };
 
 function escapeXml(value: string): string {
@@ -147,6 +157,131 @@ function specForFilename(filename: string): VisualSpec {
     secondary: "#1e293b",
     panel: "#e2e8f0",
   };
+}
+
+function splitTitle(title: string, maxLineLength = 16): string[] {
+  const words = title.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const next = currentLine ? `${currentLine} ${word}` : word;
+    if (next.length > maxLineLength && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = next;
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines.slice(0, 3);
+}
+
+function certificationBadgeSpec(filename: string): CertificationBadgeVisual {
+  const baseName = filename.replace(path.extname(filename), "");
+
+  if (baseName.includes("iso-9001")) {
+    return {
+      title: "ISO 9001",
+      kicker: "Quality Management",
+      shortCode: "QMS",
+      accent: "#0f766e",
+      secondary: "#134e4a",
+      ring: "#99f6e4",
+    };
+  }
+
+  if (baseName.includes("vde")) {
+    return {
+      title: "VDE Workflow",
+      kicker: "Insulated Tools",
+      shortCode: "VDE",
+      accent: "#2563eb",
+      secondary: "#1e3a8a",
+      ring: "#bfdbfe",
+    };
+  }
+
+  if (baseName.includes("rohs")) {
+    return {
+      title: "RoHS",
+      kicker: "Material Compliance",
+      shortCode: "RoHS",
+      accent: "#16a34a",
+      secondary: "#166534",
+      ring: "#bbf7d0",
+    };
+  }
+
+  if (baseName.includes("reach")) {
+    return {
+      title: "REACH",
+      kicker: "Documentation",
+      shortCode: "REACH",
+      accent: "#7c3aed",
+      secondary: "#581c87",
+      ring: "#ddd6fe",
+    };
+  }
+
+  if (baseName.includes("pre-shipment-inspection")) {
+    return {
+      title: "Pre-Shipment",
+      kicker: "Inspection Support",
+      shortCode: "PSI",
+      accent: "#ea580c",
+      secondary: "#9a3412",
+      ring: "#fed7aa",
+    };
+  }
+
+  return {
+    title: titleFromSlug(baseName.replace("cert-", "").replace(/-badge$/, "")),
+    kicker: "NorthForge Certification",
+    shortCode: "NF",
+    accent: "#0f766e",
+    secondary: "#134e4a",
+    ring: "#ccfbf1",
+  };
+}
+
+function buildCertificationBadgeSvg(filename: string, label: string): string {
+  const spec = certificationBadgeSpec(filename);
+  const titleLines = splitTitle(spec.title, 14).map(escapeXml);
+  const kicker = escapeXml(spec.kicker);
+  const shortCode = escapeXml(spec.shortCode);
+  const fileLabel = escapeXml(label);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${CERT_BADGE_SIZE}" height="${CERT_BADGE_SIZE}" viewBox="0 0 ${CERT_BADGE_SIZE} ${CERT_BADGE_SIZE}" role="img" aria-label="${escapeXml(spec.title)}">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f8fafc" />
+    </linearGradient>
+    <linearGradient id="panel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${spec.ring}" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.98" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" rx="112" fill="url(#bg)" />
+  <circle cx="480" cy="480" r="358" fill="${spec.secondary}" />
+  <circle cx="480" cy="480" r="316" fill="url(#panel)" stroke="${spec.ring}" stroke-width="20" />
+  <circle cx="480" cy="480" r="246" fill="#ffffff" stroke="${spec.accent}" stroke-opacity="0.18" stroke-width="12" />
+  <circle cx="480" cy="262" r="58" fill="${spec.accent}" fill-opacity="0.12" />
+  <text x="480" y="280" text-anchor="middle" fill="${spec.accent}" font-family="Arial, sans-serif" font-size="46" font-weight="800" letter-spacing="3">${shortCode}</text>
+  <text x="480" y="390" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="66" font-weight="800">${titleLines[0] ?? ""}</text>
+  ${titleLines[1] ? `<text x="480" y="458" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="66" font-weight="800">${titleLines[1]}</text>` : ""}
+  ${titleLines[2] ? `<text x="480" y="526" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="58" font-weight="800">${titleLines[2]}</text>` : ""}
+  <rect x="218" y="590" width="524" height="78" rx="39" fill="${spec.accent}" fill-opacity="0.1" />
+  <text x="480" y="638" text-anchor="middle" fill="${spec.secondary}" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1.2">${kicker}</text>
+  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">NorthForge Demo Certification Badge</text>
+  <text x="480" y="768" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">${fileLabel}</text>
+</svg>`;
 }
 
 function buildSvg(spec: VisualSpec, label: string): string {
@@ -294,6 +429,15 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
         "Content-Type": "application/pdf",
         "Cache-Control": "public, max-age=3600",
         "Content-Disposition": `inline; filename="${filename}"`,
+      },
+    });
+  }
+
+  if (filename.startsWith("cert-") && filename.includes("-badge")) {
+    return new NextResponse(buildCertificationBadgeSvg(filename, assetSegments.join("/")), {
+      headers: {
+        "Content-Type": "image/svg+xml; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
       },
     });
   }

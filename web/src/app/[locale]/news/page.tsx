@@ -1,34 +1,52 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Link } from "@/i18n/navigation";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
-export const metadata: Metadata = {
-  title: "News & Updates",
-  description: "Latest company updates, manufacturing milestones, and product news from NorthForge Tools.",
+type CommonMessages = {
+  home: string;
 };
 
-const NEWS = [
-  { date: "2026-02-10", title: "NorthForge expands insulated tool line for utility buyers", summary: "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
-  { date: "2025-11-22", title: "Factory calibration workflow upgraded for torque verification", summary: "Additional calibration checkpoints introduced to improve repeatability in high-volume torque wrench programs." },
-  { date: "2025-08-15", title: "NorthForge adds mixed-SKU export packing support", summary: "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." },
-];
+type NewsPageMessages = {
+  metadata: Metadata;
+  breadcrumb: string;
+  title: string;
+  description: string;
+  items: Array<{ date: string; title: string; summary: string }>;
+};
 
-export default function NewsPage() {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await params;
+  return getMessageNamespace<NewsPageMessages>("newsPage").then((copy) => copy.metadata);
+}
+
+export default async function NewsPage({ params }: Props) {
+  const { locale } = await params;
+  resolveLocale(locale);
+  const [common, copy] = await Promise.all([
+    getMessageNamespace<CommonMessages>("common"),
+    getMessageNamespace<NewsPageMessages>("newsPage"),
+  ]);
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">
         <div className="mx-auto max-w-5xl px-6">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-gray-400">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{common.home}</Link>
             <span className="mx-1">/</span>
-            <span className="text-gray-600">News & Updates</span>
+            <span className="text-gray-600">{copy.breadcrumb}</span>
           </nav>
-          <h1 className="text-3xl font-bold text-gray-900">News & Updates</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">Recent updates on product development, quality workflow, packaging capability, and export execution relevant to buyers and distributor programs.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{copy.title}</h1>
+          <p className="mt-3 max-w-2xl text-gray-600">{copy.description}</p>
         </div>
       </section>
       <section className="py-14">
         <div className="mx-auto max-w-5xl px-6 space-y-6">
-          {NEWS.map((item) => (
+          {copy.items.map((item) => (
             <article key={item.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">{item.date}</p>
               <h2 className="mt-2 text-xl font-semibold text-gray-900">{item.title}</h2>

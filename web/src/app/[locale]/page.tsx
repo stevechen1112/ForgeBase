@@ -12,6 +12,8 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { StructuredData, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/demoAssets";
+import { getMessageNamespace } from "@/lib/messages";
+import { resolveLocale } from "@/lib/siteCopy";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
@@ -51,226 +53,67 @@ const WHY_US_ICONS = [
   ),
 ];
 
-const HOME_PAGE_COPY = {
-  en: {
-    metadata: {
-      title: "NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
-      description:
-        "Taiwan-based OEM/ODM hand tool manufacturer specializing in torque tools, insulated tools, workshop tools, and private-label toolkit programs for distributors and tool brands.",
-    },
-    hero: {
-      eyebrow: "Trusted Export Manufacturer for Professional Tool Programs",
-      titleLine1: "Precision-Built Hand Tools for Brands,",
-      titleLine2: "Distributors, and Industrial Buyers",
-      description: "NorthForge Tools helps importers, private-label brands, and industrial distributors source torque tools, insulated tools, workshop tools, and custom toolkit programs with stronger quality control and cleaner export execution.",
-      primaryCta: "Request a Quote",
-      secondaryCta: "Browse Products →",
-    },
-    stats: [
-      { value: "20+", label: "Years Export Experience" },
-      { value: "30+", label: "Core Demo SKUs" },
-      { value: "40+", label: "Countries Served" },
-      { value: "98%", label: "Shipment-Readiness KPI" },
-    ],
-    featured: {
-      eyebrow: "Featured",
-      title: "Selected Tool Lines",
-      description: "Representative SKUs across torque, insulated, workshop, automotive service, and toolkit programs.",
-      cardCta: "View Details →",
-      sectionCta: "Browse All Products",
-    },
-    catalogue: {
-      eyebrow: "Our Catalogue",
-      title: "Product Categories",
-      description: "Browse the core families NorthForge builds for distributor programs, private-label launches, and industrial buying teams.",
-      sectionCta: "View Full Catalogue",
-    },
-    why: {
-      eyebrow: "Why NorthForge",
-      title: "Built for Global Buyers",
-      description: "Everything we do is designed to make your sourcing simpler, safer, and more profitable.",
-      items: [
-        {
-          title: "Stable Repeat Orders",
-          desc: "NorthForge reduces drift between approved samples and recurring production through tighter drawing control, verification workflow, and packaging discipline.",
-        },
-        {
-          title: "OEM and Private Label Execution",
-          desc: "From logo application and insert cards to barcode labels and retail-ready assortments, NorthForge supports programs that need more than loose tools in cartons.",
-        },
-        {
-          title: "Documentation Discipline",
-          desc: "Export buyers need clean packing lists, carton marks, barcode accuracy, and compliance-support paperwork. NorthForge treats those details as part of the product program.",
-        },
-        {
-          title: "Mixed-SKU Program Flexibility",
-          desc: "The team is structured to support recurring mixed-SKU programs, toolkit builds, and distributor-ready assortments without enterprise-scale complexity.",
-        },
-        {
-          title: "Tool-Focused Product Scope",
-          desc: "The catalog is built around torque tools, insulated tools, workshop tools, automotive service tools, and custom toolkit programs for professional channels.",
-        },
-        {
-          title: "Compliance-Support Ready",
-          desc: "NorthForge supports ISO 9001 workflow, insulated-tool process discipline, RoHS and REACH documentation, and third-party inspection coordination when needed.",
-        },
-      ],
-    },
-    applications: {
-      eyebrow: "Industries",
-      title: "Featured Applications",
-      description: "NorthForge focuses on programs where repeatability, packaging control, and clean documentation matter as much as the tool itself.",
-      sectionCta: "View all industries →",
-    },
-    oem: {
-      eyebrow: "OEM / ODM Flow",
-      title: "How a Tool Program Moves Forward",
-      description: "The process is designed to keep product, packaging, and shipment execution aligned from the first discussion through recurring orders.",
-      steps: [
-        {
-          title: "Define Product Scope",
-          desc: "Clarify target market, usage scenario, and whether a standard catalog item or customization path makes more commercial sense.",
-        },
-        {
-          title: "Review Branding and Packaging",
-          desc: "Confirm logo application, insert cards, molded cases, barcode labels, and carton marking requirements before sampling.",
-        },
-        {
-          title: "Approve Samples and Key Specs",
-          desc: "Lock in critical details such as torque range, insulation class, hardness targets, finish, packaging format, and inspection points.",
-        },
-        {
-          title: "Move into Controlled Production",
-          desc: "Production, packing, export documentation, and shipment readiness are managed as one workflow so the program stays consistent after approval.",
-        },
-      ],
-    },
-    certifications: {
-      eyebrow: "Quality Assurance",
-      title: "Certifications & Standards",
-      description: "Compliance support is positioned as a working part of export execution, not a footer claim added after the tooling is done.",
-      sectionCta: "View all certifications →",
-    },
-    finalCta: {
-      title: "Build a Cleaner, More Reliable Tool Program",
-      description: "Whether you need recurring catalog supply, private-label packaging, or a custom toolkit assortment, NorthForge can help structure the right sourcing program for your market.",
-      primaryCta: "Request a Quote",
-      secondaryCta: "Contact Sales",
-      note: "Response within 1 business day for qualified enquiries",
-    },
-  },
-  "zh-TW": {
-    metadata: {
-      title: "NorthForge Tools | 台灣 OEM 手工具製造商",
-      description:
-        "台灣 OEM/ODM 手工具製造商，專注於扭力工具、絕緣工具、工坊工具與客製工具組方案，服務經銷商與工具品牌。",
-    },
-    hero: {
-      eyebrow: "專為專業工具專案打造的出口製造夥伴",
-      titleLine1: "為品牌商、經銷商與工業買家打造",
-      titleLine2: "高一致性的專業手工具方案",
-      description: "NorthForge Tools 協助進口商、自有品牌與工業通路採購扭力工具、絕緣工具、工坊工具與客製工具組，以更穩定的品質控管與更乾淨的出口流程推進專案。",
-      primaryCta: "立即詢價",
-      secondaryCta: "瀏覽產品 →",
-    },
-    stats: [
-      { value: "20+", label: "年出口經驗" },
-      { value: "30+", label: "核心示範 SKU" },
-      { value: "40+", label: "服務國家數" },
-      { value: "98%", label: "出貨就緒 KPI" },
-    ],
-    featured: {
-      eyebrow: "精選系列",
-      title: "代表性工具產品線",
-      description: "涵蓋扭力、絕緣、工坊、汽修與工具組方案的代表型號。",
-      cardCta: "查看詳情 →",
-      sectionCta: "瀏覽全部產品",
-    },
-    catalogue: {
-      eyebrow: "產品目錄",
-      title: "產品分類",
-      description: "瀏覽 NorthForge 為經銷專案、自有品牌上市與工業採購團隊打造的核心產品家族。",
-      sectionCta: "查看完整目錄",
-    },
-    why: {
-      eyebrow: "選擇 NorthForge 的理由",
-      title: "為全球採購團隊而設計",
-      description: "我們的流程設計目標，就是讓你的採購更簡單、更穩定，也更容易持續獲利。",
-      items: [
-        {
-          title: "穩定的重複下單品質",
-          desc: "NorthForge 透過更嚴謹的圖面控管、驗證流程與包裝紀律，降低核樣後量產與後續補單之間的落差。",
-        },
-        {
-          title: "OEM 與自有品牌執行能力",
-          desc: "從 Logo 呈現、內頁卡、條碼標籤到零售型組套，NorthForge 支援的不只是散裝工具出貨。",
-        },
-        {
-          title: "文件與出口細節紀律",
-          desc: "出口買家需要乾淨的裝箱單、外箱標示、條碼準確性與合規支援文件；NorthForge 將這些視為產品專案的一部分。",
-        },
-        {
-          title: "混 SKU 專案彈性",
-          desc: "團隊可支援持續性的混 SKU 專案、工具組建置與經銷通路組套，不必用企業級複雜度去換取執行能力。",
-        },
-        {
-          title: "聚焦手工具產品範圍",
-          desc: "產品架構聚焦於扭力工具、絕緣工具、工坊工具、汽修工具與客製工具組，對應專業通路與出口市場。",
-        },
-        {
-          title: "可支援合規導向專案",
-          desc: "NorthForge 可支援 ISO 9001 流程、絕緣工具製程紀律、RoHS/REACH 文件整理，以及第三方驗貨協調。",
-        },
-      ],
-    },
-    applications: {
-      eyebrow: "應用場景",
-      title: "重點應用領域",
-      description: "NorthForge 聚焦在那些對一致性、包裝控管與文件完整度同樣重視的工具專案。",
-      sectionCta: "查看全部應用場景 →",
-    },
-    oem: {
-      eyebrow: "OEM / ODM 流程",
-      title: "一個工具專案如何穩定推進",
-      description: "這套流程的目的是從首次討論到持續補單，都讓產品、包裝與出貨執行維持一致。",
-      steps: [
-        {
-          title: "定義產品範圍",
-          desc: "先釐清目標市場、使用情境，以及該選擇標準品還是客製化方案，哪一條路更具商業效率。",
-        },
-        {
-          title: "確認品牌與包裝需求",
-          desc: "在打樣前確認 Logo 呈現、內頁卡、塑盒、條碼標籤與外箱標示需求。",
-        },
-        {
-          title: "核樣與鎖定關鍵規格",
-          desc: "把扭力範圍、絕緣等級、硬度目標、表面處理、包裝形式與檢驗重點一次鎖定。",
-        },
-        {
-          title: "進入受控量產",
-          desc: "量產、包裝、出口文件與出貨準備作為同一套工作流管理，確保核樣後的專案一致性。",
-        },
-      ],
-    },
-    certifications: {
-      eyebrow: "品質與驗證",
-      title: "認證與標準",
-      description: "合規支援在這裡不是收尾補上的行銷話術，而是出口執行流程中的實際工作項目。",
-      sectionCta: "查看全部認證 →",
-    },
-    finalCta: {
-      title: "建立更乾淨、更穩定的工具供應方案",
-      description: "不論你需要持續型目錄供貨、自有品牌包裝，或客製化工具組方案，NorthForge 都能協助你為目標市場建立更合適的採購模式。",
-      primaryCta: "立即詢價",
-      secondaryCta: "聯絡業務",
-      note: "合格詢問可於 1 個工作天內回覆",
-    },
-  },
-} as const;
+type HomeMessages = {
+  metadata: Metadata;
+  hero: {
+    eyebrow: string;
+    titleLine1: string;
+    titleLine2: string;
+    description: string;
+    primaryCta: string;
+    secondaryCta: string;
+  };
+  stats: Array<{ value: string; label: string }>;
+  featured: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    cardCta: string;
+    sectionCta: string;
+  };
+  catalogue: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    sectionCta: string;
+  };
+  why: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    items: Array<{ title: string; desc: string }>;
+  };
+  applications: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    sectionCta: string;
+  };
+  oem: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    steps: Array<{ title: string; desc: string }>;
+  };
+  certifications: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    sectionCta: string;
+  };
+  finalCta: {
+    title: string;
+    description: string;
+    primaryCta: string;
+    secondaryCta: string;
+    note: string;
+  };
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const copy = HOME_PAGE_COPY[locale as keyof typeof HOME_PAGE_COPY] ?? HOME_PAGE_COPY.en;
+  resolveLocale(locale);
+  const copy = await getMessageNamespace<HomeMessages>("home");
   return {
     title: copy.metadata.title,
     description: copy.metadata.description,
@@ -279,12 +122,13 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const copy = HOME_PAGE_COPY[locale as keyof typeof HOME_PAGE_COPY] ?? HOME_PAGE_COPY.en;
+  const resolvedLocale = resolveLocale(locale);
+  const copy = await getMessageNamespace<HomeMessages>("home");
   const [categories, applicationsRes, certifications, featuredProducts] = await Promise.all([
-    getPublishedCategories(locale),
-    getPublishedApplications(locale),
-    getPublishedCertifications(locale),
-    getFeaturedProducts(locale),
+    getPublishedCategories(resolvedLocale),
+    getPublishedApplications(resolvedLocale),
+    getPublishedCertifications(resolvedLocale),
+    getFeaturedProducts(resolvedLocale),
   ]);
   const applications = applicationsRes.data.slice(0, 6);
   const categorySlugById = new Map(categories.map((category) => [category.id, category.slug]));
