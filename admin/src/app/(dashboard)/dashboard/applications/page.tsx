@@ -30,7 +30,6 @@ export default function ApplicationsListPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("確定刪除？")) return;
     setDeleting(id);
     await applicationsApi.delete(token, id);
     load(); setDeleting(null);
@@ -40,9 +39,26 @@ export default function ApplicationsListPage() {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
   };
 
+  const INDUSTRY_COLORS: Record<string, string> = {
+    "Automotive Aftermarket": "bg-blue-100 text-blue-700",
+    "Industrial Maintenance": "bg-orange-100 text-orange-700",
+    "Electrical Services": "bg-yellow-100 text-yellow-700",
+    "Workshop Operations": "bg-green-100 text-green-700",
+    "Private Label and Distribution": "bg-purple-100 text-purple-700",
+    "Field Service": "bg-teal-100 text-teal-700",
+  };
+
   const COLUMNS = [
     { key: "application_name", label: "應用場景名稱" },
-    { key: "industry", label: "產業" },
+    {
+      key: "industry",
+      label: "產業",
+      render: (v: unknown) => {
+        const name = String(v ?? "");
+        const cls = INDUSTRY_COLORS[name] ?? "bg-gray-100 text-gray-600";
+        return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{name}</span>;
+      },
+    },
     { key: "locale", label: "語言", className: "w-20" },
     {
       key: "status", label: "狀態", className: "w-36",

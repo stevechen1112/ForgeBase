@@ -10,6 +10,16 @@ import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PublishToggle } from "@/components/ui/PublishToggle";
 
+const SELECT_CLS = "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
+
+const TAG_COLORS: Record<string, string> = {
+  OEM:       "bg-blue-50 text-blue-700",
+  Packaging: "bg-purple-50 text-purple-700",
+  Quality:   "bg-green-50 text-green-700",
+  Assembly:  "bg-amber-50 text-amber-700",
+  Export:    "bg-cyan-50 text-cyan-700",
+};
+
 export default function CapabilitiesListPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -17,17 +27,19 @@ export default function CapabilitiesListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
-    capabilitiesApi.list(token, { page, page_size: 20 }).then((res) => {
+    const params: Record<string, unknown> = { page, page_size: 20 };
+    if (localeFilter) params.locale = localeFilter;
+    capabilitiesApi.list(token, params).then((res) => {
       setRows(res.data); setTotalPages(res.meta.total_pages);
     });
-  }, [token, page]);
+  }, [token, page, localeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("確定刪除？")) return;
     setDeleting(id);
     await capabilitiesApi.delete(token, id);
     load(); setDeleting(null);
@@ -39,9 +51,21 @@ export default function CapabilitiesListPage() {
 
   const COLUMNS = [
     { key: "capability_name", label: "廠能名稱" },
-    { key: "slug", label: "Slug", className: "w-48 font-mono text-xs" },
-    { key: "short_description", label: "簡短描述", className: "max-w-xs truncate" },
-    { key: "category_tag", label: "分類標籤", className: "w-28" },
+    {
+      key: "short_description", label: "簡短描述",
+      render: (v: unknown) => (
+        <span className="line-clamp-2 max-w-xs text-sm text-muted-foreground">{v as string}</span>
+      ),
+    },
+    {
+      key: "category_tag", label: "分類標籤", className: "w-28",
+      render: (v: unknown) => {
+        const tag = v as string | undefined;
+        if (!tag) return <span className="text-muted-foreground text-xs">—</span>;
+        const cls = TAG_COLORS[tag] ?? "bg-gray-50 text-gray-600";
+        return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{tag}</span>;
+      },
+    },
     { key: "locale", label: "語言", className: "w-16" },
     { key: "sort_order", label: "排序", className: "w-16 text-center" },
     {
@@ -67,7 +91,18 @@ export default function CapabilitiesListPage() {
           <h1 className="text-2xl font-bold tracking-tight">廠能介紹管理</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理工廠技術能力與製造服務，展示於官網廠能介紹頁，強化買家信任度</p>
         </div>
-        <Button asChild><Link href="/dashboard/capabilities/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增廠能</Link></Button>
+        <div className="flex items-center gap-3">
+          <select className={SELECT_CLS} value={localeFilter} onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}>
+            <option value="">全部語言</option>
+            <option value="en">English</option>
+            <option value="zh-tw">繁體中文</option>
+            <option value="zh-cn">简体中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="de">Deutsch</option>
+          </select>
+          <Button asChild><Link href="/dashboard/capabilities/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增廠能</Link></Button>
+        </div>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/capabilities" onDelete={handleDelete} isDeleting={deleting} />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

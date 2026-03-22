@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.api.v1.router import api_router
 from app.services.score_decay import run_daily_score_decay
 from app.services.google_ads import sync_high_intent_to_customer_match
+from app.services.scheduled_publishing import run_scheduled_publishing
 
 logger = logging.getLogger("forgebase.api")
 
@@ -38,6 +39,16 @@ async def _google_ads_sync_job() -> None:
         logger.exception("Google Ads sync job failed")
 
 
+async def _scheduled_publishing_job() -> None:
+    """Every-minute job: auto-publish products whose scheduled time has arrived."""
+    try:
+        stats = await run_scheduled_publishing()
+        if stats["published"]:
+            logger.info("Scheduled publishing: %d product(s) published", stats["published"])
+    except Exception:
+        logger.exception("Scheduled publishing job failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup — register scheduled jobs
@@ -59,8 +70,16 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    _scheduler.add_job(
+        _scheduled_publishing_job,
+        trigger="interval",
+        minutes=1,
+        id="scheduled_publishing",
+        replace_existing=True,
+        misfire_grace_time=60,
+    )
     _scheduler.start()
-    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC")
+    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min")
     yield
     # shutdown
     _scheduler.shutdown(wait=False)

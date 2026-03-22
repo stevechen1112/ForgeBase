@@ -6,6 +6,7 @@ type Props = { status: string; labelMap?: Record<string, string> };
 
 const COLOR_MAP: Record<string, string> = {
   draft: "bg-yellow-100 text-yellow-700",
+  scheduled: "bg-amber-100 text-amber-700",
   published: "bg-green-100 text-green-700",
   archived: "bg-gray-100 text-gray-500",
   active: "bg-green-100 text-green-700",

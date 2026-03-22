@@ -6,21 +6,10 @@ import { categoriesApi, type ProductCategory } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DataTable, type Column } from "@/components/ui/DataTable";
+import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-
-const COLUMNS: Column<ProductCategory>[] = [
-  { key: "category_name", label: "Name" },
-  { key: "slug", label: "Slug", className: "font-mono text-xs text-gray-500" },
-  {
-    key: "status",
-    label: "Status",
-    render: (v) => <StatusBadge status={String(v)} />,
-  },
-  { key: "sort_order", label: "Order", className: "w-16 text-center" },
-  { key: "locale", label: "Locale", className: "w-16" },
-];
+import { PublishToggle } from "@/components/ui/PublishToggle";
 
 export default function CategoriesPage() {
   const { state } = useAuth();
@@ -32,36 +21,65 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(async (p: number) => {
     if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await categoriesApi.list(token, { page: p, page_size: 20 });
+      const params: Record<string, string | number> = { page: p, page_size: 20 };
+      if (localeFilter) params.locale = localeFilter;
+      const res = await categoriesApi.list(token, params);
       setRows(res.data);
       setTotalPages(res.meta.total_pages);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(e instanceof Error ? e.message : "載入失敗");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, localeFilter]);
 
   useEffect(() => { load(page); }, [load, page]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
     setDeleting(id);
     try {
       await categoriesApi.delete(token, id);
       await load(page);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      alert(e instanceof Error ? e.message : "刪除失敗");
     } finally {
       setDeleting(null);
     }
   };
+
+  const handleStatusChange = (id: string, newStatus: string) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
+  };
+
+  const COLUMNS = [
+    { key: "category_name", label: "分類名稱" },
+    { key: "slug", label: "URL 路徑", className: "font-mono text-xs text-muted-foreground" },
+    {
+      key: "status",
+      label: "狀態",
+      className: "w-44",
+      render: (_v: unknown, row: ProductCategory) => (
+        <div className="flex items-center gap-2">
+          <StatusBadge status={row.status} />
+          <PublishToggle
+            entity="categories"
+            id={row.id}
+            currentStatus={row.status}
+            onStatusChange={(s) => handleStatusChange(row.id, s)}
+          />
+        </div>
+      ),
+    },
+    { key: "sort_order", label: "排序", className: "w-16 text-center" },
+    { key: "locale", label: "語言", className: "w-16" },
+  ];
 
   return (
     <div>
@@ -70,7 +88,22 @@ export default function CategoriesPage() {
           <h1 className="text-2xl font-bold tracking-tight">商品分類</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">管理商品分類樹狀結構，分類直接影響前台導覽選單與商品 URL 路徑</p>
         </div>
-        <Button asChild><Link href="/dashboard/categories/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增分類</Link></Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={localeFilter}
+            onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white"
+          >
+            <option value="">全部語言</option>
+            <option value="en">English</option>
+            <option value="zh-tw">繁體中文</option>
+            <option value="zh-cn">简体中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="de">Deutsch</option>
+          </select>
+          <Button asChild><Link href="/dashboard/categories/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增分類</Link></Button>
+        </div>
       </div>
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}

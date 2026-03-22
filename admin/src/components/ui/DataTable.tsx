@@ -5,7 +5,7 @@
  */
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Loader2, PackageOpen } from "lucide-react";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Loader2, PackageOpen, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +43,7 @@ export function DataTable<T extends { id: string }>({
   const [query, setQuery]     = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -156,27 +157,49 @@ export function DataTable<T extends { id: string }>({
                       );
                     })}
                     <TableCell>
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" asChild>
-                          <Link href={`${editBasePath}/${row.id}/edit`} aria-label="編輯">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Link>
-                        </Button>
-                        {onDelete && (
+                      {pendingDelete === row.id ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-xs text-muted-foreground mr-0.5">確認刪除？</span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => onDelete(row.id)}
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => { onDelete?.(row.id); setPendingDelete(null); }}
                             disabled={isDeleting === row.id}
-                            aria-label="刪除"
+                            aria-label="確認刪除"
                           >
-                            {isDeleting === row.id
-                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : <Trash2 className="h-3.5 w-3.5" />}
+                            {isDeleting === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                           </Button>
-                        )}
-                      </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setPendingDelete(null)}
+                            aria-label="取消"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" asChild>
+                            <Link href={`${editBasePath}/${row.id}/edit`} aria-label="編輯">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                          {onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setPendingDelete(row.id)}
+                              aria-label="刪除"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

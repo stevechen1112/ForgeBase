@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard, Brain, FileText, BarChart2, Target, Building2,
   Mail, Linkedin, Search, Sparkles, Bot, RefreshCcw, AtSign, FlaskConical,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench, Globe,
   MousePointerClick, PenLine, Image, Lock, Link2, Map, File, ClipboardList,
-  Inbox, Users, Plug, LogOut, ChevronUp, Bell, Settings, Filter,
+  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,6 +17,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+type NavSubItem = {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  adminOnly?: boolean;
+};
+
 type NavItem = {
   label: string;
   href: string;
@@ -23,6 +31,7 @@ type NavItem = {
   adminOnly?: boolean;
   exact?: boolean;
   badge?: string;
+  children?: NavSubItem[];
 };
 
 type NavGroup = { title: string; items: NavItem[] };
@@ -37,7 +46,13 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "行銷分析",
     items: [
-      { label: "意圖分析", href: "/dashboard/intent", icon: Brain },
+      {
+        label: "意圖分析", href: "/dashboard/intent", icon: Brain,
+        children: [
+          { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true },
+          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale },
+        ],
+      },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
@@ -59,8 +74,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "SEO 診斷", href: "/dashboard/seo-audit", icon: Search },
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
-      { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true },
-      { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale },
     ],
   },
   {
@@ -70,7 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "商品管理", href: "/dashboard/products", icon: Package },
       { label: "應用場景", href: "/dashboard/applications", icon: Factory },
       { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle },
-      { label: "競品比較", href: "/dashboard/comparisons", icon: Scale },
+      // { label: "競品比較", href: "/dashboard/comparisons", icon: Scale },
       { label: "認證管理", href: "/dashboard/certifications", icon: Trophy },
       { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench },
     ],
@@ -78,7 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "內容管理",
     items: [
-      { label: "多語管理", href: "/dashboard/multilingual", icon: Globe },
+      // { label: "多語管理", href: "/dashboard/multilingual", icon: Globe },
       { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick },
       { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
       { label: "媒體庫", href: "/dashboard/assets", icon: Image },
@@ -113,6 +126,7 @@ export function Sidebar() {
 
   const user = state.status === "authenticated" ? state.user : null;
   const isAdmin = user?.role === "admin";
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -150,31 +164,73 @@ export function Sidebar() {
                     {visible.map((item) => {
                       const active = isActive(item);
                       const Icon = item.icon;
+                      const hasChildren = !!item.children?.length;
+                      const visibleChildren = item.children?.filter(c => !c.adminOnly || isAdmin) ?? [];
+                      const anyChildActive = visibleChildren.some(c => pathname === c.href || pathname.startsWith(c.href + "/"));
+                      const isExpanded = anyChildActive || expandedItems.includes(item.href);
                       return (
                         <li key={item.href}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  "group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
-                                  active
-                                    ? "bg-[hsl(var(--sidebar-primary))]/15 text-white"
-                                    : "text-[hsl(var(--sidebar-foreground))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+                          <div className={cn("flex items-center", hasChildren && "gap-0.5 pr-1")}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  href={item.href}
+                                  className={cn(
+                                    "group flex flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                                    (active || anyChildActive)
+                                      ? "bg-[hsl(var(--sidebar-primary))]/15 text-white"
+                                      : "text-[hsl(var(--sidebar-foreground))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+                                  )}
+                                >
+                                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", (active || anyChildActive) ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/50 group-hover:text-white")} />
+                                  <span className="truncate">{item.label}</span>
+                                  {active && !hasChildren && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
+                                  {item.badge && (
+                                    <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[10px]">{item.badge}</Badge>
+                                  )}
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="text-xs">
+                                {item.label}
+                              </TooltipContent>
+                            </Tooltip>
+                            {hasChildren && (
+                              <button
+                                onClick={() => setExpandedItems(prev =>
+                                  prev.includes(item.href) ? prev.filter(h => h !== item.href) : [...prev, item.href]
                                 )}
+                                className="flex h-7 w-6 shrink-0 items-center justify-center rounded text-[hsl(var(--sidebar-foreground))]/40 hover:text-white transition-colors"
+                                aria-label={isExpanded ? "收合" : "展開"}
                               >
-                                <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/50 group-hover:text-white")} />
-                                <span className="truncate">{item.label}</span>
-                                {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
-                                {item.badge && (
-                                  <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[10px]">{item.badge}</Badge>
-                                )}
-                              </Link>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              {item.label}
-                            </TooltipContent>
-                          </Tooltip>
+                                <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", isExpanded && "rotate-90")} />
+                              </button>
+                            )}
+                          </div>
+                          {hasChildren && isExpanded && visibleChildren.length > 0 && (
+                            <ul className="mt-0.5 ml-[22px] space-y-0.5 border-l border-white/10 pl-3">
+                              {visibleChildren.map(child => {
+                                const childActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                                const ChildIcon = child.icon;
+                                return (
+                                  <li key={child.href}>
+                                    <Link
+                                      href={child.href}
+                                      className={cn(
+                                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-all duration-150",
+                                        childActive
+                                          ? "bg-[hsl(var(--sidebar-primary))]/10 text-white"
+                                          : "text-[hsl(var(--sidebar-foreground))]/60 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+                                      )}
+                                    >
+                                      <ChildIcon className={cn("h-3.5 w-3.5 shrink-0", childActive ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/40")} />
+                                      <span className="truncate">{child.label}</span>
+                                      {childActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
                         </li>
                       );
                     })}

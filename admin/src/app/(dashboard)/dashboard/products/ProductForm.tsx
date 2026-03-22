@@ -43,6 +43,9 @@ export default function ProductForm({ initial, id }: Props) {
     seo_description: initial?.seo_description ?? "",
     status: initial?.status ?? "draft",
     locale: initial?.locale ?? "en",
+    publish_at: initial?.published_at
+      ? new Date(initial.published_at as string).toISOString().slice(0, 16)
+      : "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,10 +70,19 @@ export default function ProductForm({ initial, id }: Props) {
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true); setError(null);
+    e.preventDefault();
+    if (form.status === "scheduled" && !form.publish_at) {
+      setError("請選擇預約上架時間"); return;
+    }
+    setSaving(true); setError(null);
     try {
-      if (id) { await productsApi.update(token, id, form); }
-      else { await productsApi.create(token, form); }
+      const { publish_at, ...rest } = form;
+      const payload: Record<string, unknown> = { ...rest };
+      if (form.status === "scheduled" && publish_at) {
+        payload.published_at = new Date(publish_at).toISOString();
+      }
+      if (id) { await productsApi.update(token, id, payload); }
+      else { await productsApi.create(token, payload); }
       router.push("/dashboard/products");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
     finally { setSaving(false); }
@@ -117,9 +129,10 @@ export default function ProductForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿 (Draft)</option>
+                <option value="scheduled">⏰ 預約上架 (Scheduled)</option>
+                <option value="published">已上架 (Published)</option>
+                <option value="archived">已封存 (Archived)</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -131,6 +144,21 @@ export default function ProductForm({ initial, id }: Props) {
               </select>
             </div>
           </div>
+
+          {form.status === "scheduled" && (
+            <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50/60 p-3">
+              <Label className="text-amber-800">⏰ 預約上架時間 *</Label>
+              <Input
+                type="datetime-local"
+                value={form.publish_at}
+                onChange={(e) => setForm((prev) => ({ ...prev, publish_at: e.target.value }))}
+                min={new Date().toISOString().slice(0, 16)}
+                required
+                className="bg-white"
+              />
+              <p className="text-xs text-amber-700">到達指定時間後，請手動將狀態切換為「已上架」或聯繫技術團隊啟用自動排程。</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { productsApi, type Product } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
-import { Plus, Star } from "lucide-react";
+import { Plus, Star, Loader2 } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -18,6 +18,7 @@ export default function ProductsListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [featuringId, setFeaturingId] = useState<string | null>(null);
   const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
@@ -32,7 +33,6 @@ export default function ProductsListPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("確定刪除？")) return;
     setDeleting(id);
     await productsApi.delete(token, id);
     load();
@@ -44,8 +44,13 @@ export default function ProductsListPage() {
   };
 
   const handleToggleFeatured = async (id: string, current: boolean) => {
-    await productsApi.update(token, id, { is_featured: !current } as Partial<Product>);
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, is_featured: !current } : r)));
+    setFeaturingId(id);
+    try {
+      await productsApi.update(token, id, { is_featured: !current } as Partial<Product>);
+      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, is_featured: !current } : r)));
+    } finally {
+      setFeaturingId(null);
+    }
   };
 
   const COLUMNS = [
@@ -59,12 +64,13 @@ export default function ProductsListPage() {
       render: (_v: unknown, row: Product) => (
         <button
           onClick={() => handleToggleFeatured(row.id, row.is_featured)}
-          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          disabled={featuringId === row.id}
+          className="p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
           title={row.is_featured ? "取消主推" : "設為主推"}
         >
-          <Star
-            className={`h-4 w-4 ${row.is_featured ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
-          />
+          {featuringId === row.id
+            ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            : <Star className={`h-4 w-4 ${row.is_featured ? "fill-amber-400 text-amber-400" : "text-gray-300"}`} />}
         </button>
       ),
     },
