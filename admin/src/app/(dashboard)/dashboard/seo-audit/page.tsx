@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Link2, Search, TrendingUp, CheckCircle2, X, AlertTriangle, Info } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -362,10 +361,6 @@ export default function SEOAuditPage() {
                   <TableBody>
                     {visibleLinks.map((item, visibleIndex) => {
                       // 找回原始 index 以正確標記
-                      const originalIndex = links!.suggestions!.findIndex(
-                        (s, i) => s.source_url === item.source_url && s.target_url === item.target_url && !dismissedLinks.has(i)
-                          ? (links!.suggestions!.indexOf(item) === i) : false
-                      );
                       const idx = links!.suggestions!.indexOf(item);
                       const accepted = acceptedLinks.has(idx);
                       return (

@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import {
-  TrendingUp, TrendingDown, Users, Package, ClipboardList, DollarSign,
+  Users, ClipboardList,
   Globe, Eye, MousePointerClick, Percent, ArrowUpRight,
   RefreshCcw, Download,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/lib/auth/store";
 import { API_BASE } from "@/lib/api/client";
 

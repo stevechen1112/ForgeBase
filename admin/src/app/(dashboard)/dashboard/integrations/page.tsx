@@ -615,8 +615,8 @@ function EmailSection({ token }: { token: string }) {
         <p className="text-xs text-muted-foreground">
           切換寄信供應商：在 <code className="rounded bg-muted px-1">.env</code> 中設定{" "}
           <code className="rounded bg-muted px-1">ESP_PROVIDER</code> 為{" "}
-          <code className="rounded bg-muted px-1">"resend"</code> 或{" "}
-          <code className="rounded bg-muted px-1">"sendgrid"</code>
+          <code className="rounded bg-muted px-1">&quot;resend&quot;</code> 或{" "}
+          <code className="rounded bg-muted px-1">&quot;sendgrid&quot;</code>
         </p>
       </CardContent>
     </Card>

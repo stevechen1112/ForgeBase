@@ -4,8 +4,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard, Brain, FileText, BarChart2, Target, Building2,
-  Mail, Linkedin, Search, Sparkles, Bot, RefreshCcw, AtSign, FlaskConical,
-  Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench, Globe,
+  Mail, Linkedin, Search, Sparkles, Bot, FlaskConical,
+  Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Lock, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter,
 } from "lucide-react";

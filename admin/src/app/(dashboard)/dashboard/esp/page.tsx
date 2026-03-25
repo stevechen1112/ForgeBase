@@ -294,7 +294,7 @@ export default function EspPage() {
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>在 <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">.env</code> 中設定以下變數：</p>
           <ul className="list-inside list-disc space-y-1 pl-2">
-            <li><code className="text-foreground">ESP_PROVIDER</code> — <code className="text-foreground">"resend"</code> 或 <code className="text-foreground">"sendgrid"</code>（決定寄信用哪個）</li>
+            <li><code className="text-foreground">ESP_PROVIDER</code> — <code className="text-foreground">&quot;resend&quot;</code> 或 <code className="text-foreground">&quot;sendgrid&quot;</code>（決定寄信用哪個）</li>
             <li><code className="text-foreground">RESEND_API_KEY</code> — Resend 郵件服務</li>
             <li><code className="text-foreground">SENDGRID_API_KEY</code> + <code className="text-foreground">SENDGRID_LIST_ID</code></li>
             <li><code className="text-foreground">MAILCHIMP_API_KEY</code> + <code className="text-foreground">MAILCHIMP_AUDIENCE_ID</code></li>
