@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 type Props = {
-  entityType: "product" | "category" | "application";
+  entityType: "product" | "category" | "application" | "page";
   data: Record<string, unknown>;
   onApplyField: (field: string, value: string) => void;
 };
@@ -26,7 +26,8 @@ export function SEOAssistantPanel({ entityType, data, onApplyField }: Props) {
   const entityName = useMemo(() => {
     if (entityType === "product") return String(data.product_name || data.model_number || "目前產品");
     if (entityType === "category") return String(data.category_name || "目前分類");
-    return String(data.application_name || "目前應用場景");
+    if (entityType === "application") return String(data.application_name || "目前應用場景");
+    return String(data.title || data.slug || "目前頁面");
   }, [data, entityType]);
 
   async function handleAnalyze() {

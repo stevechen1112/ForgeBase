@@ -8,6 +8,7 @@ import { FacetedFilterBar } from "@/components/ui/FacetedFilterBar";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getCategoryHeroImage } from "@/lib/demoAssets";
+import { buildTwitterMeta } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ categorySlug: string }>;
@@ -30,11 +31,19 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   const faceted = isFaceted(filters);
 
+  const title = category.seo_title ?? category.category_name;
+  const description = category.seo_description ?? category.description ?? undefined;
+  const ogImage = category.og_image_url ?? category.image_url ?? undefined;
+
   return {
-    title: category.seo_title ?? category.category_name,
-    description: category.seo_description ?? category.description ?? undefined,
+    title,
+    description,
     // Canonical always points to the clean base URL — strips all filter/pagination params
     alternates: { canonical: `${SITE_URL}/products/${category.slug}` },
+    openGraph: ogImage
+      ? { images: [{ url: ogImage, width: 1200, height: 630, alt: title }] }
+      : undefined,
+    twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
     // Faceted pages must not be indexed to avoid duplicate content (2.3.1)
     robots: faceted ? { index: false, follow: true } : undefined,
   };

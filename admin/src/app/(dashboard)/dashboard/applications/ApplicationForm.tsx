@@ -39,6 +39,7 @@ export default function ApplicationForm({ initial, id }: Props) {
     challenge: initial?.challenge ?? "",
     solution: initial?.solution ?? "",
     hero_image_url: initial?.hero_image_url ?? "",
+    og_image_url: initial?.og_image_url ?? "",
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
     status: initial?.status ?? "draft",
@@ -181,6 +182,11 @@ export default function ApplicationForm({ initial, id }: Props) {
           <div className="space-y-1.5">
             <Label>SEO Description</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>OG Image URL</Label>
+            <Input {...f("og_image_url")} type="url" placeholder="https://.../application-og.jpg" />
+            <p className="text-xs text-muted-foreground">若未填寫，前台會回退使用 Hero Image URL。</p>
           </div>
         </CardContent>
       </Card>

@@ -12,7 +12,7 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
@@ -58,14 +58,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const localeVariants = await getApplicationLocales(application.slug).catch(() => []);
   const languages = buildLocaleAlternates(pagePath, localeVariants);
 
+  const title = application.seo_title ?? application.application_name;
+  const description = application.seo_description ?? application.description ?? undefined;
+  const ogImage = application.og_image_url ?? application.hero_image_url ?? undefined;
+
   return {
-    title: application.seo_title ?? application.application_name,
-    description:
-      application.seo_description ?? application.description ?? undefined,
+    title,
+    description,
     alternates: {
       canonical,
       languages,
     },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: title }] : undefined,
+    },
+    twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
   };
 }
 

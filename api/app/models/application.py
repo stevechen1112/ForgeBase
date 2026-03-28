@@ -25,6 +25,7 @@ class Application(SQLModel, table=True):
     challenge: Optional[str] = Field(default=None)     # richtext — pain points solved
     solution: Optional[str] = Field(default=None)      # richtext — how product solves it
     hero_image_url: Optional[str] = Field(default=None, max_length=500)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)  # OG-specific image (1200×630)
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
     status: str = Field(default="draft", max_length=20)

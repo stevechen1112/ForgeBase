@@ -25,7 +25,7 @@ import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
-import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 
@@ -78,13 +78,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const localeVariants = await getProductLocales(product.slug).catch(() => []);
   const languages = buildLocaleAlternates(pagePath, localeVariants);
 
+  const title = product.seo_title ?? `${product.model_number} ${product.product_name}`;
+  const description = product.seo_description ?? product.short_description;
+  const ogImage = product.og_image_url ?? product.image_url ?? undefined;
+
   return {
-    title: product.seo_title ?? `${product.model_number} ${product.product_name}`,
-    description: product.seo_description ?? product.short_description,
+    title,
+    description,
     alternates: {
       canonical,
       languages,
     },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: product.image_alt ?? product.product_name }] : undefined,
+    },
+    twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
   };
 }
 
@@ -165,6 +176,8 @@ export default async function ProductDetailPage({ params }: Props) {
           description: product.short_description,
           model: product.model_number,
           brand: BRAND_NAME,
+          imageUrl: product.og_image_url ?? product.image_url ?? undefined,
+          imageAlt: product.image_alt ?? product.product_name,
           url: productUrl,
           siteUrl: SITE_URL,
           specs: specMap,

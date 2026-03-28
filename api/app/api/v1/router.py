@@ -15,7 +15,7 @@ from app.api.v1.endpoints import (
     public_relations, preview,
     events, visitors, contacts, rfqs, integrations, segments, accounts, nurture,
     linkedin_audiences, seo_audit, seo_optimize, crm, esp, ab_test, analytics,
-    ml_scoring, chat,
+    ml_scoring, chat, redirects,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router, nurture_ai_router,
@@ -47,6 +47,7 @@ content_router.include_router(public_relations.router)
 content_router.include_router(preview.router)
 content_router.include_router(seo_audit.router)    # /content/seo-audit/* (2.3.4)
 content_router.include_router(seo_optimize.router)  # /content/seo-audit/optimize (2.3.5)
+content_router.include_router(redirects.router)     # /content/redirects/* SEO redirect mgmt
 api_router.include_router(content_router)
 
 # Phase 1b: Tracking — /api/v1/tracking/

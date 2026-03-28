@@ -28,6 +28,7 @@ export default function CategoryForm({ initial, id }: Props) {
     sort_order: initial?.sort_order ?? 0,
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
+    og_image_url: initial?.og_image_url ?? "",
     status: initial?.status ?? "draft",
     locale: initial?.locale ?? "en",
   });
@@ -105,6 +106,11 @@ export default function CategoryForm({ initial, id }: Props) {
           <div className="space-y-1.5">
             <Label>SEO Description (max 160)</Label>
             <Textarea value={form.seo_description} onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))} rows={2} maxLength={160} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>OG Image URL</Label>
+            <Input value={form.og_image_url} onChange={(e) => setForm((f) => ({ ...f, og_image_url: e.target.value }))} type="url" placeholder="https://.../category-og.jpg" />
+            <p className="text-xs text-muted-foreground">分類頁社群分享圖，建議與封面圖分開配置。</p>
           </div>
         </CardContent>
       </Card>

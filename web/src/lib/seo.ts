@@ -43,10 +43,34 @@ export function buildDefaultMetadata(input?: Partial<Metadata>): Metadata {
       title: siteName,
       description: "外銷製造商官網成長系統",
     },
+    twitter: {
+      card: "summary_large_image",
+      site: process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? undefined,
+      title: siteName,
+      description: "外銷製造商官網成長系統",
+    },
     robots: {
       index: true,
       follow: true,
     },
     ...input,
+  };
+}
+
+/**
+ * Build Twitter card metadata for a specific page.
+ * Merges with the caller's existing openGraph images so we don't duplicate data.
+ */
+export function buildTwitterMeta(opts: {
+  title: string;
+  description?: string;
+  imageUrl?: string | null;
+}): Metadata["twitter"] {
+  return {
+    card: "summary_large_image",
+    site: process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? undefined,
+    title: opts.title,
+    description: opts.description ?? undefined,
+    images: opts.imageUrl ? [opts.imageUrl] : undefined,
   };
 }

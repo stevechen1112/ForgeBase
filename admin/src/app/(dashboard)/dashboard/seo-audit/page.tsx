@@ -1,7 +1,16 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth/store";
-import { seoWorkbenchApi, type SEOHealthResponse, type SEOLinksResponse, type SEORevenueResponse } from "@/lib/api/content";
+import {
+  seoWorkbenchApi,
+  type SEOAuditSummaryResponse,
+  type SEOHealthResponse,
+  type SEOLinksResponse,
+  type SEOOnPageResponse,
+  type SEOOpportunitiesResponse,
+  type SEORevenueResponse,
+  type SEOCannibalizationResponse,
+} from "@/lib/api/content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +76,10 @@ export default function SEOAuditPage() {
   const [health, setHealth] = useState<SEOHealthResponse | null>(null);
   const [links, setLinks] = useState<SEOLinksResponse | null>(null);
   const [revenue, setRevenue] = useState<SEORevenueResponse | null>(null);
+  const [summaryData, setSummaryData] = useState<SEOAuditSummaryResponse | null>(null);
+  const [onPage, setOnPage] = useState<SEOOnPageResponse | null>(null);
+  const [opportunities, setOpportunities] = useState<SEOOpportunitiesResponse | null>(null);
+  const [cannibalization, setCannibalization] = useState<SEOCannibalizationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissedLinks, setDismissedLinks] = useState<Set<number>>(new Set());
@@ -80,12 +93,20 @@ export default function SEOAuditPage() {
       seoWorkbenchApi.health(token),
       seoWorkbenchApi.links(token),
       seoWorkbenchApi.revenue(token),
+      seoWorkbenchApi.summary(token),
+      seoWorkbenchApi.onPage(token),
+      seoWorkbenchApi.opportunities(token),
+      seoWorkbenchApi.cannibalization(token),
     ])
-      .then(([healthResult, linksResult, revenueResult]) => {
+      .then(([healthResult, linksResult, revenueResult, summaryResult, onPageResult, opportunitiesResult, cannibalizationResult]) => {
         if (healthResult.status === "fulfilled") setHealth(healthResult.value);
         if (linksResult.status === "fulfilled") setLinks(linksResult.value);
         if (revenueResult.status === "fulfilled") setRevenue(revenueResult.value);
-        const firstErr = [healthResult, linksResult, revenueResult]
+        if (summaryResult.status === "fulfilled") setSummaryData(summaryResult.value);
+        if (onPageResult.status === "fulfilled") setOnPage(onPageResult.value);
+        if (opportunitiesResult.status === "fulfilled") setOpportunities(opportunitiesResult.value);
+        if (cannibalizationResult.status === "fulfilled") setCannibalization(cannibalizationResult.value);
+        const firstErr = [healthResult, linksResult, revenueResult, summaryResult, onPageResult, opportunitiesResult, cannibalizationResult]
           .find((r): r is PromiseRejectedResult => r.status === "rejected");
         if (firstErr) setError(firstErr.reason?.message ?? "資料載入失敗");
       })
@@ -187,6 +208,7 @@ export default function SEOAuditPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview"><Search className="mr-2 h-4 w-4" />總覽</TabsTrigger>
+          <TabsTrigger value="technical"><AlertTriangle className="mr-2 h-4 w-4" />技術稽核</TabsTrigger>
           <TabsTrigger value="links">
             <Link2 className="mr-2 h-4 w-4" />內鏈建議
             {visibleLinks.length > 0 && (
@@ -304,6 +326,154 @@ export default function SEOAuditPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="technical" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">已發佈頁面</p>
+                <p className="mt-1 text-2xl font-semibold">{summaryData?.on_page.total_published_pages ?? 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">缺 JSON-LD</p>
+                <p className={`mt-1 text-2xl font-semibold ${(summaryData?.on_page.no_structured_data ?? 0) > 0 ? "text-red-600" : "text-green-600"}`}>
+                  {summaryData?.on_page.no_structured_data ?? 0}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">缺 Meta Description</p>
+                <p className={`mt-1 text-2xl font-semibold ${(summaryData?.on_page.no_meta_description ?? 0) > 0 ? "text-yellow-600" : "text-green-600"}`}>
+                  {summaryData?.on_page.no_meta_description ?? 0}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">Structured Data 覆蓋率</p>
+                <p className="mt-1 text-2xl font-semibold">{summaryData?.on_page.structured_data_coverage_pct ?? 0}%</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">On-Page 問題頁面</CardTitle>
+                <p className="text-xs text-muted-foreground">這裡列的是後端稽核已偵測出的技術 SEO 問題，讓後台可直接對照欄位修正。</p>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>頁面</TableHead>
+                      <TableHead className="w-24">嚴重度</TableHead>
+                      <TableHead>問題摘要</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {!onPage?.pages.length ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                          尚無 on-page audit 結果
+                        </TableCell>
+                      </TableRow>
+                    ) : onPage.pages.slice(0, 8).map((page) => (
+                      <TableRow key={page.id}>
+                        <TableCell>
+                          <div className="font-medium text-sm">{page.title}</div>
+                          <div className="text-xs text-muted-foreground">/{page.slug}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={page.severity === "critical" ? "destructive" : page.severity === "warning" ? "secondary" : "outline"}>
+                            {page.severity === "critical" ? "嚴重" : page.severity === "warning" ? "警示" : "正常"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{page.issues[0] ?? "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">快速機會頁</CardTitle>
+                <p className="text-xs text-muted-foreground">排名 6-20 且已有 impressions 的頁面，優先補 meta、內容深度與內鏈最有機會見效。</p>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>頁面 URL</TableHead>
+                      <TableHead className="w-20 text-right">曝光</TableHead>
+                      <TableHead className="w-20 text-right">排名</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {!opportunities?.pages.length ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                          目前沒有快速機會頁
+                        </TableCell>
+                      </TableRow>
+                    ) : opportunities.pages.slice(0, 8).map((page) => (
+                      <TableRow key={page.page}>
+                        <TableCell className="font-mono text-xs">{page.page}</TableCell>
+                        <TableCell className="text-right">{page.impressions}</TableCell>
+                        <TableCell className="text-right font-medium">{page.avg_position}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">關鍵字 Cannibalization</CardTitle>
+              <p className="text-xs text-muted-foreground">當同一查詢同時由多頁競爭時，Google 可能無法判斷主要頁面，會稀釋排名訊號。</p>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>查詢字詞</TableHead>
+                    <TableHead>競爭頁面</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!cannibalization?.queries.length ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">
+                        目前未偵測到關鍵字 cannibalization
+                      </TableCell>
+                    </TableRow>
+                  ) : cannibalization.queries.slice(0, 6).map((item) => (
+                    <TableRow key={item.query}>
+                      <TableCell className="font-medium">{item.query}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {item.pages.map((page) => (
+                            <div key={`${item.query}-${page.page}`} className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                              <span className="truncate">{page.page}</span>
+                              <span className="shrink-0">Pos. {page.position}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab 2：內鏈建議 */}

@@ -74,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "SEO 診斷", href: "/dashboard/seo-audit", icon: Search },
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
+      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2 },
     ],
   },
   {

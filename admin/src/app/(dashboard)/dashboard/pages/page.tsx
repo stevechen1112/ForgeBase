@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { pagesApi, type Page } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
@@ -14,6 +15,24 @@ const COLUMNS = [
   { key: "page_type", label: "類型", className: "w-32" },
   { key: "slug", label: "Slug", className: "w-44 font-mono text-xs" },
   { key: "locale", label: "語言", className: "w-20" },
+  {
+    key: "noindex",
+    label: "索引",
+    className: "w-24",
+    render: (_v: unknown, row: Page) =>
+      row.noindex
+        ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">Noindex</Badge>
+        : <Badge variant="outline" className="border-green-500 text-green-700 text-xs">索引中</Badge>,
+  },
+  {
+    key: "structured_data",
+    label: "JSON-LD",
+    className: "w-20",
+    render: (_v: unknown, row: Page) =>
+      row.structured_data
+        ? <span className="text-xs text-green-600 font-medium">✓</span>
+        : <span className="text-xs text-muted-foreground">—</span>,
+  },
   { key: "status", label: "狀態", className: "w-28", render: (_v: unknown, row: Page) => <StatusBadge status={row.status} /> },
 ];
 

@@ -16,6 +16,7 @@ class ProductCategory(SQLModel, table=True):
     slug: str = Field(max_length=60, unique=True, index=True)
     description: Optional[str] = Field(default=None)  # richtext stored as HTML string
     image_url: Optional[str] = Field(default=None)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)  # OG-specific image (1200×630)
     parent_id: Optional[uuid.UUID] = Field(default=None, foreign_key="product_categories.id")
     sort_order: int = Field(default=0)
     seo_title: Optional[str] = Field(default=None, max_length=70)
