@@ -50,7 +50,26 @@ export default async function middleware(request: NextRequest) {
   const redirectResponse = await resolveRedirect(request);
   if (redirectResponse) return redirectResponse;
 
-  return intlMiddleware(request);
+  const response = intlMiddleware(request);
+
+  // next-intl occasionally redirects "/" to itself (infinite loop) in
+  // standalone mode when localePrefix is "as-needed". Break the loop by
+  // passing the request through directly so app/page.tsx handles it.
+  if (response.status === 307 || response.status === 308) {
+    const location = response.headers.get("location");
+    if (location) {
+      try {
+        const dest = new URL(location);
+        if (dest.pathname === request.nextUrl.pathname) {
+          return NextResponse.next();
+        }
+      } catch {
+        // invalid URL — let original response through
+      }
+    }
+  }
+
+  return response;
 }
 
 export const config = {
