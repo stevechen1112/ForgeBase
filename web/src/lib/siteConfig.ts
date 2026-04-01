@@ -9,13 +9,29 @@
  */
 
 // ── Theme key ──────────────────────────────────────────────────────
-export type ThemeKey = "cobalt" | "forest" | "slate" | "warm";
+export type ThemeKey = "cobalt" | "forest" | "slate" | "warm" | "industrial";
+
+/**
+ * Layout variant driven by the active theme.
+ * - "classic"     — rounded cards, centered headings, light hero
+ * - "industrial"  — angular cards, left-aligned headings, dark header, bold typography
+ */
+export type LayoutVariant = "classic" | "industrial";
 
 export function getThemeKey(): ThemeKey {
   const raw = process.env.NEXT_PUBLIC_THEME ?? "cobalt";
-  if (["cobalt", "forest", "slate", "warm"].includes(raw)) return raw as ThemeKey;
+  if (["cobalt", "forest", "slate", "warm", "industrial"].includes(raw)) return raw as ThemeKey;
   return "cobalt";
 }
+
+/** Map theme keys to their layout variant */
+const LAYOUT_MAP: Record<ThemeKey, LayoutVariant> = {
+  cobalt: "classic",
+  forest: "classic",
+  slate: "classic",
+  warm: "classic",
+  industrial: "industrial",
+};
 
 // ── Brand identity ─────────────────────────────────────────────────
 function resolveBrandName(): string {
@@ -51,4 +67,7 @@ export const siteConfig = {
 
   /** Active theme key */
   theme: getThemeKey(),
+
+  /** Layout variant — determines which component set is used */
+  layout: LAYOUT_MAP[getThemeKey()],
 } as const;

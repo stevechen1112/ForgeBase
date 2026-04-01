@@ -7,6 +7,9 @@ import { buildDefaultMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/siteConfig";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { IndustrialHeader, IndustrialFooter } from "@/components/themes";
+
+const isIndustrial = siteConfig.layout === "industrial";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -53,9 +56,9 @@ export default async function RootLayout({
         )}
 
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Header />
+          {isIndustrial ? <IndustrialHeader /> : <Header />}
           <main className="flex-1">{children}</main>
-          <Footer />
+          {isIndustrial ? <IndustrialFooter /> : <Footer />}
         </NextIntlClientProvider>
       </body>
     </html>

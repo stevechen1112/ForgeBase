@@ -148,6 +148,43 @@
     --hero-via:     18 40% 16%;
     --hero-to:      20 50% 22%;
   }
+
+  /* ── Industrial theme — bold, dark, angular ── */
+  [data-theme="industrial"] {
+    --background:   220 15% 97%;
+    --foreground:   220 20% 10%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    /* Primary = safety amber / yellow */
+    --primary:      45 96% 48%;
+    --primary-foreground: 220 20% 10%;
+
+    --secondary:    220 10% 94%;
+    --secondary-foreground: 220 20% 10%;
+
+    --muted:        220 10% 94%;
+    --muted-foreground: 220 8% 46%;
+
+    --accent:       45 50% 90%;
+    --accent-foreground: 220 20% 10%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:       220 10% 85%;
+    --input:        220 10% 85%;
+    --ring:         45 96% 48%;
+    --radius:       0.25rem;
+
+    --hero-from:    220 20% 8%;
+    --hero-via:     220 18% 12%;
+    --hero-to:      220 15% 18%;
+  }
 }
 
 @layer base {

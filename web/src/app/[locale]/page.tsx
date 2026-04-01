@@ -15,6 +15,7 @@ import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/de
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialHomePage } from "@/components/themes";
 
 const SITE_URL = siteConfig.siteUrl;
 const SITE_NAME = siteConfig.brandName;
@@ -131,6 +132,27 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   ]);
   const applications = applicationsRes.data.slice(0, 6);
   const categorySlugById = new Map(categories.map((category) => [category.id, category.slug]));
+
+  // ── Industrial layout: completely different page assembly ──
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="home" />
+        <ChatWidget contextPage="/" contextEntityType="home" />
+        <StructuredData
+          data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })}
+        />
+        <IndustrialHomePage
+          copy={copy}
+          featuredProducts={featuredProducts}
+          categories={categories}
+          applications={applications}
+          certifications={certifications}
+          categorySlugById={categorySlugById}
+        />
+      </>
+    );
+  }
 
   return (
     <>

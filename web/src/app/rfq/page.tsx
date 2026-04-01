@@ -72,7 +72,7 @@ export default async function RFQPage({ searchParams }: Props) {
               <div className="rounded-lg bg-blue-50 border border-blue-200 p-5">
                 <h2 className="font-semibold text-blue-800 mb-2">Need help?</h2>
                 <p className="text-sm text-blue-700 mb-3">
-                  If you only know the application and target market, {SITE_NAME} can help narrow down the right tool family and packaging path.
+                  If you only know the application and target market, {BRAND} can help narrow down the right tool family and packaging path.
                 </p>
                 <Link
                   href="/contact"
