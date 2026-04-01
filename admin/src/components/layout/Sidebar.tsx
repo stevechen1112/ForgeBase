@@ -110,6 +110,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "網站導入",
+    items: [
+      { label: "Legacy Site Intake", href: "/dashboard/intake", icon: Globe, badge: "NEW" },
+    ],
+  },
+  {
     title: "系統",
     items: [
       { label: "使用者管理", href: "/dashboard/users", icon: Users, adminOnly: true },

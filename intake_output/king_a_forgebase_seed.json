@@ -1,0 +1,4174 @@
+{
+  "project": {
+    "project_name": "欣榮貿易 (king-a.com.tw) 導入",
+    "source_url": "https://king-a.com.tw/",
+    "locale": "zh-tw"
+  },
+  "url_candidates": [
+    {
+      "url": "https://king-a.com.tw/",
+      "page_type": "product",
+      "title": "欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "confidence": 0.9
+    },
+    {
+      "url": "https://king-a.com.tw/page/contact",
+      "page_type": "contact",
+      "title": "聯絡我們 | 欣榮貿易 - 焊接機械手臂、高速加工機、雷射焊接機代理",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/2660FABD752D0BE0AAE2",
+      "page_type": "product",
+      "title": "欣榮貿易 PANASONIC 機械手臂焊接",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/LAPRISS",
+      "page_type": "product",
+      "title": "LAPRISS｜雷射熔切｜機械手臂",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/%E5%A4%96%E9%83%A8%E8%BB%B8R%E7%B3%BB%E5%88%97",
+      "page_type": "product",
+      "title": "外部軸R系列 - 高速型定位裝置",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/DTPS",
+      "page_type": "product",
+      "title": "DTPS 電腦模擬 (離線作業)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/%E6%90%AC%E9%81%8B%E6%87%89%E7%94%A8",
+      "page_type": "product",
+      "title": "搬運應用",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/7D89BE7AE0A322CCDF93",
+      "page_type": "product",
+      "title": "Panasonic CO2 & MAG 熔接機",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/9DB9E5AA06152C449B40",
+      "page_type": "product",
+      "title": "Panasonic MAG & MIG 熔接機",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/BADA71FAEE6929D40E0A",
+      "page_type": "product",
+      "title": "Panasonic TIG 熔接機",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/8BEDB9CECFB2AC27EAAA",
+      "page_type": "product",
+      "title": "Panasonic 離子切割機",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/E9A7DB61A82001C0C78E",
+      "page_type": "product",
+      "title": "Panasonic 各型焊機正廠消耗品與零件",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/DCF27480F588BC8003F1",
+      "page_type": "product",
+      "title": "手持式雷射焊接機，體積小重量輕，操作方便。",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/A-8001",
+      "page_type": "product",
+      "title": "A-8001 合成乳膠樹脂",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/4D4E2E9A60FC9BBE7682",
+      "page_type": "product",
+      "title": "CHEMTECH 螺絲固定劑",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/AA813653773A14745452",
+      "page_type": "product",
+      "title": "CHEMTECH 密封矽膠",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/EDFEDB430EF5CB41DEBF",
+      "page_type": "product",
+      "title": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/page/09ECBB9FD8AFF0075291",
+      "page_type": "category",
+      "title": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+      "confidence": 0.7
+    },
+    {
+      "url": "https://king-a.com.tw/page/D24B0D8B40D2CB4A7B6A",
+      "page_type": "product",
+      "title": "Dainichi 指定台灣聯絡窗口欣榮貿易 - 銷售維修宏得利貿易有限公司",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw",
+      "page_type": "product",
+      "title": "欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "confidence": 0.9
+    },
+    {
+      "url": "https://king-a.com.tw/article/WG4-WGH4-G4%E7%B3%BB%E5%88%97",
+      "page_type": "product",
+      "title": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/tig-manipulator",
+      "page_type": "product",
+      "title": "TIG 熔接機械手臂 (GIII 系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/C-tawers",
+      "page_type": "product",
+      "title": "ROBOT+G4控制器+外置型焊機",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/B-tawers",
+      "page_type": "product",
+      "title": "TAWERS系列(WG4/WGH4)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/super-active-tawers",
+      "page_type": "product",
+      "title": "Active TAWERS 4 (WG4)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/618656E927D760520810",
+      "page_type": "product",
+      "title": "Panasonic YD-350NR1",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/65765F990DF452E721AE",
+      "page_type": "product",
+      "title": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/674F8C3E821597BFCEF6",
+      "page_type": "product",
+      "title": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-GZ4%E7%B3%BB%E5%88%97",
+      "page_type": "product",
+      "title": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-350vZ1",
+      "page_type": "product",
+      "title": "全數位式CO2/MAG熔接機 (350VZ1)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-RX1",
+      "page_type": "product",
+      "title": "節能型CO2/MAG熔接機 (RX1系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-GR3",
+      "page_type": "product",
+      "title": "全數位CO2/MAG熔接機 (GR3系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/39375A32DD2ED878B314",
+      "page_type": "product",
+      "title": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/MAG-MIG-400VP1",
+      "page_type": "product",
+      "title": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/MAG-MIG-400GT3",
+      "page_type": "product",
+      "title": "全數位脈波MAG/MIG熔接機 (400GT3)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-200TRC",
+      "page_type": "product",
+      "title": "Panasonic 焊接機 200TRC",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-BP4",
+      "page_type": "product",
+      "title": "Panasonic TIG-BP4",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-TR6",
+      "page_type": "product",
+      "title": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-TSP",
+      "page_type": "product",
+      "title": "TSP晶體式直流TIG熔接機 (TSP系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-WX4",
+      "page_type": "product",
+      "title": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/PF3",
+      "page_type": "product",
+      "title": "離子切割機 (PF3系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/PF1",
+      "page_type": "product",
+      "title": "離子切割機 (PF1系列)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/Special-Component",
+      "page_type": "product",
+      "title": "焊接機原廠選用配件",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/TIG-welding-torch-2",
+      "page_type": "product",
+      "title": "TIG熔接用焊槍 (TIG焊槍2)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-MIG-Component",
+      "page_type": "product",
+      "title": "原廠CO2&MAG&MIG用零件",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/MAG-Welding-Torch",
+      "page_type": "product",
+      "title": "原廠CO2&MAG專用焊槍",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/L-391B",
+      "page_type": "product",
+      "title": "L-391B 螺絲固定劑(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/L305",
+      "page_type": "product",
+      "title": "L-305 厭氧性固化劑(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/L303",
+      "page_type": "product",
+      "title": "L-303 厭氧性固化劑(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/5492E15E83B4D026",
+      "page_type": "product",
+      "title": "S-284G 液體密封矽膠(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/S-282W",
+      "page_type": "product",
+      "title": "S-282W 液體密封矽膠(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/S-281W",
+      "page_type": "product",
+      "title": "S-281W 液體密封矽膠(工業接著劑)",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/WG4-WGH4-G4系列",
+      "page_type": "product",
+      "title": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "confidence": 0.95
+    },
+    {
+      "url": "https://king-a.com.tw/article/CO2-MAG-GZ4系列",
+      "page_type": "product",
+      "title": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "confidence": 0.95
+    }
+  ],
+  "entity_candidates": [
+    {
+      "entity_type": "product",
+      "display_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "extracted_data": {
+        "product_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/banner_images/51390deb-829e-4c72-a9a5-ccc3d8be0fbd.webp"
+        ],
+        "short_description": "欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑\nPANASONIC 焊接機械手臂\n查看更多\nKING"
+      },
+      "confidence": 0.9,
+      "source_url": "https://king-a.com.tw/"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "PANASONIC 機械手臂焊接",
+      "extracted_data": {
+        "product_name": "PANASONIC 機械手臂焊接",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "1240"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2765"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2676"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2368"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2155"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "欣榮貿易 PANASONIC 機械手臂焊接\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/2660FABD752D0BE0AAE2"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "LAPRISS｜雷射熔切｜機械手臂",
+      "extracted_data": {
+        "product_name": "LAPRISS｜雷射熔切｜機械手臂",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://web.hocom.tw/ckfinder/connector?command=Proxy&type=Images&currentFolder=%2f&fileName=LAPRISS_2.png",
+          "https://app.sharing.tw/upload/542/ckeditor_images/c7d11a8b-da3e-40df-bf02-0d2e39b84c92.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/2ae2d9e4-cfdd-40c4-be7c-c0f3a9b34590.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/31ad31f5-3231-4bdc-bb7a-159a838497e5.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/332b97f4-94f5-4f22-9ddd-e30e3477dda6.webp"
+        ],
+        "short_description": "LAPRISS｜雷射熔切｜機械手臂\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n雷射焊切設備\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/LAPRISS"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "外部軸R系列 - 高速型定位裝置",
+      "extracted_data": {
+        "product_name": "外部軸R系列 - 高速型定位裝置",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "±0.05mm（R",
+            "value": "250mm位置）"
+          },
+          {
+            "key": "●  回轉軸迴轉角度",
+            "value": "±∞"
+          },
+          {
+            "key": "●回轉軸迴轉角度",
+            "value": "±360°"
+          },
+          {
+            "key": "型式",
+            "value": "RJB 12/22"
+          },
+          {
+            "key": "型式",
+            "value": "RJB 32"
+          },
+          {
+            "key": "型式",
+            "value": "RJR 42"
+          },
+          {
+            "key": "型式",
+            "value": "RJR 52"
+          },
+          {
+            "key": "±0.05mm（R",
+            "value": "250mm之位置）"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://i.sharing.tw/upload/542/ckeditor_images/423188d6-0fe5-4e3b-ba44-b89a6b92eb83.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/f9367d20-e813-4485-a811-930133f74fb0.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/a149b0a7-8679-4b9b-a0fb-4b7ba4c11b36.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/4c0f7770-7047-47f4-892d-319a3634124c.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/83be0ce3-fe9b-4c8d-9af9-cfe2ff95ffd8.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/380e6e7d-f709-42b2-ba42-1564fd30ca8c.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/dfa21e56-77a0-4329-be5d-6b012e8bfa90.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/265d11bc-4361-4dcb-876c-12cd0e55a32b.webp",
+          "https://i.sharing.tw/upload/542/ckeditor_images/7d7c97c7-41ea-4d3e-8a4a-6cc296f2d105.webp"
+        ],
+        "short_description": "外部軸R系列 - 高速型定位裝置\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n外部軸系列\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/%E5%A4%96%E9%83%A8%E8%BB%B8R%E7%B3%BB%E5%88%97"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "DTPS 電腦模擬 (離線作業)",
+      "extracted_data": {
+        "product_name": "DTPS 電腦模擬 (離線作業)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "1.6GHz（建議",
+            "value": "3.2 GHz、双CPU）"
+          },
+          {
+            "key": "1GB以上（建議",
+            "value": "2GB）"
+          },
+          {
+            "key": "記憶體",
+            "value": "128MB以上（建議：1GB對應Open GL用）"
+          },
+          {
+            "key": "1024X768以上（建議",
+            "value": "1280X1024）"
+          },
+          {
+            "key": "文字變換軟體",
+            "value": "80MB 以上空間"
+          },
+          {
+            "key": "電腦編輯軟體",
+            "value": "110MB 以上空間"
+          },
+          {
+            "key": "電腦編輯&自動接收軟體",
+            "value": "120MB 以上空間"
+          },
+          {
+            "key": "DTPSⅢ",
+            "value": "210MB 以上空間"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/7f40865d-2e63-4c89-8e1c-bcb7f4184cd5.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/933b6189-5f5d-440b-bbb8-ed7630d5a2b9.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/f7614dd8-9e71-4649-85dd-0fc3d0fad0e3.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/d4fa758e-a85c-441b-ad86-002fffd91559.webp"
+        ],
+        "short_description": "DTPS 電腦模擬 (離線作業)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n電腦模擬\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\n"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/DTPS"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "搬運應用",
+      "extracted_data": {
+        "product_name": "搬運應用",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/23a1b373-b8ac-4c48-8d1b-1897cd4ed217.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/51f697fd-48f3-486a-aea6-9fdf22095108.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/0f5930d5-9881-4b67-982f-4f0629618c7c.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/21c7c5f7-2dbc-4b91-be19-7f7352a4de61.webp"
+        ],
+        "short_description": "搬運應用\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n搬運應用\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/%E6%90%AC%E9%81%8B%E6%87%89%E7%94%A8"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic CO2 & MAG 熔接機",
+      "extracted_data": {
+        "product_name": "Panasonic CO2 & MAG 熔接機",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "76"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "644"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "611"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2584"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1585"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "Panasonic CO2 & MAG 熔接機\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/7D89BE7AE0A322CCDF93"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic MAG & MIG 熔接機",
+      "extracted_data": {
+        "product_name": "Panasonic MAG & MIG 熔接機",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "780"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2048"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "Panasonic MAG & MIG 熔接機\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\nMAG & MIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/9DB9E5AA06152C449B40"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic TIG 熔接機",
+      "extracted_data": {
+        "product_name": "Panasonic TIG 熔接機",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "1603"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1774"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1592"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1786"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1737"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "Panasonic TIG 熔接機\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/BADA71FAEE6929D40E0A"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic 離子切割機",
+      "extracted_data": {
+        "product_name": "Panasonic 離子切割機",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1857"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "Panasonic 離子切割機\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n離子切割機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\n"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/8BEDB9CECFB2AC27EAAA"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic 各型焊機正廠消耗品與零件",
+      "extracted_data": {
+        "product_name": "Panasonic 各型焊機正廠消耗品與零件",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1876"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1669"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "Panasonic 各型焊機正廠消耗品與零件\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\nPanasonic正廠消耗品\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/E9A7DB61A82001C0C78E"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "手持式雷射焊接機，體積小重量輕，操作方便。",
+      "extracted_data": {
+        "product_name": "手持式雷射焊接機，體積小重量輕，操作方便。",
+        "model_numbers": [
+          "KG-1500"
+        ],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/d5185e43-79fe-4484-94f8-77fbdeeb10f8.webp"
+        ],
+        "short_description": "手持式雷射焊接機，體積小重量輕，操作方便。\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n手持式雷射焊接機，體積小重量輕，操作方便。\n手持式雷射焊機 KG-1500\n手持式光纖雷射焊機選擇指南：\n選擇雷射焊機的考量因素\nA. 價格\nB"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/DCF27480F588BC8003F1"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "A-8001 合成乳膠樹脂",
+      "extracted_data": {
+        "product_name": "A-8001 合成乳膠樹脂",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://web.hocom.tw/ckfinder/connector?command=Proxy&type=Images&currentFolder=%2f&fileName=1_A8001(1).JPG"
+        ],
+        "short_description": "A-8001 合成乳膠樹脂\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n印刷用水膠\n印刷用水膠\n螺絲固定劑\n密封矽膠\nA-8001 合成乳膠樹脂\nA-8001 合成乳膠樹脂(工業接著劑)\nA-8001 合成乳膠樹脂\n特點\n※以水為介"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/A-8001"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "CHEMTECH 螺絲固定劑",
+      "extracted_data": {
+        "product_name": "CHEMTECH 螺絲固定劑",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "1576"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1609"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "CHEMTECH 螺絲固定劑\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n螺絲固定劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\nCHEMTECH 螺絲固定劑\n瀏覽數：1576\nL-391B 螺絲固定劑(工業接著劑)\n瀏覽數：2247\nL-3"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/4D4E2E9A60FC9BBE7682"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "CHEMTECH 密封矽膠",
+      "extracted_data": {
+        "product_name": "CHEMTECH 密封矽膠",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "瀏覽數",
+            "value": "3028"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1465"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [],
+        "short_description": "CHEMTECH 密封矽膠\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n密封矽膠\n印刷用水膠\n螺絲固定劑\n密封矽膠\nCHEMTECH 密封矽膠\n瀏覽數：3028\nS-284G 液體密封矽膠(工業接著劑)\n瀏覽數：1465\nS-282"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/AA813653773A14745452"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+      "extracted_data": {
+        "product_name": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/645e158b-dbde-4be9-911c-51297b93f9a5.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/605299c1-e257-497b-a7a8-e15a22a7e543.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/71be0a92-d6f1-45e4-b4bd-c4a24fdd1b71.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/7db1ccda-d066-4537-9c1b-8f09e90040b4.webp"
+        ],
+        "short_description": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用\nJ&W(東洋MACRO) 亞臨界水處理裝置\n何謂亞臨"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/EDFEDB430EF5CB41DEBF"
+    },
+    {
+      "entity_type": "category",
+      "display_name": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+      "extracted_data": {
+        "category_name": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+        "description": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理\n欣榮代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑\n公司簡介\n欣榮貿易公司於西元1959年創立於台北市\n，初期資本額為新台幣貳拾萬元，\n主要業務為對日進口貿易，代理日本富士機械株式會社及宮野鐵工所之工作母機。\n由於當時政府對進口商品採嚴格管制，因此於草創期間倍感艱辛，直至西元1964年政府解除對日商品採購限制，公司業務隨之順利推展。\n西元1968年起又陸續增加代理〝National/Panasonic〞電銲熔切設備(西元1988年起陸續增加代理機器人)、〝",
+        "estimated_products": 0
+      },
+      "confidence": 0.7,
+      "source_url": "https://king-a.com.tw/page/09ECBB9FD8AFF0075291"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Dainichi 指定台灣聯絡窗口 - 銷售維修宏得利貿易有限公司",
+      "extracted_data": {
+        "product_name": "Dainichi 指定台灣聯絡窗口 - 銷售維修宏得利貿易有限公司",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/41976e7b-ed4c-4fde-81c3-704d83213598.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/6f8f03c3-e180-47a6-92b0-713e5a77aad5.webp"
+        ],
+        "short_description": "Dainichi 指定台灣聯絡窗口欣榮貿易 - 銷售維修宏得利貿易有限公司\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\nDainichi 指定台灣聯絡窗口欣榮貿易 - 銷售維修宏得利貿易有限公司\n宏得利貿易有限公司\n欣榮貿易股份有限"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/page/D24B0D8B40D2CB4A7B6A"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "extracted_data": {
+        "product_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/banner_images/51390deb-829e-4c72-a9a5-ccc3d8be0fbd.webp"
+        ],
+        "short_description": "欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n欣榮貿易代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑\nPANASONIC 焊接機械手臂\n查看更多\nKING"
+      },
+      "confidence": 0.9,
+      "source_url": "https://king-a.com.tw"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "extracted_data": {
+        "product_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-10-30 14:56:31"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1857"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1774"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "780"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/600c7834-bcfa-41f4-90a3-c318abe74feb.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/19f7f0bc-3f01-4fcf-a65d-51d1c2a296f8.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/c6a021b5-4ea6-44dc-a6c9-304bbe297f17.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/50a9ce9a-ee8d-4657-951b-dafcdf5961c9.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/3ca29350-c791-4b49-b0cd-7aa9dbb6a311.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/b1d09141-3013-40c0-8afb-f75e4e084675.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/8eb8d896-af8a-47b1-b325-b9fe92d99490.webp"
+        ],
+        "short_description": "熔接機械手臂WG4 / WGH4 / G4系列\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/WG4-WGH4-G4%E7%B3%BB%E5%88%97"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "TIG 熔接機械手臂 (GIII 系列)",
+      "extracted_data": {
+        "product_name": "TIG 熔接機械手臂 (GIII 系列)",
+        "model_numbers": [
+          "TL-1800",
+          "TM-1100",
+          "TM-1400",
+          "TS-800",
+          "TS-950"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 06:48:24"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2766"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1592"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1774"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1603"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2048"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/67e121de-0b57-4455-896b-38aa4e07daaf.webp"
+        ],
+        "short_description": "TIG 熔接機械手臂 (GIII 系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/tig-manipulator"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "ROBOT+G4控制器+外置型焊機",
+      "extracted_data": {
+        "product_name": "ROBOT+G4控制器+外置型焊機",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-10-23 15:42:50"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "76"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1876"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/3a38ac6e-7875-4684-bc33-22d46400a187.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/140fcbb1-5c86-43bf-a73b-9d91b6a8af53.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/5d768c12-5b3b-4d0d-ab06-54a7c2a1be14.webp"
+        ],
+        "short_description": "ROBOT+G4控制器+外置型焊機\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nT"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/C-tawers"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "TAWERS系列(WG4/WGH4)",
+      "extracted_data": {
+        "product_name": "TAWERS系列(WG4/WGH4)",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-10-23 16:31:30"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "76"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1585"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/7e1fa920-cb43-4225-8275-34ad7f3daff8.webp"
+        ],
+        "short_description": "TAWERS系列(WG4/WGH4)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\n"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/B-tawers"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Active TAWERS 4 (WG4)",
+      "extracted_data": {
+        "product_name": "Active TAWERS 4 (WG4)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-10-24 15:37:20"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2156"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/e2c4f854-0845-4b3c-a409-8b43109b5f8b.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/ebee0b83-aaa6-4300-8db2-25f4c6dae4e8.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/e2bfdbd2-9f56-4cc5-985f-2740721f8dcc.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/6c159802-08a7-4a54-bd44-b9d607957658.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/38ca050e-de14-4876-9185-987d05e95bc2.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/4df63d60-1a0d-49ea-907a-a0f56596f213.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/20ff8b9e-017f-461b-9efd-09e8fc2cb316.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/2fdd5217-0d6b-47c1-b9d6-50e8f665447b.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/2951cb73-1171-4375-9898-a0e6ba56baf5.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/0bade16a-eba2-4a83-8720-067cc222c8fe.webp"
+        ],
+        "short_description": "Active TAWERS 4 (WG4)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/super-active-tawers"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic YD-350NR1",
+      "extracted_data": {
+        "product_name": "Panasonic YD-350NR1",
+        "model_numbers": [
+          "AC200",
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2026-02-06 16:29:55"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "77"
+          },
+          {
+            "key": "AC200 ~ 220（容許範圍",
+            "value": "180 ~ 242）"
+          },
+          {
+            "key": "CO₂",
+            "value": "CO₂ 100 ％"
+          },
+          {
+            "key": "MAG",
+            "value": "Ar 80 ％+CO₂ 20 %"
+          },
+          {
+            "key": "SUS  MIG",
+            "value": "Ar 98 ％+O₂ 2 %"
+          },
+          {
+            "key": "2.Ar",
+            "value": "氬氣，CO₂ = 二氧化碳，O₂ = 氧氣"
+          },
+          {
+            "key": "3.FCW",
+            "value": "藥芯焊線"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1786"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1603"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1609"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/7140da13-b513-4777-82ec-689b60065f48.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/83e91507-aafd-4d68-8188-9133fb94ee74.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/00055b14-a94f-401b-a56e-9a4d1dfea3ad.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/51cdd552-2c3f-41f5-b867-d7192fa25bc6.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/3e1a8a65-4544-4673-a944-5452ffdb02ba.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/a4e10f66-b2d3-4bd2-9e1d-533c369a6786.webp"
+        ],
+        "short_description": "Panasonic YD-350NR1\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/618656E927D760520810"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+      "extracted_data": {
+        "product_name": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+        "model_numbers": [
+          "YD-350VR1",
+          "YD-500VR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2026-02-06 14:20:55"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "645"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1774"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/c360f3d4-0f59-49c8-a3f9-75ba29736f59.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/51cba44a-68eb-48b9-b4ba-263270968132.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/9427a468-db06-47d1-943c-bb5614dd975d.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/64fff083-d118-4693-8fcd-9f974e8691b9.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/ab12af77-4a3e-4fff-9547-2b02cefa5d55.webp"
+        ],
+        "short_description": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MA"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/65765F990DF452E721AE"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+      "extracted_data": {
+        "product_name": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+        "model_numbers": [
+          "IP21",
+          "YD-200KR2",
+          "YD-350KR2",
+          "YD-500KR2"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2025-08-12 16:00:42"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "612"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1876"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1576"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/5f0b67cc-2a1b-41b5-983e-6d00e773eb51.webp"
+        ],
+        "short_description": "SRC傳統式 半自動熔接機\r\n(KR2系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG "
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/674F8C3E821597BFCEF6"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "extracted_data": {
+        "product_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+        "model_numbers": [
+          "AC200",
+          "DC12",
+          "DC30",
+          "DC350",
+          "DC36",
+          "DC45",
+          "DC78",
+          "DC82",
+          "YD-350GZ4",
+          "YD-500GZ4"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 03:42:23"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2586"
+          },
+          {
+            "key": "DC2(100%)MAG(Ar",
+            "value": "80%、CO2：20%)"
+          },
+          {
+            "key": "不鏽鋼MIG(Ar",
+            "value": "98%、CO2：2%)"
+          },
+          {
+            "key": "※1",
+            "value": "對應公定電壓200/220V。"
+          },
+          {
+            "key": "※2",
+            "value": "尺寸不包含電源輸入端子護蓋。"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1786"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/55689907-8c07-4204-8a1d-f6ad95cde1f1.webp"
+        ],
+        "short_description": "全數位CO2/MAG熔接機 (GZ4系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-GZ4%E7%B3%BB%E5%88%97"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位式CO2/MAG熔接機 (350VZ1)",
+      "extracted_data": {
+        "product_name": "全數位式CO2/MAG熔接機 (350VZ1)",
+        "model_numbers": [
+          "AC200",
+          "AC220",
+          "DC12",
+          "DC30",
+          "DC350",
+          "DC36",
+          "DC78",
+          "YD-350VZ1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-22 17:57:27"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "DC2(100%)MAG(Ar",
+            "value": "80%、CO2：20%)"
+          },
+          {
+            "key": "不鏽鋼MIG(Ar",
+            "value": "98%、CO2：2%)"
+          },
+          {
+            "key": "※1",
+            "value": "實心/FCW焊線適用線徑，請參考電弧特性表。"
+          },
+          {
+            "key": "※2",
+            "value": "尺寸不包含電源輸入端子護蓋。"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "645"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1576"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/af68e459-7fe0-4481-8e39-c9122a84ba57.webp"
+        ],
+        "short_description": "全數位式CO2/MAG熔接機 (350VZ1)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-350vZ1"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "節能型CO2/MAG熔接機 (RX1系列)",
+      "extracted_data": {
+        "product_name": "節能型CO2/MAG熔接機 (RX1系列)",
+        "model_numbers": [
+          "AC200",
+          "AC220",
+          "DC10",
+          "DC12",
+          "DC16",
+          "DC200",
+          "DC25",
+          "DC30",
+          "DC350",
+          "DC36",
+          "DC45",
+          "DC50",
+          "DC500",
+          "DC60",
+          "DC77",
+          "DC79",
+          "YD-200RX1",
+          "YD-350RX1",
+          "YD-500RX1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 15:05:27"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1915"
+          },
+          {
+            "key": "MAG(Ar",
+            "value": "80%、CO2：20%)"
+          },
+          {
+            "key": "※1",
+            "value": "使用初期熔接時，請詳閱說明書設定之。"
+          },
+          {
+            "key": "※2",
+            "value": "軟鋼FCW僅對應1.2mm焊線。"
+          },
+          {
+            "key": "※3",
+            "value": "尺寸不包含電源輸入端子護蓋。"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1609"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/6a3c7edc-0faa-4a5c-b278-97f67d02842c.webp"
+        ],
+        "short_description": "節能型CO2/MAG熔接機 (RX1系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-RX1"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位CO2/MAG熔接機 (GR3系列)",
+      "extracted_data": {
+        "product_name": "全數位CO2/MAG熔接機 (GR3系列)",
+        "model_numbers": [
+          "YD-350GR3",
+          "YD-350NR1",
+          "YD-500GR3"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-24 17:36:18"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1586"
+          },
+          {
+            "key": "三相 200V(變動容許範圍",
+            "value": "180～242V)50/60Hz共用"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "77"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/2c020bd7-fa4f-41b4-9da9-a39afa79ee2a.webp"
+        ],
+        "short_description": "全數位CO2/MAG熔接機 (GR3系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-GR3"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+      "extracted_data": {
+        "product_name": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+        "model_numbers": [
+          "YD-400NE1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2026-02-06 14:19:40"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1586"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2586"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1695"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/45375890-b902-4b1a-89a7-c9cce8744cab.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/385e2a81-b114-4318-a972-65bf5eb510cc.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/33c16222-e163-4a83-b56b-c3d42b043bef.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/35e0ea24-1dda-42a6-9c19-00aa081a3f87.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/3823bf40-fdbc-47c2-8af8-86a4bfd0f97c.webp"
+        ],
+        "short_description": "追求低噴渣、易於操作性的全數位焊接機(400NE1)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nMAG & MIG 熔接機\nMAG & MIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & "
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/39375A32DD2ED878B314"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+      "extracted_data": {
+        "product_name": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+        "model_numbers": [
+          "AC200",
+          "AC220",
+          "DC12",
+          "DC30",
+          "DC38",
+          "DC400",
+          "DC82",
+          "YD-400VP1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 16:15:49"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2049"
+          },
+          {
+            "key": "DC2(100%)MAG(Ar",
+            "value": "80%、CO2：20%)"
+          },
+          {
+            "key": "不鏽鋼MIG(Ar",
+            "value": "98%、CO2：2%)"
+          },
+          {
+            "key": "鋁合金MIG(Ar",
+            "value": "100%)"
+          },
+          {
+            "key": "※1",
+            "value": "實心/FCW焊線適用線徑，請參考電弧特性表。"
+          },
+          {
+            "key": "※2",
+            "value": "尺寸不包含電源輸入端子護蓋。"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1737"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1857"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/4dcac555-e1e8-4b95-be43-48fc875e70da.webp"
+        ],
+        "short_description": "全數位脈波式 MAG/MIG熔接機 (400VP1)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nMAG & MIG 熔接機\nMAG & MIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & "
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/MAG-MIG-400VP1"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位脈波MAG/MIG熔接機 (400GT3)",
+      "extracted_data": {
+        "product_name": "全數位脈波MAG/MIG熔接機 (400GT3)",
+        "model_numbers": [
+          "AC200",
+          "YD-400GT3",
+          "YD-500"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 06:09:59"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1696"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2586"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1915"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1669"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/f88b9940-a2f4-4189-aa23-53641092ec56.webp"
+        ],
+        "short_description": "全數位脈波MAG/MIG熔接機 (400GT3)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nMAG & MIG 熔接機\nMAG & MIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MA"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/MAG-MIG-400GT3"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic 焊接機 200TRC",
+      "extracted_data": {
+        "product_name": "Panasonic 焊接機 200TRC",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-28 21:33:50"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1605"
+          },
+          {
+            "key": "●材料",
+            "value": "軟鋼      ●板厚：12mm      ●銅束：短路銅束      ●電極：短路電極"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "645"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "612"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://web.hocom.tw/ckfinder/connector?command=Proxy&type=Images&currentFolder=%2f&fileName=TIG-200TRC.png",
+          "https://app.sharing.tw/upload/542/ckeditor_images/28b72a92-2566-4267-b399-660f75f0c02a.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/672a8ee3-29d2-447e-8dbf-64432cacf9b8.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/bdbd94e4-1631-4f26-a6ee-fe9ead899714.webp"
+        ],
+        "short_description": "Panasonic 焊接機 200TRC\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nTIG 熔接機\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG "
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-200TRC"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "Panasonic TIG-BP4",
+      "extracted_data": {
+        "product_name": "Panasonic TIG-BP4",
+        "model_numbers": [
+          "AC200",
+          "AC22",
+          "AC26",
+          "AC300",
+          "AC500",
+          "DC20",
+          "DC24",
+          "DC250",
+          "DC30",
+          "DC300",
+          "DC36",
+          "DC400",
+          "DC500",
+          "DC78",
+          "DC81",
+          "YD-300BP4",
+          "YD-500BP4"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-24 00:56:50"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1775"
+          },
+          {
+            "key": "平順脈波",
+            "value": "高速波形控制可有效減少交流/直流脈波熔接時所產生之噪音。"
+          },
+          {
+            "key": "出力限制機能",
+            "value": "抑制焊接時電流超過熔接電流設定值，有助於熔接時滲透管理與延長銲槍之壽命。"
+          },
+          {
+            "key": "Ar",
+            "value": "100%※5"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2049"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "3028"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/187ececb-60f2-4dfe-bc9b-3f4e33315efb.webp"
+        ],
+        "short_description": "Panasonic TIG-BP4\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nTIG 熔接機\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-BP4"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+      "extracted_data": {
+        "product_name": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 04:11:12"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1593"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "77"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1696"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/03efde8c-0605-4a47-97aa-89571449031c.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/5755f7e3-3d83-47d8-a651-328e9372b9cc.webp"
+        ],
+        "short_description": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nTIG 熔接機\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-TR6"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "TSP晶體式直流TIG熔接機 (TSP系列)",
+      "extracted_data": {
+        "product_name": "TSP晶體式直流TIG熔接機 (TSP系列)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 23:28:00"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1787"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2049"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1857"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/6c5e4444-806b-45c7-bffc-13c8a4bdca4f.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/36a56bcd-518f-4190-956a-47f4b60c048a.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/6ef0ee01-e489-4083-bb4d-763274a514e2.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/1f028ee3-7499-4919-8ddb-772a1a98e63c.webp"
+        ],
+        "short_description": "TSP晶體式直流TIG熔接機 (TSP系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nTIG 熔接機\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MI"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-TSP"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+      "extracted_data": {
+        "product_name": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+        "model_numbers": [
+          "AC200",
+          "AC220"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 03:32:06"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1738"
+          },
+          {
+            "key": "AC200（變動範圍",
+            "value": "180～220）"
+          },
+          {
+            "key": "AC220（變動範圍",
+            "value": "198～242）"
+          },
+          {
+            "key": "電防「有」",
+            "value": "14、「無」:63"
+          },
+          {
+            "key": "電防「有」",
+            "value": "14、「無」:75"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2156"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "612"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1876"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/96383ecc-b298-44db-8500-18d99b97bee5.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/ff665c3d-381c-4b97-9b3b-df540c6d33aa.webp"
+        ],
+        "short_description": "雙變頻式 交/直流TIG熔接機 (WX4系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nTIG 熔接機\nTIG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & M"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-WX4"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "離子切割機 (PF3系列)",
+      "extracted_data": {
+        "product_name": "離子切割機 (PF3系列)",
+        "model_numbers": [
+          "YP-035PF3",
+          "YP-060PF3",
+          "YP-085PF3"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 20:19:15"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1586"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/0c5ff3e3-068a-4ea9-aca1-90000418cf9d.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/15e82704-3db6-406c-bc5a-95c3d294b1c9.webp",
+          "https://web.hocom.tw/ckfinder/connector?command=Proxy&type=Images&currentFolder=%2f&fileName=1(326).png"
+        ],
+        "short_description": "離子切割機 (PF3系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n離子切割機\n離子切割機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/PF3"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "離子切割機 (PF1系列)",
+      "extracted_data": {
+        "product_name": "離子切割機 (PF1系列)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-24 17:57:43"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1858"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1696"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1465"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/9ccf6289-3d81-4cdd-8167-a867892b8bf2.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/05a4a453-d383-4200-bc4a-1a6274eb8dde.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/43b75cd1-65ee-4f76-b958-d6101eacdf57.webp"
+        ],
+        "short_description": "離子切割機 (PF1系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n離子切割機\n離子切割機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/PF1"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "焊接機原廠選用配件",
+      "extracted_data": {
+        "product_name": "焊接機原廠選用配件",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-19 16:41:27"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2248"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1669"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/163b1195-2fea-4fcf-94da-adb3ac81ffb3.webp"
+        ],
+        "short_description": "焊接機原廠選用配件\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nPanasonic正廠消耗品\nPanasonic正廠消耗品\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & M"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/Special-Component"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "TIG熔接用焊槍 (TIG焊槍2)",
+      "extracted_data": {
+        "product_name": "TIG熔接用焊槍 (TIG焊槍2)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-24 12:17:16"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1858"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/202cbf2d-21fd-4c50-9e53-89b7bce49e03.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/02782b3d-c0f8-4655-aa26-035083e9d475.webp"
+        ],
+        "short_description": "TIG熔接用焊槍 (TIG焊槍2)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nPanasonic正廠消耗品\nPanasonic正廠消耗品\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/TIG-welding-torch-2"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "原廠CO2&MAG&MIG用零件",
+      "extracted_data": {
+        "product_name": "原廠CO2&MAG&MIG用零件",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 05:52:49"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1877"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "77"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1576"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/ae313c17-8c9e-4e23-82ea-f90a74a25008.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/f0b16f48-aee6-4637-9671-783c77a271b1.webp"
+        ],
+        "short_description": "原廠CO2&MAG&MIG用零件\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nPanasonic正廠消耗品\nPanasonic正廠消耗品\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\n"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-MIG-Component"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "原廠CO2&MAG專用焊槍",
+      "extracted_data": {
+        "product_name": "原廠CO2&MAG專用焊槍",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 01:26:07"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1670"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1609"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1775"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/d8f0467a-51ee-446b-b921-6b5ce7f1ca7a.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/043c2eda-ea83-4840-a6b7-ce4ffd52329b.webp",
+          "https://app.sharing.tw/upload/542/ckeditor_images/27429c3c-6490-4a3e-9651-7cb86224472c.webp"
+        ],
+        "short_description": "原廠CO2&MAG專用焊槍\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nPanasonic正廠消耗品\nPanasonic正廠消耗品\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/MAG-Welding-Torch"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "L-391B 螺絲固定劑(工業接著劑)",
+      "extracted_data": {
+        "product_name": "L-391B 螺絲固定劑(工業接著劑)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 06:27:29"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1576"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1593"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1605"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "782"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/c88da352-7b46-40b7-ad4f-249c746ed5a0.webp"
+        ],
+        "short_description": "L-391B 螺絲固定劑(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n螺絲固定劑\n螺絲固定劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\nL-391B 螺絲固定劑(工業接著劑)\n更新日期：2024-03-01 06:27:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/L-391B"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "L-305 厭氧性固化劑(工業接著劑)",
+      "extracted_data": {
+        "product_name": "L-305 厭氧性固化劑(工業接著劑)",
+        "model_numbers": [
+          "SUS304"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-24 00:26:49"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2248"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "612"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1787"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1593"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/6777062d-8b13-45b8-b24f-074ee2d5392f.webp"
+        ],
+        "short_description": "L-305 厭氧性固化劑(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n螺絲固定劑\n螺絲固定劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\nL-305 厭氧性固化劑(工業接著劑)\n更新日期：2024-02-24 00:26:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/L305"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "L-303 厭氧性固化劑(工業接著劑)",
+      "extracted_data": {
+        "product_name": "L-303 厭氧性固化劑(工業接著劑)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-22 22:05:45"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1610"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1858"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2370"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2248"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2156"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/89513e8a-ecae-4912-bb34-7aa07c782590.webp"
+        ],
+        "short_description": "L-303 厭氧性固化劑(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n螺絲固定劑\n螺絲固定劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\nL-303 厭氧性固化劑(工業接著劑)\n更新日期：2024-02-22 22:05:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/L303"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "S-284G 液體密封矽膠(工業接著劑)",
+      "extracted_data": {
+        "product_name": "S-284G 液體密封矽膠(工業接著劑)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-27 21:41:05"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "3029"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1915"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1775"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1877"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://i.sharing.tw/upload/542/ckeditor_images/801d8462-2bc9-433c-96fb-a9a93b922090.webp"
+        ],
+        "short_description": "S-284G 液體密封矽膠(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n密封矽膠\n密封矽膠\n印刷用水膠\n螺絲固定劑\n密封矽膠\nS-284G 液體密封矽膠(工業接著劑)\n更新日期：2024-02-27 21:41:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/5492E15E83B4D026"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "S-282W 液體密封矽膠(工業接著劑)",
+      "extracted_data": {
+        "product_name": "S-282W 液體密封矽膠(工業接著劑)",
+        "model_numbers": [
+          "YD-350NR1"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-03-01 11:59:28"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1466"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1758"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2249"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2678"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "77"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/0c111e4b-861e-4a4e-91b2-7e11f5ea0286.webp"
+        ],
+        "short_description": "S-282W 液體密封矽膠(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n密封矽膠\n密封矽膠\n印刷用水膠\n螺絲固定劑\n密封矽膠\nS-282W 液體密封矽膠(工業接著劑)\n更新日期：2024-03-01 11:59:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/S-282W"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "S-281W 液體密封矽膠(工業接著劑)",
+      "extracted_data": {
+        "product_name": "S-281W 液體密封矽膠(工業接著劑)",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-28 12:07:30"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1759"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2586"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "645"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1696"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/656beb2e-3a84-43ad-b4e0-689be2f8299c.webp"
+        ],
+        "short_description": "S-281W 液體密封矽膠(工業接著劑)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n密封矽膠\n密封矽膠\n印刷用水膠\n螺絲固定劑\n密封矽膠\nS-281W 液體密封矽膠(工業接著劑)\n更新日期：2024-02-28 12:07:"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/S-281W"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "extracted_data": {
+        "product_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+        "model_numbers": [],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-10-30 14:56:31"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1242"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1857"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1774"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "780"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://king-a.com.tw/upload/542/ckeditor_images/600c7834-bcfa-41f4-90a3-c318abe74feb.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/19f7f0bc-3f01-4fcf-a65d-51d1c2a296f8.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/c6a021b5-4ea6-44dc-a6c9-304bbe297f17.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/50a9ce9a-ee8d-4657-951b-dafcdf5961c9.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/3ca29350-c791-4b49-b0cd-7aa9dbb6a311.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/b1d09141-3013-40c0-8afb-f75e4e084675.webp",
+          "https://king-a.com.tw/upload/542/ckeditor_images/8eb8d896-af8a-47b1-b325-b9fe92d99490.webp"
+        ],
+        "short_description": "熔接機械手臂WG4 / WGH4 / G4系列\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\n焊接機械手臂\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/WG4-WGH4-G4系列"
+    },
+    {
+      "entity_type": "product",
+      "display_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "extracted_data": {
+        "product_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+        "model_numbers": [
+          "AC200",
+          "DC12",
+          "DC30",
+          "DC350",
+          "DC36",
+          "DC45",
+          "DC78",
+          "DC82",
+          "YD-350GZ4",
+          "YD-500GZ4"
+        ],
+        "specifications": [
+          {
+            "key": "更新日期",
+            "value": "2024-02-29 03:42:23"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2587"
+          },
+          {
+            "key": "DC2(100%)MAG(Ar",
+            "value": "80%、CO2：20%)"
+          },
+          {
+            "key": "不鏽鋼MIG(Ar",
+            "value": "98%、CO2：2%)"
+          },
+          {
+            "key": "※1",
+            "value": "對應公定電壓200/220V。"
+          },
+          {
+            "key": "※2",
+            "value": "尺寸不包含電源輸入端子護蓋。"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1557"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "2247"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1914"
+          },
+          {
+            "key": "瀏覽數",
+            "value": "1786"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          },
+          {
+            "key": "統一編號",
+            "value": "11431603"
+          },
+          {
+            "key": "(08",
+            "value": "30~17:30)"
+          }
+        ],
+        "images": [
+          "https://app.sharing.tw/upload/542/ckeditor_images/55689907-8c07-4204-8a1d-f6ad95cde1f1.webp"
+        ],
+        "short_description": "全數位CO2/MAG熔接機 (GZ4系列)\nPANASONIC\n焊接機械手臂\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔接機\nMAG & MIG 熔接機\nTIG 熔接機\n離子切割機\nPanasonic正廠消耗品\nLaser Welding\n手持式雷射焊接機\nCHEMTECH\n工業接著劑\n印刷用水膠\n螺絲固定劑\n密封矽膠\n東洋MACRO\n亞臨界水處理裝置\nAbout Us\n關於欣榮貿易\nDAINICHI\n指定窗口\n首頁\nCO2 & MAG 熔接機\nCO2 & MAG 熔接機\n焊接機械手臂\n雷射焊切設備\n外部軸系列\n電腦模擬\n搬運應用\nCO2 & MAG 熔"
+      },
+      "confidence": 0.95,
+      "source_url": "https://king-a.com.tw/article/CO2-MAG-GZ4系列"
+    }
+  ],
+  "redirect_candidates": [
+    {
+      "from_path": "/page/2660FABD752D0BE0AAE2",
+      "to_path": "/products/panasonic-機械手臂焊接",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/LAPRISS",
+      "to_path": "/products/lapriss雷射熔切機械手臂",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/%E5%A4%96%E9%83%A8%E8%BB%B8R%E7%B3%BB%E5%88%97",
+      "to_path": "/products/外部軸r系列-高速型定位裝置",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/DTPS",
+      "to_path": "/products/dtps-電腦模擬-離線作業",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/%E6%90%AC%E9%81%8B%E6%87%89%E7%94%A8",
+      "to_path": "/products/搬運應用",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/7D89BE7AE0A322CCDF93",
+      "to_path": "/products/panasonic-co2-mag-熔接機",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/9DB9E5AA06152C449B40",
+      "to_path": "/products/panasonic-mag-mig-熔接機",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/BADA71FAEE6929D40E0A",
+      "to_path": "/products/panasonic-tig-熔接機",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/8BEDB9CECFB2AC27EAAA",
+      "to_path": "/products/panasonic-離子切割機",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/E9A7DB61A82001C0C78E",
+      "to_path": "/products/panasonic-各型焊機正廠消耗品與零件",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/DCF27480F588BC8003F1",
+      "to_path": "/products/手持式雷射焊接機體積小重量輕操作方便",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/A-8001",
+      "to_path": "/products/a-8001-合成乳膠樹脂",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/4D4E2E9A60FC9BBE7682",
+      "to_path": "/products/chemtech-螺絲固定劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/AA813653773A14745452",
+      "to_path": "/products/chemtech-密封矽膠",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/EDFEDB430EF5CB41DEBF",
+      "to_path": "/products/亞臨界水處理裝置-經亞臨界水萃取設備處理後的廢棄物可再生利用",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/page/09ECBB9FD8AFF0075291",
+      "to_path": "/categories/焊接機械手臂手持雷射焊接機高速加工機工業接著劑代理",
+      "page_type": "category"
+    },
+    {
+      "from_path": "/page/D24B0D8B40D2CB4A7B6A",
+      "to_path": "/products/dainichi-指定台灣聯絡窗口-銷售維修宏得利貿易有限公司",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/WG4-WGH4-G4%E7%B3%BB%E5%88%97",
+      "to_path": "/products/熔接機械手臂wg4-wgh4-g4系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/tig-manipulator",
+      "to_path": "/products/tig-熔接機械手臂-giii-系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/C-tawers",
+      "to_path": "/products/robotg4控制器外置型焊機",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/B-tawers",
+      "to_path": "/products/tawers系列wg4wgh4",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/super-active-tawers",
+      "to_path": "/products/active-tawers-4-wg4",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/618656E927D760520810",
+      "to_path": "/products/panasonic-yd-350nr1",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/65765F990DF452E721AE",
+      "to_path": "/products/電弧穩定低焊渣通用型全數位焊接機vr1系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/674F8C3E821597BFCEF6",
+      "to_path": "/products/src傳統式-半自動熔接機-kr2系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-GZ4%E7%B3%BB%E5%88%97",
+      "to_path": "/products/全數位co2mag熔接機-gz4系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-350vZ1",
+      "to_path": "/products/全數位式co2mag熔接機-350vz1",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-RX1",
+      "to_path": "/products/節能型co2mag熔接機-rx1系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-GR3",
+      "to_path": "/products/全數位co2mag熔接機-gr3系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/39375A32DD2ED878B314",
+      "to_path": "/products/追求低噴渣易於操作性的全數位焊接機400ne1",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/MAG-MIG-400VP1",
+      "to_path": "/products/全數位脈波式-magmig熔接機-400vp1",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/MAG-MIG-400GT3",
+      "to_path": "/products/全數位脈波magmig熔接機-400gt3",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-200TRC",
+      "to_path": "/products/panasonic-焊接機-200trc",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-BP4",
+      "to_path": "/products/panasonic-tig-bp4",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-TR6",
+      "to_path": "/products/變頻式直流-tig-熔接機-焊接機-tr6系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-TSP",
+      "to_path": "/products/tsp晶體式直流tig熔接機-tsp系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-WX4",
+      "to_path": "/products/雙變頻式-交直流tig熔接機-wx4系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/PF3",
+      "to_path": "/products/離子切割機-pf3系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/PF1",
+      "to_path": "/products/離子切割機-pf1系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/Special-Component",
+      "to_path": "/products/焊接機原廠選用配件",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/TIG-welding-torch-2",
+      "to_path": "/products/tig熔接用焊槍-tig焊槍2",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-MIG-Component",
+      "to_path": "/products/原廠co2magmig用零件",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/MAG-Welding-Torch",
+      "to_path": "/products/原廠co2mag專用焊槍",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/L-391B",
+      "to_path": "/products/l-391b-螺絲固定劑工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/L305",
+      "to_path": "/products/l-305-厭氧性固化劑工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/L303",
+      "to_path": "/products/l-303-厭氧性固化劑工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/5492E15E83B4D026",
+      "to_path": "/products/s-284g-液體密封矽膠工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/S-282W",
+      "to_path": "/products/s-282w-液體密封矽膠工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/S-281W",
+      "to_path": "/products/s-281w-液體密封矽膠工業接著劑",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/WG4-WGH4-G4系列",
+      "to_path": "/products/熔接機械手臂wg4-wgh4-g4系列",
+      "page_type": "product"
+    },
+    {
+      "from_path": "/article/CO2-MAG-GZ4系列",
+      "to_path": "/products/全數位co2mag熔接機-gz4系列",
+      "page_type": "product"
+    }
+  ],
+  "brief_candidates": [
+    {
+      "entity_display_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "target_page_type": "product",
+      "suggested_slug": "代理-焊接機械手臂手持雷射焊接機高速加工機工業接著劑",
+      "title_draft": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "primary_keyword": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.9
+    },
+    {
+      "entity_display_name": "PANASONIC 機械手臂焊接",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-機械手臂焊接",
+      "title_draft": "PANASONIC 機械手臂焊接",
+      "primary_keyword": "PANASONIC 機械手臂焊接",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "LAPRISS｜雷射熔切｜機械手臂",
+      "target_page_type": "product",
+      "suggested_slug": "lapriss雷射熔切機械手臂",
+      "title_draft": "LAPRISS｜雷射熔切｜機械手臂",
+      "primary_keyword": "LAPRISS｜雷射熔切｜機械手臂",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "外部軸R系列 - 高速型定位裝置",
+      "target_page_type": "product",
+      "suggested_slug": "外部軸r系列-高速型定位裝置",
+      "title_draft": "外部軸R系列 - 高速型定位裝置",
+      "primary_keyword": "外部軸R系列 - 高速型定位裝置",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "DTPS 電腦模擬 (離線作業)",
+      "target_page_type": "product",
+      "suggested_slug": "dtps-電腦模擬-離線作業",
+      "title_draft": "DTPS 電腦模擬 (離線作業)",
+      "primary_keyword": "DTPS 電腦模擬 (離線作業)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "搬運應用",
+      "target_page_type": "product",
+      "suggested_slug": "搬運應用",
+      "title_draft": "搬運應用",
+      "primary_keyword": "搬運應用",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic CO2 & MAG 熔接機",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-co2-mag-熔接機",
+      "title_draft": "Panasonic CO2 & MAG 熔接機",
+      "primary_keyword": "Panasonic CO2 & MAG 熔接機",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic MAG & MIG 熔接機",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-mag-mig-熔接機",
+      "title_draft": "Panasonic MAG & MIG 熔接機",
+      "primary_keyword": "Panasonic MAG & MIG 熔接機",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic TIG 熔接機",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-tig-熔接機",
+      "title_draft": "Panasonic TIG 熔接機",
+      "primary_keyword": "Panasonic TIG 熔接機",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic 離子切割機",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-離子切割機",
+      "title_draft": "Panasonic 離子切割機",
+      "primary_keyword": "Panasonic 離子切割機",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic 各型焊機正廠消耗品與零件",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-各型焊機正廠消耗品與零件",
+      "title_draft": "Panasonic 各型焊機正廠消耗品與零件",
+      "primary_keyword": "Panasonic 各型焊機正廠消耗品與零件",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "手持式雷射焊接機，體積小重量輕，操作方便。",
+      "target_page_type": "product",
+      "suggested_slug": "手持式雷射焊接機體積小重量輕操作方便",
+      "title_draft": "手持式雷射焊接機，體積小重量輕，操作方便。",
+      "primary_keyword": "手持式雷射焊接機，體積小重量輕，操作方便。",
+      "secondary_keywords": [
+        "KG-1500"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "A-8001 合成乳膠樹脂",
+      "target_page_type": "product",
+      "suggested_slug": "a-8001-合成乳膠樹脂",
+      "title_draft": "A-8001 合成乳膠樹脂",
+      "primary_keyword": "A-8001 合成乳膠樹脂",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "CHEMTECH 螺絲固定劑",
+      "target_page_type": "product",
+      "suggested_slug": "chemtech-螺絲固定劑",
+      "title_draft": "CHEMTECH 螺絲固定劑",
+      "primary_keyword": "CHEMTECH 螺絲固定劑",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "CHEMTECH 密封矽膠",
+      "target_page_type": "product",
+      "suggested_slug": "chemtech-密封矽膠",
+      "title_draft": "CHEMTECH 密封矽膠",
+      "primary_keyword": "CHEMTECH 密封矽膠",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+      "target_page_type": "product",
+      "suggested_slug": "亞臨界水處理裝置-經亞臨界水萃取設備處理後的廢棄物可再生利用",
+      "title_draft": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+      "primary_keyword": "亞臨界水處理裝置 | 經亞臨界水萃取設備處理後的廢棄物，可再生利用",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+      "target_page_type": "category",
+      "suggested_slug": "焊接機械手臂手持雷射焊接機高速加工機工業接著劑代理",
+      "title_draft": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+      "primary_keyword": "焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑代理",
+      "secondary_keywords": [],
+      "audience_persona": "B2B buyers exploring product categories and comparing options",
+      "buyer_stage": "awareness",
+      "main_cta_key": "browse_products",
+      "word_count_target": 600,
+      "confidence": 0.7
+    },
+    {
+      "entity_display_name": "Dainichi 指定台灣聯絡窗口 - 銷售維修宏得利貿易有限公司",
+      "target_page_type": "product",
+      "suggested_slug": "dainichi-指定台灣聯絡窗口-銷售維修宏得利貿易有限公司",
+      "title_draft": "Dainichi 指定台灣聯絡窗口 - 銷售維修宏得利貿易有限公司",
+      "primary_keyword": "Dainichi 指定台灣聯絡窗口 - 銷售維修宏得利貿易有限公司",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "target_page_type": "product",
+      "suggested_slug": "代理-焊接機械手臂手持雷射焊接機高速加工機工業接著劑",
+      "title_draft": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "primary_keyword": "代理 焊接機械手臂、手持雷射焊接機、高速加工機、工業接著劑",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.9
+    },
+    {
+      "entity_display_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "target_page_type": "product",
+      "suggested_slug": "熔接機械手臂wg4-wgh4-g4系列",
+      "title_draft": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "primary_keyword": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "TIG 熔接機械手臂 (GIII 系列)",
+      "target_page_type": "product",
+      "suggested_slug": "tig-熔接機械手臂-giii-系列",
+      "title_draft": "TIG 熔接機械手臂 (GIII 系列)",
+      "primary_keyword": "TIG 熔接機械手臂 (GIII 系列)",
+      "secondary_keywords": [
+        "TL-1800",
+        "TM-1100",
+        "TM-1400",
+        "TS-800",
+        "TS-950"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "ROBOT+G4控制器+外置型焊機",
+      "target_page_type": "product",
+      "suggested_slug": "robotg4控制器外置型焊機",
+      "title_draft": "ROBOT+G4控制器+外置型焊機",
+      "primary_keyword": "ROBOT+G4控制器+外置型焊機",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "TAWERS系列(WG4/WGH4)",
+      "target_page_type": "product",
+      "suggested_slug": "tawers系列wg4wgh4",
+      "title_draft": "TAWERS系列(WG4/WGH4)",
+      "primary_keyword": "TAWERS系列(WG4/WGH4)",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Active TAWERS 4 (WG4)",
+      "target_page_type": "product",
+      "suggested_slug": "active-tawers-4-wg4",
+      "title_draft": "Active TAWERS 4 (WG4)",
+      "primary_keyword": "Active TAWERS 4 (WG4)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic YD-350NR1",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-yd-350nr1",
+      "title_draft": "Panasonic YD-350NR1",
+      "primary_keyword": "Panasonic YD-350NR1",
+      "secondary_keywords": [
+        "AC200",
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+      "target_page_type": "product",
+      "suggested_slug": "電弧穩定低焊渣通用型全數位焊接機vr1系列",
+      "title_draft": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+      "primary_keyword": "電弧穩定，低焊渣通用型全數位焊接機(VR1系列)",
+      "secondary_keywords": [
+        "YD-350VR1",
+        "YD-500VR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+      "target_page_type": "product",
+      "suggested_slug": "src傳統式-半自動熔接機-kr2系列",
+      "title_draft": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+      "primary_keyword": "SRC傳統式 半自動熔接機\r\n(KR2系列)",
+      "secondary_keywords": [
+        "IP21",
+        "YD-200KR2",
+        "YD-350KR2",
+        "YD-500KR2"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位co2mag熔接機-gz4系列",
+      "title_draft": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "primary_keyword": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "secondary_keywords": [
+        "AC200",
+        "DC12",
+        "DC30",
+        "DC350",
+        "DC36"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位式CO2/MAG熔接機 (350VZ1)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位式co2mag熔接機-350vz1",
+      "title_draft": "全數位式CO2/MAG熔接機 (350VZ1)",
+      "primary_keyword": "全數位式CO2/MAG熔接機 (350VZ1)",
+      "secondary_keywords": [
+        "AC200",
+        "AC220",
+        "DC12",
+        "DC30",
+        "DC350"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "節能型CO2/MAG熔接機 (RX1系列)",
+      "target_page_type": "product",
+      "suggested_slug": "節能型co2mag熔接機-rx1系列",
+      "title_draft": "節能型CO2/MAG熔接機 (RX1系列)",
+      "primary_keyword": "節能型CO2/MAG熔接機 (RX1系列)",
+      "secondary_keywords": [
+        "AC200",
+        "AC220",
+        "DC10",
+        "DC12",
+        "DC16"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位CO2/MAG熔接機 (GR3系列)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位co2mag熔接機-gr3系列",
+      "title_draft": "全數位CO2/MAG熔接機 (GR3系列)",
+      "primary_keyword": "全數位CO2/MAG熔接機 (GR3系列)",
+      "secondary_keywords": [
+        "YD-350GR3",
+        "YD-350NR1",
+        "YD-500GR3"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+      "target_page_type": "product",
+      "suggested_slug": "追求低噴渣易於操作性的全數位焊接機400ne1",
+      "title_draft": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+      "primary_keyword": "追求低噴渣、易於操作性的全數位焊接機(400NE1)",
+      "secondary_keywords": [
+        "YD-400NE1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位脈波式-magmig熔接機-400vp1",
+      "title_draft": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+      "primary_keyword": "全數位脈波式 MAG/MIG熔接機 (400VP1)",
+      "secondary_keywords": [
+        "AC200",
+        "AC220",
+        "DC12",
+        "DC30",
+        "DC38"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位脈波MAG/MIG熔接機 (400GT3)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位脈波magmig熔接機-400gt3",
+      "title_draft": "全數位脈波MAG/MIG熔接機 (400GT3)",
+      "primary_keyword": "全數位脈波MAG/MIG熔接機 (400GT3)",
+      "secondary_keywords": [
+        "AC200",
+        "YD-400GT3",
+        "YD-500"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic 焊接機 200TRC",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-焊接機-200trc",
+      "title_draft": "Panasonic 焊接機 200TRC",
+      "primary_keyword": "Panasonic 焊接機 200TRC",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "Panasonic TIG-BP4",
+      "target_page_type": "product",
+      "suggested_slug": "panasonic-tig-bp4",
+      "title_draft": "Panasonic TIG-BP4",
+      "primary_keyword": "Panasonic TIG-BP4",
+      "secondary_keywords": [
+        "AC200",
+        "AC22",
+        "AC26",
+        "AC300",
+        "AC500"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+      "target_page_type": "product",
+      "suggested_slug": "變頻式直流-tig-熔接機-焊接機-tr6系列",
+      "title_draft": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+      "primary_keyword": "變頻式直流 TIG 熔接機 | 焊接機 (TR6系列)",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "TSP晶體式直流TIG熔接機 (TSP系列)",
+      "target_page_type": "product",
+      "suggested_slug": "tsp晶體式直流tig熔接機-tsp系列",
+      "title_draft": "TSP晶體式直流TIG熔接機 (TSP系列)",
+      "primary_keyword": "TSP晶體式直流TIG熔接機 (TSP系列)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+      "target_page_type": "product",
+      "suggested_slug": "雙變頻式-交直流tig熔接機-wx4系列",
+      "title_draft": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+      "primary_keyword": "雙變頻式 交/直流TIG熔接機 (WX4系列)",
+      "secondary_keywords": [
+        "AC200",
+        "AC220"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "離子切割機 (PF3系列)",
+      "target_page_type": "product",
+      "suggested_slug": "離子切割機-pf3系列",
+      "title_draft": "離子切割機 (PF3系列)",
+      "primary_keyword": "離子切割機 (PF3系列)",
+      "secondary_keywords": [
+        "YP-035PF3",
+        "YP-060PF3",
+        "YP-085PF3"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "離子切割機 (PF1系列)",
+      "target_page_type": "product",
+      "suggested_slug": "離子切割機-pf1系列",
+      "title_draft": "離子切割機 (PF1系列)",
+      "primary_keyword": "離子切割機 (PF1系列)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "焊接機原廠選用配件",
+      "target_page_type": "product",
+      "suggested_slug": "焊接機原廠選用配件",
+      "title_draft": "焊接機原廠選用配件",
+      "primary_keyword": "焊接機原廠選用配件",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "TIG熔接用焊槍 (TIG焊槍2)",
+      "target_page_type": "product",
+      "suggested_slug": "tig熔接用焊槍-tig焊槍2",
+      "title_draft": "TIG熔接用焊槍 (TIG焊槍2)",
+      "primary_keyword": "TIG熔接用焊槍 (TIG焊槍2)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "原廠CO2&MAG&MIG用零件",
+      "target_page_type": "product",
+      "suggested_slug": "原廠co2magmig用零件",
+      "title_draft": "原廠CO2&MAG&MIG用零件",
+      "primary_keyword": "原廠CO2&MAG&MIG用零件",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "原廠CO2&MAG專用焊槍",
+      "target_page_type": "product",
+      "suggested_slug": "原廠co2mag專用焊槍",
+      "title_draft": "原廠CO2&MAG專用焊槍",
+      "primary_keyword": "原廠CO2&MAG專用焊槍",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "L-391B 螺絲固定劑(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "l-391b-螺絲固定劑工業接著劑",
+      "title_draft": "L-391B 螺絲固定劑(工業接著劑)",
+      "primary_keyword": "L-391B 螺絲固定劑(工業接著劑)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "L-305 厭氧性固化劑(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "l-305-厭氧性固化劑工業接著劑",
+      "title_draft": "L-305 厭氧性固化劑(工業接著劑)",
+      "primary_keyword": "L-305 厭氧性固化劑(工業接著劑)",
+      "secondary_keywords": [
+        "SUS304"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "L-303 厭氧性固化劑(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "l-303-厭氧性固化劑工業接著劑",
+      "title_draft": "L-303 厭氧性固化劑(工業接著劑)",
+      "primary_keyword": "L-303 厭氧性固化劑(工業接著劑)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "S-284G 液體密封矽膠(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "s-284g-液體密封矽膠工業接著劑",
+      "title_draft": "S-284G 液體密封矽膠(工業接著劑)",
+      "primary_keyword": "S-284G 液體密封矽膠(工業接著劑)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "S-282W 液體密封矽膠(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "s-282w-液體密封矽膠工業接著劑",
+      "title_draft": "S-282W 液體密封矽膠(工業接著劑)",
+      "primary_keyword": "S-282W 液體密封矽膠(工業接著劑)",
+      "secondary_keywords": [
+        "YD-350NR1"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "S-281W 液體密封矽膠(工業接著劑)",
+      "target_page_type": "product",
+      "suggested_slug": "s-281w-液體密封矽膠工業接著劑",
+      "title_draft": "S-281W 液體密封矽膠(工業接著劑)",
+      "primary_keyword": "S-281W 液體密封矽膠(工業接著劑)",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "target_page_type": "product",
+      "suggested_slug": "熔接機械手臂wg4-wgh4-g4系列",
+      "title_draft": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "primary_keyword": "熔接機械手臂WG4 / WGH4 / G4系列",
+      "secondary_keywords": [],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    },
+    {
+      "entity_display_name": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "target_page_type": "product",
+      "suggested_slug": "全數位co2mag熔接機-gz4系列",
+      "title_draft": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "primary_keyword": "全數位CO2/MAG熔接機 (GZ4系列)",
+      "secondary_keywords": [
+        "AC200",
+        "DC12",
+        "DC30",
+        "DC350",
+        "DC36"
+      ],
+      "audience_persona": "Engineers, procurement managers, and technical buyers evaluating specific models",
+      "buyer_stage": "consideration",
+      "main_cta_key": "request_quote",
+      "word_count_target": 800,
+      "confidence": 0.95
+    }
+  ]
+}

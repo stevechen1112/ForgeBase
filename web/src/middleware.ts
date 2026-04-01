@@ -3,11 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 
 const intlMiddleware = createMiddleware(routing);
+const PUBLIC_FILE_PATH = /\/[^/]+\.[^/]+$/;
 
 const API_BASE =
   process.env.INTERNAL_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
+
+function shouldBypassMiddleware(pathname: string) {
+  return pathname.startsWith("/_next") || pathname.startsWith("/api") || PUBLIC_FILE_PATH.test(pathname);
+}
 
 /**
  * SEO Redirect middleware — resolves 301/302 rules stored in the database
@@ -19,11 +24,7 @@ async function resolveRedirect(request: NextRequest): Promise<NextResponse | nul
   const { pathname } = request.nextUrl;
 
   // Skip Next.js internals, API proxy, and static files
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
+  if (shouldBypassMiddleware(pathname)) {
     return null;
   }
 
@@ -47,13 +48,14 @@ async function resolveRedirect(request: NextRequest): Promise<NextResponse | nul
 }
 
 export default async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Root path: bypass next-intl to prevent the redirect loop it generates
-  // in standalone mode (/ → /en → / infinitely). app/page.tsx handles it.
-  if (pathname === "/") {
+  if (request.nextUrl.pathname === "/") {
     const redirectResponse = await resolveRedirect(request);
     if (redirectResponse) return redirectResponse;
+
+    return NextResponse.next();
+  }
+
+  if (shouldBypassMiddleware(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
 
@@ -65,9 +67,7 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // i18n locale prefixes
-    "/(zh-TW)/:path*",
-    // Redirect resolution: all paths except _next internals and static files
-    "/((?!_next/static|_next/image|favicon\\.ico).*)",
+    // Run middleware for page routes only; file-like requests must bypass locale/redirect handling.
+    "/((?!api|_next|_vercel|.*\\..*).*)",
   ],
 };

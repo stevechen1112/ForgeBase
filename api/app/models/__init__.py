@@ -34,6 +34,13 @@ from app.models.crm_sync_log import CrmSyncLog
 from app.models.ab_test import ABTest, ABTestView
 from app.models.chat import ChatSession, ChatMessage
 from app.models.integration_credential import IntegrationCredential
+from app.models.intake import (
+    IntakeProject,
+    IntakeUrlCandidate,
+    IntakeEntityCandidate,
+    IntakeRedirectCandidate,
+    IntakeBriefCandidate,
+)
 
 __all__ = [
     "ProductApplicationLink",
@@ -73,4 +80,9 @@ __all__ = [
     "ABTestView",
     "ChatSession",
     "ChatMessage",
+    "IntakeProject",
+    "IntakeUrlCandidate",
+    "IntakeEntityCandidate",
+    "IntakeRedirectCandidate",
+    "IntakeBriefCandidate",
 ]

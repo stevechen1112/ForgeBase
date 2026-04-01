@@ -1,0 +1,68 @@
+[
+  {
+    "category_name": "焊接機械手臂",
+    "slug": "welding-robot-arms",
+    "description": "<p>Panasonic TAWERS 系列焊接機械手臂，涵蓋 CO2/MAG、MIG、TIG 等焊接製程，搭配高速定位裝置與離線模擬軟體，提供完整的自動化焊接解決方案。適用於金屬加工、汽車零件、鋼構等產業的量產焊接需求。</p>",
+    "image_url": "/demo/king-a/assets/category-welding-robot-arms.jpg",
+    "sort_order": 10,
+    "seo_title": "焊接機械手臂 | Panasonic TAWERS 系列 | 欣榮貿易",
+    "seo_description": "Panasonic TAWERS 焊接機械手臂代理，涵蓋 WG4、WGH4、G4、GIII 系列，提供自動化焊接整合方案。",
+    "status": "published",
+    "locale": "zh-TW"
+  },
+  {
+    "category_name": "CO2/MAG 焊接機",
+    "slug": "co2-mag-welding-machines",
+    "description": "<p>Panasonic 全數位 CO2/MAG 焊接機，從入門級 SRC 傳統式到高階 GZ4 全數位系列，滿足不同焊接環境與預算需求。具備低噴渣、電弧穩定、節能等特性，適合工廠量產與維修作業。</p>",
+    "image_url": "/demo/king-a/assets/category-co2-mag-welding.jpg",
+    "sort_order": 20,
+    "seo_title": "CO2/MAG 焊接機 | Panasonic 全數位系列 | 欣榮貿易",
+    "seo_description": "Panasonic CO2/MAG 焊接機代理，GZ4、VR1、KR2、GR3、RX1 等系列，全數位控制，低噴渣高效率。",
+    "status": "published",
+    "locale": "zh-TW"
+  },
+  {
+    "category_name": "MAG/MIG 脈波焊接機",
+    "slug": "mag-mig-pulse-welding-machines",
+    "description": "<p>Panasonic 全數位脈波式 MAG/MIG 焊接機，適用於不銹鋼、鋁合金等材質的高品質焊接。脈波控制技術有效降低熱影響區、減少變形，適合精密鈑金與薄板焊接。</p>",
+    "image_url": "/demo/king-a/assets/category-mag-mig-pulse.jpg",
+    "sort_order": 30,
+    "seo_title": "MAG/MIG 脈波焊接機 | Panasonic 全數位 | 欣榮貿易",
+    "seo_description": "Panasonic 全數位脈波 MAG/MIG 焊接機，400VP1、400GT3 系列，適用不銹鋼與鋁合金焊接。",
+    "status": "published",
+    "locale": "zh-TW"
+  },
+  {
+    "category_name": "TIG 焊接機",
+    "slug": "tig-welding-machines",
+    "description": "<p>Panasonic TIG 焊接機系列，從交流/直流變頻式到晶體式，涵蓋薄板精密焊接到中厚板作業。全數位控制面板操作直覺，搭配原廠 TIG 焊槍與配件，確保焊道品質穩定。</p>",
+    "image_url": "/demo/king-a/assets/category-tig-welding.jpg",
+    "sort_order": 40,
+    "seo_title": "TIG 焊接機 | Panasonic 變頻直流系列 | 欣榮貿易",
+    "seo_description": "Panasonic TIG 焊接機代理，200TRC、BP4、TR6、TSP、WX4 系列，薄板精密焊接首選。",
+    "status": "published",
+    "locale": "zh-TW"
+  },
+  {
+    "category_name": "雷射焊切設備",
+    "slug": "laser-welding-cutting",
+    "description": "<p>Panasonic LAPRISS 雷射機械手臂整合方案與手持式雷射焊接機。結合機械手臂的高精度定位與雷射的專用焊切能力，實現傳統焊接難以達到的速度與品質。適用於薄板、異種材質接合等高端應用。</p>",
+    "image_url": "/demo/king-a/assets/category-laser-welding.jpg",
+    "sort_order": 50,
+    "seo_title": "雷射焊切設備 | LAPRISS 機械手臂整合 | 欣榮貿易",
+    "seo_description": "Panasonic LAPRISS 雷射機械手臂與手持式雷射焊接機，高精度焊切方案，適用薄板與異種材質。",
+    "status": "published",
+    "locale": "zh-TW"
+  },
+  {
+    "category_name": "工業接著劑",
+    "slug": "industrial-adhesives",
+    "description": "<p>CHEMTECH 工業接著劑系列，包含螺絲固定劑、密封矽膠、合成乳膠樹脂等產品。適用於機械組裝、管路密封、螺絲防鬆等工業應用場景，提供穩定的固化與密封效果。</p>",
+    "image_url": "/demo/king-a/assets/category-industrial-adhesives.jpg",
+    "sort_order": 60,
+    "seo_title": "工業接著劑 | CHEMTECH 螺絲固定劑與密封矽膠 | 欣榮貿易",
+    "seo_description": "CHEMTECH 工業接著劑代理，螺絲固定劑、密封矽膠、合成乳膠樹脂，機械組裝與管路密封專用。",
+    "status": "published",
+    "locale": "zh-TW"
+  }
+]

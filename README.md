@@ -16,6 +16,7 @@ ForgeBase 是專為外銷製造商設計的 B2B 網站成長平台，整合訪�
 | **帳戶智能（Account Intelligence）** | 通過 GeoIP 識別訪客國家，IP-to-Company 反查企業身份 |
 | **AI Product Advisor** | 於首頁、產品、應用、FAQ 等高價值頁面提供情境式 AI 導購，支援產品、MOQ、OEM、認證與 RFQ 導流 |
 | **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
+| **Legacy Site Intake** | 匯入既有企業官網或型錄站，爬取 HTML / PDF、分類頁面、抽取產品與內容候選資料，審核後可提交 category / product / application / certification / FAQ、redirect 與 PageBrief |
 | **Dynamic CTA** | 依訪客買家階段顯示不同行動呼籲（詢價 / 下載目錄 / 聯繫業務）|
 | **Nurture Email 序列** | 依買家階段觸發自動化培育郵件，整合 Resend |
 | **A/B 測試** | 版本對照測試 CTA 與內容效果 |
@@ -30,19 +31,22 @@ ForgeBase 是專為外銷製造商設計的 B2B 網站成長平台，整合訪�
 ForgeBase/
 ├── api/                    # 後端 API (Python 3.10 + FastAPI)
 │   ├── app/
-│   │   ├── api/v1/         # REST endpoints
-│   │   ├── db/migrations/  # Alembic migrations (20 版本)
+│   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake）
+│   │   ├── db/migrations/  # Alembic migrations (25 版本)
 │   │   ├── models/         # SQLModel 資料模型
-│   │   └── schemas/        # Pydantic 輸入/輸出 schema
+│   │   ├── schemas/        # Pydantic 輸入/輸出 schema
+│   │   └── services/       # 後端服務（含 intake_engine）
 │   ├── .venv/              # API 專用虛擬環境
 │   └── .env.example
 ├── web/                    # 前台網站 (Next.js 15，部署 Vercel)
 │   └── .env.local.example
 ├── admin/                  # 管理後台 (Next.js 15，部署 Linode)
+│   ├── src/app/(dashboard)/dashboard/intake/  # Legacy Site Intake 審核介面
 │   └── .env.local.example
 ├── demo/                   # Demo 示範資料與種子腳本
 │   └── handtool-company/   # 示範公司（手工具製造商）
 │       └── seed/           # 模擬訪客行為注入腳本
+├── intake_output/          # 網站擷取實測輸出（crawl raw / seed / analysis）
 ├── shared/                 # 共用型別與常數
 ├── ARCHITECTURE.md         # 技術架構決策紀錄
 └── .github/                # CI/CD workflows
@@ -112,6 +116,88 @@ npm run type-check
 
 ---
 
+## Legacy Site Intake
+
+ForgeBase 已包含正式的 Legacy Site Intake 模組，用來把既有製造商官網、型錄站或混合型內容站，轉成可審核的 ForgeBase 導入資料。以目前 repo 狀態來看，這不是概念驗證，而是已落地到資料表、API、admin 審核介面、測試與實測腳本的模組。
+
+### 目前能力範圍
+
+- 建立 intake project，輸入 `project_name`、`source_url`、`locale`
+- Phase 1 `discover`：爬取站內 HTML 與 PDF，建立 URL candidates，並分類為 `product`、`category`、`application`、`faq`、`contact`、`resource` 等頁型
+- Phase 2 `extract`：抽取 entity candidates、redirect candidates、PageBrief drafts
+- Admin 審核：於 admin 後台 `/dashboard/intake` 檢視、接受、略過或編修候選資料
+- Commit：可將已接受的 category / product / application / certification / FAQ entity candidates 寫回 ForgeBase 正式資料表，並同步建立 redirect、PageBrief 與主要內容關聯
+
+### Commit 後會寫入哪些正式資料
+
+- `ProductCategory`
+- `Product`
+- `Application`
+- `Certification`
+- `FAQItem`
+- `Redirect`
+- `PageBrief`
+
+同時會補上部分內容關聯：
+
+- Product -> Application
+- Product -> Certification
+- Product -> FAQ
+- Application -> FAQ
+
+### 主要實作位置
+
+- API：`/api/v1/intake/*`
+- Backend service：`api/app/services/intake_engine.py`
+- Backend endpoints：`api/app/api/v1/endpoints/intake.py`
+- Admin UI：`admin/src/app/(dashboard)/dashboard/intake/page.tsx`
+- Migration：`api/app/db/migrations/versions/0025_legacy_site_intake.py`
+- Tests：`api/tests/test_intake.py`
+- Standalone scripts：`api/scripts/intake_pipeline_king_a.py`、`api/scripts/test_intake_king_a.py`
+- Output artifacts：`intake_output/king_a_crawl_raw.json`、`intake_output/king_a_forgebase_seed.json`、`intake_output/king_a_analysis_report.json`
+
+### Intake API 範圍
+
+```bash
+POST /api/v1/intake/projects
+GET  /api/v1/intake/projects
+GET  /api/v1/intake/projects/{id}
+PATCH /api/v1/intake/projects/{id}
+POST /api/v1/intake/projects/{id}/discover
+POST /api/v1/intake/projects/{id}/extract
+GET  /api/v1/intake/projects/{id}/urls
+PATCH /api/v1/intake/urls/{id}/review
+GET  /api/v1/intake/projects/{id}/entities
+PATCH /api/v1/intake/entities/{id}/review
+GET  /api/v1/intake/projects/{id}/redirects
+PATCH /api/v1/intake/redirects/{id}/review
+GET  /api/v1/intake/projects/{id}/briefs
+PATCH /api/v1/intake/briefs/{id}/review
+POST /api/v1/intake/projects/{id}/commit
+GET  /api/v1/intake/projects/{id}/summary
+```
+
+### 使用前提與本地驗證
+
+正式使用 `/api/v1/intake/*` 時，需具備：
+
+- 已完成 DB migration `0025_legacy_site_intake`
+- 可登入 admin / API 的授權帳號
+- 對外網路抓站能力
+- `OPENAI_API_KEY`
+
+本地可先用以下方式驗證：
+
+```bash
+cd api
+python -m pytest tests/test_intake.py -q
+
+# Standalone 實測，不需要 DB，輸出會寫到 intake_output/
+python scripts/intake_pipeline_king_a.py
+```
+
+---
+
 ## 快速開始
 
 ### 環境需求
@@ -129,7 +215,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 20 個 DB migrations
+alembic upgrade head           # 套用全部 25 個 DB migrations
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -151,7 +237,7 @@ npm run dev
 ### 健康檢查
 
 ```bash
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/health
 # → {"status": "ok"}
 ```
 
@@ -238,6 +324,8 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 |------|------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 技術架構與選型決策紀錄 |
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
+| [ForgeBase_Legacy_Site_Intake_產品規格草案.md](ForgeBase_Legacy_Site_Intake_產品規格草案.md) | Legacy Site Intake 模組規格與產品化方向 |
+| [ForgeBase_Legacy_Site_Intake_操作與Demo指南.md](ForgeBase_Legacy_Site_Intake_操作與Demo指南.md) | Legacy Site Intake 實際操作、審核標準與 demo 順序 |
 | [ForgeBase_完整開發計畫.md](ForgeBase_完整開發計畫.md) | 開發里程碑計畫 |
 | [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
 | [ForgeBase_部署與維運注意事項.md](ForgeBase_部署與維運注意事項.md) | production 部署、standalone 資產檢查與維運紅線 |
