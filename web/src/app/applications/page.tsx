@@ -4,14 +4,15 @@ import { getPublishedApplications } from "@/lib/api";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const metadata: Metadata = {
   title: "Industry Applications",
   description:
-    "Explore NorthForge application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.",
+    `Explore ${siteConfig.brandName} application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 export default async function ApplicationsPage() {
   const res = await getPublishedApplications("en", 1, 50);

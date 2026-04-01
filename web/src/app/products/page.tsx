@@ -5,13 +5,16 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PRODUCTS_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Products",
-  description: "Browse NorthForge hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs.",
+  description: `Browse ${siteConfig.brandName} hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 const HIGHLIGHTS = [
   { label: "30+ Core SKUs", desc: "Demo catalog range" },
@@ -48,7 +51,7 @@ export default async function ProductsPage() {
           </nav>
           <h1 className="relative text-4xl font-extrabold">Product Catalogue</h1>
           <p className="relative mt-3 max-w-xl text-lg text-blue-200 leading-relaxed">
-            Browse the NorthForge tool families used in distributor catalogs, industrial maintenance supply,
+            Browse the {SITE_NAME} tool families used in distributor catalogs, industrial maintenance supply,
             electrical work, and private-label toolkit programs.
           </p>
         </div>

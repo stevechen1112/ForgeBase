@@ -4,14 +4,17 @@ import { getPublishedCertifications } from "@/lib/api";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Certifications & Quality",
   description:
-    "Review NorthForge quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.",
+    `Review ${siteConfig.brandName} quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 export default async function CertificationsPage() {
   const certifications = await getPublishedCertifications();
@@ -36,7 +39,7 @@ export default async function CertificationsPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Quality &amp; Certifications</h1>
           <p className="mt-2 text-gray-500 max-w-2xl">
-            This section is intended for buyers who need to verify how NorthForge handles quality workflow, material compliance, and document support during export execution.
+            This section is intended for buyers who need to verify how {SITE_NAME} handles quality workflow, material compliance, and document support during export execution.
           </p>
         </div>
       </section>
@@ -110,7 +113,7 @@ export default async function CertificationsPage() {
         <div className="container mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-2xl font-bold text-gray-800">Our Commitment to Quality</h2>
           <p className="mt-4 text-gray-600 leading-relaxed">
-            NorthForge treats quality and compliance as operational support for real orders: incoming checks,
+            {SITE_NAME} treats quality and compliance as operational support for real orders: incoming checks,
             selected performance verification, packaging control, document accuracy, and third-party inspection coordination when programs require it.
           </p>
           <Link

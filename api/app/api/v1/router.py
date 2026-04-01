@@ -15,7 +15,7 @@ from app.api.v1.endpoints import (
     public_relations, preview,
     events, visitors, contacts, rfqs, integrations, segments, accounts, nurture,
     linkedin_audiences, seo_audit, seo_optimize, crm, esp, ab_test, analytics,
-    ml_scoring, chat, redirects, intake,
+    ml_scoring, chat, redirects, intake, site_profile,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router, nurture_ai_router,
@@ -84,6 +84,9 @@ api_router.include_router(chat.router)
 
 # Legacy Site Intake — /api/v1/intake/*
 api_router.include_router(intake.router)
+
+# Site Profile — /api/v1/site-profile
+api_router.include_router(site_profile.router)
 
 # Phase 1b: Admin utilities — /api/v1/admin/
 api_router.include_router(integrations.router)      # /admin/integrations/status

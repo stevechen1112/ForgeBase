@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
 
 export function getSiteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, "");
+  return siteConfig.siteUrl;
 }
 
 export function buildCanonicalUrl(path: string, locale?: string) {
@@ -24,7 +25,7 @@ export function buildLocaleAlternates(
 }
 
 export function buildDefaultMetadata(input?: Partial<Metadata>): Metadata {
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+  const siteName = siteConfig.brandName;
   const siteUrl = getSiteUrl();
   return {
     metadataBase: new URL(siteUrl),

@@ -5,6 +5,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
 
 type CommonMessages = {
   home: string;
@@ -35,10 +36,8 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const SITE_URL = siteConfig.siteUrl;
+const SITE_NAME = siteConfig.brandName;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await params;
@@ -52,10 +51,8 @@ export default async function ContactPage({ params }: Props) {
     getMessageNamespace<ContactPageMessages>("contactPage"),
     getMessageNamespace<CommonMessages>("common"),
   ]);
-  const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.includes("forgebase")
-    ? "sales@northforgetools.com"
-    : (process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@northforgetools.com");
-  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "+886-4-3700-2218";
+  const contactEmail = siteConfig.contactEmail;
+  const contactPhone = siteConfig.contactPhone;
 
   return (
     <>

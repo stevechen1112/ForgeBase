@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ── Default / Cobalt theme ── */
+  :root,
+  [data-theme="cobalt"] {
     --background:   0 0% 100%;
     --foreground:   224 71% 4%;
 
@@ -33,6 +35,118 @@
     --input:        220 13% 91%;
     --ring:         217 91% 45%;
     --radius:       0.625rem;
+
+    --hero-from:    222 47% 11%;
+    --hero-via:     224 64% 18%;
+    --hero-to:      217 68% 25%;
+  }
+
+  /* ── Forest theme — earthy green ── */
+  [data-theme="forest"] {
+    --background:   0 0% 100%;
+    --foreground:   160 10% 10%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 160 10% 10%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 160 10% 10%;
+
+    --primary:      160 84% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:    150 10% 96%;
+    --secondary-foreground: 160 10% 10%;
+
+    --muted:        150 10% 96%;
+    --muted-foreground: 155 8% 44%;
+
+    --accent:       150 12% 92%;
+    --accent-foreground: 160 10% 10%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:       150 10% 90%;
+    --input:        150 10% 90%;
+    --ring:         160 84% 28%;
+    --radius:       0.5rem;
+
+    --hero-from:    160 30% 10%;
+    --hero-via:     158 40% 16%;
+    --hero-to:      155 50% 22%;
+  }
+
+  /* ── Slate theme — professional grey-blue ── */
+  [data-theme="slate"] {
+    --background:   0 0% 100%;
+    --foreground:   215 25% 12%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 215 25% 12%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 215 25% 12%;
+
+    --primary:      215 25% 27%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:    215 12% 96%;
+    --secondary-foreground: 215 25% 12%;
+
+    --muted:        215 12% 96%;
+    --muted-foreground: 215 10% 46%;
+
+    --accent:       215 14% 92%;
+    --accent-foreground: 215 25% 12%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:       215 12% 90%;
+    --input:        215 12% 90%;
+    --ring:         215 25% 27%;
+    --radius:       0.375rem;
+
+    --hero-from:    215 20% 10%;
+    --hero-via:     215 22% 16%;
+    --hero-to:      215 24% 22%;
+  }
+
+  /* ── Warm theme — rust / terracotta ── */
+  [data-theme="warm"] {
+    --background:   0 0% 100%;
+    --foreground:   20 15% 12%;
+
+    --card:         0 0% 100%;
+    --card-foreground: 20 15% 12%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 20 15% 12%;
+
+    --primary:      16 80% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:    25 15% 96%;
+    --secondary-foreground: 20 15% 12%;
+
+    --muted:        25 15% 96%;
+    --muted-foreground: 20 8% 46%;
+
+    --accent:       25 18% 92%;
+    --accent-foreground: 20 15% 12%;
+
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:       25 12% 90%;
+    --input:        25 12% 90%;
+    --ring:         16 80% 46%;
+    --radius:       0.75rem;
+
+    --hero-from:    16 30% 10%;
+    --hero-via:     18 40% 16%;
+    --hero-to:      20 50% 22%;
   }
 }
 

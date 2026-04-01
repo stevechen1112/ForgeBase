@@ -25,13 +25,12 @@ import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = { params: Promise<{ categorySlug: string; productSlug: string }> };
 
 const SITE_URL = getSiteUrl();
-const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const BRAND_NAME = siteConfig.brandName;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
@@ -249,7 +248,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QUALITY_INSPECTION_IMAGE}
-                alt="NorthForge quality inspection workflow"
+                alt={`${BRAND_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -263,7 +262,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={CUSTOM_PACKAGING_IMAGE}
-                alt="NorthForge private-label packaging support"
+                alt={`${BRAND_NAME} private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -429,7 +428,7 @@ export default async function ProductDetailPage({ params }: Props) {
         <div className="container mx-auto max-w-5xl px-6">
           <h2 className="text-xl font-semibold text-gray-900">Before You Submit Your RFQ</h2>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
-            Having these details ready helps NorthForge respond with accurate pricing, feasibility, and documentation scope in the first reply.
+            Having these details ready helps {BRAND_NAME} respond with accurate pricing, feasibility, and documentation scope in the first reply.
           </p>
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[

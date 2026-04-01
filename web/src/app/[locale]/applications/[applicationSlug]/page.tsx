@@ -14,6 +14,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
+import { siteConfig } from "@/lib/siteConfig";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 
@@ -195,7 +196,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QUALITY_INSPECTION_IMAGE}
-                alt="NorthForge quality inspection workflow"
+                alt={`${siteConfig.brandName} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -209,7 +210,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={CUSTOM_PACKAGING_IMAGE}
-                alt="NorthForge OEM and private-label packaging support"
+                alt={`${siteConfig.brandName} OEM and private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">

@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { buildDefaultMetadata } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -20,7 +21,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme={siteConfig.theme}>
       <head>
         {/* Preconnect to CDN (Cloudflare R2) and Google services to reduce TTFB */}
         <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_R2_HOSTNAME ?? "assets.example.com"}`} />

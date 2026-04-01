@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMessageNamespace } from "@/lib/messages";
 import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/siteConfig";
 
 type HeaderMessages = {
   rfq: string;
@@ -55,9 +56,7 @@ export function Header() {
 
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-    ? "NorthForge Tools"
-    : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+  const siteName = siteConfig.brandName;
 
   return (
     <header
@@ -72,7 +71,7 @@ export function Header() {
         {/* ─── Logo ─── */}
         <Link href="/" className="group flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-[11px] font-bold text-primary-foreground transition-all group-hover:scale-105 group-hover:shadow-md">
-            NF
+            {siteConfig.logoMark}
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
@@ -148,7 +147,7 @@ export function Header() {
         <SheetContent side="right" className="w-[300px] p-0">
           <SheetHeader className="flex flex-row items-center gap-3 border-b px-5 py-4">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
-              NF
+              {siteConfig.logoMark}
             </div>
             <SheetTitle className="text-sm font-semibold">{siteName}</SheetTitle>
           </SheetHeader>

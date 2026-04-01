@@ -41,6 +41,7 @@ from app.models.intake import (
     IntakeRedirectCandidate,
     IntakeBriefCandidate,
 )
+from app.models.site_profile import SiteProfile
 
 __all__ = [
     "ProductApplicationLink",
@@ -85,4 +86,5 @@ __all__ = [
     "IntakeEntityCandidate",
     "IntakeRedirectCandidate",
     "IntakeBriefCandidate",
+    "SiteProfile",
 ]

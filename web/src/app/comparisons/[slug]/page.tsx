@@ -4,10 +4,13 @@ import type { Metadata } from "next";
 import { getPublishedComparisons, getComparisonBySlug } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 type Props = { params: Promise<{ slug: string }> };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -120,7 +123,7 @@ export default async function ComparisonDetailPage({ params }: Props) {
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
               <h2 className="text-sm font-semibold text-blue-900">When to move to RFQ</h2>
               <p className="mt-2 text-sm leading-relaxed text-blue-800">
-                Once you have a preferred direction from this comparison, include key parameters in your RFQ: target quantity, OEM scope, preferred market, and required compliance standard. NorthForge can shortlist the right SKU or material spec from there.
+                Once you have a preferred direction from this comparison, include key parameters in your RFQ: target quantity, OEM scope, preferred market, and required compliance standard. {SITE_NAME} can shortlist the right SKU or material spec from there.
               </p>
             </div>
           </div>

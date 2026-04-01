@@ -14,11 +14,10 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const SITE_URL = siteConfig.siteUrl;
+const SITE_NAME = siteConfig.brandName;
 
 const WHY_US_ICONS = [
   (

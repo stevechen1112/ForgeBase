@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createFaviconSvg, readDemoAsset } from "@/lib/demoAssetRoute";
 
 export async function GET() {
-  const existing = await readDemoAsset(["logo-northforge-mark.svg"]);
+  const existing = await readDemoAsset(["logo-mark.svg", "logo-northforge-mark.svg"]);
 
   return new NextResponse(existing?.buffer ?? createFaviconSvg(), {
     headers: {

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const metadata: Metadata = {
   title: "Technical Docs",
-  description: "Technical documentation, data sheets, and compliance documents for NorthForge products.",
+  description: `Technical documentation, data sheets, and compliance documents for ${siteConfig.brandName} products.`,
 };
 
 const DOCS = [

@@ -13,6 +13,9 @@ import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/Structur
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 type Props = { params: Promise<{ applicationSlug: string }> };
 
@@ -161,7 +164,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QUALITY_INSPECTION_IMAGE}
-                alt="NorthForge quality inspection workflow"
+                alt={`${SITE_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -175,13 +178,13 @@ export default async function ApplicationDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={CUSTOM_PACKAGING_IMAGE}
-                alt="NorthForge OEM and private-label packaging support"
+                alt={`${SITE_NAME} OEM and private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
                 <h2 className="text-base font-semibold text-gray-900">Packaging and Program Fit</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  If this use case needs private-label cartons, molded cases, barcode labels, or assortment planning, NorthForge treats those as part of the sourcing program rather than an afterthought.
+                  If this use case needs private-label cartons, molded cases, barcode labels, or assortment planning, {SITE_NAME} treats those as part of the sourcing program rather than an afterthought.
                 </p>
               </div>
             </div>
@@ -190,7 +193,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
           {/* Sourcing Considerations */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
             <h2 className="text-base font-semibold text-gray-900">What buyers typically confirm before RFQ</h2>
-            <p className="mt-1 text-sm text-gray-500">Having this scope ready helps NorthForge respond faster and match the right product mix to your program.</p>
+            <p className="mt-1 text-sm text-gray-500">Having this scope ready helps {SITE_NAME} respond faster and match the right product mix to your program.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {[
                 { label: "Tool performance requirements", detail: "Torque range, insulation class, material hardness, or grip finish tied to the operating environment." },

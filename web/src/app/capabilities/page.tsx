@@ -3,13 +3,16 @@ import type { Metadata } from "next";
 import { getPublishedCapabilities } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Manufacturing Capabilities",
-  description: "Explore NorthForge capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support.",
+  description: `Explore ${siteConfig.brandName} capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 // Maps common capability category tags to a short buyer-facing benefit statement
 const BUYER_BENEFIT: Record<string, string> = {
@@ -38,7 +41,7 @@ export default async function CapabilitiesPage() {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">Manufacturing Capabilities</h1>
           <p className="mt-2 max-w-2xl text-gray-500">
-            These pages explain the operational strengths behind the NorthForge catalog — so buyers can judge whether the supplier fits their commercial workflow, not just their tool list.
+            These pages explain the operational strengths behind the {SITE_NAME} catalog — so buyers can judge whether the supplier fits their commercial workflow, not just their tool list.
           </p>
           <div className="mt-5 flex flex-wrap gap-2 text-xs text-gray-400">
             {["OEM development", "Private-label packaging", "Torque verification", "Kit assembly", "Export documentation"].map((tag) => (
@@ -73,7 +76,7 @@ export default async function CapabilitiesPage() {
           <div className="mt-10 rounded-2xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Not sure which capability matters most for your program?</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-blue-800">
-              Describe your sourcing scenario — toolkit build, private-label launch, or recurring distributor supply — and NorthForge can identify which capabilities are most relevant to your execution flow.
+              Describe your sourcing scenario — toolkit build, private-label launch, or recurring distributor supply — and {SITE_NAME} can identify which capabilities are most relevant to your execution flow.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link href="/contact" className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">

@@ -9,10 +9,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RFQForm } from "@/components/forms/RFQForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
 
-const BRAND = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const BRAND = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: `Request a Quotation — ${BRAND}`,
@@ -73,7 +72,7 @@ export default async function RFQPage({ searchParams }: Props) {
               <div className="rounded-lg bg-blue-50 border border-blue-200 p-5">
                 <h2 className="font-semibold text-blue-800 mb-2">Need help?</h2>
                 <p className="text-sm text-blue-700 mb-3">
-                  If you only know the application and target market, NorthForge can help narrow down the right tool family and packaging path.
+                  If you only know the application and target market, {SITE_NAME} can help narrow down the right tool family and packaging path.
                 </p>
                 <Link
                   href="/contact"

@@ -26,15 +26,14 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 
 type Props = { params: Promise<{ locale: string; categorySlug: string; productSlug: string }> };
 
 const SITE_URL = getSiteUrl();
-const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const BRAND_NAME = siteConfig.brandName;
 
 type CommonMessages = {
   home: string;
@@ -289,7 +288,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QUALITY_INSPECTION_IMAGE}
-                alt="NorthForge quality inspection workflow"
+                alt={`${siteConfig.brandName} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -303,7 +302,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={CUSTOM_PACKAGING_IMAGE}
-                alt="NorthForge private-label packaging support"
+                alt={`${siteConfig.brandName} private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
