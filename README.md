@@ -42,21 +42,21 @@ ForgeBase 的功能對應外銷製造商從曝光到成交的完整歷程：
 
 兩層方案 + 按需 add-on，對應客戶成長階段：
 
-### Starter 入門（$99–199/月）
+### Starter 入門（$149/月）
 
 **定位：數位型錄 + 詢價入口**
 
 | 漏斗階段 | 功能 |
 |----------|------|
-| 曝光 | 前台官網（英文）、SEO 基礎（canonical / sitemap / schema） |
+| 曝光 | 前台官網（英文）、SEO 基礎（canonical / sitemap / schema）、SEO Redirect 管理 |
 | 互動 | 基礎追蹤（page_view） |
 | 留資 | RFQ 詢價表單、聯絡表單 |
 | 跟進 | — |
-| 限制 | 產品 50 筆、管理員 2 組 |
+| 限制 | 產品 50 筆、管理員帳號 2 組 |
 
 > 升級誘因：「你有 5 筆新詢價，但你不知道其中 2 位早就看了你 12 個產品頁。」
 
-### Professional 專業（$499–899/月）
+### Professional 專業（$699/月）
 
 **定位：意圖識別 + AI 導購 + 業務跟進全閉環**
 
@@ -64,22 +64,11 @@ ForgeBase 的功能對應外銷製造商從曝光到成交的完整歷程：
 
 | 漏斗階段 | 功能 |
 |----------|------|
-| 曝光 | 多語言（EN + zh-TW）、AI 內容生成（PageBrief 工作流）、SEO Redirect 管理 |
+| 曝光 | 多語言（EN + zh-TW）、AI 內容生成（PageBrief 工作流） |
 | 互動 | 完整行為追蹤（15 種事件）、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI Product Advisor |
 | 留資 | Chat → RFQ handoff |
-| 跟進 | 即時通知（RFQ / 聯絡 / handoff / 意圖突破閾值 / 回訪通知）、逾時催辦（24h 提醒 / 72h 升級主管）、培育信（確認信自動 + 3 封人工確認） |
-| 限制 | 產品無上限、管理員無上限 |
-
-### 按需 Add-on
-
-有客戶明確需求時再啟用，不預建：
-
-| Add-on | 月費 |
-|--------|------|
-| HubSpot CRM 同步 | +$200 |
-| Google Ads 轉換回傳 | +$150 |
-| Meta CAPI 轉換回傳 | +$150 |
-| Webhook 整合 | +$100 |
+| 跟進 | 即時通知、逾時催辦 |
+| 限制 | 產品無上限、管理員帳號無上限 |
 
 ---
 
@@ -119,7 +108,7 @@ ForgeBase/
 | 後端 API | Python + FastAPI + SQLModel + Alembic | 3.10 / 0.115 / 0.0.21 / 1.13 |
 | 資料庫驅動 | asyncpg (async PostgreSQL) | — |
 | 資料庫 | PostgreSQL | 16 |
-| 前台 | Next.js (App Router) → Vercel | 15.2 |
+| 前台 | Next.js (App Router) → Linode | 15.2 |
 | Admin 後台 | Next.js (App Router) → Linode | 15.2 |
 | 檔案儲存 | Cloudflare R2 | S3-compatible |
 | AI | OpenAI API | gpt-5.4 |
@@ -346,7 +335,7 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 | **伺服器** | Linode Ubuntu 24.04，IP `172.234.81.223` |
 | **SSH** | `ssh -i ~/.ssh/forgebase_deploy root@172.234.81.223` |
 | **DB** | `postgresql://forgebase:***REMOVED***@localhost:5432/forgebase` |
-| **Admin 帳號** | `admin@forgebase.com` / `ForgeBase2026` |
+| **Admin 帳號** | 見 `.env` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD` |
 | **SSL 憑證** | Let's Encrypt，到期 2026-06-13（certbot auto-renew） |
 
 ### Systemd 服務
@@ -412,53 +401,23 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 
 #### 管理後台（Admin Next.js）
 
-### v0.19 — SEO Workbench 與非專家操作體驗（2026-03-15）
+### v0.20 — 多租戶 SaaS 基礎建設（2026-04-09）
 
-本次新增一套以「非 SEO 專家也能操作」為目標的 SEO workbench，將既有 metadata、診斷與分析能力整合成任務導向後台體驗。
+將單租戶架構升級為支援多租戶的 SaaS 基礎，並強化 API 安全性與 auth contract 一致性。
 
 | 類別 | 變更 |
 |------|------|
-| **API** | `POST /content/seo-audit/evaluate` — 以產品 / 分類 / 應用場景的當前內容即時評估 SEO 健康度與建議 |
-| **API** | `GET /content/seo-audit/health` — 任務導向健康摘要，提供優先修正項與高風險內容清單 |
-| **API** | `GET /content/seo-audit/links` — 依分類與應用關聯提供內部連結建議 |
-| **API** | `GET /content/seo-audit/revenue` — 將 SEO 內容表現與 RFQ 轉換串接成洞察 |
-| **Admin** | 產品 / 分類 / 應用場景表單新增「SEO 助手」面板，可直接分析目前內容並一鍵套用建議標題與摘要 |
-| **Admin** | `後台 → AI / SEO → SEO 診斷` 改為任務式儀表板，分為總覽、內鏈建議、轉換洞察三區 |
-| **Web** | 新增 `web/src/lib/seo.ts` 共用 metadata helper，統一 canonical、metadataBase 與 hreflang 生成邏輯 |
-
-| 頁面 | 變更 |
-|------|------|
-| `products/` | 新增「主推 ⭐」欄位，點擊即時切換 `is_featured` |
-| `rfqs/[id]/` | Sidebar 新增「銷售跟進」卡片：一鍵記錄首次回覆/報價時間、未成交原因 |
-| `ctas/CTAForm` | 新增「目標意圖階段」選擇器（any / cold / warm / hot）|
-| `analytics/funnel/` | 全新漏斗儀表板：轉換率卡片 + 意圖階段條形圖 + RFQ 狀態格 |
-| `nurture/` | 列表頁: 序列名稱可點擊、「新增序列」按鈕啟用 |
-| `nurture/new/` | 全新新增序列頁面 |
-| `nurture/[id]/` | 全新序列詳情頁：設定編輯 + 步驟管理（新增/刪除）+ 入列記錄 |
-| `segments/` | 「新增 Segment」按鈕啟用、名稱可點擊 |
-| `segments/new/` | 全新視覺化규則建構器（支援 intent_stage / intent_score / country / event_count）|
-| `segments/[id]/` | 全新詳情頁：設定編輯 + 條件規則展示 + 一鍵評估符合人數 |
-| `Sidebar` | 行銷分析區加入「行銷漏斗」連結 |
-
-#### 前台（Web Next.js）
-
-| 元件/頁面 | 變更 |
-|-----------|------|
-| `web/src/app/page.tsx` | Homepage 新增「主推產品」區塊（`getFeaturedProducts()` 取 `is_featured=true` 的產品，4 欄 Grid）|
-| `ProductCTAButtons.tsx` | 依訪客意圖動態調整主要 CTA 按鈕文案：Hot 階段顯示急迫樣式、服務後端 `personalization.cta_label_override` |
-
-#### 部署注意事項
-
-```bash
-# 1. 套用 DB migration（新增 3 欄位到 3 張表）
-cd api && source .venv/bin/activate
-alembic upgrade head
-# → 執行 0018_growth_site_fields
-
-# 2. 重新部署後端
-systemctl restart forgebase-api
-
-# 3. 重新建置並部署前台與後台
-cd /opt/forgebase/app/web && npm run build && ...
-cd /opt/forgebase/app/admin && npm run build && ...
-```
+| **DB** | 新增 `tenants` 資料表，含 plan / max_products / max_admins / PayPal 欄位 |
+| **DB** | `users` 新增 `tenant_id` FK |
+| **DB** | `products`、`rfq_requests`、`briefs`、`pages` 等核心模型新增 `tenant_id` FK |
+| **Migration** | `0027_add_tenant_id_to_core_models`、`0028_merge_site_profile_and_multitenant_heads`（合併 revision）|
+| **API** | `POST /auth/register` — 建立 Tenant + owner 帳號（需 `REGISTRATION_KEY` 環境變數保護）|
+| **API** | `POST /subscription/checkout|activate|upgrade|cancel` — 改為 `require_owner`，移除 inline 角色判斷 |
+| **API** | `PUT|DELETE /admin/integrations/{service}/{key}` — 升為 `require_admin`（原為 content_editor）|
+| **API** | `PUT /site-profile` — 升為 `require_admin`（原無角色保護）|
+| **API** | Team invite / update — owner 才能邀請或晉升 admin 角色 |
+| **API** | 新增 `require_owner` dependency；移除 `require_super_admin`（原與 `require_admin` 完全相同）|
+| **API** | `/auth/team` 系列統一回傳 `UserRead`（移除手動 mapping 的 `TeamMemberOut`）|
+| **Admin** | `client.ts` 加入 token 自動 refresh 機制（401 → 先嘗試 refresh → 失敗才登出）|
+| **Admin** | Billing 頁方案比較表修正（Starter: 2 管理員；Professional: 無限額）|
+| **Admin** | 側欄導覽重構：移除「自動化」群組、整合設定移入「系統」、`owner` 角色可見系統管理選單 |
