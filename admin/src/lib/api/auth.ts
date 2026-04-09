@@ -41,6 +41,20 @@ export type InviteRequest = {
   role: string;
 };
 
+export type RegisterRequest = {
+  email: string;
+  password: string;
+  full_name: string;
+  company_name: string;
+  plan: string;
+  registration_key?: string;
+};
+
+export type RegisterResponse = TokenResponse & {
+  tenant_id: string;
+  tenant_slug: string;
+};
+
 export type CheckoutResult = {
   subscription_id: string;
   approve_url: string;
@@ -61,6 +75,9 @@ export type CurrentPlanResponse = {
 };
 
 export const authApi = {
+  register: (payload: RegisterRequest) =>
+    apiClient.post<RegisterResponse>("/auth/register", payload),
+
   login: (payload: LoginRequest) =>
     apiClient.post<TokenResponse>("/auth/login", payload),
 

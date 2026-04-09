@@ -47,10 +47,10 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     Requires REGISTRATION_KEY to be set in environment.
     """
     from app.core.config import settings
-    if not settings.REGISTRATION_KEY:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Registration is currently disabled")
-    if payload.registration_key != settings.REGISTRATION_KEY:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Invalid registration key")
+    # If REGISTRATION_KEY is configured, validate it; otherwise allow open registration
+    if settings.REGISTRATION_KEY:
+        if payload.registration_key != settings.REGISTRATION_KEY:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Invalid registration key")
 
     # Validate plan
     if payload.plan not in ("starter", "professional"):
