@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,7 +21,7 @@ const HIGHLIGHTS = [
   { value: "全球觸達", label: "多語言買家意圖可視", icon: Globe },
 ];
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const router = useRouter();
   const { state, login } = useAuth();
   const searchParams = useSearchParams();
@@ -300,5 +300,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterPageInner />
+    </Suspense>
   );
 }
