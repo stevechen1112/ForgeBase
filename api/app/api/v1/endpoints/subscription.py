@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_current_user, require_owner
 from app.db.session import get_session
 from app.models.user import User
 from app.models.tenant import Tenant
@@ -101,12 +101,9 @@ async def current_plan(
 async def upgrade_plan(
     body: UpgradeRequest,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_owner),
 ):
     """Owner-only: upgrade tenant plan."""
-    if current_user.role not in ("owner", "admin"):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only owner/admin can change plan")
-
     if not current_user.tenant_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User has no tenant")
 
@@ -160,12 +157,9 @@ class CheckoutResult(BaseModel):
 async def create_checkout(
     body: CheckoutRequest,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_owner),
 ):
-    """Create a PayPal subscription checkout URL. Owner/admin only."""
-    if current_user.role not in ("owner", "admin"):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only owner/admin can manage billing")
-
+    """Create a PayPal subscription checkout URL. Owner-only."""
     if not current_user.tenant_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User has no tenant")
 
@@ -195,9 +189,9 @@ class ActivateRequest(BaseModel):
 async def activate_subscription(
     body: ActivateRequest,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_owner),
 ):
-    """Activate subscription after PayPal approval redirect."""
+    """Activate subscription after PayPal approval redirect. Owner-only."""
     if not current_user.tenant_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User has no tenant")
 
@@ -343,12 +337,9 @@ async def paypal_webhook(request: Request):
 @router.post("/cancel")
 async def cancel_sub(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_owner),
 ):
     """Owner-only: cancel current PayPal subscription."""
-    if current_user.role not in ("owner", "admin"):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only owner/admin can cancel")
-
     if not current_user.tenant_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User has no tenant")
 

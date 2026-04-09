@@ -225,6 +225,10 @@ async def invite_team_member(
     if payload.role not in allowed_roles:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Role must be one of: {allowed_roles}")
 
+    # Only owner can invite admin-role users
+    if payload.role == "admin" and current_user.role != "owner":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only the owner can invite admin users")
+
     # Password validation
     if len(payload.password) < 8:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password must be at least 8 characters")
@@ -295,9 +299,15 @@ async def update_team_member(
         allowed_roles = {"admin", "marketing_manager", "sales"}
         if payload.role not in allowed_roles:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Role must be one of: {allowed_roles}")
+        # Only owner can promote to admin or manage admin users
+        if (payload.role == "admin" or target.role == "admin") and current_user.role != "owner":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only the owner can manage admin roles")
         target.role = payload.role
 
     if payload.is_active is not None:
+        # Only owner can deactivate admin users
+        if target.role == "admin" and payload.is_active is False and current_user.role != "owner":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only the owner can deactivate admin users")
         target.is_active = payload.is_active
 
     target.updated_at = utcnow_naive()

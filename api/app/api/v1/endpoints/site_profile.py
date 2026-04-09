@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import require_admin
 from app.db.session import get_session
 from app.models.site_profile import SiteProfile
 from app.models.user import User
@@ -44,7 +44,7 @@ async def get_site_profile(db: AsyncSession = Depends(get_session)):
 async def update_site_profile(
     payload: SiteProfileUpdate,
     db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     """Admin-only — updates site branding and theme settings."""
     profile = await _get_or_create_profile(db)

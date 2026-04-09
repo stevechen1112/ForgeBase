@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_content_editor
+from app.api.v1.deps import require_admin, require_content_editor
 from app.core.encryption import decrypt, encrypt
 from app.db.session import get_session
 from app.models.integration_credential import IntegrationCredential
@@ -152,7 +152,7 @@ async def upsert_credential(
     key: str,
     body: CredentialUpsert,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    _: User = Depends(require_admin),
 ):
     """Create or update an encrypted credential."""
     if not body.value.strip():
@@ -184,7 +184,7 @@ async def delete_credential(
     key: str,
     tenant_id: Optional[str] = None,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    _: User = Depends(require_admin),
 ):
     """Remove a credential from the DB. The env-var fallback still applies."""
     row = await _get_credential(db, service, key, tenant_id)
