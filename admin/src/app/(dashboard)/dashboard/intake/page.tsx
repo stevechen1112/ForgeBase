@@ -7,7 +7,7 @@ import {
   HelpCircle, Factory, Trophy, Download,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -139,20 +139,12 @@ function relativeTime(iso: string): string {
   return days === 1 ? "昨天" : `${days} 天前`;
 }
 
-async function api(path: string, token: string, options?: { method?: string; body?: unknown }) {
-  const res = await fetch(`${API_BASE}/intake${path}`, {
-    method: options?.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `API error: ${res.status}`);
-  }
-  return res.json();
+function intakeApi<T = unknown>(path: string, token: string, options?: { method?: string; body?: unknown }): Promise<T> {
+  const method = options?.method || "GET";
+  const intakePath = `/intake${path}`;
+  if (method === "POST") return apiClient.post<T>(intakePath, options?.body ?? null, token);
+  if (method === "PATCH") return apiClient.patch<T>(intakePath, options?.body ?? null, token);
+  return apiClient.get<T>(intakePath, token);
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
@@ -190,7 +182,7 @@ export default function IntakePage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await api("/projects", token);
+      const data = await intakeApi<IntakeProject[]>("/projects", token);
       setProjects(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "無法載入專案");
@@ -209,11 +201,11 @@ export default function IntakePage() {
     setSuccess(null);
     try {
       const [sumData, urlData, entData, redData, briData] = await Promise.all([
-        api(`/projects/${project.id}/summary`, token),
-        api(`/projects/${project.id}/urls`, token),
-        api(`/projects/${project.id}/entities`, token),
-        api(`/projects/${project.id}/redirects`, token),
-        api(`/projects/${project.id}/briefs`, token),
+        intakeApi<ProjectSummary>(`/projects/${project.id}/summary`, token),
+        intakeApi<IntakeUrlCandidate[]>(`/projects/${project.id}/urls`, token),
+        intakeApi<IntakeEntityCandidate[]>(`/projects/${project.id}/entities`, token),
+        intakeApi<IntakeRedirectCandidate[]>(`/projects/${project.id}/redirects`, token),
+        intakeApi<IntakeBriefCandidate[]>(`/projects/${project.id}/briefs`, token),
       ]);
       setSummary(sumData);
       setUrls(urlData);
@@ -231,7 +223,7 @@ export default function IntakePage() {
     setActionLoading("create");
     setError(null);
     try {
-      await api("/projects", token, {
+      await intakeApi("/projects", token, {
         method: "POST",
         body: { project_name: newName.trim(), source_url: newUrl.trim() },
       });
@@ -253,7 +245,7 @@ export default function IntakePage() {
     setActionLoading("discover");
     setError(null);
     try {
-      await api(`/projects/${selectedProject.id}/discover`, token, { method: "POST" });
+      await intakeApi(`/projects/${selectedProject.id}/discover`, token, { method: "POST" });
       setSuccess("網站探索已啟動，請稍後重新整理檢視結果...");
     } catch (err) {
       setError(err instanceof Error ? err.message : "探索失敗");
@@ -268,7 +260,7 @@ export default function IntakePage() {
     setActionLoading("extract");
     setError(null);
     try {
-      await api(`/projects/${selectedProject.id}/extract`, token, { method: "POST" });
+      await intakeApi(`/projects/${selectedProject.id}/extract`, token, { method: "POST" });
       setSuccess("內容抽取已啟動，請稍後重新整理檢視結果...");
     } catch (err) {
       setError(err instanceof Error ? err.message : "抽取失敗");
@@ -283,7 +275,7 @@ export default function IntakePage() {
     setActionLoading("commit");
     setError(null);
     try {
-      const result = await api(`/projects/${selectedProject.id}/commit`, token, { method: "POST" });
+      const result = await intakeApi<{ committed?: { entities?: number; redirects?: number; briefs?: number } }>(`/projects/${selectedProject.id}/commit`, token, { method: "POST" });
       setSuccess(`匯入完成！實體: ${result.committed?.entities ?? 0}, Redirect: ${result.committed?.redirects ?? 0}, Brief: ${result.committed?.briefs ?? 0}`);
       await loadProjectDetail(selectedProject);
     } catch (err) {
@@ -298,7 +290,7 @@ export default function IntakePage() {
     if (!selectedProject) return;
     const pathMap = { urls: "urls", entities: "entities", redirects: "redirects", briefs: "briefs" };
     try {
-      await api(`/${pathMap[type]}/${id}/review`, token, {
+      await intakeApi(`/${pathMap[type]}/${id}/review`, token, {
         method: "PATCH",
         body: { review_status: status },
       });
@@ -332,7 +324,7 @@ export default function IntakePage() {
     if (!editingEntity || !selectedProject) return;
     setActionLoading("edit-entity");
     try {
-      await api(`/entities/${editingEntity.id}/review`, token, {
+      await intakeApi(`/entities/${editingEntity.id}/review`, token, {
         method: "PATCH",
         body: {
           review_status: editingEntity.review_status,
