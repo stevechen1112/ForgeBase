@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_super_admin
+from app.api.v1.deps import get_current_user, require_admin
 from app.db.session import get_session
 from app.models.segment import Segment
 from app.models.visitor import Visitor
@@ -190,7 +190,7 @@ async def update_segment(
 async def delete_segment(
     segment_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_super_admin),
+    _: User = Depends(require_admin),
 ):
     seg = await db.get(Segment, segment_id)
     if not seg:

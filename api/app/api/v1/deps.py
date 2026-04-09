@@ -47,11 +47,12 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-async def require_super_admin(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role not in ("admin", "owner"):
+async def require_owner(current_user: User = Depends(get_current_user)) -> User:
+    """Only the tenant owner can perform this action."""
+    if current_user.role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super admin access required",
+            detail="Owner access required",
         )
     return current_user
 

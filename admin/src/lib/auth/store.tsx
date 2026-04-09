@@ -74,8 +74,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEY);
       dispatch({ type: "LOGOUT" });
     };
+    const handleRefreshed = (e: Event) => {
+      const detail = (e as CustomEvent<TokenResponse>).detail;
+      if (detail) dispatch({ type: "SET_AUTH", payload: detail });
+    };
     window.addEventListener("auth:unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    window.addEventListener("auth:refreshed", handleRefreshed);
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+      window.removeEventListener("auth:refreshed", handleRefreshed);
+    };
   }, []);
 
   const login = (tokenResponse: TokenResponse) => {

@@ -31,6 +31,7 @@ export type TeamMember = {
   is_active: boolean;
   created_at: string;
   last_login_at: string | null;
+  tenant_id?: string;
 };
 
 export type InviteRequest = {

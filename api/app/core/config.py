@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     ADMIN_URL: str = "http://localhost:3001"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 
+    # Registration
+    REGISTRATION_KEY: str = ""  # If empty, public registration is disabled
+
     # Admin seed
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = ""

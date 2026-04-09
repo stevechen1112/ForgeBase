@@ -23,6 +23,7 @@ class RegisterRequest(BaseModel):
     full_name: str
     company_name: str
     plan: str = "starter"  # "starter" | "professional"
+    registration_key: str = ""
 
 
 class RegisterResponse(BaseModel):
@@ -43,7 +44,14 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     """
     Register a new tenant + owner account.
     Creates: 1 Tenant row + 1 User row (role=owner).
+    Requires REGISTRATION_KEY to be set in environment.
     """
+    from app.core.config import settings
+    if not settings.REGISTRATION_KEY:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Registration is currently disabled")
+    if payload.registration_key != settings.REGISTRATION_KEY:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Invalid registration key")
+
     # Validate plan
     if payload.plan not in ("starter", "professional"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Plan must be 'starter' or 'professional'")
@@ -178,22 +186,12 @@ class InviteRequest(BaseModel):
     role: str = "marketing_manager"  # marketing_manager | sales | admin
 
 
-class TeamMemberOut(BaseModel):
-    id: str
-    email: str
-    full_name: str
-    role: str
-    is_active: bool
-    created_at: str
-    last_login_at: str | None
-
-
 class TeamMemberUpdateRequest(BaseModel):
     role: str | None = None
     is_active: bool | None = None
 
 
-@router.get("/team")
+@router.get("/team", response_model=list[UserRead])
 async def list_team(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
@@ -209,21 +207,10 @@ async def list_team(
     )
     users = result.all()
 
-    return [
-        TeamMemberOut(
-            id=str(u.id),
-            email=u.email,
-            full_name=u.full_name,
-            role=u.role,
-            is_active=u.is_active,
-            created_at=u.created_at.isoformat() if u.created_at else "",
-            last_login_at=u.last_login_at.isoformat() if u.last_login_at else None,
-        )
-        for u in users
-    ]
+    return [UserRead.model_validate(u) for u in users]
 
 
-@router.post("/team/invite", status_code=status.HTTP_201_CREATED)
+@router.post("/team/invite", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def invite_team_member(
     payload: InviteRequest,
     session: AsyncSession = Depends(get_session),
@@ -268,18 +255,10 @@ async def invite_team_member(
     await session.commit()
     await session.refresh(user)
 
-    return TeamMemberOut(
-        id=str(user.id),
-        email=user.email,
-        full_name=user.full_name,
-        role=user.role,
-        is_active=user.is_active,
-        created_at=user.created_at.isoformat() if user.created_at else "",
-        last_login_at=None,
-    )
+    return UserRead.model_validate(user)
 
 
-@router.patch("/team/{user_id}")
+@router.patch("/team/{user_id}", response_model=UserRead)
 async def update_team_member(
     user_id: str,
     payload: TeamMemberUpdateRequest,
@@ -326,12 +305,4 @@ async def update_team_member(
     await session.commit()
     await session.refresh(target)
 
-    return TeamMemberOut(
-        id=str(target.id),
-        email=target.email,
-        full_name=target.full_name,
-        role=target.role,
-        is_active=target.is_active,
-        created_at=target.created_at.isoformat() if target.created_at else "",
-        last_login_at=target.last_login_at.isoformat() if target.last_login_at else None,
-    )
+    return UserRead.model_validate(target)

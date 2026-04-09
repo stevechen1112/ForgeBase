@@ -6,6 +6,44 @@ function resolveApiBase(rawBase?: string): string {
 
 export const API_BASE = resolveApiBase(process.env.NEXT_PUBLIC_API_URL);
 
+const STORAGE_KEY = "fb_auth";
+
+// Token refresh lock — prevent concurrent refresh calls
+let refreshPromise: Promise<string | null> | null = null;
+
+async function tryRefreshToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const stored = JSON.parse(raw);
+      const rt = stored?.refresh_token;
+      if (!rt) return null;
+
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent("auth:refreshed", { detail: data }));
+      return data.access_token as string;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 type RequestOptions = {
   method?: string;
   body?: unknown;
@@ -23,11 +61,24 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  let res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  // On 401, try to refresh the token once before giving up
+  if (res.status === 401 && !path.startsWith("/auth/refresh")) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      headers["Authorization"] = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    }
+  }
 
   if (!res.ok) {
     if (res.status === 401) {
