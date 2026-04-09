@@ -60,12 +60,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "自動化",
-    items: [
-      { label: "整合設定", href: "/dashboard/integrations", icon: Plug },
-    ],
-  },
-  {
     title: "AI / SEO",
     items: [
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
@@ -112,6 +106,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "系統",
     items: [
+      { label: "整合設定", href: "/dashboard/integrations", icon: Plug, adminOnly: true },
       { label: "團隊成員", href: "/dashboard/users", icon: Users, adminOnly: true },
       { label: "方案與帳單", href: "/dashboard/settings/billing", icon: Settings, adminOnly: true },
     ],
@@ -127,7 +122,9 @@ export function Sidebar() {
   const { state, logout } = useAuth();
 
   const user = state.status === "authenticated" ? state.user : null;
-  const isAdmin = user?.role === "admin";
+  const canManageSystem = user?.role === "admin" || user?.role === "owner";
+  const roleLabel = user?.role === "owner" ? "帳號擁有者" : user?.role === "admin" ? "管理員" : "一般使用者";
+  const accountSettingsHref = canManageSystem ? "/dashboard/users" : "/dashboard";
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   function isActive(item: NavItem) {
@@ -155,7 +152,7 @@ export function Sidebar() {
         <ScrollArea className="flex-1 px-2 py-3">
           <nav className="space-y-5">
             {NAV_GROUPS.map((group) => {
-              const visible = group.items.filter((i) => !i.adminOnly || isAdmin);
+              const visible = group.items.filter((i) => !i.adminOnly || canManageSystem);
               if (!visible.length) return null;
               return (
                 <div key={group.title}>
@@ -167,7 +164,7 @@ export function Sidebar() {
                       const active = isActive(item);
                       const Icon = item.icon;
                       const hasChildren = !!item.children?.length;
-                      const visibleChildren = item.children?.filter(c => !c.adminOnly || isAdmin) ?? [];
+                      const visibleChildren = item.children?.filter(c => !c.adminOnly || canManageSystem) ?? [];
                       const anyChildActive = visibleChildren.some(c => pathname === c.href || pathname.startsWith(c.href + "/"));
                       const isExpanded = anyChildActive || expandedItems.includes(item.href);
                       return (
@@ -259,7 +256,7 @@ export function Sidebar() {
                       {user.email.split("@")[0]}
                     </p>
                     <p className="truncate text-[11px] text-[hsl(var(--sidebar-foreground))]/50 leading-none">
-                      {isAdmin ? "管理員" : "一般使用者"}
+                      {roleLabel}
                     </p>
                   </div>
                   <ChevronUp className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--sidebar-foreground))]/40" />
@@ -274,7 +271,7 @@ export function Sidebar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer">
+                  <Link href={accountSettingsHref} className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
                     帳號設定
                   </Link>
