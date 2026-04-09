@@ -14,10 +14,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor
+from app.api.v1.deps import get_current_user, require_admin, require_content_editor, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.product_category import ProductCategory
+from app.models.user import User
 from app.schemas.base import APIResponse, PaginationMeta
 from app.schemas.product_category import (
     ProductCategoryCreate,
@@ -52,8 +53,11 @@ async def list_categories(
     slug: str | None = Query(None),
     locale: str = Query("en"),
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     base_q = select(ProductCategory).where(ProductCategory.locale == locale)
+    if tenant_id:
+        base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
     if status:
         base_q = base_q.where(ProductCategory.status == status)
     if slug:
@@ -81,12 +85,15 @@ async def list_categories(
 async def get_category_tree(
     locale: str = Query("en"),
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     q = (
         select(ProductCategory)
         .where(ProductCategory.locale == locale, ProductCategory.status == "published")
         .order_by(ProductCategory.sort_order)
     )
+    if tenant_id:
+        q = q.where(ProductCategory.tenant_id == tenant_id)
     cats = (await session.exec(q)).all()
     return APIResponse(data=_build_tree(list(cats)))
 
@@ -95,7 +102,7 @@ async def get_category_tree(
 async def create_category(
     payload: ProductCategoryCreate,
     session: AsyncSession = Depends(get_session),
-    _user=Depends(require_content_editor),
+    _user: User = Depends(require_content_editor),
 ):
     # slug uniqueness
     existing = await session.exec(
@@ -105,6 +112,7 @@ async def create_category(
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Slug already exists")
 
     cat = ProductCategory(**payload.model_dump())
+    cat.tenant_id = _user.tenant_id
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
@@ -127,10 +135,12 @@ async def update_category(
     category_id: uuid.UUID,
     payload: ProductCategoryUpdate,
     session: AsyncSession = Depends(get_session),
-    _user=Depends(require_content_editor),
+    _user: User = Depends(require_content_editor),
 ):
     cat = await session.get(ProductCategory, category_id)
     if not cat:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
+    if _user.tenant_id and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -157,10 +167,12 @@ async def update_category(
 async def delete_category(
     category_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _user=Depends(require_admin),
+    _user: User = Depends(require_admin),
 ):
     cat = await session.get(ProductCategory, category_id)
     if not cat:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
+    if _user.tenant_id and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     await session.delete(cat)
     await session.commit()

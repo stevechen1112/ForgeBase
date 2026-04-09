@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ENCRYPTION_MASTER_KEY: str = ""
 
+    # PayPal Subscriptions
+    PAYPAL_MODE: str = "sandbox"  # "sandbox" | "live"
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_CLIENT_SECRET: str = ""
+    PAYPAL_WEBHOOK_ID: str = ""
+    PAYPAL_STARTER_PLAN_ID: str = ""
+    PAYPAL_PROFESSIONAL_PLAN_ID: str = ""
+
     # App
     APP_ENV: str = "development"
     APP_URL: str = "http://localhost:8000"

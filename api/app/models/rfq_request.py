@@ -21,6 +21,7 @@ class RFQRequest(SQLModel, table=True):
     __tablename__ = "rfq_requests"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     rfq_number: str = Field(max_length=30, unique=True, index=True)
     # Format: RFQ-YYYYMMDD-NNN, e.g. RFQ-20260314-001
 

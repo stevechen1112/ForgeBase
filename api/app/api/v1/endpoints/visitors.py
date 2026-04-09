@@ -44,6 +44,8 @@ async def list_visitors(
 ):
     """List visitors sorted by intent score (desc). Admin only."""
     q = select(Visitor).order_by(col(Visitor.intent_score).desc())
+    if _.tenant_id:
+        q = q.where(Visitor.tenant_id == _.tenant_id)
     if intent_stage:
         q = q.where(Visitor.intent_stage == intent_stage)
     if min_score is not None:
@@ -77,6 +79,8 @@ async def get_visitor(
 ):
     v = await db.get(Visitor, visitor_id)
     if not v:
+        raise HTTPException(status_code=404, detail="Visitor not found")
+    if _.tenant_id and v.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="Visitor not found")
 
     # Count event breakdown

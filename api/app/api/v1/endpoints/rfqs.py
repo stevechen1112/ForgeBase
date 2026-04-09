@@ -17,13 +17,14 @@ from pydantic import BaseModel, EmailStr, field_validator
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import get_current_user, require_content_editor, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
 from app.models.rfq_request import RFQRequest, RFQProductLink
 from app.models.visitor import Visitor
 from app.models.user import User
+from uuid import UUID as _UUID
 
 # Two routers — public forms_router + admin tracking_router
 forms_router = APIRouter(prefix="/forms", tags=["Forms"])
@@ -99,6 +100,7 @@ class RFQFormIn(BaseModel):
 async def submit_rfq(
     body: RFQFormIn,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[_UUID] = Depends(resolve_tenant_id),
 ):
     """
     Submit RFQ form. Creates (or deduplicates) a Contact, then creates a
@@ -156,6 +158,7 @@ async def submit_rfq(
             intent_score_at_creation=intent_score,
             how_did_you_find_us=body.how_did_you_find_us,
             source_page=body.source_page,
+            tenant_id=tenant_id,
         )
         db.add(contact)
 
@@ -206,6 +209,7 @@ async def submit_rfq(
         status="new",
         priority=priority,
         source_page=body.source_page,
+        tenant_id=tenant_id,
     )
     db.add(rfq)
     await db.flush()
@@ -297,6 +301,8 @@ async def list_rfqs(
     _: User = Depends(get_current_user),
 ):
     q = select(RFQRequest).order_by(col(RFQRequest.created_at).desc())
+    if _.tenant_id:
+        q = q.where(RFQRequest.tenant_id == _.tenant_id)
     if status:
         q = q.where(RFQRequest.status == status)
     if priority:
@@ -316,6 +322,8 @@ async def get_rfq(
 ):
     r = await db.get(RFQRequest, rfq_id)
     if not r:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    if _.tenant_id and r.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="RFQ not found")
 
     # Fetch linked product IDs
@@ -339,6 +347,8 @@ async def update_rfq_status(
 ):
     r = await db.get(RFQRequest, rfq_id)
     if not r:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    if _.tenant_id and r.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="RFQ not found")
     old_status = r.status
     r.status = body.status

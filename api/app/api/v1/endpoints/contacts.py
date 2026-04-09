@@ -14,12 +14,13 @@ from pydantic import BaseModel, EmailStr, field_validator
 from sqlmodel import select, col
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import get_current_user, require_content_editor, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
 from app.models.visitor import Visitor
 from app.models.user import User
+from uuid import UUID as _UUID
 
 # Two separate routers — one public (forms), one admin (tracking)
 forms_router = APIRouter(prefix="/forms", tags=["Forms"])
@@ -63,6 +64,7 @@ async def submit_contact_form(
     body: ContactFormIn,
     request: Request,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[_UUID] = Depends(resolve_tenant_id),
 ):
     """
     Submit the contact enquiry form.
@@ -118,6 +120,7 @@ async def submit_contact_form(
         how_did_you_find_us=body.how_did_you_find_us,
         source_page=body.source_page,
         notes=body.message,
+        tenant_id=tenant_id,
     )
     db.add(contact)
     await db.commit()
@@ -162,6 +165,8 @@ async def list_contacts(
     _: User = Depends(get_current_user),
 ):
     q = select(Contact).order_by(col(Contact.created_at).desc())
+    if _.tenant_id:
+        q = q.where(Contact.tenant_id == _.tenant_id)
     if country:
         q = q.where(Contact.country == country)
     q = q.offset(offset).limit(min(limit, 200))
@@ -178,6 +183,8 @@ async def get_contact(
     c = await db.get(Contact, contact_id)
     if not c:
         raise HTTPException(status_code=404, detail="Contact not found")
+    if _.tenant_id and c.tenant_id != _.tenant_id:
+        raise HTTPException(status_code=404, detail="Contact not found")
     return _contact_row(c, full=True)
 
 
@@ -190,6 +197,8 @@ async def update_contact(
 ):
     c = await db.get(Contact, contact_id)
     if not c:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    if _.tenant_id and c.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="Contact not found")
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(c, field, value)

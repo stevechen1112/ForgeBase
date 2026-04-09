@@ -12,10 +12,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor
+from app.api.v1.deps import get_current_user, require_admin, require_content_editor, QuotaEnforcer, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.product import Product
+from app.models.user import User
 from app.schemas.base import APIResponse, PaginationMeta
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 
@@ -33,8 +34,11 @@ async def list_products(
     q: str | None = Query(None, description="Full-text search on product_name and model_number"),
     featured: bool | None = Query(None, description="Filter by is_featured"),
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     base_q = select(Product)
+    if tenant_id:
+        base_q = base_q.where(Product.tenant_id == tenant_id)
     if locale:
         base_q = base_q.where(Product.locale == locale)
     if status:
@@ -71,6 +75,7 @@ async def create_product(
     payload: ProductCreate,
     session: AsyncSession = Depends(get_session),
     _user=Depends(require_content_editor),
+    _quota=Depends(QuotaEnforcer("product")),
 ):
     # slug uniqueness is per-locale; model_number is globally unique
     slug_conflict = await session.exec(
@@ -85,6 +90,7 @@ async def create_product(
         raise HTTPException(status.HTTP_409_CONFLICT, detail="model_number already exists")
 
     product = Product(**payload.model_dump())
+    product.tenant_id = _user.tenant_id
     session.add(product)
     await session.commit()
     await session.refresh(product)
@@ -107,10 +113,12 @@ async def update_product(
     product_id: uuid.UUID,
     payload: ProductUpdate,
     session: AsyncSession = Depends(get_session),
-    _user=Depends(require_content_editor),
+    _user: User = Depends(require_content_editor),
 ):
     product = await session.get(Product, product_id)
     if not product:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    if _user.tenant_id and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -146,10 +154,12 @@ async def update_product(
 async def delete_product(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _user=Depends(require_admin),
+    _user: User = Depends(require_admin),
 ):
     product = await session.get(Product, product_id)
     if not product:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    if _user.tenant_id and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     await session.delete(product)
     await session.commit()

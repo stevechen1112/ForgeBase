@@ -14,6 +14,7 @@ class TrackingEvent(SQLModel, table=True):
     __tablename__ = "tracking_events"
 
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     event_name: str = Field(max_length=50, index=True)
     # 15 valid values from spec 12.5.1
 

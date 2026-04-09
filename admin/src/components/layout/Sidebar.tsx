@@ -105,7 +105,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "系統",
     items: [
-      { label: "使用者管理", href: "/dashboard/users", icon: Users, adminOnly: true },
+      { label: "團隊成員", href: "/dashboard/users", icon: Users, adminOnly: true },
+      { label: "方案與帳單", href: "/dashboard/settings/billing", icon: Settings, adminOnly: true },
     ],
   },
 ];

@@ -15,6 +15,7 @@ class Contact(SQLModel, table=True):
     __tablename__ = "contacts"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     email: str = Field(max_length=100, unique=True, index=True)
     full_name: str = Field(max_length=100)
     company_name: Optional[str] = Field(default=None, max_length=100)

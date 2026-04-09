@@ -1,26 +1,84 @@
 # ForgeBase
 
-**外銷製造商官網成長系統** — Capture · Intent · Conversion
+**外銷製造商官網成長系統** — Expose · Engage · Capture · Follow-up
 
-ForgeBase 是專為外銷製造商設計的 B2B 網站成長平台，整合訪客行為追蹤、意圖評分、詢價捕捉、AI 內容生成與帳戶智能（Account Intelligence），讓業務團隊能在潛在買家主動詢價前就掌握其購買信號。
+ForgeBase 是專為中小型外銷製造商設計的 B2B 網站成長平台。核心理念：**讓產品被找到、讓買家意圖被看見、讓每筆詢價都被接住。**
+
+---
+
+## 行銷漏斗四階段
+
+ForgeBase 的功能對應外銷製造商從曝光到成交的完整歷程：
+
+| 階段 | 名稱 | 核心問題 | ForgeBase 功能 |
+|------|------|----------|---------------|
+| **1. 曝光** | 被找到 | 買家在 Google 搜到我嗎？ | SEO 基礎設施、sitemap、schema、多語言、AI 內容生成 |
+| **2. 互動** | 站內行為 | 買家看了什麼？多有興趣？ | 行為追蹤（15 種事件）、意圖評分、Dynamic CTA、AI Product Advisor |
+| **3. 留資** | 詢價轉換 | 買家願意報上名嗎？ | RFQ 表單、聯絡表單、Chat → RFQ handoff |
+| **4. 跟進** | 業務接住 | 每筆詢價有人跟、跟得好嗎？ | 即時通知、逾時催辦、培育信、狀態管理 |
 
 ---
 
 ## 核心功能
 
-| 模組 | 說明 |
-|------|------|
-| **訪客追蹤 & 意圖評分** | 自動記錄頁面瀏覽、產品查看、FAQ 展開、規格下載等行為事件，實時計算 Cold / Warm / Hot / Sales-Ready 買家階段 |
-| **RFQ 捕捉** | 結構化詢價表單，含產品需求、預算、時程等欄位，直送管理後台 |
-| **Download Gate** | 規格書、技術文件需留資才可下載，自動建立聯絡人 |
-| **帳戶智能（Account Intelligence）** | 通過 GeoIP 識別訪客國家，IP-to-Company 反查企業身份 |
-| **AI Product Advisor** | 於首頁、產品、應用、FAQ 等高價值頁面提供情境式 AI 導購，支援產品、MOQ、OEM、認證與 RFQ 導流 |
-| **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
-| **Dynamic CTA** | 依訪客買家階段顯示不同行動呼籲（詢價 / 下載目錄 / 聯繫業務）|
-| **Nurture Email 序列** | 依買家階段觸發自動化培育郵件，整合 Resend |
-| **A/B 測試** | 版本對照測試 CTA 與內容效果 |
-| **CRM 同步** | 將 RFQ / 聯絡人同步至外部 CRM |
-| **SEO 稽核** | 產品頁 SEO 評分、關鍵字建議、結構化資料檢查 |
+| 模組 | 說明 | 漏斗階段 |
+|------|------|----------|
+| **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 | 曝光 |
+| **多語言支援** | 英文 + 繁體中文，hreflang 自動產生 | 曝光 |
+| **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ | 曝光 |
+| **訪客追蹤 & 意圖評分** | 自動記錄 page_view / product_view / cta_click 等 15 種事件，計算 Cold → Warm → Hot → Sales-Ready 階段 | 互動 |
+| **Dynamic CTA** | 依訪客買家階段動態切換行動呼籲按鈕 | 互動 |
+| **AI Product Advisor** | FAQ 頁、產品詳頁嵌入情境式 AI 對話，導向 RFQ | 互動 → 留資 |
+| **RFQ 詢價表單** | 結構化詢價，含產品需求、數量、時程等欄位 | 留資 |
+| **聯絡表單** | 一般詢問留資 | 留資 |
+| **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ | 留資 |
+| **GeoIP 國家識別** | 訪客國家自動標記 | 互動 |
+| **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2 | 全階段 |
+
+---
+
+## SaaS 方案分層
+
+兩層方案 + 按需 add-on，對應客戶成長階段：
+
+### Starter 入門（$99–199/月）
+
+**定位：數位型錄 + 詢價入口**
+
+| 漏斗階段 | 功能 |
+|----------|------|
+| 曝光 | 前台官網（英文）、SEO 基礎（canonical / sitemap / schema） |
+| 互動 | 基礎追蹤（page_view） |
+| 留資 | RFQ 詢價表單、聯絡表單 |
+| 跟進 | — |
+| 限制 | 產品 50 筆、管理員 2 組 |
+
+> 升級誘因：「你有 5 筆新詢價，但你不知道其中 2 位早就看了你 12 個產品頁。」
+
+### Professional 專業（$499–899/月）
+
+**定位：意圖識別 + AI 導購 + 業務跟進全閉環**
+
+含 Starter 全部，加上：
+
+| 漏斗階段 | 功能 |
+|----------|------|
+| 曝光 | 多語言（EN + zh-TW）、AI 內容生成（PageBrief 工作流）、SEO Redirect 管理 |
+| 互動 | 完整行為追蹤（15 種事件）、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI Product Advisor |
+| 留資 | Chat → RFQ handoff |
+| 跟進 | 即時通知（RFQ / 聯絡 / handoff / 意圖突破閾值 / 回訪通知）、逾時催辦（24h 提醒 / 72h 升級主管）、培育信（確認信自動 + 3 封人工確認） |
+| 限制 | 產品無上限、管理員無上限 |
+
+### 按需 Add-on
+
+有客戶明確需求時再啟用，不預建：
+
+| Add-on | 月費 |
+|--------|------|
+| HubSpot CRM 同步 | +$200 |
+| Google Ads 轉換回傳 | +$150 |
+| Meta CAPI 轉換回傳 | +$150 |
+| Webhook 整合 | +$100 |
 
 ---
 
@@ -129,7 +187,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 20 個 DB migrations
+alembic upgrade head           # 套用全部 DB migrations
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -171,12 +229,12 @@ python3 ../demo/handtool-company/seed/import_demo_content.py
 python3 ../demo/handtool-company/seed/seed_demo_visitors.py
 # → 14 訪客 / 10 RFQ / 14 聯絡人 / 69 事件（含 Thomas/Sarah/Marco 等 demo 角色）
 
-# 步驟三：注入 Page Briefs、CTAs、Nurture 序列（已有資料時可略過）
+# 步驟三：注入 Page Briefs、CTAs（已有資料時可略過）
 python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
-# → 8 個 Page Briefs（各狀態）/ 4 個 CTA / 2 個 Nurture 序列 7 個步驟
+# → 8 個 Page Briefs（各狀態）/ 4 個 CTA
 ```
 
-注入成功後，管理後台（:3001）可立即看到 Cold / Warm / Hot / Sales-Ready 各階段訪客、RFQ 收件箱、Page Brief 列表、CTA 規則、Nurture 序列。
+注入成功後，管理後台（:3001）可立即看到 Cold / Warm / Hot / Sales-Ready 各階段訪客、RFQ 收件箱、Page Brief 列表、CTA 規則。
 
 ---
 

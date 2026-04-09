@@ -1,8 +1,10 @@
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.api.v1.deps import resolve_tenant_id
 from app.db.session import get_session
 from app.models.chat import ChatSession
 from app.schemas.base import APIResponse
@@ -30,6 +32,7 @@ async def _get_chat_session_or_404(db: AsyncSession, chat_session_id: uuid.UUID)
 async def create_chat_session(
     body: ChatSessionCreate,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
     service = ChatService(db)
     chat_session, greeting, suggestions = await service.create_session(
@@ -38,6 +41,7 @@ async def create_chat_session(
         context_page=body.context_page,
         context_entity_type=body.context_entity_type,
         context_entity_id=body.context_entity_id,
+        tenant_id=tenant_id,
     )
     return APIResponse(
         data=ChatSessionCreateData(

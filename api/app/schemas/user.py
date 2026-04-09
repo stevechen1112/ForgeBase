@@ -19,6 +19,7 @@ class UserRead(SQLModel):
     full_name: str
     role: UserRole
     is_active: bool
+    tenant_id: Optional[uuid.UUID] = None
     created_at: datetime
     last_login_at: Optional[datetime] = None
 

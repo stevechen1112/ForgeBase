@@ -263,10 +263,10 @@ class ChatService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _ensure_visitor_exists(self, visitor_id: uuid.UUID) -> None:
+    async def _ensure_visitor_exists(self, visitor_id: uuid.UUID, tenant_id=None) -> None:
         visitor = await self.db.get(Visitor, visitor_id)
         if visitor is None:
-            self.db.add(Visitor(visitor_id=visitor_id))
+            self.db.add(Visitor(visitor_id=visitor_id, tenant_id=tenant_id))
             await self.db.flush()
 
     async def _ensure_tracking_session_exists(
@@ -299,6 +299,7 @@ class ChatService:
         context_page: Optional[str],
         context_entity_type: str,
         context_entity_id: Optional[uuid.UUID],
+        tenant_id=None,
     ) -> tuple[ChatSession, str, list[str]]:
         product_name: Optional[str] = None
         category_name: Optional[str] = None
@@ -316,7 +317,7 @@ class ChatService:
             if application:
                 application_name = application.application_name
 
-        await self._ensure_visitor_exists(visitor_id)
+        await self._ensure_visitor_exists(visitor_id, tenant_id=tenant_id)
         await self._ensure_tracking_session_exists(
             session_id=session_id,
             visitor_id=visitor_id,
@@ -329,6 +330,7 @@ class ChatService:
             context_page=context_page,
             context_entity_type=context_entity_type,
             context_entity_id=context_entity_id,
+            tenant_id=tenant_id,
         )
         await self._record_tracking_event(
             visitor_id=visitor_id,

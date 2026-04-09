@@ -12,6 +12,7 @@ class ProductCategory(SQLModel, table=True):
     __tablename__ = "product_categories"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     category_name: str = Field(max_length=60)
     slug: str = Field(max_length=60, unique=True, index=True)
     description: Optional[str] = Field(default=None)  # richtext stored as HTML string

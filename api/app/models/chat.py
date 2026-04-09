@@ -11,6 +11,7 @@ class ChatSession(SQLModel, table=True):
     __tablename__ = "chat_sessions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     visitor_id: uuid.UUID = Field(foreign_key="visitors.visitor_id", index=True)
     session_id: Optional[uuid.UUID] = Field(default=None, index=True)
     context_page: Optional[str] = Field(default=None, max_length=500)

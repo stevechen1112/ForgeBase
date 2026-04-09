@@ -28,6 +28,7 @@ class Product(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     product_name: str = Field(max_length=100, index=True)
     slug: str = Field(max_length=100, index=True)
     model_number: str = Field(max_length=50, unique=True)

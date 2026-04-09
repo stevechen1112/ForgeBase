@@ -9,10 +9,11 @@ export type UserRead = {
   id: string;
   email: string;
   full_name: string;
-  role: "admin" | "marketing_manager" | "sales";
+  role: "admin" | "owner" | "marketing_manager" | "sales";
   is_active: boolean;
   created_at: string;
   last_login_at: string | null;
+  tenant_id?: string;
 };
 
 export type TokenResponse = {
@@ -22,10 +23,55 @@ export type TokenResponse = {
   user: UserRead;
 };
 
+export type TeamMember = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+};
+
+export type InviteRequest = {
+  email: string;
+  full_name: string;
+  password: string;
+  role: string;
+};
+
+export type CheckoutResult = {
+  subscription_id: string;
+  approve_url: string;
+};
+
 export const authApi = {
   login: (payload: LoginRequest) =>
     apiClient.post<TokenResponse>("/auth/login", payload),
 
   refresh: (refreshToken: string) =>
     apiClient.post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken }),
+
+  listTeam: (token: string) =>
+    apiClient.get<TeamMember[]>("/auth/team", token),
+
+  inviteTeamMember: (payload: InviteRequest, token: string) =>
+    apiClient.post<TeamMember>("/auth/team/invite", payload, token),
+
+  updateTeamMember: (userId: string, payload: { role?: string; is_active?: boolean }, token: string) =>
+    apiClient.patch<TeamMember>(`/auth/team/${userId}`, payload, token),
+};
+
+export const subscriptionApi = {
+  getPlans: (token: string) =>
+    apiClient.get<{ plans: Record<string, unknown> }>("/subscription/plans", token),
+
+  getCurrent: (token: string) =>
+    apiClient.get<{ plan: string; limits: Record<string, unknown>; usage: Record<string, unknown> }>("/subscription/current", token),
+
+  checkout: (plan: string, token: string) =>
+    apiClient.post<CheckoutResult>("/subscription/checkout", { plan }, token),
+
+  cancel: (token: string) =>
+    apiClient.post<{ status: string }>("/subscription/cancel", {}, token),
 };

@@ -21,7 +21,7 @@ from pydantic import BaseModel, field_validator
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_current_user, resolve_tenant_id
 from app.db.session import get_session
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
@@ -137,6 +137,7 @@ async def _upsert_visitor(
     db: AsyncSession,
     score_delta: int,
     client_ip: Optional[str] = None,
+    tenant_id: Optional[uuid.UUID] = None,
 ) -> tuple[int, str, str, bool]:
     """
     Create or update visitor record. Apply score_delta.
@@ -150,6 +151,7 @@ async def _upsert_visitor(
         visitor = Visitor(
             visitor_id=visitor_id,
             device_type=event.device_type,
+            tenant_id=tenant_id,
         )
     else:
         # Return visit detection: same visitor, gap > 24 hours
@@ -190,6 +192,7 @@ async def receive_event(
     request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
     """
     Receive a single tracking event from the frontend SDK.
@@ -209,7 +212,7 @@ async def receive_event(
     if body.session_id and body.visitor_id:
         # Visitor must be upserted FIRST to satisfy FK constraint on tracking_sessions
         new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip
+            body.visitor_id, body, db, score_delta, client_ip, tenant_id
         )
         depth_reached = await _upsert_session(body.session_id, body.visitor_id, body, db)
         if is_return:
@@ -218,7 +221,7 @@ async def receive_event(
             computed_events.append("session_depth_reached")
     elif body.visitor_id:
         new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip
+            body.visitor_id, body, db, score_delta, client_ip, tenant_id
         )
         if is_return:
             computed_events.append("return_visit")
@@ -244,6 +247,7 @@ async def receive_event(
         ip_address=client_ip,
         properties=json.dumps(props) if props else None,
         score_delta=score_delta,
+        tenant_id=tenant_id,
     )
     db.add(event_obj)
 
@@ -268,6 +272,7 @@ async def receive_event(
             device_type=body.device_type,
             ip_address=client_ip,
             score_delta=c_delta,
+            tenant_id=tenant_id,
         ))
 
     await db.commit()
@@ -322,6 +327,7 @@ async def receive_events_batch(
     body: list[EventIn],
     request: Request,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
     """Receive up to 20 events at once (e.g. queued while offline)."""
     if len(body) > 20:
@@ -335,14 +341,14 @@ async def receive_events_batch(
         if ev.session_id and ev.visitor_id:
             # Visitor MUST be upserted first to satisfy FK on tracking_sessions
             new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta
+                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id
             )
             await db.flush()
             await _upsert_session(ev.session_id, ev.visitor_id, ev, db)
             await db.flush()  # Also flush session before inserting event (fk_events_session_id)
         elif ev.visitor_id:
             new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta
+                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id
             )
         event_obj = TrackingEvent(
             event_name=ev.event_name,
@@ -360,6 +366,7 @@ async def receive_events_batch(
             ip_address=_get_client_ip(request),
             properties=json.dumps(props) if props else None,
             score_delta=score_delta,
+            tenant_id=tenant_id,
         )
         db.add(event_obj)
         results.append({
@@ -388,6 +395,8 @@ async def query_events(
 ):
     """Query events with filters. Admin only."""
     q = select(TrackingEvent).order_by(col(TrackingEvent.timestamp).desc())
+    if _.tenant_id:
+        q = q.where(TrackingEvent.tenant_id == _.tenant_id)
     if visitor_id:
         q = q.where(TrackingEvent.visitor_id == visitor_id)
     if session_id:

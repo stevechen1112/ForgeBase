@@ -8,6 +8,7 @@ from app.models.associations import (
     ApplicationFAQLink,
     ApplicationRelatedLink,
 )
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.product_category import ProductCategory
 from app.models.product import Product
@@ -38,6 +39,7 @@ __all__ = [
     "AlternativePartLink",
     "ApplicationFAQLink",
     "ApplicationRelatedLink",
+    "Tenant",
     "User",
     "ProductCategory",
     "Product",

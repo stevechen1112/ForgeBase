@@ -42,6 +42,7 @@ async def page_analytics(
     Joins tracking_events + visitors (for avg intent score) + rfq_requests (for RFQ count).
     """
     page_type_filter = "AND te.page_type = :page_type" if page_type else ""
+    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
     sql = text(f"""
         SELECT
             te.page_id::text                                              AS page_id,
@@ -63,6 +64,7 @@ async def page_analytics(
         WHERE te.page_id IS NOT NULL
           AND te.timestamp >= NOW() - make_interval(days => :days)
           {page_type_filter}
+          {tenant_filter}
         GROUP BY te.page_id, te.page_type, p.product_name, app.application_name, pg.title
         ORDER BY page_views DESC
         LIMIT :limit
@@ -71,6 +73,8 @@ async def page_analytics(
     params: dict[str, Any] = {"days": days, "limit": limit}
     if page_type:
         params["page_type"] = page_type
+    if _.tenant_id:
+        params["tenant_id"] = str(_.tenant_id)
 
     result = await session.execute(sql, params)
     rows = result.mappings().all()
@@ -85,6 +89,7 @@ async def page_analytics(
         WHERE te.page_id IS NOT NULL
           AND te.timestamp >= NOW() - make_interval(days => :days)
           {page_type_filter}
+          {tenant_filter}
     """)
     totals_row = (await session.execute(totals_sql, params)).mappings().one()
 
@@ -106,7 +111,8 @@ async def product_analytics(
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Per-product: page views, unique visitors, spec downloads, RFQ count, avg intent score."""
-    sql = text("""
+    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
+    sql = text(f"""
         SELECT
             te.page_id::text                                 AS product_id,
             p.product_name,
@@ -124,11 +130,15 @@ async def product_analytics(
         LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
         WHERE te.page_type = 'product'
           AND te.timestamp >= NOW() - make_interval(days => :days)
+          {tenant_filter}
         GROUP BY te.page_id, p.product_name, p.model_number, c.slug
         ORDER BY page_views DESC
         LIMIT :limit
     """)
-    result = await session.execute(sql, {"days": days, "limit": limit})
+    params: dict[str, Any] = {"days": days, "limit": limit}
+    if _.tenant_id:
+        params["tenant_id"] = str(_.tenant_id)
+    result = await session.execute(sql, params)
     rows = result.mappings().all()
 
     return {
@@ -148,7 +158,8 @@ async def application_analytics(
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Per-application: page views, unique visitors, RFQ count, avg intent score."""
-    sql = text("""
+    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
+    sql = text(f"""
         SELECT
             te.page_id::text                                 AS application_id,
             app.application_name,
@@ -163,11 +174,12 @@ async def application_analytics(
         LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
         WHERE te.page_type = 'application'
           AND te.timestamp >= NOW() - make_interval(days => :days)
+          {tenant_filter}
         GROUP BY te.page_id, app.application_name, app.industry
         ORDER BY page_views DESC
         LIMIT :limit
     """)
-    result = await session.execute(sql, {"days": days, "limit": limit})
+    result = await session.execute(sql, {"days": days, "limit": limit} | ({"tenant_id": str(_.tenant_id)} if _.tenant_id else {}))
     rows = result.mappings().all()
 
     return {
@@ -195,7 +207,8 @@ async def strategy_map_analytics(
     """
     # Fetch all strategy entries with linked page metrics
     # content_strategies uses entity_id + entity_type (not page_id / funnel_stage)
-    sql = text("""
+    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
+    sql = text(f"""
         WITH page_metrics AS (
             SELECT
                 te.page_id                                       AS page_id,
@@ -209,6 +222,7 @@ async def strategy_map_analytics(
             LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
             WHERE te.page_id IS NOT NULL
               AND te.timestamp >= NOW() - make_interval(days => :days)
+              {tenant_filter}
             GROUP BY te.page_id
         )
         SELECT
@@ -240,7 +254,7 @@ async def strategy_map_analytics(
             COALESCE(pm.page_views, 0) DESC
     """)
 
-    result = await session.execute(sql, {"days": days})
+    result = await session.execute(sql, {"days": days} | ({"tenant_id": str(_.tenant_id)} if _.tenant_id else {}))
     rows = result.mappings().all()
 
     # Aggregate tier counts

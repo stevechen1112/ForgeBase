@@ -14,6 +14,7 @@ class Visitor(SQLModel, table=True):
     __tablename__ = "visitors"
 
     visitor_id: uuid.UUID = Field(primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     # visitor_id is generated client-side and stored in first-party cookie
 
     first_seen: datetime = Field(default_factory=utcnow_naive)
