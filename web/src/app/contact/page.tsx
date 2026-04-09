@@ -3,17 +3,16 @@ import type { Metadata } from "next";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const metadata: Metadata = {
-  title: "Contact NorthForge Tools",
+  title: `Contact ${siteConfig.brandName}`,
   description:
-    "Contact NorthForge Tools to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.",
+    `Contact ${siteConfig.brandName} to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const SITE_URL = siteConfig.siteUrl;
+const SITE_NAME = siteConfig.brandName;
 
 const OFFICES = [
   {
@@ -38,10 +37,8 @@ const REASONS = [
 ];
 
 export default function ContactPage() {
-  const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.includes("forgebase")
-    ? "sales@northforgetools.com"
-    : (process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@northforgetools.com");
-  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "+886-4-3700-2218";
+  const contactEmail = siteConfig.contactEmail;
+  const contactPhone = siteConfig.contactPhone;
 
   return (
     <>
@@ -101,7 +98,7 @@ export default function ContactPage() {
 
               {/* Why contact us */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Best Reasons to Contact NorthForge</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Best Reasons to Contact {SITE_NAME}</h2>
                 <ul className="mt-4 space-y-3">
                   {REASONS.map((r) => (
                     <li key={r.label} className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3">

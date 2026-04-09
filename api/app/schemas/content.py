@@ -12,6 +12,7 @@ class ApplicationCreate(BaseModel):
     challenge: Optional[str] = None
     solution: Optional[str] = None
     hero_image_url: Optional[str] = Field(default=None, max_length=500)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
     status: str = Field(default="draft")
@@ -27,6 +28,7 @@ class ApplicationUpdate(BaseModel):
     challenge: Optional[str] = None
     solution: Optional[str] = None
     hero_image_url: Optional[str] = Field(default=None, max_length=500)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
     status: Optional[str] = None
@@ -43,6 +45,7 @@ class ApplicationRead(BaseModel):
     challenge: Optional[str]
     solution: Optional[str]
     hero_image_url: Optional[str]
+    og_image_url: Optional[str]
     seo_title: Optional[str]
     seo_description: Optional[str]
     status: str

@@ -11,6 +11,7 @@ import { getCategoryHeroImage } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { buildTwitterMeta } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ locale: string; categorySlug: string }>;
@@ -57,12 +58,22 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (!category) return { title: "Not Found" };
 
   const faceted = isFaceted(filters);
+  const title = category.seo_title ?? category.category_name;
+  const description = category.seo_description ?? category.description ?? undefined;
+  const ogImage = category.og_image_url ?? category.image_url ?? undefined;
 
   return {
-    title: category.seo_title ?? category.category_name,
-    description: category.seo_description ?? category.description ?? undefined,
+    title,
+    description,
     // Canonical always points to the clean base URL — strips all filter/pagination params
     alternates: { canonical: `${SITE_URL}/products/${category.slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/products/${category.slug}`,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: title }] : undefined,
+    },
+    twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
     // Faceted pages must not be indexed to avoid duplicate content (2.3.1)
     robots: faceted ? { index: false, follow: true } : undefined,
   };

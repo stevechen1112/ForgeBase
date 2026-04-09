@@ -37,6 +37,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new Error(err.detail || err.error || `HTTP ${res.status}`);
   }
 
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return undefined as T;
+  }
+
   return res.json();
 }
 

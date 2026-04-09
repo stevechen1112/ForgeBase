@@ -1,15 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { pagesApi, type Page } from "@/lib/api/content";
+import { pagesApi, redirectsApi, type Page } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -31,11 +32,15 @@ export default function PageContentForm({ initial, id }: Props) {
     seo_description: initial?.seo_description ?? "",
     og_image_url: initial?.og_image_url ?? "",
     canonical_url: initial?.canonical_url ?? "",
+    structured_data: initial?.structured_data ?? "",
     locale: initial?.locale ?? "en",
     status: initial?.status ?? "draft",
+    noindex: initial?.noindex ?? false,
   });
+  const initialSlug = useRef(initial?.slug ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectCreated, setRedirectCreated] = useState(false);
 
   const handleTitleChange = (v: string) => {
     const autoSlug = v.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -43,7 +48,7 @@ export default function PageContentForm({ initial, id }: Props) {
   };
 
   const f = (key: keyof typeof form) => ({
-    value: String(form[key]),
+    value: typeof form[key] === "boolean" ? String(form[key]) : String(form[key]),
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value })),
   });
@@ -51,8 +56,21 @@ export default function PageContentForm({ initial, id }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError(null);
     try {
-      if (id) { await pagesApi.update(token, id, form); }
-      else { await pagesApi.create(token, form); }
+      if (id) {
+        await pagesApi.update(token, id, form);
+        if (form.slug && initialSlug.current && form.slug !== initialSlug.current) {
+          try {
+            await redirectsApi.create(token, {
+              from_path: `/${initialSlug.current}`,
+              to_path: `/${form.slug}`,
+              status_code: 301,
+              is_active: true,
+              note: `Auto: page slug ${initialSlug.current} → ${form.slug}`,
+            });
+            setRedirectCreated(true);
+          } catch { /* non-critical */ }
+        }
+      } else { await pagesApi.create(token, form); }
       router.push("/dashboard/pages");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
     finally { setSaving(false); }
@@ -61,6 +79,7 @@ export default function PageContentForm({ initial, id }: Props) {
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+      {redirectCreated && <Alert><AlertDescription>✓ Slug 已更新，已自動建立 301 Redirect 規則</AlertDescription></Alert>}
 
       <Card>
         <CardHeader><CardTitle className="text-base">頁面設定</CardTitle></CardHeader>
@@ -118,6 +137,28 @@ export default function PageContentForm({ initial, id }: Props) {
           <div className="space-y-1.5">
             <Label>Canonical URL</Label>
             <Input {...f("canonical_url")} type="url" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Structured Data (JSON-LD)</Label>
+            <Textarea
+              value={form.structured_data}
+              onChange={(e) => setForm((prev) => ({ ...prev, structured_data: e.target.value }))}
+              rows={8}
+              className="font-mono text-xs"
+              placeholder='{"@context":"https://schema.org","@type":"WebPage"}'
+            />
+            <p className="text-xs text-muted-foreground">直接貼入 JSON-LD。適用於 landing page、FAQ、Article 或客製頁面。</p>
+          </div>
+          <div className="flex items-start justify-between rounded-lg border bg-muted/20 px-4 py-3">
+            <div className="space-y-1 pr-4">
+              <Label htmlFor="page-noindex">Noindex</Label>
+              <p className="text-xs text-muted-foreground">開啟後，頁面會要求搜尋引擎不要索引。適合活動過期頁、測試頁與暫存內容。</p>
+            </div>
+            <Switch
+              id="page-noindex"
+              checked={form.noindex}
+              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, noindex: checked }))}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

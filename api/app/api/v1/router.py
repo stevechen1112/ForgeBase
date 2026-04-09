@@ -16,6 +16,9 @@ from app.api.v1.endpoints import (
     events, visitors, contacts, rfqs, integrations, segments,
     seo_optimize, esp, analytics,
     ml_scoring, chat,
+    redirects, events, visitors, contacts, rfqs, integrations, segments,
+    seo_optimize, esp, analytics,
+    ml_scoring, chat, intake, site_profile,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router,
@@ -47,6 +50,7 @@ content_router.include_router(orphans.router)
 content_router.include_router(public_relations.router)
 content_router.include_router(preview.router)
 content_router.include_router(seo_optimize.router)  # /content/seo-optimize
+content_router.include_router(redirects.router)     # /content/redirects/* SEO redirect mgmt
 api_router.include_router(content_router)
 
 # Phase 1b: Tracking — /api/v1/tracking/
@@ -74,6 +78,12 @@ api_router.include_router(forms_router)
 
 # Chat MVP — /api/v1/chat/*
 api_router.include_router(chat.router)
+
+# Legacy Site Intake — /api/v1/intake/*
+api_router.include_router(intake.router)
+
+# Site Profile — /api/v1/site-profile
+api_router.include_router(site_profile.router)
 
 # Phase 1b: Admin utilities — /api/v1/admin/
 api_router.include_router(integrations.router)      # /admin/integrations/status

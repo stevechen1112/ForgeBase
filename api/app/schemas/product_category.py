@@ -11,6 +11,7 @@ class ProductCategoryCreate(BaseModel):
     slug: str = Field(max_length=60, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     description: Optional[str] = None
     image_url: Optional[str] = Field(default=None, max_length=500)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)
     parent_id: Optional[uuid.UUID] = None
     sort_order: int = Field(default=0, ge=0)
     seo_title: Optional[str] = Field(default=None, max_length=70)
@@ -24,6 +25,7 @@ class ProductCategoryUpdate(BaseModel):
     slug: Optional[str] = Field(default=None, max_length=60, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     description: Optional[str] = None
     image_url: Optional[str] = Field(default=None, max_length=500)
+    og_image_url: Optional[str] = Field(default=None, max_length=500)
     parent_id: Optional[uuid.UUID] = None
     sort_order: Optional[int] = Field(default=None, ge=0)
     seo_title: Optional[str] = Field(default=None, max_length=70)
@@ -38,6 +40,7 @@ class ProductCategoryRead(BaseModel):
     slug: str
     description: Optional[str]
     image_url: Optional[str]
+    og_image_url: Optional[str]
     parent_id: Optional[uuid.UUID]
     sort_order: int
     seo_title: Optional[str]

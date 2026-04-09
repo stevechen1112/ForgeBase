@@ -24,12 +24,15 @@ export function buildProductSchema(opts: {
   model?: string;      // model_number → used for mpn
   brand?: string;
   imageUrl?: string;
+  imageAlt?: string;
   url: string;
   // 2.3.3 extended fields
   specs?: Record<string, string>;
   certifications?: Array<{ cert_name: string; issuing_body?: string | null }>;
   alternatives?: Array<{ product_name: string; model_number?: string | null; slug: string; categorySlug?: string }>;
   siteUrl?: string;
+  /** Whether the product is in stock. Defaults to true. */
+  inStock?: boolean;
 }) {
   // Build additionalProperty: specs first, then certifications
   const additionalProperty: Record<string, unknown>[] = [];
@@ -67,8 +70,23 @@ export function buildProductSchema(opts: {
     description: opts.description,
     mpn: opts.model,
     brand: opts.brand ? { "@type": "Brand", name: opts.brand } : undefined,
-    image: opts.imageUrl ? [opts.imageUrl] : undefined,
+    image: opts.imageUrl
+      ? [{ "@type": "ImageObject", url: opts.imageUrl, description: opts.imageAlt ?? opts.name }]
+      : undefined,
     url: opts.url,
+    offers: {
+      "@type": "Offer",
+      url: opts.url,
+      availability: (opts.inStock ?? true)
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        description: "Contact for quotation",
+      },
+      seller: opts.brand ? { "@type": "Organization", name: opts.brand } : undefined,
+    },
     additionalProperty: additionalProperty.length > 0 ? additionalProperty : undefined,
     isSimilarTo: isSimilarTo?.length ? isSimilarTo : undefined,
   };

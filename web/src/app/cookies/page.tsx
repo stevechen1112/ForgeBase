@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
-  description: "Cookie usage policy for the NorthForge Tools website.",
+  description: `Cookie usage policy for the ${siteConfig.brandName} website.`,
 };
 
 export default function CookiesPage() {
@@ -21,7 +24,7 @@ export default function CookiesPage() {
       </section>
       <section className="py-14">
         <div className="prose prose-gray mx-auto max-w-4xl px-6">
-          <p>NorthForge Tools uses essential website cookies and limited analytics storage to support navigation, form submissions, and basic performance measurement.</p>
+          <p>{SITE_NAME} uses essential website cookies and limited analytics storage to support navigation, form submissions, and basic performance measurement.</p>
           <p>Cookies may be used to remember UI state, support request flows, and understand page usage trends. They are not used to sell behavioral data to third parties.</p>
           <p>You can manage cookies through your browser settings. Disabling some cookies may affect site functionality such as form persistence or gated downloads.</p>
         </div>

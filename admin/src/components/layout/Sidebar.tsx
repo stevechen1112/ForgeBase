@@ -7,7 +7,7 @@ import {
   Sparkles, Bot,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
-  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter,
+  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -69,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "AI / SEO",
     items: [
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
+      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2 },
     ],
   },
   {
@@ -100,6 +101,12 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, adminOnly: true },
       { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
+    ],
+  },
+  {
+    title: "網站導入",
+    items: [
+      { label: "Legacy Site Intake", href: "/dashboard/intake", icon: Globe, badge: "NEW" },
     ],
   },
   {

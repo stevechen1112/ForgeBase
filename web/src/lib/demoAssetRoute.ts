@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { siteConfig } from "@/lib/siteConfig";
 
 const SVG_WIDTH = 1600;
 const SVG_HEIGHT = 900;
@@ -62,7 +63,7 @@ function specForFilename(filename: string): VisualSpec {
 
   if (baseName.startsWith("homepage-hero") || baseName.startsWith("page-home")) {
     return {
-      eyebrow: "NorthForge Tools",
+      eyebrow: siteConfig.brandName,
       title: "Taiwan OEM Hand Tool Manufacturing",
       subtitle: "Professional tool programs for brands, distributors, and industrial buyers.",
       accent: "#1d4ed8",
@@ -140,7 +141,7 @@ function specForFilename(filename: string): VisualSpec {
 
   if (baseName.startsWith("logo-")) {
     return {
-      eyebrow: "NorthForge Tools",
+      eyebrow: siteConfig.brandName,
       title: "Brand Asset",
       subtitle: titleFromSlug(baseName.replace("logo-", "")),
       accent: "#1d4ed8",
@@ -241,7 +242,7 @@ function certificationBadgeSpec(filename: string): CertificationBadgeVisual {
 
   return {
     title: titleFromSlug(baseName.replace("cert-", "").replace(/-badge$/, "")),
-    kicker: "NorthForge Certification",
+    kicker: `${siteConfig.brandName} Certification`,
     shortCode: "NF",
     accent: "#0f766e",
     secondary: "#134e4a",
@@ -279,7 +280,7 @@ function buildCertificationBadgeSvg(filename: string, label: string): string {
   ${titleLines[2] ? `<text x="480" y="526" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="58" font-weight="800">${titleLines[2]}</text>` : ""}
   <rect x="218" y="590" width="524" height="78" rx="39" fill="${spec.accent}" fill-opacity="0.1" />
   <text x="480" y="638" text-anchor="middle" fill="${spec.secondary}" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1.2">${kicker}</text>
-  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">NorthForge Demo Certification Badge</text>
+  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">${siteConfig.brandName} Demo Certification Badge</text>
   <text x="480" y="768" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">${fileLabel}</text>
 </svg>`;
 }
@@ -320,7 +321,7 @@ function buildSvg(spec: VisualSpec, label: string): string {
   <circle cx="446" cy="446" r="18" fill="${spec.accent}" />
   <rect x="120" y="672" width="668" height="68" rx="18" fill="#0f172a" fill-opacity="0.06" />
   <text x="152" y="715" fill="#475569" font-family="Arial, sans-serif" font-size="20">${fileLabel}</text>
-  <text x="1010" y="214" fill="white" font-family="Arial, sans-serif" font-size="34" font-weight="700">NorthForge Demo Asset</text>
+  <text x="1010" y="214" fill="white" font-family="Arial, sans-serif" font-size="34" font-weight="700">${siteConfig.brandName} Demo Asset</text>
   <text x="1010" y="264" fill="white" fill-opacity="0.82" font-family="Arial, sans-serif" font-size="24">Served directly from repo source or generated fallback.</text>
 </svg>`;
 }
@@ -328,7 +329,7 @@ function buildSvg(spec: VisualSpec, label: string): string {
 function buildPdfBuffer(filename: string): Buffer {
   const spec = specForFilename(filename);
   const lines = [
-    "NorthForge Demo Document",
+    `${siteConfig.brandName} Demo Document`,
     spec.title,
     spec.subtitle,
     `Source: ${filename}`,
@@ -377,12 +378,13 @@ function buildPdfBuffer(filename: string): Buffer {
 
 function getAssetRootCandidates(): string[] {
   const cwd = process.cwd();
+  const folder = siteConfig.demoCompanyFolder;
   return [
-    path.join(cwd, "demo", "handtool-company", "assets"),
-    path.join(cwd, "..", "demo", "handtool-company", "assets"),
-    path.join(cwd, "..", "..", "demo", "handtool-company", "assets"),
-    path.join(cwd, "..", "..", "..", "demo", "handtool-company", "assets"),
-    path.join(cwd, "..", "..", "..", "..", "demo", "handtool-company", "assets"),
+    path.join(cwd, "demo", folder, "assets"),
+    path.join(cwd, "..", "demo", folder, "assets"),
+    path.join(cwd, "..", "..", "demo", folder, "assets"),
+    path.join(cwd, "..", "..", "..", "demo", folder, "assets"),
+    path.join(cwd, "..", "..", "..", "..", "demo", folder, "assets"),
   ];
 }
 
@@ -453,7 +455,7 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
 
 export function createFaviconSvg() {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NorthForge Tools">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${siteConfig.brandName}">
   <rect width="64" height="64" rx="14" fill="#0f172a"/>
   <rect x="10" y="10" width="44" height="44" rx="10" fill="#1d4ed8"/>
   <path d="M20 44V20h6l12 15V20h6v24h-6L26 29v15z" fill="white"/>

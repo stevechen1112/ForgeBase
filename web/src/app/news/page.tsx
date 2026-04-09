@@ -1,15 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "News & Updates",
-  description: "Latest company updates, manufacturing milestones, and product news from NorthForge Tools.",
+  description: `Latest company updates, manufacturing milestones, and product news from ${siteConfig.brandName}.`,
 };
 
 const NEWS = [
-  { date: "2026-02-10", title: "NorthForge expands insulated tool line for utility buyers", summary: "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
+  { date: "2026-02-10", title: `${SITE_NAME} expands insulated tool line for utility buyers`, summary: "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
   { date: "2025-11-22", title: "Factory calibration workflow upgraded for torque verification", summary: "Additional calibration checkpoints introduced to improve repeatability in high-volume torque wrench programs." },
-  { date: "2025-08-15", title: "NorthForge adds mixed-SKU export packing support", summary: "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." },
+  { date: "2025-08-15", title: `${SITE_NAME} adds mixed-SKU export packing support`, summary: "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." },
 ];
 
 export default function NewsPage() {

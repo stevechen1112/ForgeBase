@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
 
 export function getSiteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, "");
+  return siteConfig.siteUrl;
 }
 
 export function buildCanonicalUrl(path: string, locale?: string) {
@@ -24,7 +25,7 @@ export function buildLocaleAlternates(
 }
 
 export function buildDefaultMetadata(input?: Partial<Metadata>): Metadata {
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "ForgeBase";
+  const siteName = siteConfig.brandName;
   const siteUrl = getSiteUrl();
   return {
     metadataBase: new URL(siteUrl),
@@ -43,10 +44,34 @@ export function buildDefaultMetadata(input?: Partial<Metadata>): Metadata {
       title: siteName,
       description: "外銷製造商官網成長系統",
     },
+    twitter: {
+      card: "summary_large_image",
+      site: process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? undefined,
+      title: siteName,
+      description: "外銷製造商官網成長系統",
+    },
     robots: {
       index: true,
       follow: true,
     },
     ...input,
+  };
+}
+
+/**
+ * Build Twitter card metadata for a specific page.
+ * Merges with the caller's existing openGraph images so we don't duplicate data.
+ */
+export function buildTwitterMeta(opts: {
+  title: string;
+  description?: string;
+  imageUrl?: string | null;
+}): Metadata["twitter"] {
+  return {
+    card: "summary_large_image",
+    site: process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? undefined,
+    title: opts.title,
+    description: opts.description ?? undefined,
+    images: opts.imageUrl ? [opts.imageUrl] : undefined,
   };
 }

@@ -22,14 +22,13 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
-import { buildCanonicalUrl, buildLocaleAlternates, getSiteUrl } from "@/lib/seo";
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = { params: Promise<{ categorySlug: string; productSlug: string }> };
 
 const SITE_URL = getSiteUrl();
-const BRAND_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const BRAND_NAME = siteConfig.brandName;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
@@ -43,13 +42,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const localeVariants = await getProductLocales(product.slug).catch(() => []);
   const languages = buildLocaleAlternates(pagePath, localeVariants);
 
+  const title = product.seo_title ?? `${product.model_number} ${product.product_name}`;
+  const description = product.seo_description ?? product.short_description;
+  const ogImage = product.og_image_url ?? product.image_url ?? undefined;
+
   return {
-    title: product.seo_title ?? `${product.model_number} ${product.product_name}`,
-    description: product.seo_description ?? product.short_description,
+    title,
+    description,
     alternates: {
       canonical,
       languages,
     },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: product.image_alt ?? product.product_name }] : undefined,
+    },
+    twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
   };
 }
 
@@ -123,6 +133,8 @@ export default async function ProductDetailPage({ params }: Props) {
           description: product.short_description,
           model: product.model_number,
           brand: BRAND_NAME,
+          imageUrl: product.og_image_url ?? product.image_url ?? undefined,
+          imageAlt: product.image_alt ?? product.product_name,
           url: productUrl,
           siteUrl: SITE_URL,
           specs: specMap,
@@ -227,7 +239,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QUALITY_INSPECTION_IMAGE}
-                alt="NorthForge quality inspection workflow"
+                alt={`${BRAND_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -241,7 +253,7 @@ export default async function ProductDetailPage({ params }: Props) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={CUSTOM_PACKAGING_IMAGE}
-                alt="NorthForge private-label packaging support"
+                alt={`${BRAND_NAME} private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -407,7 +419,7 @@ export default async function ProductDetailPage({ params }: Props) {
         <div className="container mx-auto max-w-5xl px-6">
           <h2 className="text-xl font-semibold text-gray-900">Before You Submit Your RFQ</h2>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
-            Having these details ready helps NorthForge respond with accurate pricing, feasibility, and documentation scope in the first reply.
+            Having these details ready helps {BRAND_NAME} respond with accurate pricing, feasibility, and documentation scope in the first reply.
           </p>
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[

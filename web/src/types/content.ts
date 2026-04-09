@@ -5,6 +5,7 @@ export type ProductCategory = {
   slug: string;
   description: string | null;
   image_url: string | null;
+  og_image_url: string | null;
   parent_id: string | null;
   sort_order: number;
   seo_title: string | null;
@@ -22,8 +23,11 @@ export type Product = {
   full_description: string | null;
   specifications: string | null;   // JSON string
   category_id: string;
+  image_url?: string | null;
   seo_title: string | null;
   seo_description: string | null;
+  og_image_url: string | null;
+  image_alt: string | null;
   status: string;
   locale: string;
   is_featured: boolean;
@@ -40,6 +44,7 @@ export type Application = {
   challenge: string | null;
   solution: string | null;
   hero_image_url: string | null;
+  og_image_url: string | null;
   seo_title: string | null;
   seo_description: string | null;
   status: string;

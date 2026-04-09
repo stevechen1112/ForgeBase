@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Dealer Locator",
-  description: "Regional distributor and dealer support information for NorthForge Tools.",
+  description: `Regional distributor and dealer support information for ${siteConfig.brandName}.`,
 };
 
 const REGIONS = [
@@ -24,7 +27,7 @@ export default function DealersPage() {
             <span className="text-gray-600">Dealer Locator</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-900">Dealer Locator</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">NorthForge works with importers, distributors, and private-label partners across multiple regions, with routing based on product category, channel type, and market scope.</p>
+          <p className="mt-3 max-w-2xl text-gray-600">{SITE_NAME} works with importers, distributors, and private-label partners across multiple regions, with routing based on product category, channel type, and market scope.</p>
         </div>
       </section>
       <section className="py-14">
@@ -39,7 +42,7 @@ export default function DealersPage() {
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Need a regional contact?</h2>
-            <p className="mt-3 text-sm leading-relaxed text-blue-800">Contact sales@northforgetools.com with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team.</p>
+            <p className="mt-3 text-sm leading-relaxed text-blue-800">Contact {siteConfig.contactEmail} with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team.</p>
           </div>
         </div>
       </section>

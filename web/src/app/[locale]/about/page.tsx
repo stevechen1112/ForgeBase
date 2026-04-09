@@ -7,16 +7,15 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ABOUT_HERO_IMAGE } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 
 interface Props {
   params: Promise<{ locale: string }>;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const SITE_URL = siteConfig.siteUrl;
+const SITE_NAME = siteConfig.brandName;
 
 type CommonMessages = {
   home: string;

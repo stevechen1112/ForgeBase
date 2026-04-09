@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { productsApi, type Product } from "@/lib/api/content";
+import { categoriesApi, productsApi, redirectsApi, type Product } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,14 +40,19 @@ export default function ProductForm({ initial, id }: Props) {
     category_id: initial?.category_id ?? "",
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
+    og_image_url: initial?.og_image_url ?? "",
+    image_alt: initial?.image_alt ?? "",
     status: initial?.status ?? "draft",
     locale: initial?.locale ?? "en",
     publish_at: initial?.published_at
       ? new Date(initial.published_at as string).toISOString().slice(0, 16)
       : "",
   });
+  const initialSlug = useRef(initial?.slug ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectCreated, setRedirectCreated] = useState(false);
+  const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [localeVariants, setLocaleVariants] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -56,6 +61,16 @@ export default function ProductForm({ initial, id }: Props) {
       .then((res) => setLocaleVariants(res.data.filter((p: Product) => p.id !== id)))
       .catch(() => {/* non-critical */});
   }, [id, form.slug, token]);
+
+  useEffect(() => {
+    if (!token || !form.category_id) {
+      setCategorySlug(null);
+      return;
+    }
+    categoriesApi.get(token, form.category_id)
+      .then((res) => setCategorySlug(res.data.slug))
+      .catch(() => setCategorySlug(null));
+  }, [form.category_id, token]);
 
   const handleNameChange = (v: string) => {
     const autoSlug = v.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -80,8 +95,21 @@ export default function ProductForm({ initial, id }: Props) {
       if (form.status === "scheduled" && publish_at) {
         payload.published_at = new Date(publish_at).toISOString();
       }
-      if (id) { await productsApi.update(token, id, payload); }
-      else { await productsApi.create(token, payload); }
+      if (id) {
+        await productsApi.update(token, id, payload);
+        if (form.slug && initialSlug.current && form.slug !== initialSlug.current && categorySlug) {
+          try {
+            await redirectsApi.create(token, {
+              from_path: `/products/${categorySlug}/${initialSlug.current}`,
+              to_path: `/products/${categorySlug}/${form.slug}`,
+              status_code: 301,
+              is_active: true,
+              note: `Auto: product slug ${initialSlug.current} → ${form.slug}`,
+            });
+            setRedirectCreated(true);
+          } catch { /* non-critical */ }
+        }
+      } else { await productsApi.create(token, payload); }
       router.push("/dashboard/products");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
     finally { setSaving(false); }
@@ -90,6 +118,7 @@ export default function ProductForm({ initial, id }: Props) {
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+      {redirectCreated && <Alert><AlertDescription>✓ Slug 已更新，已自動建立 301 Redirect 規則</AlertDescription></Alert>}
 
       <Card>
         <CardHeader><CardTitle className="text-base">產品資訊</CardTitle></CardHeader>
@@ -203,6 +232,16 @@ export default function ProductForm({ initial, id }: Props) {
           <div className="space-y-1.5">
             <Label>SEO Description</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>OG Image URL</Label>
+            <Input {...f("og_image_url")} type="url" placeholder="https://.../product-og.jpg" />
+            <p className="text-xs text-muted-foreground">建議使用 1200 x 630 的分享圖，供 Open Graph / Twitter Card 使用。</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>主圖 Alt 文字</Label>
+            <Input {...f("image_alt")} maxLength={200} placeholder="例：VDE insulated screwdriver set for industrial maintenance" />
+            <p className="text-xs text-muted-foreground">這段文字會用於圖片 SEO、無障礙與結構化資料 ImageObject 描述。</p>
           </div>
         </CardContent>
       </Card>

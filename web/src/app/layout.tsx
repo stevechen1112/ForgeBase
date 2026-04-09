@@ -4,8 +4,12 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { buildDefaultMetadata } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { IndustrialHeader, IndustrialFooter } from "@/components/themes";
+
+const isIndustrial = siteConfig.layout === "industrial";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -20,7 +24,18 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme={siteConfig.theme}>
+      <head>
+        {/* Preconnect to CDN (Cloudflare R2) and Google services to reduce TTFB */}
+        <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_R2_HOSTNAME ?? "assets.example.com"}`} />
+        <link rel="dns-prefetch" href={`https://${process.env.NEXT_PUBLIC_R2_HOSTNAME ?? "assets.example.com"}`} />
+        {GA_ID && (
+          <>
+            <link rel="preconnect" href="https://www.googletagmanager.com" />
+            <link rel="preconnect" href="https://www.google-analytics.com" />
+          </>
+        )}
+      </head>
       <body className="flex min-h-screen flex-col">
         {/* GA4 — only injected when NEXT_PUBLIC_GA_MEASUREMENT_ID is set */}
         {GA_ID && (
@@ -41,9 +56,9 @@ export default async function RootLayout({
         )}
 
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Header />
+          {isIndustrial ? <IndustrialHeader /> : <Header />}
           <main className="flex-1">{children}</main>
-          <Footer />
+          {isIndustrial ? <IndustrialFooter /> : <Footer />}
         </NextIntlClientProvider>
       </body>
     </html>

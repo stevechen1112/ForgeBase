@@ -30,6 +30,14 @@ from app.models.tracking_session import TrackingSession
 from app.models.segment import Segment
 from app.models.chat import ChatSession, ChatMessage
 from app.models.integration_credential import IntegrationCredential
+from app.models.intake import (
+    IntakeProject,
+    IntakeUrlCandidate,
+    IntakeEntityCandidate,
+    IntakeRedirectCandidate,
+    IntakeBriefCandidate,
+)
+from app.models.site_profile import SiteProfile
 
 __all__ = [
     "ProductApplicationLink",
@@ -62,4 +70,10 @@ __all__ = [
     "Segment",
     "ChatSession",
     "ChatMessage",
+    "IntakeProject",
+    "IntakeUrlCandidate",
+    "IntakeEntityCandidate",
+    "IntakeRedirectCandidate",
+    "IntakeBriefCandidate",
+    "SiteProfile",
 ]

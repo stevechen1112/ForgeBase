@@ -5,14 +5,15 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "Find answers to common questions about NorthForge MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation.",
+    `Find answers to common questions about ${siteConfig.brandName} MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation.`,
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const SITE_URL = siteConfig.siteUrl;
 
 export default async function FAQPage() {
   const faqs = await getPublishedFAQs("en");

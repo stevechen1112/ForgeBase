@@ -1,0 +1,26 @@
+{
+  "package": "king-a-intake-demo",
+  "company_name": "欣榮貿易有限公司 (King-A Trading Co., Ltd.)",
+  "locale": "zh-TW",
+  "status": "intake-generated",
+  "source_url": "https://king-a.com.tw/",
+  "intake_date": "2026-03-31",
+  "targets": {
+    "product_categories": 6,
+    "products": 30,
+    "applications": 4,
+    "faq_items": 10,
+    "pages": 4
+  },
+  "content_files": [
+    "../content/01-company-blueprint.md"
+  ],
+  "completed_outputs": [
+    "categories.json",
+    "products.json",
+    "applications.json",
+    "faq-items.json",
+    "pages.json",
+    "relationships.json"
+  ]
+}

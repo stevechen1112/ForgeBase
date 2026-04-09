@@ -47,6 +47,7 @@ export type ProductCategory = {
   slug: string;
   description: string | null;
   image_url: string | null;
+  og_image_url: string | null;
   parent_id: string | null;
   sort_order: number;
   seo_title: string | null;
@@ -68,6 +69,8 @@ export type Product = {
   category_id: string;
   seo_title: string | null;
   seo_description: string | null;
+  og_image_url: string | null;
+  image_alt: string | null;
   status: string;
   locale: string;
   is_featured: boolean;
@@ -86,6 +89,7 @@ export type Application = {
   challenge: string | null;
   solution: string | null;
   hero_image_url: string | null;
+  og_image_url: string | null;
   seo_title: string | null;
   seo_description: string | null;
   status: string;
@@ -176,9 +180,24 @@ export type Page = {
   structured_data: string | null;
   locale: string;
   status: string;
+  noindex: boolean;
+  entity_type: string | null;
+  entity_id: string | null;
+  brief_id: string | null;
   created_at: string;
   updated_at: string;
   published_at: string | null;
+};
+
+export type RedirectRule = {
+  id: string;
+  from_path: string;
+  to_path: string;
+  status_code: 301 | 302;
+  is_active: boolean;
+  note: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type PageBrief = {
@@ -200,7 +219,6 @@ export type PageBrief = {
   created_at: string;
   updated_at: string;
 };
-
 // ── API client instances ──────────────────────────────────────────────────────
 const BASE = "/content";
 
@@ -233,7 +251,16 @@ export const capabilitiesApi = makeContentApi<Capability, Partial<Capability>, P
 export const ctasApi = makeContentApi<CTA, Partial<CTA>, Partial<CTA>>(`${BASE}/ctas`);
 export const pagesApi = makeContentApi<Page, Partial<Page>, Partial<Page>>(`${BASE}/pages`);
 export const briefsApi = makeContentApi<PageBrief, Partial<PageBrief>, Partial<PageBrief>>(`${BASE}/briefs`);
-
+export const redirectsApi = {
+  list: (token: string, activeOnly = false) =>
+    apiClient.get<RedirectRule[]>(`${BASE}/redirects?active_only=${String(activeOnly)}`, token),
+  create: (token: string, payload: Partial<RedirectRule>) =>
+    apiClient.post<RedirectRule>(`${BASE}/redirects`, payload, token),
+  update: (token: string, id: string, payload: Partial<RedirectRule>) =>
+    apiClient.patch<RedirectRule>(`${BASE}/redirects/${id}`, payload, token),
+  delete: (token: string, id: string) =>
+    apiClient.del<void>(`${BASE}/redirects/${id}`, token),
+};
 // ── Preview Token (1a.6.4) ────────────────────────────────────────────────────
 export const previewApi = {
   createToken: (token: string, pageId: string) =>
@@ -331,27 +358,4 @@ export const assetsApi = {
     apiClient.del<void>(`${BASE}/assets/${id}`, token),
   updateAlt: (token: string, id: string, altText: string) =>
     apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, { alt_text: altText }, token),
-};
-
-// ── SEO Redirects ─────────────────────────────────────────────────────────────
-export type RedirectRule = {
-  id: string;
-  from_path: string;
-  to_path: string;
-  status_code: 301 | 302;
-  is_active: boolean;
-  note: string;
-  created_at: string;
-  updated_at: string;
-};
-
-export const redirectsApi = {
-  list: (token: string, activeOnly = false) =>
-    apiClient.get<RedirectRule[]>(`${BASE}/redirects?active_only=${String(activeOnly)}`, token),
-  create: (token: string, payload: Partial<RedirectRule>) =>
-    apiClient.post<RedirectRule>(`${BASE}/redirects`, payload, token),
-  update: (token: string, id: string, payload: Partial<RedirectRule>) =>
-    apiClient.patch<RedirectRule>(`${BASE}/redirects/${id}`, payload, token),
-  delete: (token: string, id: string) =>
-    apiClient.del<void>(`${BASE}/redirects/${id}`, token),
 };

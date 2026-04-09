@@ -11,6 +11,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
 
 type RFQPageMessages = {
   metadata: {
@@ -29,9 +30,7 @@ type RFQPageMessages = {
   responseWindowHours: string;
 };
 
-const BRAND = process.env.NEXT_PUBLIC_SITE_NAME === "ForgeBase"
-  ? "NorthForge Tools"
-  : (process.env.NEXT_PUBLIC_SITE_NAME || "NorthForge Tools");
+const BRAND = siteConfig.brandName;
 
 interface Props {
   params: Promise<{ locale: string }>;

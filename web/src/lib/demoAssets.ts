@@ -1,6 +1,7 @@
 import type { Product, ProductCategory } from "@/types/content";
+import { siteConfig } from "@/lib/siteConfig";
 
-const GENERATED_BASE = "/demo/handtool-company/assets/generated";
+const GENERATED_BASE = `${siteConfig.assetBase}/generated`;
 const V = "?v=2"; // cache-buster: bump to force browser refresh
 
 export const HOME_HERO_IMAGE = `${GENERATED_BASE}/homepage-hero-northforge-manufacturer.png${V}`;

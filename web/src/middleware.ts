@@ -3,7 +3,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 
 const intlMiddleware = createMiddleware(routing);
-
 const PUBLIC_FILE_PATH = /\/[^/]+\.[^/]+$/;
 
 const API_BASE =
@@ -23,9 +22,7 @@ function shouldBypassMiddleware(pathname: string) {
  * SEO Redirect middleware — resolves 301/302 rules stored in the database
  * before the i18n middleware handles locale routing.
  */
-async function resolveRedirect(
-  request: NextRequest
-): Promise<NextResponse | null> {
+async function resolveRedirect(request: NextRequest): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl;
 
   if (shouldBypassMiddleware(pathname)) {

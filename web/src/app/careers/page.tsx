@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
+
+const SITE_NAME = siteConfig.brandName;
 
 export const metadata: Metadata = {
   title: "Careers",
-  description: "Career opportunities and hiring information for NorthForge Tools.",
+  description: `Career opportunities and hiring information for ${siteConfig.brandName}.`,
 };
 
 const OPENINGS = [
@@ -24,7 +27,7 @@ export default function CareersPage() {
             <span className="text-gray-600">Careers</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-900">Careers</h1>
-          <p className="mt-3 max-w-2xl text-gray-600">NorthForge hires across sales, quality, packaging, manufacturing coordination, and export operations to support real B2B tool programs.</p>
+          <p className="mt-3 max-w-2xl text-gray-600">{SITE_NAME} hires across sales, quality, packaging, manufacturing coordination, and export operations to support real B2B tool programs.</p>
         </div>
       </section>
       <section className="py-14">

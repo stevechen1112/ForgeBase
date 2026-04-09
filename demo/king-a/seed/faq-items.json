@@ -1,0 +1,82 @@
+[
+  {
+    "question": "欣榮貿易是 Panasonic 焊接設備的授權代理嗎？",
+    "answer": "<p>是的，欣榮貿易是 Panasonic 焊接設備在台灣的授權代理商，提供正廠零件、技術支援與售後維修服務。</p>",
+    "category_tag": "公司",
+    "locale": "zh-TW",
+    "sort_order": 10,
+    "status": "published"
+  },
+  {
+    "question": "TAWERS 焊接機械手臂和外置焊機型機械手臂有什麼差異？",
+    "answer": "<p>TAWERS 系列採用焊機內建一體化設計，焊接電源與控制器整合，通訊延遲更低、電弧控制更精準。外置焊機型（G4 控制器）則允許搭配不同品牌或規格的外置焊接電源，適合已有既有焊機或有特殊焊接需求的用戶。</p>",
+    "category_tag": "機械手臂",
+    "locale": "zh-TW",
+    "sort_order": 20,
+    "status": "published"
+  },
+  {
+    "question": "如何選擇適合的焊接機？CO2/MAG、MIG、TIG 有什麼不同？",
+    "answer": "<p>CO2/MAG 焊接適合碳鋼的量產焊接，效率高成本低。MIG（脈波）焊接適合不銹鋼與鋁合金，焊道品質更好。TIG 焊接適合薄板與外觀要求高的精密焊接，速度較慢但品質最佳。建議聯繫我們的技術團隊，依據您的材質、產量與品質需求推薦最適方案。</p>",
+    "category_tag": "焊接機",
+    "locale": "zh-TW",
+    "sort_order": 30,
+    "status": "published"
+  },
+  {
+    "question": "導入焊接機械手臂需要多長時間？",
+    "answer": "<p>從需求評估到設備交付與調試，一般需要 2-4 個月。包含現場評估、方案設計、設備製造、安裝調試與操作員教育訓練。複雜的自動化產線可能需要更長時間。我們提供完整的專案管理支援。</p>",
+    "category_tag": "導入",
+    "locale": "zh-TW",
+    "sort_order": 40,
+    "status": "published"
+  },
+  {
+    "question": "DTPS 離線教導系統可以減少多少停機時間？",
+    "answer": "<p>使用 DTPS 離線教導系統，新工件的教導作業可在電腦上完成，不需要停止現有產線。相較於直接在機器人上教導，可減少 50-70% 的設備停機時間，大幅提升設備稼動率。</p>",
+    "category_tag": "軟體",
+    "locale": "zh-TW",
+    "sort_order": 50,
+    "status": "published"
+  },
+  {
+    "question": "焊接機械手臂的維修與保養如何處理？",
+    "answer": "<p>欣榮貿易提供完整的售後服務，包含定期保養、故障排除、零件更換與緊急維修。我們備有 Panasonic 正廠零件庫存，確保最短的設備停機時間。也提供預防性保養合約，定期檢查確保設備最佳狀態。</p>",
+    "category_tag": "售後服務",
+    "locale": "zh-TW",
+    "sort_order": 60,
+    "status": "published"
+  },
+  {
+    "question": "手持式雷射焊接機和傳統 TIG 焊接有什麼區別？",
+    "answer": "<p>手持式雷射焊接速度更快（約為 TIG 的 3-5 倍），熱影響區更小，焊道更美觀且通常不需要後續打磨。但設備成本較高，且不適合所有材質與板厚。TIG 焊接則適用範圍更廣、設備較經濟。建議依據您的加工需求評估。</p>",
+    "category_tag": "雷射",
+    "locale": "zh-TW",
+    "sort_order": 70,
+    "status": "published"
+  },
+  {
+    "question": "CHEMTECH 工業接著劑有哪些種類？",
+    "answer": "<p>CHEMTECH 系列包含螺絲固定劑（L-391B 中強度、L-305 高強度、L-303 低強度）與密封矽膠（S-284G、S-282W、S-281W）。依據您的應用場景（螺絲防鬆、管路密封、接合面密封等）選擇適合的型號。</p>",
+    "category_tag": "接著劑",
+    "locale": "zh-TW",
+    "sort_order": 80,
+    "status": "published"
+  },
+  {
+    "question": "是否提供焊接設備的操作員訓練？",
+    "answer": "<p>是的，欣榮貿易提供完整的操作員教育訓練服務，涵蓋設備操作、焊接參數調整、日常保養與基礎故障排除。機械手臂的訓練還包含基礎教導與程式修改。訓練可在我們的展示中心或客戶現場進行。</p>",
+    "category_tag": "服務",
+    "locale": "zh-TW",
+    "sort_order": 90,
+    "status": "published"
+  },
+  {
+    "question": "如何詢價或安排設備展示？",
+    "answer": "<p>您可以透過網站的聯絡表單、電話或 Email 聯繫我們。請提供您的焊接需求（材質、板厚、產量、品質要求等），我們的技術團隊會在 1-2 個工作天內回覆初步建議與報價。也歡迎預約到展示中心實際觀看設備運作。</p>",
+    "category_tag": "詢價",
+    "locale": "zh-TW",
+    "sort_order": 100,
+    "status": "published"
+  }
+]
