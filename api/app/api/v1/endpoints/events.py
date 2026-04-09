@@ -167,10 +167,6 @@ async def _upsert_visitor(
     visitor.last_activity_at = now
     visitor.updated_at = now
 
-    # Store IP for later resolution (2.1.2)
-    if client_ip and visitor.last_seen_ip != client_ip:
-        visitor.last_seen_ip = client_ip
-
     if event.page_type == "product" or event.event_name == "page_view":
         visitor.total_page_views += 1
     if event.device_type and not visitor.device_type:
@@ -276,13 +272,6 @@ async def receive_event(
 
     await db.commit()
 
-    # 2.1.2 IP-to-Company: schedule IP resolution if visitor has no account yet
-    if body.visitor_id and client_ip:
-        visitor_for_ip = await db.get(Visitor, body.visitor_id)
-        if visitor_for_ip and visitor_for_ip.account_id is None and visitor_for_ip.ip_resolved_at is None:
-            from app.api.v1.endpoints.accounts import _resolve_and_link
-            background_tasks.add_task(_resolve_and_link, body.visitor_id, client_ip)
-
     # 1b.3.5 Intent trigger: fire sales alert on stage escalation to hot/sales_ready
     if body.visitor_id and new_score is not None and new_stage in ("hot", "sales_ready"):
         if should_alert(old_stage, new_stage):
@@ -305,18 +294,7 @@ async def receive_event(
                         "new_stage":   new_stage,
                         "intent_score": new_score,
                     })
-                    # 2.1.4 Trigger nurture sequences for intent stage change
-                    try:
-                        from app.api.v1.endpoints.nurture import trigger_nurture_for_contact
-                        asyncio.create_task(
-                            trigger_nurture_for_contact(
-                                visitor_for_hook.contact_id,
-                                "intent_stage",
-                                new_stage,
-                            )
-                        )
-                    except Exception:
-                        pass
+                    # Nurture engine removed
             except Exception:
                 pass
 

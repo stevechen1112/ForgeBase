@@ -123,17 +123,3 @@ async def send_email(
     return await _send_via_resend(to, subject, html_body, text_body, from_field)
 
 
-async def send_nurture_step(contact, step) -> bool:
-    """
-    Send a nurture sequence step email to a contact.
-    contact: Contact model instance
-    step: NurtureStep model instance
-    """
-    return await send_email(
-        to=contact.email,
-        subject=step.subject,
-        html_body=step.html_body,
-        text_body=step.text_body,
-        from_name=step.from_name,
-        from_email=step.from_email,
-    )

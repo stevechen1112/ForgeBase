@@ -129,7 +129,6 @@ class ContentAssetRead(BaseModel):
     title: str | None
     is_indexable: bool = False
     seo_title: str | None = None
-    requires_gate: bool = False
     product_id: uuid.UUID | None
     page_id: uuid.UUID | None
     uploaded_by: uuid.UUID
@@ -276,7 +275,6 @@ class AssetUpdate(BaseModel):
     title: str | None = None
     is_indexable: bool | None = None
     seo_title: str | None = None
-    requires_gate: bool | None = None
 
 
 @router.patch("/{asset_id}", response_model=ContentAssetRead)
@@ -297,56 +295,7 @@ async def update_asset(
         asset.is_indexable = payload.is_indexable
     if payload.seo_title is not None:
         asset.seo_title = payload.seo_title
-    if payload.requires_gate is not None:
-        asset.requires_gate = payload.requires_gate
     session.add(asset)
     await session.commit()
     await session.refresh(asset)
     return ContentAssetRead.model_validate(asset)
-
-
-# ── Public: indexed documents (2.3.2) ─────────────────────────────────────────
-
-class IndexedDocRead(BaseModel):
-    id: uuid.UUID
-    title: str | None
-    seo_title: str | None
-    public_url: str
-    mime_type: str
-    file_size_bytes: int
-    requires_gate: bool = False
-    product_id: uuid.UUID | None
-    created_at: datetime
-
-
-@router.get("/public/indexed-docs", response_model=list[IndexedDocRead], tags=["Public Assets"])
-async def list_indexed_documents(
-    product_id: str | None = Query(default=None),
-    session: AsyncSession = Depends(get_session),
-):
-    """Public endpoint: returns all PDFs marked as is_indexable, optionally filtered by product."""
-    q = select(ContentAsset).where(
-        ContentAsset.is_indexable == True,  # noqa: E712
-        ContentAsset.asset_type == "pdf",
-    )
-    if product_id:
-        try:
-            q = q.where(ContentAsset.product_id == uuid.UUID(product_id))
-        except ValueError:
-            raise HTTPException(status_code=422, detail="Invalid product_id format")
-    items = (
-        await session.exec(q.order_by(ContentAsset.created_at.desc()))
-    ).all()
-    return [
-        IndexedDocRead(
-            id=a.id,
-            title=a.title,
-            seo_title=a.seo_title,
-            public_url=a.public_url,
-            mime_type=a.mime_type,
-            file_size_bytes=a.file_size_bytes,
-            product_id=a.product_id,
-            created_at=a.created_at,
-        )
-        for a in items
-    ]

@@ -201,118 +201,6 @@ export type PageBrief = {
   updated_at: string;
 };
 
-export type SEOEvaluationCheck = {
-  id: string;
-  label: string;
-  status: "good" | "warning" | "critical";
-  message: string;
-};
-
-export type SEOEvaluationSuggestion = {
-  id: string;
-  title: string;
-  detail: string;
-  priority: "high" | "medium" | "low";
-  field?: string;
-  suggested_value?: string | null;
-};
-
-export type SEOEvaluation = {
-  entity_type: string;
-  entity_label: string;
-  entity_name: string;
-  score: number;
-  status: "healthy" | "needs-work" | "critical";
-  summary: string;
-  focus_keywords: string[];
-  search_preview: {
-    title: string;
-    description: string;
-    url: string;
-  };
-  checks: SEOEvaluationCheck[];
-  suggestions: SEOEvaluationSuggestion[];
-  recommended: {
-    seo_title: string;
-    seo_description: string;
-    canonical_url: string;
-  };
-};
-
-export type SEOHealthTask = {
-  id: string;
-  title: string;
-  description: string;
-  count: number;
-  impact: string;
-  entity_types: string[];
-};
-
-export type SEOHealthEntity = {
-  id: string;
-  entity_type: string;
-  name: string;
-  score: number;
-  status: "healthy" | "needs-work" | "critical";
-  url: string;
-  focus_keywords: string[];
-  top_issue: string;
-};
-
-export type SEOHealthResponse = {
-  summary: {
-    total_entities: number;
-    healthy: number;
-    needs_work: number;
-    critical: number;
-    avg_score: number;
-    published_pages: number;
-    published_products: number;
-    published_categories: number;
-    published_applications: number;
-  };
-  tasks: SEOHealthTask[];
-  entities: SEOHealthEntity[];
-};
-
-export type SEOLinkOpportunity = {
-  source_type: string;
-  source_name: string;
-  source_url: string;
-  target_type: string;
-  target_name: string;
-  target_url: string;
-  reason: string;
-  confidence: string;
-};
-
-export type SEOLinksResponse = {
-  count: number;
-  suggestions: SEOLinkOpportunity[];
-};
-
-export type SEORevenueRow = {
-  page_id: string;
-  page_type: string;
-  page_name: string;
-  page_views: number;
-  unique_visitors: number;
-  rfq_count: number;
-  avg_intent_score: number;
-  conversion_rate: number;
-};
-
-export type SEORevenueResponse = {
-  summary: {
-    total_views: number;
-    total_rfq: number;
-    pages_with_rfq: number;
-    avg_conversion_rate: number;
-  };
-  top_converters: SEORevenueRow[];
-  underperformers: SEORevenueRow[];
-};
-
 // ── API client instances ──────────────────────────────────────────────────────
 const BASE = "/content";
 
@@ -345,17 +233,6 @@ export const capabilitiesApi = makeContentApi<Capability, Partial<Capability>, P
 export const ctasApi = makeContentApi<CTA, Partial<CTA>, Partial<CTA>>(`${BASE}/ctas`);
 export const pagesApi = makeContentApi<Page, Partial<Page>, Partial<Page>>(`${BASE}/pages`);
 export const briefsApi = makeContentApi<PageBrief, Partial<PageBrief>, Partial<PageBrief>>(`${BASE}/briefs`);
-
-export const seoWorkbenchApi = {
-  evaluate: (token: string, payload: { entity_type: string; data: Record<string, unknown> }) =>
-    apiClient.post<SEOEvaluation>(`${BASE}/seo-audit/evaluate`, payload, token),
-  health: (token: string) =>
-    apiClient.get<SEOHealthResponse>(`${BASE}/seo-audit/health`, token),
-  links: (token: string, limit = 20) =>
-    apiClient.get<SEOLinksResponse>(`${BASE}/seo-audit/links?limit=${limit}`, token),
-  revenue: (token: string, days = 30) =>
-    apiClient.get<SEORevenueResponse>(`${BASE}/seo-audit/revenue?days=${days}`, token),
-};
 
 // ── Preview Token (1a.6.4) ────────────────────────────────────────────────────
 export const previewApi = {
@@ -436,7 +313,6 @@ export type ContentAsset = {
   title: string | null;
   is_indexable: boolean;
   seo_title: string | null;
-  requires_gate: boolean;
   entity_type: string | null;
   entity_id: string | null;
   locale: string;
@@ -455,6 +331,27 @@ export const assetsApi = {
     apiClient.del<void>(`${BASE}/assets/${id}`, token),
   updateAlt: (token: string, id: string, altText: string) =>
     apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, { alt_text: altText }, token),
-  toggleGate: (token: string, id: string, requiresGate: boolean) =>
-    apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, { requires_gate: requiresGate }, token),
+};
+
+// ── SEO Redirects ─────────────────────────────────────────────────────────────
+export type RedirectRule = {
+  id: string;
+  from_path: string;
+  to_path: string;
+  status_code: 301 | 302;
+  is_active: boolean;
+  note: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export const redirectsApi = {
+  list: (token: string, activeOnly = false) =>
+    apiClient.get<RedirectRule[]>(`${BASE}/redirects?active_only=${String(activeOnly)}`, token),
+  create: (token: string, payload: Partial<RedirectRule>) =>
+    apiClient.post<RedirectRule>(`${BASE}/redirects`, payload, token),
+  update: (token: string, id: string, payload: Partial<RedirectRule>) =>
+    apiClient.patch<RedirectRule>(`${BASE}/redirects/${id}`, payload, token),
+  delete: (token: string, id: string) =>
+    apiClient.del<void>(`${BASE}/redirects/${id}`, token),
 };

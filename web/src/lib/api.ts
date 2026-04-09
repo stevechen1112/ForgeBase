@@ -148,6 +148,16 @@ export async function getProductBySlug(slug: string, locale = "en"): Promise<Pro
   return res.data[0] ?? null;
 }
 
+export async function getProductLocales(slug: string): Promise<Array<{ locale: string }>> {
+  const res = await apiFetch<ListResponse<Product>>(
+    `/content/products?slug=${slug}&page_size=20`,
+    emptyListResponse<Product>()
+  );
+  return Array.from(
+    new Set(res.data.map((item) => item.locale).filter(Boolean))
+  ).map((locale) => ({ locale }));
+}
+
 export async function getPublishedProducts(
   locale = "en",
   page = 1,
@@ -215,6 +225,16 @@ export async function getApplicationBySlug(slug: string, locale = "en"): Promise
     emptyListResponse<Application>()
   );
   return res.data[0] ?? null;
+}
+
+export async function getApplicationLocales(slug: string): Promise<Array<{ locale: string }>> {
+  const res = await apiFetch<ListResponse<Application>>(
+    `/content/applications?slug=${slug}&page_size=20`,
+    emptyListResponse<Application>()
+  );
+  return Array.from(
+    new Set(res.data.map((item) => item.locale).filter(Boolean))
+  ).map((locale) => ({ locale }));
 }
 
 export async function getPublishedCertifications(locale = "en"): Promise<Certification[]> {
@@ -361,22 +381,6 @@ export async function getProductRelatedFAQs(
     []
   );
 }
-
-export interface LocaleVariant {
-  id: string;
-  locale: string;
-  product_name?: string;
-  application_name?: string;
-}
-
-export async function getProductLocales(slug: string): Promise<LocaleVariant[]> {
-  return apiFetch<LocaleVariant[]>(`/content/public/products/${slug}/locales`, []);
-}
-
-export async function getApplicationLocales(slug: string): Promise<LocaleVariant[]> {
-  return apiFetch<LocaleVariant[]>(`/content/public/applications/${slug}/locales`, []);
-}
-
 export async function getProductAlternatives(
   productId: string
 ): Promise<PublicRelatedProduct[]> {
@@ -384,26 +388,6 @@ export async function getProductAlternatives(
     `/content/public/products/${productId}/alternatives`,
     []
   );
-}
-
-export interface IndexedDoc {
-  id: string;
-  title: string | null;
-  seo_title: string | null;
-  public_url: string;
-  mime_type: string;
-  file_size_bytes: number;
-  requires_gate: boolean;
-  product_id: string | null;
-  created_at: string;
-}
-
-export async function getIndexedDocuments(): Promise<IndexedDoc[]> {
-  return apiFetch<IndexedDoc[]>("/content/assets/public/indexed-docs", []);
-}
-
-export async function getProductIndexedDocs(productId: string): Promise<IndexedDoc[]> {
-  return apiFetch<IndexedDoc[]>(`/content/assets/public/indexed-docs?product_id=${productId}`, []);
 }
 
 export async function getApplicationRelatedFAQs(

@@ -30,7 +30,7 @@ export default function CapabilitiesListPage() {
   const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
-    const params: Record<string, unknown> = { page, page_size: 20 };
+    const params: Record<string, string | number> = { page, page_size: 20 };
     if (localeFilter) params.locale = localeFilter;
     capabilitiesApi.list(token, params).then((res) => {
       setRows(res.data); setTotalPages(res.meta.total_pages);

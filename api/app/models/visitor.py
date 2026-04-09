@@ -37,11 +37,6 @@ class Visitor(SQLModel, table=True):
     # Identity: linked contact after form submission
     contact_id: Optional[uuid.UUID] = Field(default=None, foreign_key="contacts.id")
 
-    # IP-to-Company: linked account after IP resolution (2.1.2)
-    account_id: Optional[uuid.UUID] = Field(default=None, foreign_key="accounts.id", index=True)
-    last_seen_ip: Optional[str] = Field(default=None, max_length=45)
-    ip_resolved_at: Optional[datetime] = Field(default=None)
-
     # Stage change alert flags
     stage_alert_sent: bool = Field(default=False)
     # Reset when stage changes, set after alert is sent

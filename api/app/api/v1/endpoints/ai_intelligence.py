@@ -5,10 +5,8 @@ Phase 3 AI Intelligence Endpoints
 3.1.2  POST /tracking/rfqs/{rfq_id}/draft-reply       — AI draft reply email
 3.1.3  POST /content/intelligence/optimize            — AI content optimizer
 3.1.4  GET  /tracking/visitors/{visitor_id}/recommend-cta — CTA recommendation
-3.2.3  GET  /tracking/accounts/{account_id}/insight   — Account-level insight
 3.3.1  GET  /content/dynamic-cta                      — Dynamic CTA for visitor
-3.3.2  POST /nurture/sequences/{seq_id}/optimize      — Nurture path optimizer
-3.3.3  GET  /content/products/{product_id}/recommend-relations
+3.3.2  GET  /content/products/{product_id}/recommend-relations
        GET  /content/applications/{app_id}/recommend-relations
 """
 import uuid
@@ -28,7 +26,6 @@ from app.services.ai_rfq import analyze_rfq, generate_rfq_reply_draft
 from app.services.content_optimizer import optimize_content
 from app.services.ai_recommend import recommend_cta_for_visitor
 from app.services.dynamic_cta import select_dynamic_cta
-from app.services.nurture_optimizer import optimize_nurture_sequence
 from app.services.relation_recommender import recommend_relations
 
 # ── Routers (paths already include full prefix segment) ───────────────────────
@@ -37,7 +34,6 @@ from app.services.relation_recommender import recommend_relations
 rfq_ai_router = APIRouter(tags=["AI Intelligence: RFQ"])
 content_ai_router = APIRouter(tags=["AI Intelligence: Content"])
 visitor_ai_router = APIRouter(tags=["AI Intelligence: Visitors"])
-nurture_ai_router = APIRouter(tags=["AI Intelligence: Nurture"])
 
 
 # ── 3.1.1  AI RFQ Analysis ───────────────────────────────────────────────────
@@ -266,145 +262,6 @@ async def recommend_cta_endpoint(
     return await recommend_cta_for_visitor(visitor_profile, ctas, page_context)
 
 
-# ── 3.2.3  Account-level Insight ──────────────────────────────────────────────
-
-@visitor_ai_router.get("/tracking/accounts/{account_id}/insight")
-async def account_insight_endpoint(
-    account_id: uuid.UUID,
-    period_days: int = Query(30, ge=7, le=365),
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Aggregate behavioral insight for all visitors from a company account.
-    Combines intent data, product interest, RFQ history for account-level view.
-    """
-    # Fetch account
-    acct_sql = text("""
-        SELECT id::text, company_name, domain, industry, employee_count_range,
-               country, enrichment_status
-        FROM accounts WHERE id = :id
-    """)
-    acct_result = await session.execute(acct_sql, {"id": account_id})
-    account = acct_result.mappings().first()
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    # Aggregate visitor stats
-    visitor_stats_sql = text("""
-        SELECT
-            COUNT(*) AS visitor_count,
-            AVG(intent_score) AS avg_intent_score,
-            MAX(intent_score) AS max_intent_score,
-            SUM(total_page_views) AS total_page_views,
-            MAX(last_activity_at) AS last_activity,
-            COUNT(*) FILTER (WHERE intent_stage = 'hot') AS hot_visitors,
-            COUNT(*) FILTER (WHERE intent_stage = 'sales_ready') AS sales_ready_visitors,
-            COUNT(*) FILTER (WHERE intent_stage = 'warm') AS warm_visitors
-        FROM visitors
-        WHERE account_id = :account_id
-    """)
-    vstats_result = await session.execute(visitor_stats_sql, {"account_id": account_id})
-    vstats = vstats_result.mappings().first() or {}
-
-    # RFQ count from this account
-    rfq_sql = text("""
-        SELECT COUNT(*) AS rfq_count, MAX(r.created_at) AS last_rfq_date
-        FROM rfq_requests r
-        JOIN visitors v ON r.visitor_id = v.visitor_id
-        WHERE v.account_id = :account_id
-          AND r.created_at > NOW() - (:days || ' days')::interval
-    """)
-    rfq_result = await session.execute(rfq_sql, {"account_id": account_id, "days": period_days})
-    rfq_data = rfq_result.mappings().first() or {}
-
-    # Spec downloads
-    dl_sql = text("""
-        SELECT COUNT(*) AS spec_downloads
-        FROM tracking_events e
-        JOIN visitors v ON e.visitor_id = v.visitor_id
-        WHERE v.account_id = :account_id
-          AND e.event_name = 'spec_download'
-          AND e.created_at > NOW() - (:days || ' days')::interval
-    """)
-    dl_result = await session.execute(dl_sql, {"account_id": account_id, "days": period_days})
-    dl_data = dl_result.mappings().first() or {}
-
-    # Top 5 products viewed by account visitors
-    top_products_sql = text("""
-        SELECT
-            e.properties->>'product_name' AS product_name,
-            COUNT(*) AS view_count
-        FROM tracking_events e
-        JOIN visitors v ON e.visitor_id = v.visitor_id
-        WHERE v.account_id = :account_id
-          AND e.event_name = 'product_view'
-          AND e.properties->>'product_name' IS NOT NULL
-          AND e.created_at > NOW() - (:days || ' days')::interval
-        GROUP BY product_name
-        ORDER BY view_count DESC
-        LIMIT 5
-    """)
-    top_prods_result = await session.execute(
-        top_products_sql, {"account_id": account_id, "days": period_days}
-    )
-    top_products = [dict(r) for r in top_prods_result.mappings().all()]
-
-    # Opportunity assessment
-    max_intent = int(vstats.get("max_intent_score") or 0)
-    rfq_count = int(rfq_data.get("rfq_count") or 0)
-    spec_dl = int(dl_data.get("spec_downloads") or 0)
-    last_activity = vstats.get("last_activity")
-    days_since_active: Optional[float] = None
-    if last_activity:
-        if isinstance(last_activity, datetime):
-            days_since_active = (datetime.now(timezone.utc) - last_activity).days
-        else:
-            try:
-                la = datetime.fromisoformat(str(last_activity))
-                if la.tzinfo is None:
-                    la = la.replace(tzinfo=timezone.utc)
-                days_since_active = (datetime.now(timezone.utc) - la).days
-            except Exception:
-                pass
-
-    if rfq_count > 0:
-        opportunity_tier = "active_deal"
-    elif max_intent >= 30 or spec_dl >= 3:
-        opportunity_tier = "high_potential"
-    elif max_intent >= 10 or spec_dl >= 1:
-        opportunity_tier = "nurture"
-    elif days_since_active and days_since_active > 60:
-        opportunity_tier = "re_engage"
-    else:
-        opportunity_tier = "cold"
-
-    return {
-        "account": dict(account),
-        "visitor_summary": {
-            "total_visitors": int(vstats.get("visitor_count") or 0),
-            "avg_intent_score": round(float(vstats.get("avg_intent_score") or 0), 1),
-            "max_intent_score": max_intent,
-            "total_page_views": int(vstats.get("total_page_views") or 0),
-            "hot_visitors": int(vstats.get("hot_visitors") or 0),
-            "sales_ready_visitors": int(vstats.get("sales_ready_visitors") or 0),
-            "warm_visitors": int(vstats.get("warm_visitors") or 0),
-            "last_activity": last_activity.isoformat() if isinstance(last_activity, datetime) else str(last_activity) if last_activity else None,
-            "days_since_active": days_since_active,
-        },
-        "rfq_summary": {
-            "rfq_count": rfq_count,
-            "last_rfq_date": str(rfq_data.get("last_rfq_date") or ""),
-        },
-        "engagement": {
-            "spec_downloads": spec_dl,
-            "top_products_viewed": top_products,
-        },
-        "opportunity_tier": opportunity_tier,
-        "period_days": period_days,
-    }
-
-
 # ── 3.3.1  Dynamic CTA ────────────────────────────────────────────────────────
 
 @content_ai_router.get("/content/dynamic-cta")
@@ -465,86 +322,6 @@ async def dynamic_cta_endpoint(
 
     page_context = {"page_type": page_type, "entity_name": entity_name, "entity_id": entity_id}
     return select_dynamic_cta(intent_stage, intent_score, ctas, page_context, top_products)
-
-
-# ── 3.3.2  Nurture Sequence Optimizer ────────────────────────────────────────
-
-@nurture_ai_router.post("/nurture/sequences/{seq_id}/optimize")
-async def optimize_nurture_sequence_endpoint(
-    seq_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """AI analysis of nurture sequence performance with reordering + rewrite suggestions."""
-    # Fetch sequence
-    seq_sql = text("""
-        SELECT id::text, name, trigger_stage, trigger_event, description
-        FROM nurture_sequences WHERE id = :id
-    """)
-    seq_result = await session.execute(seq_sql, {"id": seq_id})
-    sequence = seq_result.mappings().first()
-    if not sequence:
-        raise HTTPException(status_code=404, detail="Nurture sequence not found")
-
-    # Fetch steps
-    steps_sql = text("""
-        SELECT step_number, subject, delay_days, body_html
-        FROM nurture_steps WHERE sequence_id = :sid ORDER BY step_number
-    """)
-    steps_result = await session.execute(steps_sql, {"sid": seq_id})
-    steps = [dict(r) for r in steps_result.mappings().all()]
-
-    # Fetch click event counts per step (proxy for engagement)
-    # nurture_step_id is stored in tracking_event properties
-    clicks_sql = text("""
-        SELECT
-            properties->>'nurture_step' AS step_num,
-            COUNT(*) AS click_count
-        FROM tracking_events
-        WHERE event_name = 'cta_click'
-          AND properties->>'nurture_sequence_id' = :sid::text
-        GROUP BY step_num
-    """)
-    clicks_result = await session.execute(clicks_sql, {"sid": seq_id})
-    click_map: dict[str, int] = {
-        r["step_num"]: int(r["click_count"])
-        for r in clicks_result.mappings().all()
-        if r["step_num"]
-    }
-
-    # Enriched steps
-    enrollments_sql = text("""
-        SELECT
-            COUNT(*) AS total_enrolled,
-            COUNT(*) FILTER (WHERE status = 'active') AS active,
-            COUNT(*) FILTER (WHERE status = 'completed') AS completed,
-            COUNT(*) FILTER (WHERE status IN ('dropped', 'unsubscribed')) AS dropped
-        FROM nurture_enrollments WHERE sequence_id = :sid
-    """)
-    enr_result = await session.execute(enrollments_sql, {"sid": seq_id})
-    enr_data = dict(enr_result.mappings().first() or {})
-    total_enrolled = int(enr_data.get("total_enrolled") or 1)
-    completed = int(enr_data.get("completed") or 0)
-    enr_data["avg_completion_rate"] = round(completed / total_enrolled * 100, 1)
-
-    # Count proxy "sent" for each step from enrollments * position assumption
-    steps_with_metrics = []
-    for step in steps:
-        sn = str(step.get("step_number"))
-        clicks = click_map.get(sn, 0)
-        # Approximate sent count based on enrollment
-        sent = max(1, total_enrolled)
-        steps_with_metrics.append({
-            "step_number": step.get("step_number"),
-            "subject": step.get("subject", ""),
-            "delay_days": step.get("delay_days"),
-            "sent_count": sent,
-            "click_count": clicks,
-            "click_rate": round(clicks / sent * 100, 1),
-        })
-
-    result = await optimize_nurture_sequence(dict(sequence), steps_with_metrics, enr_data)
-    return {"sequence_id": str(seq_id), "sequence_name": sequence["name"], **result}
 
 
 # ── 3.3.3  Relation Recommendations ──────────────────────────────────────────

@@ -28,8 +28,6 @@ class ContentAsset(SQLModel, table=True):
     # 2.3.2 PDF indexing
     is_indexable: bool = Field(default=False)
     seo_title: Optional[str] = Field(default=None, max_length=200)
-    # 2.1.5 Download Gate — visitor must fill out form before download
-    requires_gate: bool = Field(default=False)
     product_id: Optional[uuid.UUID] = Field(default=None, foreign_key="products.id")
     page_id: Optional[uuid.UUID] = Field(default=None, foreign_key="pages.id")
     uploaded_by: uuid.UUID = Field(foreign_key="users.id")

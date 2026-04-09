@@ -23,15 +23,10 @@ from app.models.content_asset import ContentAsset
 from app.models.content_strategy import ContentStrategy
 from app.models.ai_generation_log import AIGenerationLog
 from app.models.audience_tag import AudienceTag, VisitorTagLink
-from app.models.account import Account
 from app.models.visitor import Visitor
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.segment import Segment
-from app.models.nurture import NurtureSequence, NurtureStep, NurtureEnrollment
-from app.models.linkedin_audience import LinkedInAudience
-from app.models.crm_sync_log import CrmSyncLog
-from app.models.ab_test import ABTest, ABTestView
 from app.models.chat import ChatSession, ChatMessage
 from app.models.integration_credential import IntegrationCredential
 
@@ -59,18 +54,10 @@ __all__ = [
     "AIGenerationLog",
     "AudienceTag",
     "VisitorTagLink",
-    "Account",
     "Visitor",
     "TrackingEvent",
     "TrackingSession",
     "Segment",
-    "NurtureSequence",
-    "NurtureStep",
-    "NurtureEnrollment",
-    "LinkedInAudience",
-    "CrmSyncLog",
-    "ABTest",
-    "ABTestView",
     "ChatSession",
     "ChatMessage",
 ]

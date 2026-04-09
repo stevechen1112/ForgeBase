@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  CheckCircle2, XCircle, Linkedin, ExternalLink, Eye, EyeOff, Save, Trash2,
-  RefreshCcw, Mail, Search, UploadCloud, Send, ChevronDown,
+  CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2,
+  Mail, Search, UploadCloud, Send,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -26,16 +26,6 @@ type FieldDef = {
   placeholder: string;
   isSecret?: boolean;
   isTextarea?: boolean;
-};
-
-type SyncLog = {
-  id: string;
-  direction: string;
-  entity_type: string;
-  status: string;
-  error_message?: string;
-  payload_summary?: string;
-  synced_at: string;
 };
 
 type EspStatus = {
@@ -55,20 +45,6 @@ type ProviderStats = {
 };
 
 // ── Field configs (module-level to keep reference stable) ─────────────────────
-
-const LINKEDIN_FIELDS: FieldDef[] = [
-  { key: "access_token", label: "Access Token", placeholder: "填入新的 Token 以覆蓋現有值", isSecret: true },
-  { key: "ad_account_id", label: "Ad Account ID", placeholder: "例：123456789" },
-];
-
-const SALESFORCE_FIELDS: FieldDef[] = [
-  { key: "client_id", label: "OAuth Client ID", placeholder: "Connected App Consumer Key", isSecret: true },
-  { key: "client_secret", label: "OAuth Client Secret", placeholder: "Connected App Consumer Secret", isSecret: true },
-  { key: "username", label: "Username", placeholder: "your@org.salesforce.com" },
-  { key: "password", label: "Password", placeholder: "Salesforce 帳號密碼", isSecret: true },
-  { key: "security_token", label: "Security Token", placeholder: "重設密碼時取得的 Token", isSecret: true },
-  { key: "instance_url", label: "Instance URL", placeholder: "https://yourorg.my.salesforce.com" },
-];
 
 const RESEND_FIELDS: FieldDef[] = [
   { key: "api_key", label: "API Key", placeholder: "re_xxxxxxxxxxxx", isSecret: true },
@@ -339,156 +315,6 @@ function ProviderStats({ token, endpoint }: { token: string; endpoint: string })
   );
 }
 
-// ── LinkedIn Section ──────────────────────────────────────────────────────────
-
-function LinkedInSection({ token }: { token: string }) {
-  const { status, previews, reload } = useCredentials("linkedin", LINKEDIN_FIELDS, token);
-  const configured = status["access_token"] && status["ad_account_id"];
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Linkedin className="h-5 w-5 text-[#0077B5]" />
-            <CardTitle className="text-base">LinkedIn Marketing API</CardTitle>
-          </div>
-          <Badge className={configured ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
-            {configured ? "已串接" : "未串接"}
-          </Badge>
-        </div>
-        <CardDescription>將高意圖受眾同步至 LinkedIn Campaign Manager，用於精準廣告投放</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <CredentialForm service="linkedin" fields={LINKEDIN_FIELDS} token={token}
-          status={status} previews={previews} reload={reload} />
-        <div className="space-y-3 rounded-lg bg-muted/40 px-4 py-3 text-sm">
-          <p className="font-medium">如何取得這兩個憑證</p>
-          <ol className="list-inside list-decimal space-y-2 text-xs leading-relaxed text-muted-foreground">
-            <li>前往 <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
-              LinkedIn Developer Apps <ExternalLink className="h-3 w-3" /></a> 建立或選擇 App
-            </li>
-            <li>申請 OAuth 2.0 scopes：<code className="rounded bg-muted px-1">rw_dmp_segments</code>、<code className="rounded bg-muted px-1">r_ads</code></li>
-            <li>完成 OAuth 授權後取得 <strong>Access Token</strong>（有效期 60 天）</li>
-            <li>前往 <a href="https://www.linkedin.com/campaignmanager/" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
-              Campaign Manager <ExternalLink className="h-3 w-3" /></a> → 網址列數字即為 <strong>Ad Account ID</strong>
-            </li>
-          </ol>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Salesforce Section ────────────────────────────────────────────────────────
-
-const SF_STATUS_COLOR: Record<string, string> = {
-  success: "bg-green-100 text-green-700",
-  error: "bg-red-100 text-red-700",
-  skipped: "bg-gray-100 text-gray-600",
-};
-
-function SalesforceSection({ token }: { token: string }) {
-  const { status, previews, reload } = useCredentials("salesforce", SALESFORCE_FIELDS, token);
-  const configured = SALESFORCE_FIELDS.every(f => status[f.key]);
-  const [logs, setLogs] = useState<SyncLog[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
-
-  async function loadLogs() {
-    try {
-      const r = await fetch(`${API_BASE}/tracking/crm/sync-logs?limit=10`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (r.ok) setLogs(await r.json());
-    } catch { /* ignore */ }
-  }
-
-  function toggleLogs() {
-    const next = !showLogs;
-    setShowLogs(next);
-    if (next) loadLogs();
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <RefreshCcw className="h-5 w-5 text-[#00A1E0]" />
-            <CardTitle className="text-base">Salesforce CRM</CardTitle>
-          </div>
-          <Badge className={configured ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
-            {configured ? "已串接" : "未串接"}
-          </Badge>
-        </div>
-        <CardDescription>雙向同步聯絡人與 RFQ，追蹤商機進度至 Closed Won / Lost</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <CredentialForm service="salesforce" fields={SALESFORCE_FIELDS} token={token}
-          status={status} previews={previews} reload={reload} />
-
-        <SyncButton token={token} endpoint="/tracking/crm/sf/bulk-sync-contacts"
-          label="全部聯絡人同步至 Salesforce" />
-
-        {/* Collapsible sync log */}
-        <div>
-          <button
-            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-            onClick={toggleLogs}
-          >
-            <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? "rotate-180" : ""}`} />
-            同步記錄（最近 10 筆）
-          </button>
-          {showLogs && (
-            <div className="mt-2 overflow-x-auto rounded border text-xs">
-              {logs.length === 0 ? (
-                <p className="py-4 text-center text-muted-foreground">尚無記錄</p>
-              ) : (
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">實體</th>
-                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">方向</th>
-                      <th className="px-3 py-1.5 text-center font-medium text-muted-foreground">狀態</th>
-                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">摘要</th>
-                      <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">時間</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {logs.map(l => (
-                      <tr key={l.id} className="hover:bg-muted/30">
-                        <td className="px-3 py-1.5">{l.entity_type}</td>
-                        <td className="px-3 py-1.5 text-muted-foreground">
-                          {l.direction === "push" ? "推送 →" : "← 拉取"}
-                        </td>
-                        <td className="px-3 py-1.5 text-center">
-                          <Badge className={`${SF_STATUS_COLOR[l.status] ?? "bg-gray-100 text-gray-600"} text-xs`}>
-                            {l.status === "success" ? "成功" : l.status === "error" ? "失敗" : "略過"}
-                          </Badge>
-                        </td>
-                        <td className="max-w-xs truncate px-3 py-1.5 text-muted-foreground">
-                          {l.status === "error"
-                            ? <span className="text-red-600">{l.error_message}</span>
-                            : l.payload_summary}
-                        </td>
-                        <td className="px-3 py-1.5 text-muted-foreground">
-                          {new Date(l.synced_at).toLocaleString("zh-TW")}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ── Email Section ─────────────────────────────────────────────────────────────
 
 const EMAIL_PROVIDERS = [
@@ -615,8 +441,8 @@ function EmailSection({ token }: { token: string }) {
         <p className="text-xs text-muted-foreground">
           切換寄信供應商：在 <code className="rounded bg-muted px-1">.env</code> 中設定{" "}
           <code className="rounded bg-muted px-1">ESP_PROVIDER</code> 為{" "}
-          <code className="rounded bg-muted px-1">"resend"</code> 或{" "}
-          <code className="rounded bg-muted px-1">"sendgrid"</code>
+          <code className="rounded bg-muted px-1">&quot;resend&quot;</code> 或{" "}
+          <code className="rounded bg-muted px-1">&quot;sendgrid&quot;</code>
         </p>
       </CardContent>
     </Card>
@@ -669,13 +495,11 @@ export default function IntegrationsPage() {
       <Alert className="mb-6 border-blue-200 bg-blue-50 text-blue-900">
         <AlertDescription className="text-xs">
           <span className="font-semibold">僅伺服器管理員可見。</span>{" "}
-          LinkedIn 憑證已支援從資料庫讀取；其他服務同時支援環境變數，DB 設定為多租戶 SaaS 預備。
+          目前保留 Email 與 Google Search Console 所需設定；憑證會加密儲存在資料庫中。
         </AlertDescription>
       </Alert>
 
       <div className="space-y-6">
-        <LinkedInSection token={token} />
-        <SalesforceSection token={token} />
         <EmailSection token={token} />
         <GscSection token={token} />
       </div>

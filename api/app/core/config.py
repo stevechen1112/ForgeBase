@@ -27,24 +27,9 @@ class Settings(BaseSettings):
     EMAIL_FROM: str = "noreply@example.com"
     EMAIL_FROM_NAME: str = "ForgeBase"
 
-    # IP-to-Company enrichment (2.1.2, 2.1.3)
-    CLEARBIT_API_KEY: str = ""  # Clearbit Reveal API key (optional)
-
-    # LinkedIn Marketing API (2.1.6)
-    LINKEDIN_ACCESS_TOKEN: str = ""
-    LINKEDIN_AD_ACCOUNT_ID: str = ""
-
-    # Google Search Console (2.3.4)
+    # Google Search Console
     GSC_SERVICE_ACCOUNT_KEY_JSON: str = ""   # JSON string of service account credentials
     GSC_SITE_URL: str = ""                   # e.g. "https://example.com/"
-
-    # Salesforce CRM (2.4.1)
-    SF_CLIENT_ID: str = ""
-    SF_CLIENT_SECRET: str = ""
-    SF_USERNAME: str = ""
-    SF_PASSWORD: str = ""
-    SF_SECURITY_TOKEN: str = ""
-    SF_INSTANCE_URL: str = ""                # e.g. "https://yourorg.my.salesforce.com"
 
     # ESP — Email Service Provider (2.4.3)
     # Active transactional provider: "resend" | "sendgrid"

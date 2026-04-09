@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileText, Image as ImageIcon, File, RefreshCw, ExternalLink, Lock } from "lucide-react";
+import { FileText, Image as ImageIcon, File, RefreshCw, ExternalLink } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -18,7 +18,6 @@ type Asset = {
   alt_text: string | null;
   title: string | null;
   is_indexable: boolean;
-  requires_gate: boolean;
   product_id: string | null;
   page_id: string | null;
   uploaded_by: string;
@@ -121,7 +120,6 @@ export default function AssetsPage() {
                   <td className="px-4 py-3 text-muted-foreground">{fmtSize(a.file_size_bytes)}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {a.requires_gate && <Badge variant="outline" className="text-xs"><Lock className="mr-1 h-3 w-3" />需留資</Badge>}
                       {a.is_indexable && <Badge variant="outline" className="text-xs bg-green-50 text-green-700">可索引</Badge>}
                       {!a.is_indexable && <Badge variant="outline" className="text-xs text-muted-foreground">不索引</Badge>}
                     </div>

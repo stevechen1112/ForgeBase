@@ -3,10 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  LayoutDashboard, Brain, FileText, BarChart2, Target, Building2,
-  Mail, Linkedin, Search, Sparkles, Bot, RefreshCcw, AtSign, FlaskConical,
-  Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench, Globe,
-  MousePointerClick, PenLine, Image, Lock, Link2, Map, File, ClipboardList,
+  LayoutDashboard, Brain, FileText, BarChart2, Target,
+  Sparkles, Bot,
+  Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
+  MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
@@ -57,22 +57,17 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
       { label: "自訂受眾", href: "/dashboard/segments", icon: Target },
-      { label: "企業訪客識別", href: "/dashboard/accounts", icon: Building2 },
     ],
   },
   {
     title: "自動化",
     items: [
-      { label: "Nurture 引擎", href: "/dashboard/nurture", icon: Mail },
-      { label: "LinkedIn Audience", href: "/dashboard/linkedin", icon: Linkedin },
-      { label: "A/B 測試", href: "/dashboard/ab-tests", icon: FlaskConical },
       { label: "整合設定", href: "/dashboard/integrations", icon: Plug },
     ],
   },
   {
     title: "AI / SEO",
     items: [
-      { label: "SEO 診斷", href: "/dashboard/seo-audit", icon: Search },
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
     ],
   },
@@ -95,7 +90,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick },
       { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
       { label: "媒體庫", href: "/dashboard/assets", icon: Image },
-      { label: "Download Gate", href: "/dashboard/download-gate", icon: Lock },
       { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2 },
       { label: "策略地圖", href: "/dashboard/strategies", icon: Map },
       { label: "頁面管理", href: "/dashboard/pages", icon: File },

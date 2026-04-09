@@ -9,7 +9,6 @@ import {
   getProductRelatedCertifications,
   getProductRelatedFAQs,
   getProductAlternatives,
-  getProductIndexedDocs,
   getProductLocales,
 } from "@/lib/api";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
@@ -21,7 +20,6 @@ import {
 } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
-import { DownloadGateModal } from "@/components/ui/DownloadGateModal";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
@@ -124,12 +122,11 @@ export default async function ProductDetailPage({ params }: Props) {
   const faqs = await getPublishedFAQs(locale, category.slug);
 
   // Fetch M2M linked data in parallel (1a.5.12 内連自動化)
-  const [relatedApps, relatedCerts, linkedFaqs, alternatives, indexedDocs] = await Promise.all([
+  const [relatedApps, relatedCerts, linkedFaqs, alternatives] = await Promise.all([
     getProductRelatedApplications(product.id).catch(() => []),
     getProductRelatedCertifications(product.id).catch(() => []),
     getProductRelatedFAQs(product.id).catch(() => []),
     getProductAlternatives(product.id).catch(() => []),
-    getProductIndexedDocs(product.id).catch(() => []),
   ]);
 
   // Merge linked FAQs (deduplicated by question)
@@ -250,12 +247,6 @@ export default async function ProductDetailPage({ params }: Props) {
                 productName={product.product_name}
                 categorySlug={category.slug}
                 categoryName={category.category_name}
-              />
-              {/* Download Gate (2.1.5) */}
-              <DownloadGateModal
-                productId={product.id}
-                productName={product.product_name}
-                docs={indexedDocs}
               />
             </div>
           </div>

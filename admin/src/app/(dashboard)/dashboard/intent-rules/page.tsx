@@ -19,7 +19,7 @@ const SCORE_RULES = [
 
 const STAGES = [
   { stage: "Cold", range: "0–19", color: "bg-gray-100 text-gray-700", desc: "未顯示明確購買意圖", action: "持續曝光，不主動跟進" },
-  { stage: "Warm", range: "20–49", color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度意圖", action: "加入再行銷受眾，可發送 nurture" },
+  { stage: "Warm", range: "20–49", color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度意圖", action: "加入再行銷受眾，可發送後續跟進信" },
   { stage: "Hot", range: "50–99", color: "bg-orange-100 text-orange-800", desc: "高頻瀏覽，強烈購買意圖", action: "發出 Sales Alert，業務主動聯繫" },
   { stage: "Sales-Ready", range: "100+", color: "bg-red-100 text-red-800", desc: "已提交 RFQ 或極高分", action: "高優先 Alert + 立即業務跟進" },
 ];
