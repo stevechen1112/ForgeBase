@@ -45,6 +45,20 @@ export type CheckoutResult = {
   approve_url: string;
 };
 
+export type CurrentPlanResponse = {
+  plan: string;
+  display_name: string;
+  features: Record<string, boolean>;
+  limits: {
+    max_products: number | null;
+    max_admins: number | null;
+  };
+  usage: {
+    products: number;
+    admins: number;
+  };
+};
+
 export const authApi = {
   login: (payload: LoginRequest) =>
     apiClient.post<TokenResponse>("/auth/login", payload),
@@ -64,10 +78,10 @@ export const authApi = {
 
 export const subscriptionApi = {
   getPlans: (token: string) =>
-    apiClient.get<{ plans: Record<string, unknown> }>("/subscription/plans", token),
+    apiClient.get<Record<string, unknown>[]>("/subscription/plans", token),
 
   getCurrent: (token: string) =>
-    apiClient.get<{ plan: string; limits: Record<string, unknown>; usage: Record<string, unknown> }>("/subscription/current", token),
+    apiClient.get<CurrentPlanResponse>("/subscription/current", token),
 
   checkout: (plan: string, token: string) =>
     apiClient.post<CheckoutResult>("/subscription/checkout", { plan }, token),

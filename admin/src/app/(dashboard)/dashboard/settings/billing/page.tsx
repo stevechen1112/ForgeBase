@@ -1,6 +1,6 @@
 "use client";
 import { useAuth } from "@/lib/auth/store";
-import { subscriptionApi } from "@/lib/api/auth";
+import { subscriptionApi, type CurrentPlanResponse } from "@/lib/api/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, Package, Users, ArrowUpRight, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-
-type PlanInfo = {
-  plan: string;
-  limits: Record<string, number>;
-  usage: Record<string, number>;
-};
 
 const PLAN_LABELS: Record<string, string> = {
   starter: "Starter — $149/月",
@@ -25,7 +19,7 @@ export default function BillingPage() {
   const token = state.status === "authenticated" ? state.accessToken : "";
   const isOwner = state.status === "authenticated" && state.user.role === "owner";
 
-  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
+  const [planInfo, setPlanInfo] = useState<CurrentPlanResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -36,7 +30,7 @@ export default function BillingPage() {
     setError(null);
     try {
       const data = await subscriptionApi.getCurrent(token);
-      setPlanInfo(data as PlanInfo);
+      setPlanInfo(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "載入方案資訊失敗");
     } finally {
@@ -80,14 +74,14 @@ export default function BillingPage() {
         {
           label: "商品數量",
           icon: Package,
-          current: planInfo.usage?.product ?? 0,
-          limit: planInfo.limits?.product ?? 0,
+          current: planInfo.usage.products ?? 0,
+          limit: planInfo.limits.max_products,
         },
         {
           label: "管理員帳號",
           icon: Users,
-          current: planInfo.usage?.admin ?? 0,
-          limit: planInfo.limits?.admin ?? 0,
+          current: planInfo.usage.admins ?? 0,
+          limit: planInfo.limits.max_admins,
         },
       ]
     : [];
@@ -155,7 +149,7 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {usageItems.map((item) => {
-                const percent = item.limit > 0 ? Math.round((item.current / item.limit) * 100) : 0;
+                const percent = item.limit && item.limit > 0 ? Math.round((item.current / item.limit) * 100) : 0;
                 const Icon = item.icon;
                 const isNearLimit = percent >= 80;
                 return (
@@ -166,10 +160,10 @@ export default function BillingPage() {
                         <span className="text-sm font-medium">{item.label}</span>
                       </div>
                       <span className={`text-sm font-mono ${isNearLimit ? "text-orange-600 font-bold" : "text-muted-foreground"}`}>
-                        {item.current} / {item.limit === -1 ? "∞" : item.limit}
+                        {item.current} / {item.limit == null ? "∞" : item.limit}
                       </span>
                     </div>
-                    {item.limit > 0 && (
+                    {item.limit != null && item.limit > 0 && (
                       <Progress
                         value={percent}
                         className={`h-2 ${isNearLimit ? "[&>div]:bg-orange-500" : ""}`}

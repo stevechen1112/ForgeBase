@@ -34,6 +34,10 @@ class RegisterResponse(BaseModel):
     tenant_slug: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, session: AsyncSession = Depends(get_session)):
     """
@@ -134,16 +138,16 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_sessi
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(refresh_token: str, session: AsyncSession = Depends(get_session)):
-    payload = decode_token(refresh_token)
+async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_session)):
+    token_payload = decode_token(payload.refresh_token)
 
-    if not payload or payload.get("type") != "refresh":
+    if not token_payload or token_payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
         )
 
-    result = await session.exec(select(User).where(User.id == payload["sub"]))
+    result = await session.exec(select(User).where(User.id == token_payload["sub"]))
     user = result.first()
 
     if not user or not user.is_active:
@@ -184,10 +188,15 @@ class TeamMemberOut(BaseModel):
     last_login_at: str | None
 
 
+class TeamMemberUpdateRequest(BaseModel):
+    role: str | None = None
+    is_active: bool | None = None
+
+
 @router.get("/team")
 async def list_team(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     """List all team members in the current tenant."""
     if not current_user.tenant_id:
@@ -273,10 +282,9 @@ async def invite_team_member(
 @router.patch("/team/{user_id}")
 async def update_team_member(
     user_id: str,
+    payload: TeamMemberUpdateRequest,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
-    role: str | None = None,
-    is_active: bool | None = None,
 ):
     """Update a team member's role or active status. Admin/owner only."""
     if not current_user.tenant_id:
@@ -293,21 +301,25 @@ async def update_team_member(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Cannot deactivate yourself
-    if target.id == current_user.id and is_active is False:
+    if target.id == current_user.id and payload.is_active is False:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Cannot deactivate your own account")
 
-    # Cannot change owner role
-    if target.role == "owner" and role and role != "owner":
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Cannot change owner role")
+    if target.role == "owner":
+        if current_user.role != "owner":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Only owner can manage owner account")
+        if payload.role and payload.role != "owner":
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Cannot change owner role")
+        if payload.is_active is False:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Cannot deactivate owner account")
 
-    if role is not None:
+    if payload.role is not None:
         allowed_roles = {"admin", "marketing_manager", "sales"}
-        if role not in allowed_roles:
+        if payload.role not in allowed_roles:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Role must be one of: {allowed_roles}")
-        target.role = role
+        target.role = payload.role
 
-    if is_active is not None:
-        target.is_active = is_active
+    if payload.is_active is not None:
+        target.is_active = payload.is_active
 
     target.updated_at = utcnow_naive()
     session.add(target)
