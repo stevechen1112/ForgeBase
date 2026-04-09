@@ -9,11 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { CreditCard, Package, Users, ArrowUpRight, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 
-const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter — $149/月",
-  professional: "Professional — $699/月",
-};
-
 export default function BillingPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -117,7 +112,7 @@ export default function BillingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold">
-                    {PLAN_LABELS[planInfo.plan] || planInfo.plan}
+                    {planInfo.display_name} — ${planInfo.plan === "starter" ? "149" : "699"}/月
                   </p>
                   <Badge variant="outline" className="mt-1">
                     {planInfo.plan === "professional" ? "專業版" : "入門版"}
@@ -188,13 +183,13 @@ export default function BillingPage() {
                   {
                     name: "Starter",
                     price: "$149/月",
-                    features: ["50 筆商品", "1 個管理員", "基本分析報表", "AI 客服 (500 次/月)", "Email 支援"],
+                    features: ["50 筆商品", "2 個管理員帳號", "基本分析報表", "SEO 重導向管理", "Email 支援"],
                     current: planInfo.plan === "starter",
                   },
                   {
                     name: "Professional",
                     price: "$699/月",
-                    features: ["500 筆商品", "5 個管理員", "進階分析 + 意圖評分", "AI 客服 (5,000 次/月)", "整合串接 (GA4, GTM)", "優先技術支援"],
+                    features: ["無限商品", "無限管理員帳號", "進階分析 + 意圖評分", "多語系官網", "整合串接 (GA4、GTM、HubSpot)", "AI 內容生成", "優先技術支援"],
                     current: planInfo.plan === "professional",
                   },
                 ].map((plan) => (
