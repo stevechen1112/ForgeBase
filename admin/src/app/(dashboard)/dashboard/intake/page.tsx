@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Globe, Loader2, Plus, RefreshCw, ArrowRight, Search, CheckCircle2,
-  XCircle, Eye, Zap, FileText, LinkIcon, PenLine, Package, FolderOpen,
+  XCircle, Eye, Zap, FileText, PenLine, Package, FolderOpen,
   HelpCircle, Factory, Trophy, Download,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
