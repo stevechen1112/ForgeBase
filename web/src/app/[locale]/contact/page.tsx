@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -53,6 +54,95 @@ export default async function ContactPage({ params }: Props) {
   ]);
   const contactEmail = siteConfig.contactEmail;
   const contactPhone = siteConfig.contactPhone;
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.breadcrumb, url: `${SITE_URL}/contact` },
+          ])}
+        />
+        <PageViewTracker pageType="contact" />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.breadcrumb },
+            ]}
+            eyebrow="Sales Contact"
+            title={copy.title || SITE_NAME}
+            description={copy.description}
+          >
+            <div className="flex flex-wrap gap-3">
+              <a href={`mailto:${contactEmail}`} className="border border-gray-700 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-300 hover:border-primary hover:text-primary">
+                {contactEmail}
+              </a>
+              <a href={`tel:${contactPhone.replace(/\D/g, "")}`} className="border border-gray-700 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-300 hover:border-primary hover:text-primary">
+                {contactPhone}
+              </a>
+            </div>
+          </IndustrialPageHero>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="grid gap-10 lg:grid-cols-5">
+                <div className="space-y-8 lg:col-span-2">
+                  <div>
+                    <h2 className="text-lg font-black uppercase tracking-wide text-gray-900">{copy.reasonsTitle}</h2>
+                    <ul className="mt-4 space-y-3">
+                      {copy.reasons.map((r) => (
+                        <li key={r.label} className="border-l-4 border-primary bg-gray-50 p-4">
+                          <p className="text-sm font-black uppercase tracking-wide text-gray-900">{r.label}</p>
+                          <p className="mt-1 text-xs leading-relaxed text-gray-500">{r.desc}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black uppercase tracking-wide text-gray-900">{copy.officesTitle}</h2>
+                    <div className="mt-4 space-y-4">
+                      {copy.offices.map((office) => (
+                        <div key={office.city} className="border border-gray-300 bg-white p-4">
+                          <h3 className="text-sm font-black uppercase tracking-wide text-primary">{office.city}</h3>
+                          <dl className="mt-3 space-y-2 text-sm text-gray-600">
+                            <div>{office.address}</div>
+                            <div>{office.phone}</div>
+                            <div>{office.hours}</div>
+                          </dl>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-l-4 border-primary bg-gray-50 p-4">
+                    <span className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.responseTitle}</span>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600">{copy.responseDescription}</p>
+                  </div>
+                </div>
+                <div className="lg:col-span-3">
+                  <div className="border border-gray-300 bg-white p-8">
+                    <h2 className="mb-1 text-xl font-black uppercase tracking-wide text-gray-900">{copy.formTitle}</h2>
+                    <p className="mb-6 text-sm text-gray-500">{copy.formDescription}</p>
+                    <ContactForm />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section className="border-t border-gray-200 bg-gray-50 py-12">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6">
+              <p className="text-sm font-bold uppercase tracking-wide text-gray-700">{copy.quickLinksPrompt}</p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/products" className="border border-gray-300 px-4 py-2 text-sm font-black uppercase tracking-[0.16em] text-gray-800 hover:border-primary hover:text-primary">{copy.quickLinks.products}</Link>
+                <Link href="/certifications" className="border border-gray-300 px-4 py-2 text-sm font-black uppercase tracking-[0.16em] text-gray-800 hover:border-primary hover:text-primary">{copy.quickLinks.certifications}</Link>
+                <Link href="/rfq" className="bg-primary px-4 py-2 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground">{copy.quickLinks.rfq}</Link>
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

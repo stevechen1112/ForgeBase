@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -54,6 +56,59 @@ export default async function ApplicationsPage({ params }: Props) {
     },
     {}
   );
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <ChatWidget contextPage="/applications" contextEntityType="application" />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: pageCopy.breadcrumb, url: `${SITE_URL}/applications` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: pageCopy.breadcrumb },
+            ]}
+            eyebrow="Applications"
+            title={pageCopy.title}
+            description={pageCopy.description}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              {applications.length === 0 ? (
+                <p className="border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-sm text-gray-500">{pageCopy.emptyState}</p>
+              ) : Object.keys(byIndustry).length > 1 ? (
+                Object.entries(byIndustry).map(([industry, apps]) => (
+                  <div key={industry} className="mb-12 last:mb-0">
+                    <div className="mb-5 flex items-center gap-3">
+                      <div className="h-6 w-1.5 bg-primary" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-gray-900">{industry}</h2>
+                    </div>
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                      {apps.map((app) => (
+                        <ApplicationCard key={app.id} application={app} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {applications.map((app) => (
+                    <ApplicationCard key={app.id} application={app} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

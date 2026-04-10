@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
+import { INDUSTRIAL_PROSE_CLASS, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -30,6 +32,33 @@ export default async function PrivacyPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<LegalPageMessages>("legal.privacy"),
   ]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <main className="bg-white">
+        <IndustrialPageHero
+          items={[
+            { label: common.home, href: "/" },
+            { label: copy.breadcrumb },
+          ]}
+          eyebrow="Policy"
+          title={copy.title}
+        />
+        <section className="py-16">
+          <div className="mx-auto max-w-4xl px-6">
+            <div className="border border-gray-300 bg-white p-8">
+              <div className={INDUSTRIAL_PROSE_CLASS}>
+                {copy.paragraphs?.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

@@ -1,19 +1,23 @@
 import Link from "next/link";
 import type { Application } from "@/types/content";
 import { getApplicationImage } from "@/lib/demoAssets";
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = { application: Application };
 
 export function ApplicationCard({ application }: Props) {
   const imageUrl = getApplicationImage(application.slug, application.hero_image_url);
+  const isIndustrial = siteConfig.layout === "industrial";
 
   return (
     <Link
       href={`/applications/${application.slug}`}
-      className="group flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-md"
+      className={isIndustrial
+        ? "group flex flex-col overflow-hidden border border-gray-300 bg-white transition-colors hover:border-primary/50 hover:bg-primary/5"
+        : "group flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-md"}
     >
       {/* Hero image */}
-      <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+      <div className={isIndustrial ? "relative h-44 w-full overflow-hidden bg-gray-100" : "relative h-44 w-full overflow-hidden bg-slate-100"}>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -28,20 +32,26 @@ export function ApplicationCard({ application }: Props) {
             </svg>
           </div>
         )}
-        <span className="absolute bottom-3 left-3 inline-block rounded-full bg-blue-600/90 px-3 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+        <span className={isIndustrial
+          ? "absolute bottom-3 left-3 inline-block bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground"
+          : "absolute bottom-3 left-3 inline-block rounded-full bg-blue-600/90 px-3 py-0.5 text-xs font-medium text-white backdrop-blur-sm"}>
           {application.industry}
         </span>
       </div>
 
       {/* Text content */}
       <div className="flex flex-col p-5 flex-1">
-        <h3 className="text-base font-semibold text-gray-800 group-hover:text-blue-700 transition-colors line-clamp-2">
+        <h3 className={isIndustrial
+          ? "text-base font-black uppercase tracking-wide text-gray-900 transition-colors group-hover:text-primary line-clamp-2"
+          : "text-base font-semibold text-gray-800 group-hover:text-blue-700 transition-colors line-clamp-2"}>
           {application.application_name}
         </h3>
         {application.description && (
           <p className="mt-2 text-sm text-gray-500 line-clamp-3">{application.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</p>
         )}
-        <span className="mt-4 text-sm font-medium text-blue-700 group-hover:underline">
+        <span className={isIndustrial
+          ? "mt-4 text-xs font-black uppercase tracking-[0.16em] text-primary group-hover:underline"
+          : "mt-4 text-sm font-medium text-blue-700 group-hover:underline"}>
           Learn more →
         </span>
       </div>

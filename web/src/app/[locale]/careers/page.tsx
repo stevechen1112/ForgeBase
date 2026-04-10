@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -35,6 +37,39 @@ export default async function CareersPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<CareersPageMessages>("careersPage"),
   ]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <main className="bg-white">
+        <IndustrialPageHero
+          items={[
+            { label: common.home, href: "/" },
+            { label: copy.breadcrumb },
+          ]}
+          eyebrow="Careers"
+          title={copy.title}
+          description={copy.description}
+        />
+        <section className="py-16">
+          <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-[1.2fr,0.8fr]">
+            <div className="border border-gray-300 bg-white p-6">
+              <h2 className="text-xl font-black uppercase tracking-wide text-gray-900">{copy.rolesTitle}</h2>
+              <ul className="mt-5 space-y-3 text-sm text-gray-600">
+                {copy.openings.map((role) => (
+                  <li key={role} className="border-l-4 border-gray-200 bg-gray-50 px-4 py-3">{role}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="border-l-4 border-primary bg-gray-50 p-6">
+              <h2 className="text-lg font-black uppercase tracking-wide text-gray-900">{copy.applyTitle}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">{copy.applyDescription}</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

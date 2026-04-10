@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -55,6 +57,74 @@ export default async function CertificationsPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, certifications);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="certification" />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: pageCopy.breadcrumb, url: `${SITE_URL}/certifications` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: pageCopy.breadcrumb },
+            ]}
+            eyebrow="Compliance"
+            title={pageCopy.title}
+            description={pageCopy.description}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              {certifications.length === 0 ? (
+                <p className="border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-sm text-gray-500">{pageCopy.emptyState}</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {certifications.map((cert) => (
+                    <CertificationBadge key={cert.id} certification={cert} />
+                  ))}
+                </div>
+              )}
+              <div className="mt-12 border border-gray-300 bg-white p-7">
+                <h2 className="text-xl font-black uppercase tracking-wide text-gray-900">{pageCopy.overviewTitle}</h2>
+                <p className="mt-2 max-w-2xl text-sm text-gray-500">{pageCopy.overviewDescription}</p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                  {pageCopy.items.map((item) => (
+                    <div key={item.type} className="border-l-4 border-primary bg-gray-50 p-5">
+                      <h3 className="text-sm font-black uppercase tracking-wide text-gray-900">{item.type}</h3>
+                      <p className="mt-2 text-xs leading-relaxed text-gray-600">{item.detail}</p>
+                      <span className="mt-3 inline-block bg-primary px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground">
+                        {item.note}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-5 text-sm text-gray-500">
+                  {pageCopy.availabilityNote}{" "}
+                  <Link href="/contact" className="font-bold text-primary hover:underline">
+                    {pageCopy.availabilityCta}
+                  </Link>
+                </p>
+              </div>
+              <div className="mt-12">
+                <IndustrialCtaPanel
+                  title={pageCopy.commitmentTitle}
+                  description={pageCopy.commitmentDescription}
+                  primaryHref="/contact"
+                  primaryLabel={pageCopy.commitmentCta}
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

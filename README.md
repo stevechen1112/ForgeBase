@@ -1,40 +1,54 @@
 # ForgeBase
 
-**外銷製造商官網成長系統** — Expose · Engage · Capture · Follow-up
+**RFQ Growth OS for Export Manufacturers** — Capture · Intent · Conversion
 
-ForgeBase 是專為中小型外銷製造商設計的 B2B 網站成長平台。核心理念：**讓產品被找到、讓買家意圖被看見、讓每筆詢價都被接住。**
+ForgeBase 是專為外銷製造商打造的 RFQ 成長系統。
+不是幫你做一個網站，而是讓你的網站開始接單——捕捉買家需求、辨識採購意圖、推進詢價、讓業務在對的時間接手。
 
 ---
 
-## 行銷漏斗四階段
+## 產品核心三層
 
-ForgeBase 的功能對應外銷製造商從曝光到成交的完整歷程：
+ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 
-| 階段 | 名稱 | 核心問題 | ForgeBase 功能 |
-|------|------|----------|---------------|
-| **1. 曝光** | 被找到 | 買家在 Google 搜到我嗎？ | SEO 基礎設施、sitemap、schema、多語言、AI 內容生成 |
-| **2. 互動** | 站內行為 | 買家看了什麼？多有興趣？ | 行為追蹤（15 種事件）、意圖評分、Dynamic CTA、AI Product Advisor |
-| **3. 留資** | 詢價轉換 | 買家願意報上名嗎？ | RFQ 表單、聯絡表單、Chat → RFQ handoff |
-| **4. 跟進** | 業務接住 | 每筆詢價有人跟、跟得好嗎？ | 即時通知、逾時催辦、培育信、狀態管理 |
+| 層級 | 核心問題 | ForgeBase 做的事 |
+|------|----------|------------------|
+| **Capture** | 買家找得到你嗎？ | SEO 基礎設施、多語言內容、AI 內容生成、Legacy Site Intake 舊站匯入 |
+| **Intent** | 誰只是逛逛、誰在評估？ | 15 種行為追蹤、意圖評分引擎、GeoIP、Dynamic CTA、AI Product Advisor |
+| **Conversion** | 高意圖訪客有被推進到詢價嗎？ | RFQ 表單、Chat → RFQ handoff、即時通知、逾時催辦、RFQ 事件審計 |
 
 ---
 
 ## 核心功能
 
-| 模組 | 說明 | 漏斗階段 |
-|------|------|----------|
-| **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 | 曝光 |
-| **多語言支援** | 英文 + 繁體中文，hreflang 自動產生 | 曝光 |
-| **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ | 曝光 |
-| **訪客追蹤 & 意圖評分** | 自動記錄 page_view / product_view / cta_click 等 15 種事件，計算 Cold → Warm → Hot → Sales-Ready 階段 | 互動 |
-| **Dynamic CTA** | 依訪客買家階段動態切換行動呼籲按鈕 | 互動 |
-| **AI Product Advisor** | FAQ 頁、產品詳頁嵌入情境式 AI 對話，導向 RFQ | 互動 → 留資 |
-| **RFQ 詢價表單** | 結構化詢價，含產品需求、數量、時程等欄位 | 留資 |
-| **聯絡表單** | 一般詢問留資 | 留資 |
-| **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ | 留資 |
-| **GeoIP 國家識別** | 訪客國家自動標記 | 互動 |
-| **Legacy Site Intake** | 匯入既有企業官網或型錄站，抽取內容候選資料後進入 admin 審核與提交流程 | 曝光 |
-| **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2 | 全階段 |
+### Capture — 讓產品被找到、被理解
+
+| 模組 | 說明 |
+|------|------|
+| **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 |
+| **多語言支援** | 英文 + 繁體中文，hreflang 自動產生 |
+| **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
+| **Legacy Site Intake** | 匯入既有企業官網或型錄站，抽取內容候選資料後進入 admin 審核與提交流程 |
+| **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2 |
+
+### Intent — 辨識誰在評估、誰有採購意圖
+
+| 模組 | 說明 |
+|------|------|
+| **訪客追蹤 & 意圖評分** | 自動記錄 page_view / product_view / cta_click 等 15 種事件，計算 Cold → Warm → Hot → Sales-Ready 階段 |
+| **Dynamic CTA** | 依訪客買家階段動態切換行動呼籲按鈕 |
+| **AI Product Advisor** | FAQ 頁、產品詳頁嵌入情境式 AI 對話，導向 RFQ |
+| **GeoIP 國家識別** | 訪客國家自動標記 |
+
+### Conversion — 推進詢價、讓業務接住
+
+| 模組 | 說明 |
+|------|------|
+| **RFQ 詢價表單** | 結構化詢價，含產品需求、數量、時程等欄位 |
+| **聯絡表單** | 一般詢問留資 |
+| **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ |
+| **RFQ 事件審計** | RFQ 生命週期完整紀錄，含狀態變更、指派、首次回覆、報價等事件時間軸 |
+| **即時通知 & 逾時催辦** | 新詢價通知、SLA 催辦、業務跟進狀態管理 |
 
 ---
 

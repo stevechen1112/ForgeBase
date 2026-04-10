@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-step-capture",
+    "filename": "sales-step-capture.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Capture: Getting found by buyers on Google'. Show a stylized Google search results page with a B2B manufacturer product listing highlighted at the top position, surrounded by floating icons representing SEO elements: meta tags, sitemap symbol, structured data markup brackets, and a small upward-trending chart. A magnifying glass focuses on the top search result. Use a blue (#0d93e8) and white color palette with subtle teal accents on a light background. Flat modern SaaS illustration style, professional, minimal, not cartoonish. No real Google branding. 4:3 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "ckDZabryFejR2roP0tObyA4",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 133,
+    "candidatesTokenCount": 1431,
+    "totalTokenCount": 1564,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 133
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

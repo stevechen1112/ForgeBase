@@ -38,6 +38,7 @@ from app.models.intake import (
     IntakeBriefCandidate,
 )
 from app.models.site_profile import SiteProfile
+from app.models.rfq_event import RFQEvent
 
 __all__ = [
     "ProductApplicationLink",
@@ -76,4 +77,5 @@ __all__ = [
     "IntakeRedirectCandidate",
     "IntakeBriefCandidate",
     "SiteProfile",
+    "RFQEvent",
 ]

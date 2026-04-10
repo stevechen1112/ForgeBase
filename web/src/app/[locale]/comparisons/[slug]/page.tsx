@@ -7,6 +7,8 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -69,6 +71,92 @@ export default async function ComparisonDetailPage({ params }: Props) {
     } catch {
       // not JSON, treat as plain text
     }
+  }
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="comparison" pageId={topic.id} />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.comparisons, url: `${SITE_URL}/comparisons` },
+            { name: topic.topic_title, url: `${SITE_URL}/comparisons/${slug}` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.comparisons, href: "/comparisons" },
+              { label: topic.topic_title },
+            ]}
+            eyebrow="Comparison"
+            title={topic.topic_title}
+            description={topic.summary ?? undefined}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-5xl px-6 space-y-10">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} />}
+              {dimensions ? (
+                <div className="overflow-x-auto border border-gray-300">
+                  <table className="w-full text-sm">
+                    <thead className="border-b border-gray-300 bg-gray-900 text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.16em]">{copy.dimension}</th>
+                        <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.16em]">{copy.optionA}</th>
+                        <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.16em]">{copy.optionB}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {dimensions.map((dim) => (
+                        <tr key={dim.dimension} className="bg-white hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-700">{dim.dimension}</td>
+                          <td className={`px-4 py-3 ${dim.winner === "us" ? "font-black text-primary" : "text-gray-600"}`}>{dim.our_value}</td>
+                          <td className="px-4 py-3 text-gray-600">{dim.competitor_value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : topic.dimensions ? (
+                <div className="border border-gray-300 bg-white p-6">
+                  <h2 className="mb-3 text-base font-black uppercase tracking-wide text-gray-900">{copy.detailsTitle}</h2>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{topic.dimensions}</p>
+                </div>
+              ) : null}
+              {topic.conclusion && (
+                <div className="border-l-4 border-primary bg-gray-50 p-6">
+                  <h2 className="mb-2 text-base font-black uppercase tracking-wide text-gray-900">{copy.takeawayTitle}</h2>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{topic.conclusion}</p>
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="border border-gray-300 bg-white p-5">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.recommendedTitle}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.recommendedDescription}</p>
+                </div>
+                <div className="border-l-4 border-primary bg-gray-50 p-5">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.rfqTitle}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.rfqDescription}</p>
+                </div>
+              </div>
+              <IndustrialCtaPanel
+                title={copy.rfqTitle}
+                description={copy.rfqDescription}
+                primaryHref="/rfq"
+                primaryLabel={copy.submitRfq}
+                secondaryHref="/contact"
+                secondaryLabel={copy.askQuestion}
+              />
+              <div>
+                <Link href="/comparisons" className="text-[11px] font-black uppercase tracking-[0.16em] text-primary hover:underline">{copy.allComparisons}</Link>
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
   }
 
   return (

@@ -1,0 +1,55 @@
+{
+  "profile": "forgebase-sales-page",
+  "description": "Product marketing page images for ForgeBase. Run with: python demo/handtool-company/seed/generate_demo_images.py --manifest assets/sales-page/generation-jobs.sales-page.json --env-file assets/sales-page/.env.gemini",
+  "jobs": [
+    {
+      "id": "sales-hero-dashboard",
+      "filename": "sales-hero-dashboard-mockup.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a clean, modern SaaS dashboard UI screenshot illustration for a B2B manufacturer website growth platform. The dashboard shows a left sidebar navigation with icons, a main panel with a Visitor Intent pipeline displaying 4 horizontal status cards labeled Cold (blue), Warm (yellow), Hot (orange), Sales-Ready (red) with visitor names and country flags (DE, US, JP, IT). Below that, an RFQ (Request for Quote) list table with columns for company, product, status badge, and date. In the top-right corner, a small world map widget with colored dots showing website traffic by country. Color scheme: professional blue (#0d93e8) primary, white background, light gray sidebar, subtle shadows. The style should look like a realistic modern web application screenshot with clean rounded UI elements, not a 3D render. No text smaller than 10px. 16:9 aspect ratio."
+    },
+    {
+      "id": "sales-step-capture",
+      "filename": "sales-step-capture.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Capture: Getting found by buyers on Google'. Show a stylized Google search results page with a B2B manufacturer product listing highlighted at the top position, surrounded by floating icons representing SEO elements: meta tags, sitemap symbol, structured data markup brackets, and a small upward-trending chart. A magnifying glass focuses on the top search result. Use a blue (#0d93e8) and white color palette with subtle teal accents on a light background. Flat modern SaaS illustration style, professional, minimal, not cartoonish. No real Google branding. 4:3 aspect ratio."
+    },
+    {
+      "id": "sales-step-intent",
+      "filename": "sales-step-intent.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Intent: Identifying serious buyers through behavior tracking'. Show a stylized product webpage with a semi-transparent heatmap overlay in warm colors, alongside a vertical intent-scoring gauge that progresses from blue (Cold) through yellow (Warm) to red-orange (Hot). Floating data chips show visitor actions: 'Viewed Product ×3', 'Downloaded Spec', 'Expanded FAQ'. A subtle visitor silhouette with a highlighted intent badge. Blue (#0d93e8) and orange accent color palette, flat modern SaaS illustration style on a light background. Professional, minimal, not cartoonish. 4:3 aspect ratio."
+    },
+    {
+      "id": "sales-step-convert",
+      "filename": "sales-step-convert.png",
+      "aspect_ratio": "4:3",
+      "image_size": "1K",
+      "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Convert: Turning interested visitors into RFQ submissions'. Show a structured RFQ (Request for Quote) form card on the left with filled fields (product, quantity, certification) and a green submit checkmark, connected by a flowing arrow to a notification bell icon on the right that alerts a business representative shown as a small avatar with a phone displaying a push notification. Include a subtle funnel shape in the background suggesting conversion. Blue (#0d93e8) and green accent color palette, flat modern SaaS illustration style on a light background. Professional, minimal. 4:3 aspect ratio."
+    },
+    {
+      "id": "sales-ai-advisor-chat",
+      "filename": "sales-ai-advisor-chat.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a clean UI mockup illustration of an AI chat assistant interface embedded on a B2B product page. The right side shows a chat window with a conversation: a buyer message bubble says 'Do you have VDE-certified insulated screwdrivers for the European market?' and the AI assistant responds with a product recommendation card showing a small product thumbnail, product name, key specs (voltage rating, certification), and a prominent blue 'Request Quote' CTA button. The left side shows a partial product page with specifications table. Modern chat bubble design with blue (#0d93e8) accent, rounded corners, clean white background, subtle drop shadows. Professional SaaS product screenshot style, not a 3D render. 16:9 aspect ratio."
+    },
+    {
+      "id": "sales-manufacturer-office",
+      "filename": "sales-manufacturer-office.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a realistic photograph-style image of a mid-sized Taiwanese export manufacturer's sales office. A business professional in smart-casual attire sits at a clean desk, looking at their laptop screen which shows a basic company website with small product thumbnails. On the desk: a few printed product catalogs with industrial product photos on covers, international trade show visitor badges with lanyards, scattered business cards from overseas clients, and a coffee mug. The scene subtly conveys 'good products but underperforming digital presence' — the person looks thoughtful, not frustrated. Professional natural office lighting through a window, modern but modest office furniture, warm neutral tones. No cinematic effects, no dramatic lighting. Authentic mid-sized manufacturing company atmosphere. 16:9 aspect ratio."
+    },
+    {
+      "id": "sales-before-after-site",
+      "filename": "sales-before-after-site.png",
+      "aspect_ratio": "16:9",
+      "image_size": "1K",
+      "prompt": "Create a side-by-side before-and-after website comparison illustration for a SaaS marketing page. Left side labeled 'Before': an outdated 2008-era B2B industrial website mockup with cluttered layout, tiny text, low-contrast colors, table-based product grid, basic navigation bar, and a generic 'Contact Us' form at the bottom. Right side labeled 'After': the same company's content modernized in a clean, professional product page with structured product cards, hero image, clear blue CTA buttons, mobile-responsive layout, professional typography, and a structured RFQ form. A subtle glowing arrow or transformation effect in the middle connects the two sides. The 'Before' side uses muted gray-beige tones; the 'After' side uses crisp white and blue (#0d93e8). 16:9 aspect ratio."
+    }
+  ]
+}

@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field as PydanticField, field_validator
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -22,6 +22,7 @@ from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
 from app.models.rfq_request import RFQRequest, RFQProductLink
+from app.models.rfq_event import RFQEvent
 from app.models.visitor import Visitor
 from app.models.user import User
 from uuid import UUID as _UUID
@@ -29,6 +30,27 @@ from uuid import UUID as _UUID
 # Two routers — public forms_router + admin tracking_router
 forms_router = APIRouter(prefix="/forms", tags=["Forms"])
 tracking_router = APIRouter(prefix="/tracking", tags=["Tracking"])
+
+
+async def _log_rfq_event(
+    db: AsyncSession,
+    rfq_id: uuid.UUID,
+    event_type: str,
+    summary: str,
+    *,
+    actor_id: Optional[uuid.UUID] = None,
+    tenant_id: Optional[uuid.UUID] = None,
+    detail: Optional[str] = None,
+) -> None:
+    """Append an immutable event to the rfq_events audit log."""
+    db.add(RFQEvent(
+        rfq_id=rfq_id,
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        event_type=event_type,
+        summary=summary,
+        detail=detail,
+    ))
 
 VALID_STATUSES = {"new", "assigned", "in_progress", "quoted", "won", "lost", "expired"}
 VALID_PRIORITIES = {"normal", "high", "urgent"}
@@ -222,6 +244,14 @@ async def submit_rfq(
             continue
         db.add(RFQProductLink(rfq_id=rfq.id, product_id=pid))
 
+    # ── 6b. Log creation event ─────────────────────────────────────────
+    await _log_rfq_event(
+        db, rfq.id, "created",
+        f"RFQ {rfq_number} submitted by {body.email}",
+        tenant_id=tenant_id,
+        detail=json.dumps({"priority": priority, "intent_score": intent_score}),
+    )
+
     await db.commit()
 
     # ── 7. Trigger routing + notification + HubSpot + webhook (async, non-blocking)
@@ -287,7 +317,7 @@ class AssignUpdate(BaseModel):
 class FollowUpUpdate(BaseModel):
     first_response_at: Optional[datetime] = None
     quote_sent_at: Optional[datetime] = None
-    lost_reason: Optional[str] = None
+    lost_reason: Optional[str] = PydanticField(default=None, max_length=500)
 
 
 @tracking_router.get("/rfqs")
@@ -356,6 +386,13 @@ async def update_rfq_status(
     if body.status in ("won", "lost", "expired"):
         r.closed_at = r.updated_at
     db.add(r)
+
+    await _log_rfq_event(
+        db, r.id, "status_changed",
+        f"Status changed from {old_status} to {body.status}",
+        actor_id=_.id, tenant_id=r.tenant_id,
+        detail=json.dumps({"old_status": old_status, "new_status": body.status}),
+    )
     await db.commit()
 
     # 1b.5.3 Fire rfq.status_changed webhook
@@ -383,6 +420,9 @@ async def assign_rfq(
     r = await db.get(RFQRequest, rfq_id)
     if not r:
         raise HTTPException(status_code=404, detail="RFQ not found")
+    if current_user.tenant_id and r.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    old_assigned = r.assigned_to
     r.assigned_to = body.assigned_to
     if body.priority:
         r.priority = body.priority
@@ -390,6 +430,20 @@ async def assign_rfq(
     r.assigned_notified_at = None  # reset so notification fires again
     r.updated_at = utcnow_naive()
     db.add(r)
+
+    summary_parts = [f"Assigned to {body.assigned_to}"]
+    if body.priority:
+        summary_parts.append(f"priority set to {body.priority}")
+    await _log_rfq_event(
+        db, r.id, "assigned",
+        "; ".join(summary_parts),
+        actor_id=current_user.id, tenant_id=r.tenant_id,
+        detail=json.dumps({
+            "old_assigned_to": str(old_assigned) if old_assigned else None,
+            "new_assigned_to": str(body.assigned_to),
+            "priority": body.priority,
+        }),
+    )
     await db.commit()
 
     # Trigger assignment notification
@@ -413,13 +467,64 @@ async def update_rfq_follow_up(
     r = await db.get(RFQRequest, rfq_id)
     if not r:
         raise HTTPException(status_code=404, detail="RFQ not found")
+    if _.tenant_id and r.tenant_id != _.tenant_id:
+        raise HTTPException(status_code=404, detail="RFQ not found")
     updates = body.model_dump(exclude_unset=True)
     for field, value in updates.items():
         setattr(r, field, value)
     r.updated_at = utcnow_naive()
     db.add(r)
+
+    for field in updates:
+        event_type_map = {
+            "first_response_at": "first_response",
+            "quote_sent_at": "quote_sent",
+            "lost_reason": "lost_reason_set",
+        }
+        etype = event_type_map.get(field, field)
+        val = updates[field]
+        await _log_rfq_event(
+            db, r.id, etype,
+            f"{field} recorded" if field != "lost_reason" else f"Lost reason: {val}",
+            actor_id=_.id, tenant_id=r.tenant_id,
+        )
+
     await db.commit()
     return {"rfq_number": r.rfq_number, "updated_fields": list(updates.keys())}
+
+
+@tracking_router.get("/rfqs/{rfq_id}/events")
+async def list_rfq_events(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    """Return the full event timeline for a single RFQ, newest first."""
+    r = await db.get(RFQRequest, rfq_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    if _.tenant_id and r.tenant_id != _.tenant_id:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+
+    rows = (
+        await db.exec(
+            select(RFQEvent)
+            .where(RFQEvent.rfq_id == rfq_id)
+            .order_by(col(RFQEvent.created_at).desc())
+        )
+    ).all()
+
+    return [
+        {
+            "id": str(e.id),
+            "event_type": e.event_type,
+            "summary": e.summary,
+            "detail": json.loads(e.detail) if e.detail else None,
+            "actor_id": str(e.actor_id) if e.actor_id else None,
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in rows
+    ]
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────

@@ -4,12 +4,17 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowRight, BarChart3, Brain, Check, Globe, Users, Zap, FileText, Shield,
+  ArrowRight, BarChart3, Brain, Check, Globe, Users, Zap, FileText,
+  MessageSquare, Upload, Bell, MousePointerClick,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PublicNav } from "@/components/public/PublicNav";
+import { PublicFooter } from "@/components/public/PublicFooter";
+
+/* ─── Data ─── */
 
 const FEATURES = [
   {
@@ -41,6 +46,16 @@ const FEATURES = [
     icon: Users,
     title: "RFQ 追蹤管理",
     desc: "結構化詢價收件箱、狀態管理、首次回覆計時，一筆詢價都不漏接",
+  },
+  {
+    icon: MessageSquare,
+    title: "AI Product Advisor",
+    desc: "在產品頁嵌入 AI 對話，買家問規格、認證、交期，聊到有興趣就導入 RFQ",
+  },
+  {
+    icon: Upload,
+    title: "Legacy Site Intake",
+    desc: "不用從零開始——自動爬取舊網站內容，審核後一鍵匯入 ForgeBase",
   },
 ];
 
@@ -85,6 +100,42 @@ const PLANS = [
   },
 ];
 
+const STEPS = [
+  {
+    num: 1,
+    title: "搬資料",
+    desc: "系統自動讀取你現有網站上的所有產品資料、規格、常見問題，整理成清單讓你確認",
+  },
+  {
+    num: 2,
+    title: "確認上線",
+    desc: "在後台看過、改好，按一下就上線。不滿意的先跳過，分批處理不急",
+  },
+  {
+    num: 3,
+    title: "開始接單",
+    desc: "上線後系統自動開始運作：辨識買家、引導詢價、通知業務。你只要等通知去跟進就好",
+  },
+];
+
+const PROBLEMS = [
+  { icon: Users, label: "不知道誰在看", text: "每天有人來逛網站，但不知道哪些人是真的想買" },
+  { icon: Bell, label: "詢價常漏掉", text: "好不容易有人詢價，卻埋在 Email 裡沒人跟" },
+  { icon: MousePointerClick, label: "花了錢沒效果", text: "做了網站、買了廣告，但不知道哪些真的有帶來生意" },
+  { icon: BarChart3, label: "業務不知道先跟誰", text: "十筆詢價進來，不知道哪筆最有機會成交" },
+];
+
+const COMPARE = [
+  ["重視頁面好不好看", "重視網站能不能帶來有效詢價"],
+  ["報告給你看流量數字", "告訴你哪個買家最可能下單"],
+  ["幫你管理網站內容", "幫你把訪客變成詢價單"],
+  ["做完交件就結束了", "持續幫你優化，效果越來越好"],
+  ["舊網站要整個打掉重做", "舊網站的資料可以直接搬過來，分批上線"],
+  ["業務要自己看報表找客戶", "有認真買家或新詢價，系統主動通知業務"],
+];
+
+/* ─── Page ─── */
+
 export default function LandingPage() {
   const { state } = useAuth();
   const router = useRouter();
@@ -105,71 +156,135 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ─── Navbar ─── */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(211,100%,50%)] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              FB
-            </div>
-            <span className="font-bold text-lg tracking-tight">ForgeBase</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">登入</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/register">
-                免費試用 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* ─── Hero ─── */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
-        <Badge
-          variant="outline"
-          className="mb-6 text-[hsl(211,100%,45%)] border-[hsl(211,100%,80%)] bg-[hsl(211,100%,97%)] px-3 py-1"
-        >
-          專為外銷製造商設計的 SaaS 平台
-        </Badge>
-        <h1 className="text-5xl font-bold tracking-tight text-slate-900 mb-6 leading-tight">
-          讓製造專業
-          <br />
-          <span className="text-[hsl(211,100%,50%)]">轉化為全球訂單</span>
-        </h1>
-        <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-          ForgeBase 幫外銷製造商建立 AI 驅動的 B2B 官網，
-          <br />
-          自動識別買家意圖、接住每筆詢價、追蹤業務跟進。
-        </p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          <Button size="lg" className="h-12 px-8 text-base" asChild>
-            <Link href="/register">
-              14 天免費試用 <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
-            <Link href="https://mitselect.com" target="_blank" rel="noreferrer">
-              查看 Demo 網站
-            </Link>
-          </Button>
+      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <Badge
+              variant="outline"
+              className="mb-6 text-[hsl(211,100%,45%)] border-[hsl(211,100%,80%)] bg-[hsl(211,100%,97%)] px-3 py-1"
+            >
+              專為外銷製造商設計的 SaaS 平台
+            </Badge>
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 mb-6 leading-tight">
+              讓製造專業
+              <br />
+              <span className="text-[hsl(211,100%,50%)]">轉化為全球訂單</span>
+            </h1>
+            <p className="text-lg text-slate-500 max-w-lg leading-relaxed mb-8">
+              ForgeBase 幫外銷製造商建立 AI 驅動的 B2B 官網，
+              自動識別買家意圖、接住每筆詢價、追蹤業務跟進。
+            </p>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button size="lg" className="h-12 px-8 text-base" asChild>
+                <Link href="/register">
+                  14 天免費試用 <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
+                <Link href="https://mitselect.com" target="_blank" rel="noreferrer">
+                  查看 Demo 網站
+                </Link>
+              </Button>
+            </div>
+            <p className="text-sm text-slate-400 mt-4">免費試用不需信用卡 · 隨時可取消</p>
+          </div>
+
+          {/* Dashboard preview */}
+          <div className="hidden lg:block">
+            <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 overflow-hidden shadow-xl relative">
+              <img
+                src="/sales-page/sales-hero-dashboard-mockup.jpg"
+                alt="ForgeBase Dashboard — Visitor Intent Scoring"
+                className="w-full h-full object-cover relative z-10"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <BarChart3 className="w-16 h-16 text-slate-200" />
+                <p className="text-slate-300 text-xs mt-2">Dashboard Preview</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-slate-400 mt-4">免費試用不需信用卡 · 隨時可取消</p>
+      </section>
+
+      {/* ─── Problem ─── */}
+      <section className="bg-slate-900 py-20">
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="text-[hsl(211,100%,70%)] text-sm font-semibold tracking-widest uppercase mb-4">
+            你是不是也遇到這些問題？
+          </p>
+          <h2 className="text-3xl font-bold text-white mb-4 leading-tight">
+            網站做好了、產品也上架了，
+            <br className="hidden sm:block" />
+            但詢價單還是寥寥無幾
+          </h2>
+          <p className="text-slate-400 max-w-2xl mb-12 leading-relaxed">
+            你的官網不缺產品頁，也不缺公司介紹。真正缺的是一套能讓來看的人，走到送出詢價那一步的機制。
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {PROBLEMS.map(({ icon: Icon, label, text }) => (
+              <div
+                key={label}
+                className="border border-white/10 rounded-xl p-6 bg-white/5"
+              >
+                <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center mb-4">
+                  <Icon className="w-5 h-5 text-red-400" />
+                </div>
+                <p className="text-white font-medium">{label}</p>
+                <p className="mt-2 text-sm text-slate-400">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Solution 3-step ─── */}
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <p className="text-[hsl(211,100%,50%)] text-sm font-semibold tracking-widest uppercase mb-3">
+              ForgeBase 怎麼解決？
+            </p>
+            <h2 className="text-3xl font-bold text-slate-900 leading-tight">
+              三步讓你的官網
+              <br className="hidden sm:block" />
+              從「被看看」變成「被詢價」
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {STEPS.map((s) => (
+              <Card key={s.num} className="border-0 shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="w-12 h-12 rounded-xl bg-[hsl(211,100%,95%)] flex items-center justify-center mb-5">
+                    <span className="text-xl font-bold text-[hsl(211,100%,50%)]">{s.num}</span>
+                  </div>
+                  <h3 className="font-bold text-lg text-slate-900 mb-2">{s.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ─── Features ─── */}
-      <section className="bg-slate-50 py-20">
+      <section className="py-20" id="features">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">行銷漏斗四階段，全部接住</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">
+              不只是一個網站，是一整套幫你接單的系統
+            </h2>
             <p className="text-slate-500">從 Google 搜尋到詢價成交，ForgeBase 管理每個關鍵觸點</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <Card key={title} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+              <Card
+                key={title}
+                className="border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
+              >
                 <CardContent className="pt-6">
                   <div className="w-10 h-10 rounded-lg bg-[hsl(211,100%,95%)] flex items-center justify-center mb-4">
                     <Icon className="h-5 w-5 text-[hsl(211,100%,50%)]" />
@@ -179,6 +294,80 @@ export default function LandingPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── AI Advisor Showcase ─── */}
+      <section className="py-20 bg-slate-900">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-[hsl(211,100%,70%)] text-sm font-semibold tracking-widest uppercase mb-4">
+                AI Product Advisor
+              </p>
+              <h2 className="text-3xl font-bold text-white leading-tight mb-6">
+                買家問問題，
+                <br />
+                <span className="text-[hsl(211,100%,70%)]">AI 聊到他填詢價單</span>
+              </h2>
+              <p className="text-slate-400 leading-relaxed mb-8">
+                在產品詳頁與 FAQ 頁嵌入情境式 AI 對話。買家用自然語言問規格、認證、交期——AI
+                從你的產品資料即時作答，判定購買意圖後自動導向預填好的 RFQ 表單。
+              </p>
+              <ul className="space-y-3 text-sm text-slate-400">
+                <li className="flex items-start gap-3">
+                  <span className="text-[hsl(211,100%,70%)] mt-0.5">✦</span> 基於你的產品資料回答，不會亂講
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[hsl(211,100%,70%)] mt-0.5">✦</span> 自動偵測購買意圖，適時引導開單
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[hsl(211,100%,70%)] mt-0.5">✦</span> 對話紀錄同步至 admin，業務可續接
+                </li>
+              </ul>
+            </div>
+            <div className="aspect-video rounded-2xl bg-gradient-to-br from-slate-800 to-slate-700 border border-white/10 overflow-hidden shadow-2xl relative">
+              <img
+                src="/sales-page/sales-ai-advisor-chat.jpg"
+                alt="AI Product Advisor 對話截圖"
+                className="w-full h-full object-cover relative z-10"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <MessageSquare className="w-16 h-16 text-white/10" />
+                <p className="text-white/20 text-xs mt-2">AI Advisor Preview</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Comparison ─── */}
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">
+              跟一般做網站哪裡不同？
+            </h2>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="py-4 px-6 text-sm font-semibold text-slate-500 w-1/2">一般做網站</th>
+                  <th className="py-4 px-6 text-sm font-semibold text-[hsl(211,100%,50%)] w-1/2">ForgeBase</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {COMPARE.map(([before, after], i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6 text-sm text-slate-400">{before}</td>
+                    <td className="py-4 px-6 text-sm text-slate-900 font-medium">{after}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -202,7 +391,9 @@ export default function LandingPage() {
               >
                 {plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-[hsl(211,100%,50%)] text-white px-3 shadow">{plan.badge}</Badge>
+                    <Badge className="bg-[hsl(211,100%,50%)] text-white px-3 shadow">
+                      {plan.badge}
+                    </Badge>
                   </div>
                 )}
                 <CardHeader className="pb-4">
@@ -214,11 +405,7 @@ export default function LandingPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button
-                    className="w-full"
-                    variant={plan.highlight ? "default" : "outline"}
-                    asChild
-                  >
+                  <Button className="w-full" variant={plan.highlight ? "default" : "outline"} asChild>
                     <Link href={`/register?plan=${plan.plan}`}>{plan.cta}</Link>
                   </Button>
                   <ul className="space-y-2.5">
@@ -236,30 +423,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Footer ─── */}
-      <footer className="border-t border-slate-100 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-[hsl(211,100%,50%)] flex items-center justify-center text-white font-bold text-xs">
-              FB
-            </div>
-            <span className="font-semibold text-slate-800">ForgeBase</span>
+      {/* ─── Final CTA ─── */}
+      <section className="py-20 bg-slate-900">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+            你的官網不缺好看，
+            <br className="hidden sm:block" />
+            <span className="text-[hsl(211,100%,70%)]">缺的是一套能幫你收到詢價單的機制</span>
+          </h2>
+          <p className="mt-6 text-lg text-slate-400 leading-relaxed max-w-xl mx-auto">
+            不用再花大錢重做網站。ForgeBase 讓你現有的官網就能開始找到買家、收到詢價、通知業務。
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="h-14 px-10 text-lg" asChild>
+              <Link href="/register">
+                14 天免費試用 <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
-          <p className="text-sm text-slate-400">© 2026 ForgeBase. 外銷製造商官網成長系統</p>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/login" className="text-slate-400 hover:text-slate-600 transition-colors">
-              登入
-            </Link>
-            <Link href="/register" className="text-slate-400 hover:text-slate-600 transition-colors">
-              免費試用
-            </Link>
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <Shield className="h-3 w-3" />
-              <span>SSL 加密</span>
-            </div>
-          </div>
+          <p className="mt-6 text-sm text-slate-400">
+            不用付費 · 不用信用卡 · 30 分鐘搞定上線
+          </p>
         </div>
-      </footer>
+      </section>
+
+      <PublicFooter />
     </div>
   );
 }

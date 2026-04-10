@@ -8,6 +8,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -58,6 +60,73 @@ export default async function FAQPage({ params }: Props) {
   }, {});
 
   const tags = Object.keys(grouped).sort();
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="faq" />
+        <ChatWidget contextPage="/faq" contextEntityType="faq" />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.breadcrumb, url: `${SITE_URL}/faq` },
+          ])}
+        />
+        {faqs.length > 0 && <StructuredData data={buildFAQSchema(faqs)} />}
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.breadcrumb },
+            ]}
+            eyebrow="Buyer Questions"
+            title={copy.title}
+            description={copy.description}
+          >
+            {tags.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/faq/${encodeURIComponent(tag.toLowerCase().replace(/\s+/g, "-"))}`}
+                    className="border border-gray-700 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-gray-300 hover:border-primary hover:text-primary"
+                  >
+                    {tag} ({grouped[tag].length})
+                  </Link>
+                ))}
+              </div>
+            )}
+          </IndustrialPageHero>
+          <section className="py-16">
+            <div className="mx-auto max-w-4xl px-6 space-y-10">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} />}
+              {faqs.length === 0 ? (
+                <p className="border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-sm text-gray-500">{copy.emptyState}</p>
+              ) : (
+                tags.map((tag) => (
+                  <div key={tag}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="h-6 w-1.5 bg-primary" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-gray-900" id={tag.toLowerCase().replace(/\s+/g, "-")}>{tag}</h2>
+                    </div>
+                    <FAQAccordion items={grouped[tag]} />
+                  </div>
+                ))
+              )}
+              <IndustrialCtaPanel
+                title={copy.ctaTitle}
+                description={copy.ctaDescription}
+                primaryHref="/rfq"
+                primaryLabel={copy.ctaButtons.rfq}
+                secondaryHref="/contact"
+                secondaryLabel={copy.ctaButtons.contact}
+              />
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

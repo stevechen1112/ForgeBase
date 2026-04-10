@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-manufacturer-office",
+    "filename": "sales-manufacturer-office.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a realistic photograph-style image of a mid-sized Taiwanese export manufacturer's sales office. A business professional in smart-casual attire sits at a clean desk, looking at their laptop screen which shows a basic company website with small product thumbnails. On the desk: a few printed product catalogs with industrial product photos on covers, international trade show visitor badges with lanyards, scattered business cards from overseas clients, and a coffee mug. The scene subtly conveys 'good products but underperforming digital presence' — the person looks thoughtful, not frustrated. Professional natural office lighting through a window, modern but modest office furniture, warm neutral tones. No cinematic effects, no dramatic lighting. Authentic mid-sized manufacturing company atmosphere. 16:9 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "y0DZad-8GPi30-kPnZ6wQQ",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 152,
+    "candidatesTokenCount": 1614,
+    "totalTokenCount": 1766,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 152
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

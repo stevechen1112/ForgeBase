@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -45,6 +47,66 @@ export default async function CapabilitiesPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, capabilities);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="capability" />
+        <StructuredData data={buildBreadcrumbSchema([{ name: common.home, url: SITE_URL }, { name: pageCopy.breadcrumb, url: `${SITE_URL}/capabilities` }])} />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: pageCopy.breadcrumb },
+            ]}
+            eyebrow="Operations"
+            title={pageCopy.title}
+            description={pageCopy.description}
+          >
+            <div className="flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">
+              {pageCopy.tags.map((tag) => (
+                <span key={tag} className="border border-gray-700 px-3 py-1">{tag}</span>
+              ))}
+            </div>
+          </IndustrialPageHero>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {capabilities.map((cap) => {
+                  const buyerBenefit = cap.category_tag ? (pageCopy.buyerBenefit[cap.category_tag.toLowerCase() as keyof typeof pageCopy.buyerBenefit] ?? null) : null;
+                  return (
+                    <Link key={cap.id} href={`/capabilities/${cap.slug}`} className="group border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5">
+                      {cap.category_tag && (
+                        <span className="mb-3 inline-block bg-primary px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground">
+                          {cap.category_tag}
+                        </span>
+                      )}
+                      <h2 className="text-base font-black uppercase tracking-wide text-gray-900 transition-colors group-hover:text-primary">{cap.capability_name}</h2>
+                      <p className="mt-2 text-sm text-gray-500">{cap.short_description}</p>
+                      {buyerBenefit && (
+                        <p className="mt-4 border-t border-gray-200 pt-4 text-xs leading-relaxed text-gray-600">{buyerBenefit}</p>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-12">
+                <IndustrialCtaPanel
+                  title={pageCopy.ctaTitle}
+                  description={pageCopy.ctaDescription}
+                  primaryHref="/contact"
+                  primaryLabel={pageCopy.ctaPrimary}
+                  secondaryHref="/rfq"
+                  secondaryLabel={pageCopy.ctaSecondary}
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

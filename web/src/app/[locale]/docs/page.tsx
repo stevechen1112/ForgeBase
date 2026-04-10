@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -33,6 +35,41 @@ export default async function DocsPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<DocsPageMessages>("docsPage"),
   ]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <main className="bg-white">
+        <IndustrialPageHero
+          items={[
+            { label: common.home, href: "/" },
+            { label: copy.breadcrumb },
+          ]}
+          eyebrow="Documentation"
+          title={copy.title}
+          description={copy.description}
+        />
+        <section className="py-16">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              {copy.docs.map((doc) => (
+                <div key={doc.title} className="border border-gray-300 bg-white p-6">
+                  <h2 className="text-lg font-black uppercase tracking-wide text-gray-900">{doc.title}</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-600">{doc.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 border-l-4 border-primary bg-gray-50 p-6">
+              <h2 className="text-lg font-black uppercase tracking-wide text-gray-900">{copy.noteTitle}</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+                {copy.noteDescription}
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

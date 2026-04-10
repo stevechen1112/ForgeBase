@@ -9,6 +9,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; tag: string }> };
 
@@ -60,6 +62,44 @@ export default async function FAQTagPage({ params }: Props) {
 
   const label = decoded.charAt(0).toUpperCase() + decoded.slice(1);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, filtered);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="faq" pageId={tag} />
+        <ChatWidget contextPage={`/faq/${tag}`} contextEntityType="faq" />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.breadcrumb, url: `${SITE_URL}/faq` },
+            { name: label, url: `${SITE_URL}/faq/${tag}` },
+          ])}
+        />
+        <StructuredData data={buildFAQSchema(filtered)} />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.breadcrumb, href: "/faq" },
+              { label },
+            ]}
+            eyebrow="Buyer Questions"
+            title={`${label} - ${copy.breadcrumb}`}
+            description={`${filtered.length} ${common.questions}`}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-4xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <FAQAccordion items={filtered} />
+              <div className="mt-8">
+                <Link href="/faq" className="text-[11px] font-black uppercase tracking-[0.16em] text-primary hover:underline">{copy.allCategories}</Link>
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

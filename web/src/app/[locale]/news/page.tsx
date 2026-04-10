@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -31,6 +33,34 @@ export default async function NewsPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<NewsPageMessages>("newsPage"),
   ]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <main className="bg-white">
+        <IndustrialPageHero
+          items={[
+            { label: common.home, href: "/" },
+            { label: copy.breadcrumb },
+          ]}
+          eyebrow="Updates"
+          title={copy.title}
+          description={copy.description}
+        />
+        <section className="py-16">
+          <div className="mx-auto max-w-6xl px-6 space-y-4">
+            {copy.items.map((item) => (
+              <article key={item.title} className="border border-gray-300 bg-white p-6 transition-colors hover:border-primary/50 hover:bg-primary/5">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">{item.date}</p>
+                <h2 className="mt-3 text-2xl font-black uppercase tracking-tight text-gray-900">{item.title}</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-600">{item.summary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

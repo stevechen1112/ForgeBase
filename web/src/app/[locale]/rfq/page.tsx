@@ -12,6 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type RFQPageMessages = {
   metadata: {
@@ -54,6 +55,56 @@ export default async function RFQPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   const productIds = sp.product_id ? [sp.product_id] : [];
   const applicationId = sp.application_id;
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="rfq" />
+        <main className="min-h-screen bg-white">
+          <IndustrialPageHero
+            items={[{ label: "Home", href: "/" }, { label: "RFQ" }]}
+            eyebrow="Quotation"
+            title={copy.title}
+            description={copy.description}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <aside className="space-y-6 lg:col-span-1">
+                  <div className="border border-gray-300 bg-white p-5">
+                    <h2 className="mb-4 text-base font-black uppercase tracking-wide text-gray-900">{copy.builtForTitle}</h2>
+                    <ul className="space-y-3 text-sm text-gray-600">
+                      {copy.builtForItems.map((item) => (
+                        <li key={item} className="border-l-4 border-primary bg-gray-50 px-3 py-2">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="border-l-4 border-primary bg-gray-50 p-5">
+                    <h2 className="mb-2 text-base font-black uppercase tracking-wide text-gray-900">{copy.helpTitle}</h2>
+                    <p className="mb-3 text-sm leading-relaxed text-gray-600">{copy.helpDescription}</p>
+                    <Link href="/contact" className="text-[11px] font-black uppercase tracking-[0.16em] text-primary hover:underline">
+                      {copy.helpCta}
+                    </Link>
+                  </div>
+                  <div className="border border-gray-300 bg-gray-900 p-5 text-center text-white">
+                    <div className="text-3xl font-black text-primary">{copy.responseWindowTime}</div>
+                    <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-gray-300">{copy.responseWindowLabel}</div>
+                    <div className="mt-2 text-xs text-gray-500">{copy.responseWindowHours}</div>
+                  </div>
+                </aside>
+                <div className="lg:col-span-2 border border-gray-300 bg-white p-6">
+                  <RFQForm
+                    preselectedProductIds={productIds}
+                    preselectedApplicationId={applicationId}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Certification } from "@/types/content";
 import { trackSpecDownload } from "@/lib/analytics";
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = { certification: Certification };
 
@@ -21,6 +22,7 @@ function buildDetailHref(locale: string, slug: string) {
 export function CertificationBadge({ certification }: Props) {
   const localeKey = resolveLocale(certification.locale);
   const detailHref = buildDetailHref(certification.locale, certification.slug);
+  const isIndustrial = siteConfig.layout === "industrial";
   const badgeImageSrc = certification.badge_image_url
     ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
     : null;
@@ -28,7 +30,9 @@ export function CertificationBadge({ certification }: Props) {
   const downloadLabel = localeKey === "zh-TW" ? "下載證書" : "Download Certificate";
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-5 shadow-sm text-center">
+    <div className={isIndustrial
+      ? "flex flex-col items-center border border-gray-300 bg-white p-5 text-center"
+      : "flex flex-col items-center rounded-xl border border-gray-100 bg-white p-5 shadow-sm text-center"}>
       <Link href={detailHref} className="flex flex-col items-center">
         {badgeImageSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -56,7 +60,9 @@ export function CertificationBadge({ certification }: Props) {
             </svg>
           </div>
         )}
-        <p className="text-sm font-semibold text-gray-800 hover:text-blue-700 transition-colors">{certification.cert_name}</p>
+        <p className={isIndustrial
+          ? "text-sm font-black uppercase tracking-wide text-gray-900 transition-colors hover:text-primary"
+          : "text-sm font-semibold text-gray-800 hover:text-blue-700 transition-colors"}>{certification.cert_name}</p>
       </Link>
       {certification.issuer && (
         <p className="mt-0.5 text-xs text-gray-500">{certification.issuer}</p>
@@ -71,7 +77,9 @@ export function CertificationBadge({ certification }: Props) {
           href={certification.document_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 text-xs font-medium text-blue-600 hover:underline"
+          className={isIndustrial
+            ? "mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-primary hover:underline"
+            : "mt-3 text-xs font-medium text-blue-600 hover:underline"}
           onClick={() => trackSpecDownload(certification.id, certification.cert_name)}
         >
           {downloadLabel}

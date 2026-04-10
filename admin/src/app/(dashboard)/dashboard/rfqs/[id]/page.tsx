@@ -13,6 +13,27 @@ import { API_BASE } from "@/lib/api/client";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
+type RFQEvent = {
+  id: string;
+  event_type: string;
+  summary: string;
+  detail: Record<string, unknown> | null;
+  actor_id: string | null;
+  created_at: string;
+};
+
+const EVENT_ICON: Record<string, string> = {
+  created: "🟢",
+  status_changed: "🔄",
+  assigned: "👤",
+  first_response: "💬",
+  quote_sent: "📨",
+  lost_reason_set: "❌",
+  notification_sent: "🔔",
+  ai_analysis_run: "🤖",
+  draft_reply_generated: "✉️",
+};
+
 type RFQDetail = {
   id: string; rfq_number: string; contact_id: string | null; visitor_id: string | null;
   status: string; priority: string; intent_score_at_submit: number; assigned_to: string | null;
@@ -61,6 +82,18 @@ export default function RFQDetailPage() {
   const [followUpSaving, setFollowUpSaving] = useState(false);
   const [lostReason, setLostReason] = useState("");
 
+  // Timeline events
+  const [events, setEvents] = useState<RFQEvent[]>([]);
+
+  async function fetchEvents() {
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setEvents(await res.json());
+    } catch { /* non-critical */ }
+  }
+
   async function saveFollowUp(field: "first_response_at" | "quote_sent_at") {
     setFollowUpSaving(true);
     try {
@@ -72,6 +105,7 @@ export default function RFQDetailPage() {
       if (!res.ok) throw new Error("Failed");
       setRfq((prev) => prev ? { ...prev, [field]: new Date().toISOString() } : prev);
       setMessage(`${field === "first_response_at" ? "首次回覆" : "報價發出"}時間已記錄 ✓`);
+      fetchEvents();
     } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
     finally { setFollowUpSaving(false); }
   }
@@ -88,6 +122,7 @@ export default function RFQDetailPage() {
       if (!res.ok) throw new Error("Failed");
       setRfq((prev) => prev ? { ...prev, lost_reason: lostReason } : prev);
       setMessage("未成交原因已儲存 ✓");
+      fetchEvents();
     } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
     finally { setFollowUpSaving(false); }
   }
@@ -125,6 +160,7 @@ export default function RFQDetailPage() {
       .then((r) => r.json())
       .then((data) => { setRfq(data); setNewStatus(data.status); setAssignTo(data.assigned_to ?? ""); })
       .finally(() => setLoading(false));
+    fetchEvents();
   }, [id, token]);
 
   async function saveStatus() {
@@ -140,6 +176,7 @@ export default function RFQDetailPage() {
       if (!res.ok) throw new Error(data.detail);
       setRfq((prev) => prev ? { ...prev, status: data.status } : prev);
       setMessage("Status updated ✓");
+      fetchEvents();
     } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
     finally { setSaving(false); }
   }
@@ -157,6 +194,7 @@ export default function RFQDetailPage() {
       if (!res.ok) throw new Error(data.detail);
       setRfq((prev) => prev ? { ...prev, assigned_to: data.assigned_to, status: data.status } : prev);
       setMessage("Assigned ✓");
+      fetchEvents();
     } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
     finally { setSaving(false); }
   }
@@ -247,6 +285,44 @@ export default function RFQDetailPage() {
                   </div>
                 ))}
               </dl>
+            </CardContent>
+          </Card>
+
+          {/* Activity Timeline */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">活動紀錄</CardTitle>
+                <Button size="sm" variant="ghost" onClick={fetchEvents} className="text-xs">
+                  重新整理
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">尚無紀錄</p>
+              ) : (
+                <ol className="relative border-l border-muted-foreground/20 ml-2 space-y-4">
+                  {events.map((evt) => (
+                    <li key={evt.id} className="ml-4">
+                      <div className="absolute -left-2.5 mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-background border text-xs">
+                        {EVENT_ICON[evt.event_type] ?? "📌"}
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="text-sm font-medium">{evt.summary}</p>
+                        <time className="shrink-0 text-xs text-muted-foreground">
+                          {new Date(evt.created_at).toLocaleString()}
+                        </time>
+                      </div>
+                      {evt.detail && (
+                        <pre className="mt-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1 overflow-x-auto">
+                          {JSON.stringify(evt.detail, null, 2)}
+                        </pre>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
             </CardContent>
           </Card>
 

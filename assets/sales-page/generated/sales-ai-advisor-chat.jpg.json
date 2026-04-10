@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-ai-advisor-chat",
+    "filename": "sales-ai-advisor-chat.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a clean UI mockup illustration of an AI chat assistant interface embedded on a B2B product page. The right side shows a chat window with a conversation: a buyer message bubble says 'Do you have VDE-certified insulated screwdrivers for the European market?' and the AI assistant responds with a product recommendation card showing a small product thumbnail, product name, key specs (voltage rating, certification), and a prominent blue 'Request Quote' CTA button. The left side shows a partial product page with specifications table. Modern chat bubble design with blue (#0d93e8) accent, rounded corners, clean white background, subtle drop shadows. Professional SaaS product screenshot style, not a 3D render. 16:9 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "rEDZaezmN7vl2roPzbbkeQ",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 152,
+    "candidatesTokenCount": 1656,
+    "totalTokenCount": 1808,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 152
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

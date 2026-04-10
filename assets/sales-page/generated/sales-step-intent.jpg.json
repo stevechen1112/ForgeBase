@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-step-intent",
+    "filename": "sales-step-intent.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Intent: Identifying serious buyers through behavior tracking'. Show a stylized product webpage with a semi-transparent heatmap overlay in warm colors, alongside a vertical intent-scoring gauge that progresses from blue (Cold) through yellow (Warm) to red-orange (Hot). Floating data chips show visitor actions: 'Viewed Product ×3', 'Downloaded Spec', 'Expanded FAQ'. A subtle visitor silhouette with a highlighted intent badge. Blue (#0d93e8) and orange accent color palette, flat modern SaaS illustration style on a light background. Professional, minimal, not cartoonish. 4:3 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "f0DZafLuC6220-kPu9OawAE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 138,
+    "candidatesTokenCount": 1375,
+    "totalTokenCount": 1513,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 138
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

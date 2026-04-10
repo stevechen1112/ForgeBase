@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-hero-dashboard",
+    "filename": "sales-hero-dashboard-mockup.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a clean, modern SaaS dashboard UI screenshot illustration for a B2B manufacturer website growth platform. The dashboard shows a left sidebar navigation with icons, a main panel with a Visitor Intent pipeline displaying 4 horizontal status cards labeled Cold (blue), Warm (yellow), Hot (orange), Sales-Ready (red) with visitor names and country flags (DE, US, JP, IT). Below that, an RFQ (Request for Quote) list table with columns for company, product, status badge, and date. In the top-right corner, a small world map widget with colored dots showing website traffic by country. Color scheme: professional blue (#0d93e8) primary, white background, light gray sidebar, subtle shadows. The style should look like a realistic modern web application screenshot with clean rounded UI elements, not a 3D render. No text smaller than 10px. 16:9 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "YUDZaeHSKq-w0-kP6YnIyA4",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 191,
+    "candidatesTokenCount": 1713,
+    "totalTokenCount": 1904,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 191
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

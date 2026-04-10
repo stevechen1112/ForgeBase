@@ -7,6 +7,8 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -51,6 +53,55 @@ export default async function CapabilityDetailPage({ params }: Props) {
   const capability = await getCapabilityBySlug(slug, locale);
   if (!capability) notFound();
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [capability]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="capability" pageId={capability.id} />
+        <StructuredData data={buildBreadcrumbSchema([
+          { name: common.home, url: SITE_URL },
+          { name: copy.capabilities, url: `${SITE_URL}/capabilities` },
+          { name: capability.capability_name, url: `${SITE_URL}/capabilities/${capability.slug}` },
+        ])} />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.capabilities, href: "/capabilities" },
+              { label: capability.capability_name },
+            ]}
+            eyebrow={capability.category_tag || copy.capabilities}
+            title={capability.capability_name}
+            description={capability.short_description}
+          />
+          <section className="py-16">
+            <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-2">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="lg:col-span-2" />}
+              <div>
+                <div className="mb-6 border-l-4 border-primary bg-gray-50 p-5">
+                  <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.commercialBenefit}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.commercialBenefitDescription}</p>
+                </div>
+                <div className="text-sm leading-relaxed text-gray-700 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4" dangerouslySetInnerHTML={{ __html: capability.detail || capability.short_description }} />
+              </div>
+              <div className="border border-gray-300 bg-white p-6">
+                <h2 className="mb-3 text-lg font-black uppercase tracking-wide text-gray-900">{copy.snapshot}</h2>
+                <dl className="space-y-3 text-sm">
+                  <div className="flex justify-between gap-4 border-b border-gray-200 pb-3"><dt className="text-gray-500">{copy.focusArea}</dt><dd className="font-medium text-gray-700 capitalize">{capability.category_tag || copy.general}</dd></div>
+                  <div className="flex justify-between gap-4 border-b border-gray-200 pb-3"><dt className="text-gray-500">{copy.relevantAt}</dt><dd className="font-medium text-gray-700">{copy.relevantValue}</dd></div>
+                  <div className="flex justify-between gap-4"><dt className="text-gray-500">{copy.appliesTo}</dt><dd className="font-medium text-gray-700">{copy.appliesValue}</dd></div>
+                </dl>
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <p className="text-sm leading-relaxed text-gray-600">{copy.discussionDescription}</p>
+                  <Link href="/contact" className="mt-4 inline-block bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground skew-x-[-3deg]"><span className="block skew-x-[3deg]">{copy.discuss}</span></Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

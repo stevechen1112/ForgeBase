@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-before-after-site",
+    "filename": "sales-before-after-site.png",
+    "aspect_ratio": "16:9",
+    "image_size": "1K",
+    "prompt": "Create a side-by-side before-and-after website comparison illustration for a SaaS marketing page. Left side labeled 'Before': an outdated 2008-era B2B industrial website mockup with cluttered layout, tiny text, low-contrast colors, table-based product grid, basic navigation bar, and a generic 'Contact Us' form at the bottom. Right side labeled 'After': the same company's content modernized in a clean, professional product page with structured product cards, hero image, clear blue CTA buttons, mobile-responsive layout, professional typography, and a structured RFQ form. A subtle glowing arrow or transformation effect in the middle connects the two sides. The 'Before' side uses muted gray-beige tones; the 'After' side uses crisp white and blue (#0d93e8). 16:9 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "5kDZaYeGE6220-kPu9OawAE",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 177,
+    "candidatesTokenCount": 1498,
+    "totalTokenCount": 1675,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 177
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

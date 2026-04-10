@@ -5,6 +5,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -40,6 +42,58 @@ export default async function ComparisonsPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, comparisons);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: pageCopy.breadcrumb, url: `${SITE_URL}/comparisons` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: pageCopy.breadcrumb },
+            ]}
+            eyebrow="Decision Guides"
+            title={pageCopy.title}
+            description={pageCopy.description}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              {comparisons.length === 0 ? (
+                <p className="border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-sm text-gray-500">{pageCopy.emptyState}</p>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {comparisons.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/comparisons/${c.slug}`}
+                      className="group border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      <h2 className="text-base font-black uppercase tracking-wide text-gray-900 transition-colors group-hover:text-primary">
+                        {c.topic_title}
+                      </h2>
+                      {c.summary && (
+                        <p className="mt-2 text-sm text-gray-500 line-clamp-3">{c.summary}</p>
+                      )}
+                      <p className="mt-4 text-[11px] font-black uppercase tracking-[0.16em] text-primary group-hover:underline">
+                        {pageCopy.readMore}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

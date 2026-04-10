@@ -12,6 +12,8 @@ import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { buildTwitterMeta } from "@/lib/seo";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialPageHero } from "@/components/themes";
 
 type Props = {
   params: Promise<{ locale: string; categorySlug: string }>;
@@ -102,6 +104,103 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const faceted = isFaceted(filters);
   const baseUrl = `/products/${category.slug}`;
   const heroImage = getCategoryHeroImage(category.slug, category.image_url);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="category" pageId={category.id} />
+        <ChatWidget contextPage={baseUrl} contextEntityType="category" contextEntityId={category.id} />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.products, url: `${SITE_URL}/products` },
+            { name: category.category_name, url: `${SITE_URL}/products/${category.slug}` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.products, href: "/products" },
+              { label: category.category_name },
+            ]}
+            eyebrow="Category"
+            title={category.category_name}
+            description={category.description ? category.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : undefined}
+            imageSrc={heroImage ?? undefined}
+          />
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <div className="mb-8 grid gap-4 lg:grid-cols-3">
+                <div className="border-l-4 border-primary bg-gray-50 p-5">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.buyerFocusTitle}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.buyerFocusDescription}</p>
+                </div>
+                <div className="border-l-4 border-gray-300 bg-gray-50 p-5">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.typicalQuestionsTitle}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.typicalQuestionsDescription}</p>
+                </div>
+                <div className="border-l-4 border-primary bg-gray-900 p-5 text-white">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-primary">{copy.fasterAnswerTitle}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-300">{copy.fasterAnswerDescription}</p>
+                </div>
+              </div>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <FacetedFilterBar placeholder={`${copy.searchPlaceholder} ${category.category_name}...`} />
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                  {total} {total !== 1 ? copy.productCountPlural : copy.productCount}
+                  {q ? ` ${copy.matching} \"${q}\"` : ""}
+                </p>
+              </div>
+              {faceted && (
+                <div className="mb-4 border-l-4 border-primary bg-gray-50 px-4 py-3 text-xs text-gray-600">
+                  {copy.filteredNotice}{" "}
+                  <Link href={baseUrl} className="font-bold uppercase tracking-[0.16em] text-primary underline">{copy.viewAllProducts}</Link>
+                </div>
+              )}
+              {products.length === 0 ? (
+                <p className="border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-sm text-gray-500">
+                  {q ? `${copy.noProductsFound} "${q}"。` : copy.noProducts}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {products.map((product) => (
+                    <ProductCard key={product.id} product={product} categorySlug={category.slug} />
+                  ))}
+                </div>
+              )}
+              {total_pages > 1 && (
+                <nav className="mt-10 flex justify-center gap-2" aria-label="Pagination">
+                  {page > 1 && (
+                    <Link
+                      href={page - 1 === 1 ? baseUrl : `${baseUrl}?page=${page - 1}${q ? `&q=${q}` : ""}`}
+                      rel="prev"
+                      className="border border-gray-300 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-700 hover:border-primary hover:text-primary"
+                    >
+                      {copy.prev}
+                    </Link>
+                  )}
+                  <span className="px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                    {copy.page} {page} / {total_pages}
+                  </span>
+                  {page < total_pages && (
+                    <Link
+                      href={`${baseUrl}?page=${page + 1}${q ? `&q=${q}` : ""}`}
+                      rel="next"
+                      className="border border-gray-300 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-700 hover:border-primary hover:text-primary"
+                    >
+                      {copy.next}
+                    </Link>
+                  )}
+                </nav>
+              )}
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

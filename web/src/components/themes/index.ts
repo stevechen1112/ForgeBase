@@ -13,3 +13,9 @@ export { IndustrialHeader } from "./industrial/IndustrialHeader";
 export { IndustrialFooter } from "./industrial/IndustrialFooter";
 export { IndustrialHero } from "./industrial/IndustrialHero";
 export { IndustrialHomePage } from "./industrial/IndustrialHomePage";
+export {
+	IndustrialPageHero,
+	IndustrialSectionHeading,
+	IndustrialCtaPanel,
+	INDUSTRIAL_PROSE_CLASS,
+} from "./industrial/IndustrialPagePrimitives";

@@ -1,0 +1,30 @@
+{
+  "job": {
+    "id": "sales-step-convert",
+    "filename": "sales-step-convert.png",
+    "aspect_ratio": "4:3",
+    "image_size": "1K",
+    "prompt": "Create a clean conceptual illustration for a SaaS marketing page showing the concept of 'Convert: Turning interested visitors into RFQ submissions'. Show a structured RFQ (Request for Quote) form card on the left with filled fields (product, quantity, certification) and a green submit checkmark, connected by a flowing arrow to a notification bell icon on the right that alerts a business representative shown as a small avatar with a phone displaying a push notification. Include a subtle funnel shape in the background suggesting conversion. Blue (#0d93e8) and green accent color palette, flat modern SaaS illustration style on a light background. Professional, minimal. 4:3 aspect ratio."
+  },
+  "model": "gemini-3.1-flash-image-preview",
+  "mime_type": "image/jpeg",
+  "response_id": "jkDZaeqVJee00-kPr6Hz2A4",
+  "model_version": "gemini-3.1-flash-image-preview",
+  "usage_metadata": {
+    "promptTokenCount": 135,
+    "candidatesTokenCount": 1441,
+    "totalTokenCount": 1576,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 135
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1120
+      }
+    ]
+  }
+}

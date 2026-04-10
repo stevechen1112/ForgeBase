@@ -17,6 +17,7 @@ import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, 
 import { siteConfig } from "@/lib/siteConfig";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; applicationSlug: string }> };
 
@@ -97,6 +98,166 @@ export default async function ApplicationDetailPage({ params }: Props) {
   ]);
   const heroImage = getApplicationImage(application.slug, application.hero_image_url);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [application, ...relatedProducts, ...relatedFaqs]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="application" pageId={application.id} />
+        <ChatWidget
+          contextPage={`/applications/${application.slug}`}
+          contextEntityType="application"
+          contextEntityId={application.id}
+        />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.applications, url: `${SITE_URL}/applications` },
+            { name: application.application_name, url: `${SITE_URL}/applications/${application.slug}` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.applications, href: "/applications" },
+              { label: application.application_name },
+            ]}
+            eyebrow={application.industry || "Application"}
+            title={application.application_name}
+            imageSrc={heroImage ?? undefined}
+          >
+            {application.description && (
+              <div className="max-w-2xl text-sm leading-relaxed text-gray-300 [&_p]:mb-2 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: application.description }} />
+            )}
+          </IndustrialPageHero>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <div className="mb-8 grid gap-4 md:grid-cols-3">
+                {copy.prompts.map((item) => (
+                  <div key={item} className="border-l-4 border-primary bg-gray-50 p-4 text-sm leading-relaxed text-gray-600">{item}</div>
+                ))}
+              </div>
+              {(application.challenge || application.solution) && (
+                <div className="grid gap-8 lg:grid-cols-2">
+                  {application.challenge && (
+                    <div className="border border-amber-300 bg-amber-50 p-6">
+                      <h2 className="mb-3 text-lg font-black uppercase tracking-wide text-amber-900">{copy.challenge}</h2>
+                      <div className="text-sm leading-relaxed text-gray-700 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4" dangerouslySetInnerHTML={{ __html: application.challenge }} />
+                    </div>
+                  )}
+                  {application.solution && (
+                    <div className="border border-green-300 bg-green-50 p-6">
+                      <h2 className="mb-3 text-lg font-black uppercase tracking-wide text-green-900">{copy.solution}</h2>
+                      <div className="text-sm leading-relaxed text-gray-700 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4" dangerouslySetInnerHTML={{ __html: application.solution }} />
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="mt-10 grid gap-6 lg:grid-cols-2">
+                <div className="overflow-hidden border border-gray-300 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={QUALITY_INSPECTION_IMAGE} alt={`${siteConfig.brandName} quality inspection workflow`} className="h-56 w-full object-cover" />
+                  <div className="p-5">
+                    <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.verificationTitle}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.verificationDescription}</p>
+                  </div>
+                </div>
+                <div className="overflow-hidden border border-gray-300 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={CUSTOM_PACKAGING_IMAGE} alt={`${siteConfig.brandName} OEM and private-label packaging support`} className="h-56 w-full object-cover" />
+                  <div className="p-5">
+                    <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.packagingTitle}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.packagingDescription}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-10 border border-gray-300 bg-white p-6">
+                <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.sourcingTitle}</h2>
+                <p className="mt-1 text-sm text-gray-500">{copy.sourcingDescription}</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {copy.sourcingItems.map((item) => (
+                    <div key={item.label} className="border-l-4 border-primary bg-gray-50 p-4">
+                      <p className="text-sm font-black uppercase tracking-wide text-gray-900">{item.label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-gray-500">{item.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-8">
+                <IndustrialCtaPanel
+                  title={copy.quoteCta}
+                  description={copy.planCta}
+                  primaryHref={`/rfq?application_id=${application.id}`}
+                  primaryLabel={copy.quoteCta}
+                  secondaryHref="/contact"
+                  secondaryLabel={copy.planCta}
+                />
+                <div className="mt-4">
+                  <Link href="/applications" className="text-[11px] font-black uppercase tracking-[0.16em] text-primary hover:underline">{copy.allApplications}</Link>
+                </div>
+              </div>
+              {relatedProducts.length > 0 && (
+                <div className="mt-12">
+                  <h2 className="mb-2 text-xl font-black uppercase tracking-wide text-gray-900">{copy.relatedProductsTitle}</h2>
+                  <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-500">{copy.relatedProductsDescription}</p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {relatedProducts.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={product.category_slug ? `/products/${product.category_slug}/${product.slug}` : "/products"}
+                        className="group border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                      >
+                        <div className="mb-4 overflow-hidden bg-gray-100 aspect-[4/3]">
+                          {product.model_number ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={getProductImage({ model_number: product.model_number }, product.category_slug) ?? undefined}
+                              alt={product.product_name}
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-gray-300">
+                              <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+                          )}
+                        </div>
+                        {product.model_number && <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{product.model_number}</p>}
+                        <h3 className="mt-1 text-sm font-black uppercase tracking-wide text-gray-900">{product.product_name}</h3>
+                        {product.short_description && <p className="mt-2 text-sm text-gray-500 line-clamp-2">{product.short_description}</p>}
+                        <span className="mt-3 inline-block text-[11px] font-black uppercase tracking-[0.16em] text-primary">{copy.viewProduct}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {relatedFaqs.length > 0 && (
+                <div className="mt-12">
+                  <h2 className="mb-6 text-xl font-black uppercase tracking-wide text-gray-900">{copy.faqTitle}</h2>
+                  <FAQAccordion
+                    items={relatedFaqs.map((f) => ({
+                      id: f.id,
+                      question: f.question,
+                      answer: f.answer,
+                      locale: f.locale ?? "en",
+                      status: "published" as const,
+                      sort_order: 0,
+                      category_tag: null,
+                      seo_title: null,
+                      seo_description: null,
+                      slug: f.id,
+                      created_at: "",
+                      updated_at: "",
+                    }))}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

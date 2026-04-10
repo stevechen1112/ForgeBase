@@ -8,6 +8,8 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { siteConfig } from "@/lib/siteConfig";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
   home: string;
@@ -52,6 +54,116 @@ export default async function ProductsPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, categories);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <ChatWidget contextPage="/products" contextEntityType="category" />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: pageCopy.breadcrumb, url: `${SITE_URL}/products` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: pageCopy.breadcrumb },
+            ]}
+            eyebrow="Catalogue"
+            title={pageCopy.heroTitle}
+            description={pageCopy.heroDescription}
+            imageSrc={PRODUCTS_HERO_IMAGE}
+          />
+          <section className="border-b border-gray-800 bg-gray-900">
+            <div className="mx-auto max-w-7xl px-6 py-8">
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                {pageCopy.highlights.map((h) => (
+                  <div key={h.label} className="flex flex-col">
+                    <span className="text-sm font-black uppercase tracking-[0.16em] text-primary">{h.label}</span>
+                    <span className="mt-1 text-xs text-gray-500">{h.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="h-6 w-1.5 bg-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{pageCopy.browseLabel}</span>
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900">{pageCopy.categoriesTitle}</h2>
+                </div>
+                <Link
+                  href="/contact"
+                  className="border border-gray-300 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-gray-800 hover:border-primary hover:text-primary"
+                >
+                  {pageCopy.contactCta}
+                </Link>
+              </div>
+              {categories.length === 0 ? (
+                <div className="border border-dashed border-gray-300 bg-gray-50 py-20 text-center text-sm text-gray-500">
+                  <p>{pageCopy.emptyState}</p>
+                  <Link href="/contact" className="mt-4 inline-block font-bold uppercase tracking-[0.16em] text-primary hover:underline">
+                    {pageCopy.emptyCta}
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      href={`/products/${cat.slug}`}
+                      className="group flex gap-4 border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      {getCategoryCardImage(cat) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={getCategoryCardImage(cat) ?? undefined}
+                          alt={cat.category_name}
+                          className="h-16 w-16 flex-shrink-0 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center bg-gray-100 text-3xl text-gray-400">
+                          ⬡
+                        </div>
+                      )}
+                      <div className="min-w-0 flex flex-col justify-center">
+                        <h2 className="text-base font-black uppercase tracking-wide text-gray-900 transition-colors group-hover:text-primary">
+                          {cat.category_name}
+                        </h2>
+                        {cat.description && (
+                          <p className="mt-1 text-sm text-gray-500 line-clamp-2">{cat.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</p>
+                        )}
+                        <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.16em] text-primary">
+                          {pageCopy.viewProducts}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              <div className="mt-12">
+                <IndustrialCtaPanel
+                  title={pageCopy.customTitle}
+                  description={pageCopy.customDescription}
+                  primaryHref="/rfq"
+                  primaryLabel={pageCopy.customCta}
+                  secondaryHref="/contact"
+                  secondaryLabel={pageCopy.talkCta}
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

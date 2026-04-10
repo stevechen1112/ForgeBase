@@ -9,6 +9,7 @@ import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { siteConfig } from "@/lib/siteConfig";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -68,6 +69,192 @@ export default async function AboutPage({ params }: Props) {
     getPublishedCertifications(locale),
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [...capabilities, ...certifications]);
+
+  if (siteConfig.layout === "industrial") {
+    return (
+      <>
+        <PageViewTracker pageType="about" />
+        <StructuredData
+          data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })}
+        />
+        <StructuredData
+          data={buildBreadcrumbSchema([
+            { name: common.home, url: SITE_URL },
+            { name: copy.breadcrumb, url: `${SITE_URL}/about` },
+          ])}
+        />
+        <main className="bg-white">
+          <IndustrialPageHero
+            items={[
+              { label: common.home, href: "/" },
+              { label: copy.breadcrumb },
+            ]}
+            eyebrow="Manufacturer Profile"
+            title={copy.heroTitle}
+            description={copy.heroDescription}
+            imageSrc={ABOUT_HERO_IMAGE}
+          />
+          <section className="border-b border-gray-800 bg-gray-900">
+            <div className="mx-auto max-w-7xl px-6 py-8">
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                {copy.stats.map((s) => (
+                  <div key={s.label} className="flex flex-col">
+                    <span className="text-3xl font-black text-primary">{s.value}</span>
+                    <span className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-gray-500">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+                <div>
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="h-6 w-1.5 bg-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.ourStory}</span>
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900">{copy.storyTitle}</h2>
+                  {copy.storyParagraphs.map((paragraph) => (
+                    <p key={paragraph} className="mt-4 leading-relaxed text-gray-600">{paragraph}</p>
+                  ))}
+                  <Link
+                    href="/contact"
+                    className="mt-8 inline-block bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground skew-x-[-3deg]"
+                  >
+                    <span className="block skew-x-[3deg]">{copy.talkTeam}</span>
+                  </Link>
+                </div>
+                <div className="overflow-hidden border border-gray-300 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ABOUT_HERO_IMAGE}
+                    alt={`${SITE_NAME} factory and manufacturing environment`}
+                    className="aspect-video w-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+          <section className="border-y border-gray-200 bg-gray-50 py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
+              <div className="mb-10 flex items-center gap-3">
+                <div className="h-6 w-1.5 bg-primary" />
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.whatWeMake}</span>
+                  <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-gray-900">{copy.productLinesTitle}</h2>
+                </div>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {copy.productLines.map((v) => (
+                  <div key={v.title} className="border border-gray-300 bg-white p-6">
+                    <h3 className="text-base font-black uppercase tracking-wide text-gray-900">{v.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-500">{v.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="mb-10 flex items-center gap-3">
+                <div className="h-6 w-1.5 bg-primary" />
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.ourJourney}</span>
+                  <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-gray-900">{copy.milestones}</h2>
+                </div>
+              </div>
+              <div className="relative ml-4 border-l-2 border-gray-200 pl-8">
+                {copy.timeline.map((item) => (
+                  <div key={item.year} className="relative pb-8 last:pb-0">
+                    <div className="absolute -left-[calc(2rem+5px)] flex h-10 w-10 items-center justify-center bg-primary text-sm font-black text-primary-foreground">
+                      {item.year}
+                    </div>
+                    <p className="pt-2 text-sm leading-relaxed text-gray-600">{item.event}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="border-y border-gray-200 bg-gray-50 py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="mb-10 flex items-center gap-3">
+                <div className="h-6 w-1.5 bg-primary" />
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.strengthsEyebrow}</span>
+                  <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-gray-900">{copy.strengthsTitle}</h2>
+                </div>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {copy.operationalStrengths.map((item) => (
+                  <div key={item.title} className="border-l-4 border-primary bg-white p-6">
+                    <h3 className="text-base font-black uppercase tracking-wide text-gray-900">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-500">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          {capabilities.length > 0 && (
+            <section className="py-16">
+              <div className="mx-auto max-w-7xl px-6">
+                <div className="mb-10 flex items-center gap-3">
+                  <div className="h-6 w-1.5 bg-primary" />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.capabilitiesEyebrow}</span>
+                    <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-gray-900">{copy.capabilitiesTitle}</h2>
+                  </div>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {capabilities.map((cap) => (
+                    <Link
+                      key={cap.id}
+                      href={`/capabilities/${cap.slug}`}
+                      className="border border-gray-300 bg-white p-6 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      <h3 className="text-base font-black uppercase tracking-wide text-gray-900">{cap.capability_name}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-500">{cap.short_description}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+          {certifications.length > 0 && (
+            <section className="border-y border-gray-200 bg-gray-50 py-16">
+              <div className="mx-auto max-w-7xl px-6">
+                <div className="mb-10 flex items-center gap-3">
+                  <div className="h-6 w-1.5 bg-primary" />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{copy.certificationsEyebrow}</span>
+                    <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-gray-900">{copy.certificationsTitle}</h2>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {certifications.map((cert) => (
+                    <CertificationBadge key={cert.id} certification={cert} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+          <section className="py-16">
+            <div className="mx-auto max-w-7xl px-6">
+              <IndustrialCtaPanel
+                title={copy.ctaTitle}
+                description={copy.ctaDescription}
+                primaryHref="/contact"
+                primaryLabel={copy.contactTeam}
+                secondaryHref="/products"
+                secondaryLabel={copy.browseProducts}
+              />
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

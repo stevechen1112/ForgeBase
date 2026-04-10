@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/types/content";
 import { getProductImage } from "@/lib/demoAssets";
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = {
   product: Product;
@@ -13,14 +14,19 @@ export function ProductCard({ product, categorySlug }: Props) {
     ? `/products/${categorySlug}/${product.slug}`
     : `/products/${product.slug}`;
   const productImage = getProductImage(product, categorySlug);
+  const isIndustrial = siteConfig.layout === "industrial";
 
   return (
     <Link
       href={href}
-      className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+      className={isIndustrial
+        ? "group flex flex-col border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+        : "group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"}
     >
       {/* Placeholder image area */}
-      <div className="mb-4 aspect-square w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
+      <div className={isIndustrial
+        ? "mb-4 aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-300"
+        : "mb-4 aspect-square w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"}>
         {productImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -34,8 +40,12 @@ export function ProductCard({ product, categorySlug }: Props) {
           </svg>
         )}
       </div>
-      <p className="text-xs font-mono text-gray-400 mb-1">{product.model_number}</p>
-      <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors line-clamp-2">
+      <p className={isIndustrial
+        ? "mb-1 text-[11px] font-black uppercase tracking-[0.16em] text-primary"
+        : "text-xs font-mono text-gray-400 mb-1"}>{product.model_number}</p>
+      <h3 className={isIndustrial
+        ? "text-sm font-black uppercase tracking-wide text-gray-900 group-hover:text-primary transition-colors line-clamp-2"
+        : "text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors line-clamp-2"}>
         {product.product_name}
       </h3>
       <p className="mt-2 text-xs text-gray-500 line-clamp-2">{product.short_description}</p>
