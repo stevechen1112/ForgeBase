@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/store";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 type StrategyRow = {
   id: string;
@@ -43,10 +43,8 @@ export default function StrategyPerformancePage() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    fetch(`${API_BASE}/tracking/events/strategy-performance?days=${days}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
+    apiClient
+      .get<StrategyRow[]>(`/tracking/events/strategy-performance?days=${days}`, token)
       .then((data) => setRows(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setLoading(false));

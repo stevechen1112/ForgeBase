@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import RequireFeature, get_current_user
 from app.core.config import settings
 from app.models.page_brief import PageBrief
 from app.models.product import Product
@@ -41,6 +41,7 @@ class GenerateResponse(BaseModel):
 @router.post("/generate", response_model=GenerateResponse, tags=["ai"])
 async def generate_page_content(
     payload: GenerateRequest,
+    _feature=Depends(RequireFeature("ai_content_generation")),
     session: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
@@ -180,6 +181,7 @@ async def generate_page_content(
 @router.get("/generate/logs/{brief_id}", tags=["ai"])
 async def get_generation_logs(
     brief_id: uuid.UUID,
+    _feature=Depends(RequireFeature("ai_content_generation")),
     session: AsyncSession = Depends(get_session),
     _=Depends(get_current_user),
 ):

@@ -8,8 +8,10 @@ import {
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
+import { usePlan } from "@/lib/hooks/usePlan";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,6 +24,8 @@ type NavSubItem = {
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  /** Feature key from PLAN_MATRIX. Item is locked for plans without this feature. */
+  requiredFeature?: string;
 };
 
 type NavItem = {
@@ -32,6 +36,8 @@ type NavItem = {
   exact?: boolean;
   badge?: string;
   children?: NavSubItem[];
+  /** Feature key from PLAN_MATRIX. Item is locked for plans without this feature. */
+  requiredFeature?: string;
 };
 
 type NavGroup = { title: string; items: NavItem[] };
@@ -48,23 +54,24 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         label: "意圖分析", href: "/dashboard/intent", icon: Brain,
+        requiredFeature: "intent_scoring",
         children: [
-          { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true },
-          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale },
+          { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true, requiredFeature: "intent_scoring" },
+          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale, requiredFeature: "intent_scoring" },
         ],
       },
-      { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare },
+      { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
-      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
-      { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },
-      { label: "自訂受眾", href: "/dashboard/segments", icon: Target },
+      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking" },
+      { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter, requiredFeature: "full_tracking" },
+      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking" },
     ],
   },
   {
     title: "AI / SEO",
     items: [
-      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles },
-      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2 },
+      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation" },
+      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects" },
     ],
   },
   {
@@ -74,7 +81,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "商品管理", href: "/dashboard/products", icon: Package },
       { label: "應用場景", href: "/dashboard/applications", icon: Factory },
       { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle },
-      // { label: "競品比較", href: "/dashboard/comparisons", icon: Scale },
       { label: "認證管理", href: "/dashboard/certifications", icon: Trophy },
       { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench },
     ],
@@ -82,8 +88,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "內容管理",
     items: [
-      // { label: "多語管理", href: "/dashboard/multilingual", icon: Globe },
-      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick },
+      { label: "多語管理", href: "/dashboard/multilingual", icon: Globe, requiredFeature: "multilingual" },
+      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta" },
       { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
       { label: "媒體庫", href: "/dashboard/assets", icon: Image },
       { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2 },
@@ -121,6 +127,7 @@ function getInitials(email: string) {
 export function Sidebar() {
   const pathname = usePathname();
   const { state, logout } = useAuth();
+  const { hasFeature, isLoading: planLoading } = usePlan();
 
   const user = state.status === "authenticated" ? state.user : null;
   const canManageSystem = user?.role === "admin" || user?.role === "owner";
@@ -131,6 +138,13 @@ export function Sidebar() {
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
     return pathname === item.href || pathname.startsWith(item.href + "/");
+  }
+
+  /** Returns true if the item is locked (feature required but unavailable). */
+  function isLocked(item: NavItem | NavSubItem): boolean {
+    if (!item.requiredFeature) return false;
+    if (planLoading) return false; // optimistic: don't lock while loading
+    return !hasFeature(item.requiredFeature);
   }
 
   return (
@@ -163,6 +177,7 @@ export function Sidebar() {
                   <ul className="space-y-0.5">
                     {visible.map((item) => {
                       const active = isActive(item);
+                      const locked = isLocked(item);
                       const Icon = item.icon;
                       const hasChildren = !!item.children?.length;
                       const visibleChildren = item.children?.filter(c => !c.adminOnly || canManageSystem) ?? [];
@@ -173,28 +188,44 @@ export function Sidebar() {
                           <div className={cn("flex items-center", hasChildren && "gap-0.5 pr-1")}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Link
-                                  href={item.href}
-                                  className={cn(
-                                    "group flex flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
-                                    (active || anyChildActive)
-                                      ? "bg-[hsl(var(--sidebar-primary))]/15 text-white"
-                                      : "text-[hsl(var(--sidebar-foreground))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
-                                  )}
-                                >
-                                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", (active || anyChildActive) ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/50 group-hover:text-white")} />
-                                  <span className="truncate">{item.label}</span>
-                                  {active && !hasChildren && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
-                                  {item.badge && (
-                                    <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[10px]">{item.badge}</Badge>
-                                  )}
-                                </Link>
+                                {locked ? (
+                                  /* ── Locked item — not navigable ── */
+                                  <Link
+                                    href="/dashboard/settings/billing"
+                                    className={cn(
+                                      "group flex flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                                      "text-[hsl(var(--sidebar-foreground))]/35 hover:bg-[hsl(var(--sidebar-accent))]/50 hover:text-[hsl(var(--sidebar-foreground))]/50"
+                                    )}
+                                  >
+                                    <Icon className="h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))]/25" />
+                                    <span className="truncate flex-1">{item.label}</span>
+                                    <Lock className="h-3 w-3 shrink-0 text-[hsl(var(--sidebar-foreground))]/30" />
+                                  </Link>
+                                ) : (
+                                  /* ── Normal / active item ── */
+                                  <Link
+                                    href={item.href}
+                                    className={cn(
+                                      "group flex flex-1 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                                      (active || anyChildActive)
+                                        ? "bg-[hsl(var(--sidebar-primary))]/15 text-white"
+                                        : "text-[hsl(var(--sidebar-foreground))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+                                    )}
+                                  >
+                                    <Icon className={cn("h-4 w-4 shrink-0 transition-colors", (active || anyChildActive) ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/50 group-hover:text-white")} />
+                                    <span className="truncate">{item.label}</span>
+                                    {active && !hasChildren && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
+                                    {item.badge && (
+                                      <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[10px]">{item.badge}</Badge>
+                                    )}
+                                  </Link>
+                                )}
                               </TooltipTrigger>
                               <TooltipContent side="right" className="text-xs">
-                                {item.label}
+                                {locked ? "升級至 Professional 方案解鎖" : item.label}
                               </TooltipContent>
                             </Tooltip>
-                            {hasChildren && (
+                            {hasChildren && !locked && (
                               <button
                                 onClick={() => setExpandedItems(prev =>
                                   prev.includes(item.href) ? prev.filter(h => h !== item.href) : [...prev, item.href]
@@ -206,26 +237,38 @@ export function Sidebar() {
                               </button>
                             )}
                           </div>
-                          {hasChildren && isExpanded && visibleChildren.length > 0 && (
+                          {hasChildren && !locked && isExpanded && visibleChildren.length > 0 && (
                             <ul className="mt-0.5 ml-[22px] space-y-0.5 border-l border-white/10 pl-3">
                               {visibleChildren.map(child => {
-                                const childActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                                const childLocked = isLocked(child);
+                                const childActive = !childLocked && (pathname === child.href || pathname.startsWith(child.href + "/"));
                                 const ChildIcon = child.icon;
                                 return (
                                   <li key={child.href}>
-                                    <Link
-                                      href={child.href}
-                                      className={cn(
-                                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-all duration-150",
-                                        childActive
-                                          ? "bg-[hsl(var(--sidebar-primary))]/10 text-white"
-                                          : "text-[hsl(var(--sidebar-foreground))]/60 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
-                                      )}
-                                    >
-                                      <ChildIcon className={cn("h-3.5 w-3.5 shrink-0", childActive ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/40")} />
-                                      <span className="truncate">{child.label}</span>
-                                      {childActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
-                                    </Link>
+                                    {childLocked ? (
+                                      <Link
+                                        href="/dashboard/settings/billing"
+                                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-[hsl(var(--sidebar-foreground))]/30 hover:bg-[hsl(var(--sidebar-accent))]/50 transition-all duration-150"
+                                      >
+                                        <ChildIcon className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--sidebar-foreground))]/20" />
+                                        <span className="truncate flex-1">{child.label}</span>
+                                        <Lock className="h-3 w-3 shrink-0 text-[hsl(var(--sidebar-foreground))]/20" />
+                                      </Link>
+                                    ) : (
+                                      <Link
+                                        href={child.href}
+                                        className={cn(
+                                          "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-all duration-150",
+                                          childActive
+                                            ? "bg-[hsl(var(--sidebar-primary))]/10 text-white"
+                                            : "text-[hsl(var(--sidebar-foreground))]/60 hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+                                        )}
+                                      >
+                                        <ChildIcon className={cn("h-3.5 w-3.5 shrink-0", childActive ? "text-[hsl(var(--sidebar-primary))]" : "text-[hsl(var(--sidebar-foreground))]/40")} />
+                                        <span className="truncate">{child.label}</span>
+                                        {childActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />}
+                                      </Link>
+                                    )}
                                   </li>
                                 );
                               })}

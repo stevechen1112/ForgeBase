@@ -14,7 +14,7 @@ from pydantic import BaseModel, field_validator
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_admin
+from app.api.v1.deps import RequireFeature, require_admin
 from app.db.session import get_session
 from app.models.chat import ChatMessage, ChatSession
 from app.models.user import User
@@ -48,6 +48,7 @@ async def list_chat_sessions(
     has_notes: Optional[bool] = None,
     limit: int = 50,
     offset: int = 0,
+    _feature: User = Depends(RequireFeature("chat_handoff")),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
@@ -116,6 +117,7 @@ async def list_chat_sessions(
 @router.get("/sessions/{chat_session_id}")
 async def get_chat_session_detail(
     chat_session_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("chat_handoff")),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
@@ -169,6 +171,7 @@ async def get_chat_session_detail(
 async def update_chat_session(
     chat_session_id: uuid.UUID,
     body: ChatSessionUpdate,
+    _feature: User = Depends(RequireFeature("chat_handoff")),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):

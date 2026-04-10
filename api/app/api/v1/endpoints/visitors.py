@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import RequireFeature, get_current_user, require_content_editor
 from app.db.session import get_session
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
@@ -42,6 +42,7 @@ async def list_visitors(
     country: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -77,6 +78,7 @@ async def list_visitors(
 @router.get("/visitors/{visitor_id}")
 async def get_visitor(
     visitor_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -112,6 +114,7 @@ async def get_visitor(
 async def visitor_event_timeline(
     visitor_id: uuid.UUID,
     limit: int = 100,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -142,6 +145,7 @@ async def visitor_event_timeline(
 @router.get("/sessions/{session_id}")
 async def get_session_detail(
     session_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -171,6 +175,7 @@ async def get_session_detail(
 @router.get("/visitors/{visitor_id}/journey")
 async def visitor_journey(
     visitor_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):

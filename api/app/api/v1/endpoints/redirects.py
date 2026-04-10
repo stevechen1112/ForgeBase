@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import RequireFeature, get_current_user
 from app.db.session import get_session
 from app.models.redirect import Redirect
 from app.models.user import User
@@ -55,6 +55,7 @@ async def resolve_redirect(
 @router.get("", response_model=list[RedirectRead])
 async def list_redirects(
     active_only: bool = Query(True),
+    _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
     _current_user: User = Depends(get_current_user),
 ):
@@ -69,6 +70,7 @@ async def list_redirects(
 @router.post("", response_model=RedirectRead, status_code=201)
 async def create_redirect(
     body: RedirectCreate,
+    _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
     _current_user: User = Depends(get_current_user),
 ):
@@ -97,6 +99,7 @@ async def create_redirect(
 async def update_redirect(
     redirect_id: uuid.UUID,
     body: RedirectUpdate,
+    _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
     _current_user: User = Depends(get_current_user),
 ):
@@ -126,6 +129,7 @@ async def update_redirect(
 @router.delete("/{redirect_id}", status_code=204)
 async def deactivate_redirect(
     redirect_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
     _current_user: User = Depends(get_current_user),
 ):

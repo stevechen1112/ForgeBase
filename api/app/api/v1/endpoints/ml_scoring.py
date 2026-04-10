@@ -14,7 +14,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import RequireFeature, get_current_user, require_content_editor
 from app.db.session import get_session
 from app.models.user import User
 from app.services.ml_intent import (
@@ -32,6 +32,7 @@ router = APIRouter(tags=["ML Intent Scoring"])
 @router.post("/tracking/ml/train", status_code=status.HTTP_202_ACCEPTED)
 async def train_intent_model(
     background_tasks: BackgroundTasks,
+    _feature: User = Depends(RequireFeature("intent_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
@@ -51,6 +52,7 @@ async def train_intent_model(
 
 @router.get("/tracking/ml/status")
 async def intent_model_status(
+    _feature: User = Depends(RequireFeature("intent_scoring")),
     current_user: User = Depends(get_current_user),
 ):
     """Return current ML model status, metadata, and last training details."""
@@ -63,6 +65,7 @@ async def intent_model_status(
 async def predict_visitor_intent_score(
     visitor_id: uuid.UUID,
     save: bool = Query(False, description="Persist the blended score back to visitors table"),
+    _feature: User = Depends(RequireFeature("intent_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -131,6 +134,7 @@ async def predict_visitor_intent_score(
 async def batch_score_visitors(
     background_tasks: BackgroundTasks,
     limit: int = Query(500, ge=10, le=5000),
+    _feature: User = Depends(RequireFeature("intent_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):

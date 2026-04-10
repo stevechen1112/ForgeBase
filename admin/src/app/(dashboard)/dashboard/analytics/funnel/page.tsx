@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/store";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type FunnelStage = { stage: string; visitors: number };
@@ -54,10 +54,8 @@ export default function FunnelDashboard() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    fetch(`${API_BASE}/tracking/analytics/funnel?days=${days}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`API ${r.status}`))))
+    apiClient
+      .get<FunnelData>(`/tracking/analytics/funnel?days=${days}`, token)
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));

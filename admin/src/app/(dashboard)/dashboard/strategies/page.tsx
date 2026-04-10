@@ -2,12 +2,14 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
+import { usePlan } from "@/lib/hooks/usePlan";
 import { strategiesApi, type ContentStrategy } from "@/lib/api/content";
+import { UpgradeChip } from "@/components/plan/PlanGate";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, BarChart2 } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 const STATUS_LABELS: Record<string, string> = {
   unplanned: "未規劃",
@@ -48,7 +50,9 @@ type StrategyMetric = {
 
 export default function StrategiesPage() {
   const { state } = useAuth();
+  const { hasFeature } = usePlan();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const hasTracking = hasFeature("full_tracking");
   const [all, setAll] = useState<ContentStrategy[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -66,20 +70,19 @@ export default function StrategiesPage() {
   useEffect(() => { load(); }, [load]);
 
   const loadPerformance = useCallback(async () => {
-    if (!token) return;
+    if (!token || !hasTracking) return;
     setLoadingPerf(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/tracking/analytics/strategy-map?days=${perfDays}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const data = await apiClient.get<{ strategies?: StrategyMetric[]; tier_summary?: Record<string, number> }>(
+        `/tracking/analytics/strategy-map?days=${perfDays}`,
+        token,
       );
-      const data = await res.json();
       const map: Record<string, StrategyMetric> = {};
       for (const row of data.strategies ?? []) { map[row.strategy_id] = row; }
       setMetricsMap(map);
       setTierSummary(data.tier_summary ?? {});
     } finally { setLoadingPerf(false); }
-  }, [token, perfDays]);
+  }, [token, perfDays, hasTracking]);
 
   useEffect(() => { if (showPerf) loadPerformance(); }, [showPerf, loadPerformance]);
 
@@ -109,6 +112,7 @@ export default function StrategiesPage() {
             type="button"
             variant={showPerf ? "default" : "outline"}
             size="sm"
+            disabled={!hasTracking}
             onClick={() => setShowPerf(!showPerf)}
           >
             <BarChart2 className="mr-1.5 h-4 w-4" />
@@ -121,7 +125,17 @@ export default function StrategiesPage() {
       </div>
 
       {/* Performance controls */}
-      {showPerf && (
+      {!hasTracking && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-amber-900">策略成效覆蓋需要 Professional 方案</p>
+            <p className="text-xs text-amber-700 mt-0.5">Starter 仍可管理策略內容，但不提供流量與轉換成效覆蓋。</p>
+          </div>
+          <UpgradeChip label="升級解鎖策略成效" />
+        </div>
+      )}
+
+      {showPerf && hasTracking && (
         <div className="flex flex-wrap items-center gap-4 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
           <span className="text-xs font-medium text-indigo-700">成效時段：</span>
           {[7, 14, 30, 90].map((d) => (

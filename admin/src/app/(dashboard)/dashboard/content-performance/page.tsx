@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, FileText, Package, LayoutGrid, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 // ── 流量統計資料型別（來自 /tracking/analytics/* ）────────────────────────────
 type SummaryRow = { total_events: number; total_pages: number; total_unique_visitors: number };
@@ -82,10 +82,7 @@ export default function ContentPerformancePage() {
     setLoading(true); setError(null);
     try {
       const ep = CONTENT_TABS.find(x => x.key === t)!.endpoint;
-      const r = await fetch(`${API_BASE}/${ep}?days=${d}&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await r.json();
+      const json = await apiClient.get<AnalyticsResponse>(`/${ep}?days=${d}&limit=100`, token);
       setContentData(prev => ({ ...prev, [t]: json }));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));

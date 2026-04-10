@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import RequireFeature, get_current_user
 from app.db.session import get_session
 from app.models.user import User
 
@@ -34,6 +34,7 @@ async def page_analytics(
     days: int = Query(30, ge=1, le=365, description="Look-back window in days"),
     page_type: str | None = Query(None, description="Filter by page_type (product/application/page/category)"),
     limit: int = Query(50, ge=1, le=200),
+    _feature: User = Depends(RequireFeature("full_tracking")),
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -107,6 +108,7 @@ async def page_analytics(
 async def product_analytics(
     days: int = Query(30, ge=1, le=365),
     limit: int = Query(50, ge=1, le=200),
+    _feature: User = Depends(RequireFeature("full_tracking")),
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -154,6 +156,7 @@ async def product_analytics(
 async def application_analytics(
     days: int = Query(30, ge=1, le=365),
     limit: int = Query(50, ge=1, le=200),
+    _feature: User = Depends(RequireFeature("full_tracking")),
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -194,6 +197,7 @@ async def application_analytics(
 @router.get("/strategy-map")
 async def strategy_map_analytics(
     days: int = Query(30, ge=1, le=365),
+    _feature: User = Depends(RequireFeature("full_tracking")),
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -277,6 +281,7 @@ async def strategy_map_analytics(
 @router.get("/funnel")
 async def funnel_analytics(
     days: int = Query(30, ge=1, le=365),
+    _feature: User = Depends(RequireFeature("full_tracking")),
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -289,27 +294,32 @@ async def funnel_analytics(
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Visitors by intent stage
-    stage_sql = text("""
+    tenant_filter = "AND tenant_id = :tenant_id" if _.tenant_id else ""
+
+    stage_sql = text(f"""
         SELECT
             COALESCE(intent_stage, 'cold') AS stage,
             COUNT(*) AS count
         FROM visitors
         WHERE created_at >= :since
+          {tenant_filter}
         GROUP BY COALESCE(intent_stage, 'cold')
         ORDER BY count DESC
     """)
-    stage_result = await session.execute(stage_sql, {"since": since})
+    params = {"since": since} | ({"tenant_id": _.tenant_id} if _.tenant_id else {})
+    stage_result = await session.execute(stage_sql, params)
     stage_rows = {r["stage"]: r["count"] for r in stage_result.mappings().all()}
 
     # RFQ counts by status
-    rfq_sql = text("""
+    rfq_sql = text(f"""
         SELECT status, COUNT(*) AS count
         FROM rfq_requests
         WHERE created_at >= :since
+          {tenant_filter}
         GROUP BY status
         ORDER BY count DESC
     """)
-    rfq_result = await session.execute(rfq_sql, {"since": since})
+    rfq_result = await session.execute(rfq_sql, params)
     rfq_rows = {r["status"]: r["count"] for r in rfq_result.mappings().all()}
 
     # Totals for conversion rates

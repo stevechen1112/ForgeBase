@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin
+from app.api.v1.deps import RequireFeature, get_current_user, require_admin
 from app.db.session import get_session
 from app.models.segment import Segment
 from app.models.visitor import Visitor
@@ -80,6 +80,7 @@ class SegmentUpdate(BaseModel):
 
 @router.get("/segments", response_model=list[SegmentRead])
 async def list_segments(
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -102,6 +103,7 @@ async def list_segments(
 @router.post("/segments", response_model=SegmentRead, status_code=status.HTTP_201_CREATED)
 async def create_segment(
     payload: SegmentCreate,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -132,6 +134,7 @@ async def create_segment(
 @router.get("/segments/{segment_id}", response_model=SegmentRead)
 async def get_segment(
     segment_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -154,6 +157,7 @@ async def get_segment(
 async def update_segment(
     segment_id: uuid.UUID,
     payload: SegmentUpdate,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -189,6 +193,7 @@ async def update_segment(
 @router.delete("/segments/{segment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_segment(
     segment_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(require_admin),
 ):
@@ -204,6 +209,7 @@ async def delete_segment(
 @router.post("/segments/{segment_id}/evaluate")
 async def evaluate_segment(
     segment_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):

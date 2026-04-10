@@ -3,13 +3,14 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Users, ClipboardList,
   Globe, Eye, MousePointerClick, Percent, ArrowUpRight,
-  RefreshCcw, Download,
+  RefreshCcw, Download, Lock,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/store";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
+import { PlanGate, UpgradeChip } from "@/components/plan/PlanGate";
 
 // ── 型別 ────────────────────────────────────────────────────────────────────
 type FunnelData = {
@@ -61,11 +62,10 @@ export default function DashboardPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const [funnelRes, rfqRes] = await Promise.all([
-        fetch(`${API_BASE}/tracking/analytics/funnel?days=30`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/tracking/rfqs?limit=5`, { headers: { Authorization: `Bearer ${token}` } }),
+      const [funnelJson, rfqJson] = await Promise.all([
+        apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
+        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=5", token),
       ]);
-      const [funnelJson, rfqJson] = await Promise.all([funnelRes.json(), rfqRes.json()]);
       setFunnel(funnelJson);
       setRfqs(Array.isArray(rfqJson) ? rfqJson : []);
     } catch { /* 靜默失敗 */ }
@@ -134,14 +134,14 @@ export default function DashboardPage() {
 
       {/* ─── KPI Grid（真實資料）─── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {KPI_CARDS.map((kpi) => {
+        {/* RFQ KPI — always available */}
+        {(() => {
+          const kpi = KPI_CARDS[0];
           const Icon = kpi.icon;
           return (
             <Card key={kpi.title} className="hover:shadow-card-hover transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {kpi.title}
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.title}</CardTitle>
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
                   <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
                 </div>
@@ -151,6 +151,50 @@ export default function DashboardPage() {
                 <p className="mt-1 text-xs text-muted-foreground">{kpi.sub}</p>
               </CardContent>
             </Card>
+          );
+        })()}
+
+        {/* Visitor KPI — requires full_tracking */}
+        {KPI_CARDS.slice(1).map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <PlanGate
+              key={kpi.title}
+              feature="full_tracking"
+              inline
+              fallback={
+                <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                      {kpi.title}
+                      <Lock className="h-3 w-3 text-muted-foreground/60" />
+                    </CardTitle>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
+                      <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
+                    <div className="mt-1">
+                      <UpgradeChip label="Professional 方案解鎖" />
+                    </div>
+                  </CardContent>
+                </Card>
+              }
+            >
+              <Card className="hover:shadow-card-hover transition-shadow duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.title}</CardTitle>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
+                    <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{kpi.sub}</p>
+                </CardContent>
+              </Card>
+            </PlanGate>
           );
         })}
       </div>

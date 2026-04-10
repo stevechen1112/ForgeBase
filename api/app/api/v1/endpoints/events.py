@@ -21,7 +21,7 @@ from pydantic import BaseModel, field_validator
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, resolve_tenant_id
+from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
 from app.db.session import get_session
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
@@ -457,6 +457,7 @@ async def events_summary(
 async def events_by_page(
     days: int = 30,
     page_type: Optional[str] = None,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -485,6 +486,8 @@ async def events_by_page(
         )
         .order_by(func.count(TrackingEvent.event_id).desc())
     )
+    if _.tenant_id:
+        q = q.where(TrackingEvent.tenant_id == _.tenant_id)
     if page_type:
         q = q.where(TrackingEvent.page_type == page_type)
     rows = (await db.exec(q)).all()
@@ -506,6 +509,7 @@ async def events_by_page(
 async def events_by_entity(
     days: int = 30,
     page_type: Optional[str] = None,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -535,6 +539,8 @@ async def events_by_entity(
         )
         .order_by(TrackingEvent.page_id, TrackingEvent.event_name)
     )
+    if _.tenant_id:
+        q = q.where(TrackingEvent.tenant_id == _.tenant_id)
     if page_type:
         q = q.where(TrackingEvent.page_type == page_type)
     rows = (await db.exec(q)).all()
@@ -564,6 +570,7 @@ async def events_by_entity(
 @router.get("/events/strategy-performance")
 async def strategy_performance(
     days: int = 30,
+    _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -586,6 +593,8 @@ async def strategy_performance(
         )
         .group_by(TrackingEvent.page_id, TrackingEvent.event_name)
     )
+    if _.tenant_id:
+        event_q = event_q.where(TrackingEvent.tenant_id == _.tenant_id)
     event_rows = (await db.exec(event_q)).all()
 
     # Build lookup: {page_id → {event_name → count}}
@@ -597,7 +606,10 @@ async def strategy_performance(
             perf[key][row[1]] = row[2]
 
     # Load all strategy entries
-    strategies = (await db.exec(select(ContentStrategy))).all()
+    strategy_q = select(ContentStrategy)
+    if _.tenant_id:
+        strategy_q = strategy_q.where(ContentStrategy.tenant_id == _.tenant_id)
+    strategies = (await db.exec(strategy_q)).all()
 
     return [
         {

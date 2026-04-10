@@ -8,6 +8,7 @@ from sqlmodel import select
 from app.db.session import get_session
 from app.core.security import decode_token
 from app.models.user import User
+from app.models.tenant import Tenant
 
 bearer_scheme = HTTPBearer()
 
@@ -65,6 +66,42 @@ async def require_content_editor(current_user: User = Depends(get_current_user))
             detail="Content editor access required",
         )
     return current_user
+
+
+class RequireFeature:
+    """FastAPI dependency that blocks access when tenant plan lacks a feature."""
+
+    def __init__(self, feature: str):
+        self.feature = feature
+
+    async def __call__(
+        self,
+        session: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if not current_user.tenant_id:
+            return current_user
+
+        tenant = await session.get(Tenant, current_user.tenant_id)
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tenant not found",
+            )
+
+        from app.services.subscription import get_plan_feature
+
+        if not get_plan_feature(tenant.plan, self.feature):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "feature_not_available",
+                    "feature": self.feature,
+                    "message": f"Feature '{self.feature}' requires a higher plan.",
+                },
+            )
+
+        return current_user
 
 
 class QuotaEnforcer:

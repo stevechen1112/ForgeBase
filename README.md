@@ -70,6 +70,25 @@ ForgeBase 的功能對應外銷製造商從曝光到成交的完整歷程：
 | 跟進 | 即時通知、逾時催辦 |
 | 限制 | 產品無上限、管理員帳號無上限 |
 
+### 方案驅動的 Admin UI / API
+
+目前 Starter 與 Professional 已由 feature flag 真正驅動前後台行為，而不只是顯示不同 pricing 文案。
+
+- Admin 側欄會依方案自動裁切，鎖定功能會導向升級頁
+- Professional-only 頁面會在 route layout 層被 `PlanGate` 阻擋
+- 非整頁鎖定的功能會使用 inline upgrade UX，例如儀表板訪客 KPI、策略地圖成效覆蓋
+- 後端關鍵 API 也會同步檢查 tenant plan，避免繞過前端直接取用 Professional 功能
+
+目前代表性的 feature flags 包含：
+
+- `full_tracking`：訪客旅程、內容成效、漏斗分析、自訂受眾、策略成效覆蓋
+- `intent_scoring`：意圖分析、ML scoring、評分規則
+- `chat_handoff`：對話管理與 chat review workspace
+- `ai_content_generation`：AI 內容優化與內容生成 API
+- `seo_redirects`：Redirect 管理
+- `multilingual`：多語管理
+- `dynamic_cta`：CTA 管理
+
 ---
 
 ## 專案結構
@@ -108,8 +127,8 @@ ForgeBase/
 | 後端 API | Python + FastAPI + SQLModel + Alembic | 3.10 / 0.115 / 0.0.21 / 1.13 |
 | 資料庫驅動 | asyncpg (async PostgreSQL) | — |
 | 資料庫 | PostgreSQL | 16 |
-| 前台 | Next.js (App Router) → Linode | 15.2 |
-| Admin 後台 | Next.js (App Router) → Linode | 15.2 |
+| 前台 | Next.js (App Router) → Linode | 15.5.15 |
+| Admin 後台 | Next.js (App Router) → Linode | 15.5.15 |
 | 檔案儲存 | Cloudflare R2 | S3-compatible |
 | AI | OpenAI API | gpt-5.4 |
 | Email | Resend | — |
@@ -394,6 +413,24 @@ curl -sf https://mitselect.com/health
 systemctl is-active forgebase-api forgebase-web forgebase-admin
 ```
 
+### 2026-04-10 本次 GitHub / Linode 更新重點
+
+本次同步到 GitHub 與 Linode 的內容包含：
+
+- 多租戶方案功能裁切正式落地到 Admin 導覽、頁面入口與 inline upgrade UX
+- `chat_admin`、`visitors`、`segments`、`ml_scoring`、`redirects`、`ai_generate`、`analytics`、`events` 等 API 全面補上 plan gate
+- analytics 與 strategy performance 查詢補齊 tenant filter，避免跨租戶混讀資料
+- 多個 admin analytics 頁面改回 `apiClient`，避免 token 過期造成 401 壞頁
+
+這次沒有新增 Alembic migration，但 production 仍建議維持標準部署順序：
+
+1. push 分支到 GitHub
+2. Linode `git pull`
+3. `pip install -r requirements.txt`
+4. `alembic upgrade head`
+5. 重建 admin / web
+6. restart systemd services
+
 ### Linode 上的實際路徑
 
 | 路徑 | 用途 |
@@ -517,3 +554,18 @@ systemctl restart forgebase-admin
 | **Admin** | `client.ts` 加入 token 自動 refresh 機制（401 → 先嘗試 refresh → 失敗才登出）|
 | **Admin** | Billing 頁方案比較表修正（Starter: 2 管理員；Professional: 無限額）|
 | **Admin** | 側欄導覽重構：移除「自動化」群組、整合設定移入「系統」、`owner` 角色可見系統管理選單 |
+
+### v0.21 — 方案驅動功能裁切與權限收斂（2026-04-10）
+
+將多租戶 SaaS 從「有方案資料」推進到「方案真正影響產品行為」，並補齊前後台權限一致性。
+
+| 類別 | 變更 |
+|------|------|
+| **Admin** | 新增 `PlanProvider`、`usePlan`、`PlanGate`，改由 `subscription/current` 回傳的 feature flags 驅動 UI |
+| **Admin** | Sidebar 依方案自動裁切，Starter 進入 Professional 功能時統一導向 billing 升級流程 |
+| **Admin** | `chats`、`intent`、`ml-scoring`、`content-optimizer`、`redirects`、`segments`、`visitors`、`multilingual`、`ctas`、`analytics/*` 改為 route-level gating |
+| **Admin** | Dashboard 與 Strategies 頁新增 inline upgrade UX，避免 Starter 看見 403 或壞掉的圖表卡片 |
+| **Admin** | analytics / funnel / strategy / content-performance / dashboard 等頁面改回 `apiClient`，避免 token 過期時 401 壞頁 |
+| **API** | 新增 `RequireFeature` dependency，依 tenant plan 封鎖 Professional-only endpoints |
+| **API** | `chat_admin`、`visitors`、`segments`、`ml_scoring`、`redirects`、`ai_generate`、`analytics`、`events` 等 endpoint 全面接上 feature gate |
+| **API** | 修正 analytics 與 strategy performance 查詢的 tenant filter，避免跨租戶資料混讀 |
