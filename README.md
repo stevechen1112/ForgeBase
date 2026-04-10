@@ -85,9 +85,9 @@ ForgeBase/
 │   │   └── services/       # 後端服務（含 intake_engine）
 │   ├── .venv/              # API 專用虛擬環境
 │   └── .env.example
-├── web/                    # 前台網站 (Next.js 15，部署 Vercel)
+├── web/                    # 前台網站 (Next.js 15，生產部署 Linode)
 │   └── .env.local.example
-├── admin/                  # 管理後台 (Next.js 15，部署 Linode)
+├── admin/                  # 管理後台 (Next.js 15，生產部署 Linode)
 │   ├── src/app/(dashboard)/dashboard/intake/  # Legacy Site Intake 審核介面
 │   └── .env.local.example
 ├── demo/                   # Demo 示範資料與種子腳本
@@ -114,7 +114,7 @@ ForgeBase/
 | AI | OpenAI API | gpt-5.4 |
 | Email | Resend | — |
 | GeoIP | Cloudflare CF-IPCountry header | — |
-| Hosting | Linode（API + DB + Admin） | — |
+| Hosting | Linode（API + DB + Web + Admin） | — |
 | CI/CD | GitHub Actions | — |
 
 ---
@@ -323,6 +323,89 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 
 ---
 
+## GitHub 與 Linode 部署
+
+### GitHub repository
+
+| 項目 | 值 |
+|------|----|
+| **Git remote** | `git@github.com:stevechen1112/ForgeBase2026.git` |
+| **CI/CD workflow** | `.github/workflows/deploy.yml` |
+| **自動部署分支** | `main` |
+| **目前常用開發分支** | `refactor/consolidate-analytics-pages` |
+
+### GitHub Actions 自動部署
+
+目前 production 自動部署是由 GitHub Actions 觸發，條件是 push 到 `main`。
+
+```bash
+# 開發完成後
+git checkout main
+git pull origin main
+git merge <your-feature-branch>
+git push origin main
+```
+
+`.github/workflows/deploy.yml` 會在 Linode 依序執行：
+
+1. `git pull origin main`
+2. `cd api && source .venv/bin/activate && pip install -r requirements.txt`
+3. `alembic upgrade head`
+4. `systemctl restart forgebase-api`
+5. `cd web && npm ci && npm run build`
+6. `cd admin && npm ci && npm run build`
+7. `systemctl restart forgebase-web forgebase-admin`
+8. `curl https://mitselect.com/health` 驗證 health check
+
+GitHub repository 需先設定以下 Secrets：
+
+- `DEPLOY_HOST=172.234.81.223`
+- `DEPLOY_SSH_KEY=<Linode deploy private key>`
+
+### 手動 SSH 部署到 Linode
+
+若目前變更仍在 feature branch，或不想先 merge 到 `main`，可以直接 SSH 到 Linode 手動部署：
+
+```bash
+ssh -i ~/.ssh/forgebase_deploy root@172.234.81.223
+
+cd /opt/forgebase/app
+git fetch origin
+git checkout refactor/consolidate-analytics-pages
+git pull origin refactor/consolidate-analytics-pages
+
+cd /opt/forgebase/app/api
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+systemctl restart forgebase-api
+
+cd /opt/forgebase/app/web
+npm ci --prefer-offline
+npm run build
+systemctl restart forgebase-web
+
+cd /opt/forgebase/app/admin
+npm ci --prefer-offline
+npm run build
+systemctl restart forgebase-admin
+
+curl -sf https://mitselect.com/health
+systemctl is-active forgebase-api forgebase-web forgebase-admin
+```
+
+### Linode 上的實際路徑
+
+| 路徑 | 用途 |
+|------|------|
+| `/opt/forgebase/app` | production repo root |
+| `/opt/forgebase/app/api` | FastAPI 專案 |
+| `/opt/forgebase/app/web` | 前台 Next.js |
+| `/opt/forgebase/app/admin` | Admin Next.js |
+| `/etc/nginx/sites-available/forgebase` | nginx 設定檔 |
+
+---
+
 ---
 
 ## 生產環境（mitselect.com）
@@ -334,6 +417,7 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 | **API** | https://mitselect.com/api/v1/ |
 | **伺服器** | Linode Ubuntu 24.04，IP `172.234.81.223` |
 | **SSH** | `ssh -i ~/.ssh/forgebase_deploy root@172.234.81.223` |
+| **部署目錄** | `/opt/forgebase/app` |
 | **DB** | `postgresql://forgebase:***REMOVED***@localhost:5432/forgebase` |
 | **Admin 帳號** | 見 `.env` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD` |
 | **SSL 憑證** | Let's Encrypt，到期 2026-06-13（certbot auto-renew） |
@@ -347,11 +431,23 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 | `forgebase-admin` | 3001 | 管理後台 Next.js |
 
 ```bash
-# 重新部署前端（兩個前端流程相同）
-cd /opt/forgebase/app/web   # 或 admin
+# API
+cd /opt/forgebase/app/api
+source .venv/bin/activate
+alembic upgrade head
+systemctl restart forgebase-api
+
+# Web
+cd /opt/forgebase/app/web
 npm ci --prefer-offline
 npm run build
-systemctl restart forgebase-web   # 或 forgebase-admin
+systemctl restart forgebase-web
+
+# Admin
+cd /opt/forgebase/app/admin
+npm ci --prefer-offline
+npm run build
+systemctl restart forgebase-admin
 ```
 
 ### 重要注意事項
@@ -359,7 +455,7 @@ systemctl restart forgebase-web   # 或 forgebase-admin
 - **HTTPS Mixed Content**：`NEXT_PUBLIC_API_URL` 必須設為 `https://mitselect.com`（不可用 HTTP 或 IP），否則瀏覽器會封鎖所有 API 請求
 - **nginx `/backend` 路由**：`location /backend {`（無 trailing slash），`proxy_pass http://127.0.0.1:3001`（也無 trailing slash）— 兩端都有 `/` 會導致 404
 - **Next.js standalone 靜態資產**：前後台都依賴 `postbuild` 自動執行 `scripts/prepare-next-standalone.sh`，重建 `.next/standalone/public` 與 `.next/standalone/.next/static` 的 symlink；不要再手動 `cp -r public` 或 `cp -r .next/static`
-- **GitHub Actions CI/CD**：需在 GitHub → Settings → Secrets 設定 `DEPLOY_HOST=172.234.81.223` 與 `DEPLOY_SSH_KEY`
+- **GitHub Actions CI/CD**：production 自動部署只監聽 `main`；若你在 feature branch 開發，需先 merge 到 `main`，或改走上面的手動 SSH 部署
 
 更完整的部署檢查與維運紅線，請見 `ForgeBase_部署與維運注意事項.md`。
 

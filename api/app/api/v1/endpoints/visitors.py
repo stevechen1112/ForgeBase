@@ -4,6 +4,7 @@ Visitor & Session Management API  (1b.2.1, 1b.2.2, 1b.2.5)
 GET  /tracking/visitors               — list visitors (admin)
 GET  /tracking/visitors/{id}          — visitor detail + event timeline
 GET  /tracking/visitors/{id}/events   — visitor events timeline
+GET  /tracking/visitors/{id}/journey  — unified journey timeline
 GET  /tracking/sessions/{id}          — session detail
 GET  /tracking/audiences              — list audience tags (admin)
 POST /tracking/audiences              — create audience tag (admin)
@@ -26,6 +27,8 @@ from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
 from app.models.audience_tag import AudienceTag, VisitorTagLink
 from app.models.user import User
+from app.models.chat import ChatSession, ChatMessage
+from app.models.rfq_request import RFQRequest
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
@@ -160,6 +163,148 @@ async def get_session_detail(
         "utm_campaign": ts.utm_campaign,
         "device_type": ts.device_type,
         "country": ts.country,
+    }
+
+
+# ── Visitor Journey (P2: unified timeline) ────────────────────────────────────
+
+@router.get("/visitors/{visitor_id}/journey")
+async def visitor_journey(
+    visitor_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    """
+    Unified journey timeline for a single visitor.
+    Combines: visitor profile, tracking events, chat sessions, RFQs.
+    """
+    import json as _json
+
+    v = await db.get(Visitor, visitor_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="Visitor not found")
+    if _.tenant_id and v.tenant_id != _.tenant_id:
+        raise HTTPException(status_code=404, detail="Visitor not found")
+
+    # 1. Key events (last 200)
+    events = (await db.exec(
+        select(TrackingEvent)
+        .where(TrackingEvent.visitor_id == visitor_id)
+        .order_by(col(TrackingEvent.timestamp).desc())
+        .limit(200)
+    )).all()
+
+    # 2. Chat sessions
+    chats = (await db.exec(
+        select(ChatSession)
+        .where(ChatSession.visitor_id == visitor_id)
+        .order_by(col(ChatSession.started_at).desc())
+    )).all()
+
+    # 3. RFQs
+    rfqs = (await db.exec(
+        select(RFQRequest)
+        .where(RFQRequest.visitor_id == visitor_id)
+        .order_by(col(RFQRequest.created_at).desc())
+    )).all()
+
+    # 4. Chat message previews (first & last message per session) via one batch query
+    chat_previews: dict[str, dict] = {}
+    chat_ids = [cs.id for cs in chats]
+    if chat_ids:
+        chat_messages = (await db.exec(
+            select(ChatMessage)
+            .where(ChatMessage.chat_session_id.in_(chat_ids))  # type: ignore[union-attr]
+            .order_by(col(ChatMessage.chat_session_id).asc(), col(ChatMessage.created_at).asc())
+        )).all()
+        grouped_messages: dict[uuid.UUID, list[ChatMessage]] = {}
+        for msg in chat_messages:
+            grouped_messages.setdefault(msg.chat_session_id, []).append(msg)
+
+        for chat_id, msgs in grouped_messages.items():
+            chat_previews[str(chat_id)] = {
+                "first_user_msg": next(
+                    (m.content for m in msgs if m.role == "user"), None
+                ),
+                "last_assistant_msg": next(
+                    (m.content for m in reversed(msgs) if m.role == "assistant"), None
+                ),
+                "total_messages": len(msgs),
+            }
+
+    # Build unified timeline entries
+    timeline = []
+
+    for e in events:
+        timeline.append({
+            "type": "event",
+            "timestamp": e.timestamp.isoformat(),
+            "event_name": e.event_name,
+            "page_url": e.page_url,
+            "page_type": e.page_type,
+            "score_delta": e.score_delta,
+            "properties": _json.loads(e.properties) if e.properties else None,
+        })
+
+    for cs in chats:
+        preview = chat_previews.get(str(cs.id), {})
+        timeline.append({
+            "type": "chat",
+            "timestamp": cs.started_at.isoformat(),
+            "chat_session_id": str(cs.id),
+            "status": cs.status,
+            "message_count": cs.message_count,
+            "context_page": cs.context_page,
+            "context_entity_type": cs.context_entity_type,
+            "quality_rating": cs.quality_rating,
+            "first_user_msg": preview.get("first_user_msg"),
+            "last_assistant_msg": preview.get("last_assistant_msg"),
+        })
+
+    for r in rfqs:
+        form = _json.loads(r.form_data) if r.form_data else {}
+        timeline.append({
+            "type": "rfq",
+            "timestamp": r.created_at.isoformat(),
+            "rfq_id": str(r.id),
+            "rfq_number": r.rfq_number,
+            "status": r.status,
+            "priority": r.priority,
+            "intent_score_at_submit": r.intent_score_at_submit,
+            "company_name": form.get("company_name"),
+            "email": form.get("email"),
+        })
+
+    # Sort by timestamp desc
+    timeline.sort(key=lambda x: x["timestamp"], reverse=True)
+
+    # Event breakdown counts
+    event_counts = (await db.exec(
+        select(TrackingEvent.event_name, func.count(TrackingEvent.event_id).label("c"))
+        .where(TrackingEvent.visitor_id == visitor_id)
+        .group_by(TrackingEvent.event_name)
+    )).all()
+
+    return {
+        "visitor": {
+            "visitor_id": str(v.visitor_id),
+            "intent_score": v.intent_score,
+            "intent_stage": v.intent_stage,
+            "total_visits": v.total_visits,
+            "total_page_views": v.total_page_views,
+            "device_type": v.device_type,
+            "country": v.country,
+            "contact_id": str(v.contact_id) if v.contact_id else None,
+            "first_seen": v.first_seen.isoformat(),
+            "last_seen": v.last_seen.isoformat(),
+        },
+        "summary": {
+            "total_events": len(events),
+            "total_chats": len(chats),
+            "total_rfqs": len(rfqs),
+            "event_breakdown": {row[0]: row[1] for row in event_counts},
+        },
+        "timeline": timeline,
     }
 
 

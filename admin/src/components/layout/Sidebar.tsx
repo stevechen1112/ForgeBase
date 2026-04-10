@@ -7,7 +7,7 @@ import {
   Sparkles, Bot,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
-  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe,
+  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
           { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale },
         ],
       },
+      { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2 },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter },

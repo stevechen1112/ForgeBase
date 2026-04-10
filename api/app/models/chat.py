@@ -21,6 +21,8 @@ class ChatSession(SQLModel, table=True):
     ended_at: Optional[datetime] = Field(default=None)
     status: str = Field(default="active", max_length=20)
     message_count: int = Field(default=0)
+    quality_rating: Optional[int] = Field(default=None)  # 1-5 admin quality rating
+    admin_notes: Optional[str] = Field(default=None)  # admin review notes
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
 

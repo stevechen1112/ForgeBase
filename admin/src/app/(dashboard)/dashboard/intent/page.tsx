@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Users, Flame, TrendingUp, Thermometer } from "lucide-react";
+import { RefreshCw, Users, Flame, TrendingUp, Thermometer, ExternalLink, MessageSquare, ClipboardList, Eye } from "lucide-react";
 import { API_BASE } from "@/lib/api/client";
 
 type Visitor = {
@@ -138,11 +139,11 @@ export default function IntentPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Top Visitors */}
-        <Card>
+        {/* Top Visitors — Actionable Worktable */}
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Flame className="h-4 w-4 text-orange-500" />高意圖訪客 Top 10
+              <Flame className="h-4 w-4 text-orange-500" />高意圖訪客工作台
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -152,16 +153,22 @@ export default function IntentPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客 ID</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">Stage</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">分數</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">瀏覽頁數</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">最後活動</th>
+                    <th className="px-3 py-2 text-center font-medium text-muted-foreground">動作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {topVisitors.map(v => (
                     <tr key={v.visitor_id} className="hover:bg-muted/30">
-                      <td className="px-3 py-2 font-mono text-xs">{v.visitor_id?.slice(0, 8)}…</td>
+                      <td className="px-3 py-2">
+                        <Link href={`/dashboard/visitors/${v.visitor_id}`} className="font-mono text-xs text-primary hover:underline">
+                          {v.visitor_id?.slice(0, 8)}…
+                        </Link>
+                      </td>
                       <td className="px-3 py-2 text-center">
                         <Badge className={`text-xs ${STAGE_COLOR[v.intent_stage] ?? ""}`}>
                           {STAGE_DISPLAY[v.intent_stage] ?? v.intent_stage}
@@ -169,6 +176,18 @@ export default function IntentPage() {
                       </td>
                       <td className="px-3 py-2 text-right font-bold">{v.intent_score ?? 0}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{v.total_page_views ?? 0}</td>
+                      <td className="px-3 py-2 text-right text-xs text-muted-foreground">
+                        {v.last_seen ? new Date(v.last_seen).toLocaleDateString("zh-TW", { month: "short", day: "numeric" }) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button asChild variant="ghost" size="icon" className="h-7 w-7" title="查看旅程">
+                            <Link href={`/dashboard/visitors/${v.visitor_id}`}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,8 +195,9 @@ export default function IntentPage() {
             )}
           </CardContent>
         </Card>
+      </div>
 
-        {/* Contacts with Intent */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

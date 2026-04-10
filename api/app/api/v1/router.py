@@ -15,10 +15,10 @@ from app.api.v1.endpoints import (
     public_relations, preview,
     events, visitors, contacts, rfqs, integrations, segments,
     seo_optimize, esp, analytics,
-    ml_scoring, chat,
+    ml_scoring, chat, chat_admin,
     redirects, events, visitors, contacts, rfqs, integrations, segments,
     seo_optimize, esp, analytics,
-    ml_scoring, chat, intake, site_profile,
+    ml_scoring, chat, chat_admin, intake, site_profile,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router,
@@ -78,6 +78,7 @@ api_router.include_router(forms_router)
 
 # Chat MVP — /api/v1/chat/*
 api_router.include_router(chat.router)
+api_router.include_router(chat_admin.router)
 
 # Legacy Site Intake — /api/v1/intake/*
 api_router.include_router(intake.router)
