@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ArrowLeft,
@@ -22,7 +22,7 @@ import {
   Bot,
   Star,
 } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 type VisitorProfile = {
   visitor_id: string;
@@ -132,11 +132,8 @@ export default function VisitorDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/tracking/visitors/${id}/journey`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      setData(await res.json());
+      const journey = await apiClient.get<JourneyData>(`/tracking/visitors/${id}/journey`, token);
+      setData(journey);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "載入失敗");
     } finally {

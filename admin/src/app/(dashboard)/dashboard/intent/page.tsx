@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Users, Flame, TrendingUp, Thermometer, ExternalLink, MessageSquare, ClipboardList, Eye } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { RefreshCw, Users, Flame, TrendingUp, Thermometer, Eye } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
 
 type Visitor = {
   visitor_id: string;
@@ -26,6 +26,10 @@ type Contact = {
   company_name?: string;
   intent_score_at_creation: number;
   created_at: string;
+};
+
+type ContactListResponse = {
+  items?: Contact[];
 };
 
 // API returns lowercase stage names; map to display labels
@@ -56,21 +60,12 @@ export default function IntentPage() {
     if (!token) return; // Wait until authenticated
     setLoading(true); setError(null);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const [vRes, cRes] = await Promise.all([
-        // Only need top 10 — API already sorts by score DESC
-        fetch(`${API_BASE}/tracking/visitors?limit=10`, { headers }),
-        fetch(`${API_BASE}/tracking/contacts?page_size=50`, { headers }),
+      const [visitorsData, contactsData] = await Promise.all([
+        apiClient.get<Visitor[]>("/tracking/visitors?limit=10", token),
+        apiClient.get<ContactListResponse | Contact[]>("/tracking/contacts?page_size=50", token),
       ]);
-      if (!vRes.ok || !cRes.ok) {
-        const errRes = !vRes.ok ? vRes : cRes;
-        const errJson = await errRes.json().catch(() => ({}));
-        throw new Error(errJson.error ?? `API error ${errRes.status}`);
-      }
-      const vData = await vRes.json();
-      const cData = await cRes.json();
-      setTopVisitors(Array.isArray(vData) ? vData : vData.items ?? []);
-      setContacts(Array.isArray(cData) ? cData : cData.items ?? []);
+      setTopVisitors(Array.isArray(visitorsData) ? visitorsData : []);
+      setContacts(Array.isArray(contactsData) ? contactsData : contactsData.items ?? []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

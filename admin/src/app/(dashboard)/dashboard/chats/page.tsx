@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, MessageSquare, Star, AlertTriangle } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 type ChatSessionItem = {
   id: string;
@@ -23,6 +23,13 @@ type ChatSessionItem = {
   admin_notes: string | null;
   started_at: string;
   ended_at: string | null;
+};
+
+type ChatSessionsResponse = {
+  items: ChatSessionItem[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -80,11 +87,10 @@ export default function ChatSessionsPage() {
       if (statusFilter) params.set("status", statusFilter);
       if (ratingFilter) params.set("quality_rating", ratingFilter);
 
-      const res = await fetch(`${API_BASE}/chat/admin/sessions?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
+      const data = await apiClient.get<ChatSessionsResponse>(
+        `/chat/admin/sessions?${params.toString()}`,
+        token,
+      );
       setItems(data.items ?? []);
       setTotal(data.total ?? 0);
     } catch (e: unknown) {

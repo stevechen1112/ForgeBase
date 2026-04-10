@@ -18,7 +18,7 @@ import {
   Globe,
   Monitor,
 } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 type ChatMessage = {
   id: string;
@@ -77,11 +77,7 @@ export default function ChatDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/chat/admin/sessions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data: ChatDetail = await res.json();
+      const data = await apiClient.get<ChatDetail>(`/chat/admin/sessions/${id}`, token);
       setDetail(data);
       setLocalRating(data.quality_rating);
       setLocalNotes(data.admin_notes ?? "");
@@ -100,19 +96,18 @@ export default function ChatDetailPage() {
     if (!token || !id) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/chat/admin/sessions/${id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const updated = await apiClient.patch<{
+        id: string;
+        quality_rating: number | null;
+        admin_notes: string | null;
+      }>(
+        `/chat/admin/sessions/${id}`,
+        {
           quality_rating: localRating,
           admin_notes: localNotes || null,
-        }),
-      });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-      const updated = await res.json();
+        },
+        token,
+      );
       setDetail((d) =>
         d
           ? { ...d, quality_rating: updated.quality_rating, admin_notes: updated.admin_notes }
