@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import RequireFeature, get_current_user
+from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
 from app.db.session import get_session
 from app.models.redirect import Redirect
 from app.models.user import User
@@ -35,18 +35,20 @@ router = APIRouter(prefix="/redirects", tags=["Redirects"])
 async def resolve_redirect(
     path: str = Query(..., description="Incoming request path, e.g. /products/old-slug"),
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
     """
     Look up a redirect rule for the given path.
     Returns the redirect row if found and active, otherwise null.
     Used by Next.js middleware to perform server-side 301/302 redirects.
     """
-    result = await db.exec(
-        select(Redirect).where(
-            Redirect.from_path == path,
-            Redirect.is_active == True,  # noqa: E712
-        )
+    stmt = select(Redirect).where(
+        Redirect.from_path == path,
+        Redirect.is_active == True,  # noqa: E712
     )
+    if tenant_id:
+        stmt = stmt.where(Redirect.tenant_id == tenant_id)
+    result = await db.exec(stmt)
     return result.first()
 
 
@@ -57,11 +59,13 @@ async def list_redirects(
     active_only: bool = Query(True),
     _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     stmt = select(Redirect)
     if active_only:
         stmt = stmt.where(Redirect.is_active == True)  # noqa: E712
+    if current_user.tenant_id:
+        stmt = stmt.where(Redirect.tenant_id == current_user.tenant_id)
     stmt = stmt.order_by(Redirect.created_at.desc())
     result = await db.exec(stmt)
     return result.all()
@@ -72,23 +76,24 @@ async def create_redirect(
     body: RedirectCreate,
     _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     # Prevent redirect loops
     if body.from_path == body.to_path:
         raise HTTPException(status_code=400, detail="from_path and to_path must differ")
 
-    # Check for existing rule on this path
-    existing = await db.exec(
-        select(Redirect).where(Redirect.from_path == body.from_path)
-    )
+    # Check for existing rule on this path within the same tenant
+    stmt = select(Redirect).where(Redirect.from_path == body.from_path)
+    if current_user.tenant_id:
+        stmt = stmt.where(Redirect.tenant_id == current_user.tenant_id)
+    existing = await db.exec(stmt)
     if existing.first():
         raise HTTPException(
             status_code=409,
             detail=f"A redirect rule already exists for '{body.from_path}'",
         )
 
-    redirect = Redirect(**body.model_dump())
+    redirect = Redirect(**body.model_dump(), tenant_id=current_user.tenant_id)
     db.add(redirect)
     await db.commit()
     await db.refresh(redirect)
@@ -101,10 +106,12 @@ async def update_redirect(
     body: RedirectUpdate,
     _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     redirect = await db.get(Redirect, redirect_id)
     if not redirect:
+        raise HTTPException(status_code=404, detail="Redirect not found")
+    if current_user.tenant_id and redirect.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Redirect not found")
 
     patch = body.model_dump(exclude_unset=True)
@@ -131,11 +138,13 @@ async def deactivate_redirect(
     redirect_id: uuid.UUID,
     _feature: User = Depends(RequireFeature("seo_redirects")),
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Soft-delete: sets is_active=False rather than destroying the record."""
     redirect = await db.get(Redirect, redirect_id)
     if not redirect:
+        raise HTTPException(status_code=404, detail="Redirect not found")
+    if current_user.tenant_id and redirect.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Redirect not found")
 
     redirect.is_active = False

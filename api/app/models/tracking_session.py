@@ -20,6 +20,10 @@ class TrackingSession(SQLModel, table=True):
         foreign_key="visitors.visitor_id", index=True
     )
 
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", index=True
+    )
+
     start_time: datetime = Field(default_factory=utcnow_naive)
     end_time: Optional[datetime] = Field(default=None)
     # last event time in session; updated on each event

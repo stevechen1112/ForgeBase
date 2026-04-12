@@ -240,6 +240,7 @@ async def create_project(
     project = IntakeProject(
         **body.model_dump(),
         created_by=current_user.id,
+        tenant_id=current_user.tenant_id,
     )
     db.add(project)
     await db.commit()
@@ -250,11 +251,12 @@ async def create_project(
 @router.get("/projects", response_model=list[IntakeProjectRead])
 async def list_projects(
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.exec(
-        select(IntakeProject).order_by(IntakeProject.created_at.desc())
-    )
+    stmt = select(IntakeProject).order_by(IntakeProject.created_at.desc())
+    if current_user.tenant_id:
+        stmt = stmt.where(IntakeProject.tenant_id == current_user.tenant_id)
+    result = await db.exec(stmt)
     return result.all()
 
 
@@ -262,10 +264,12 @@ async def list_projects(
 async def get_project(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     project = await db.get(IntakeProject, project_id)
     if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if current_user.tenant_id and project.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
@@ -275,10 +279,12 @@ async def update_project(
     project_id: uuid.UUID,
     body: IntakeProjectUpdate,
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     project = await db.get(IntakeProject, project_id)
     if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if current_user.tenant_id and project.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Project not found")
 
     update_data = body.model_dump(exclude_unset=True)
@@ -318,10 +324,12 @@ async def trigger_discovery(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     project = await db.get(IntakeProject, project_id)
     if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if current_user.tenant_id and project.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Project not found")
     if project.status not in ("created", "discovered", "ready_for_review"):
         raise HTTPException(
@@ -338,10 +346,12 @@ async def trigger_extraction(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     project = await db.get(IntakeProject, project_id)
     if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if current_user.tenant_id and project.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Project not found")
     if project.status not in ("discovered", "ready_for_review"):
         raise HTTPException(

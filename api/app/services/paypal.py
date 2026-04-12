@@ -157,8 +157,12 @@ async def verify_webhook_signature(
     Returns True if the webhook is authentic.
     """
     if not PAYPAL_WEBHOOK_ID:
-        logger.warning("PAYPAL_WEBHOOK_ID not set — skipping webhook verification")
-        return True  # Allow in dev mode
+        from app.core.config import settings
+        if settings.is_production:
+            logger.error("PAYPAL_WEBHOOK_ID not set in production — rejecting webhook to prevent bypass")
+            return False
+        logger.warning("PAYPAL_WEBHOOK_ID not set — skipping webhook verification (dev mode only)")
+        return True  # Allow in dev mode only
 
     token = await _get_access_token()
     verification_body = {

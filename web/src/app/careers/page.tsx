@@ -42,7 +42,7 @@ export default function CareersPage() {
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Apply by Email</h2>
-            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to careers@northforgetools.com. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
+            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to {siteConfig.careersEmail}. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
           </div>
         </div>
       </section>

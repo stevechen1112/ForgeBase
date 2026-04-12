@@ -8,6 +8,7 @@ PUT  /tracking/rfqs/{id}/status   — update status  (admin)
 PUT  /tracking/rfqs/{id}/assign   — assign to sales user (admin)
 """
 import json
+import logging
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -30,6 +31,7 @@ from uuid import UUID as _UUID
 # Two routers — public forms_router + admin tracking_router
 forms_router = APIRouter(prefix="/forms", tags=["Forms"])
 tracking_router = APIRouter(prefix="/tracking", tags=["Tracking"])
+logger = logging.getLogger(__name__)
 
 
 async def _log_rfq_event(
@@ -280,7 +282,7 @@ async def submit_rfq(
             "source_page":  body.source_page,
         })
     except Exception:
-        pass  # routing failures must not block form submission
+        logger.warning("rfq routing/webhook failed", exc_info=True)  # routing failures must not block form submission
 
     return {
         "rfq_number": rfq_number,
@@ -405,7 +407,7 @@ async def update_rfq_status(
             "new_status": r.status,
         })
     except Exception:
-        pass
+        logger.warning("rfq.status_changed webhook failed", exc_info=True)
 
     return {"rfq_number": r.rfq_number, "status": r.status}
 
@@ -452,7 +454,7 @@ async def assign_rfq(
         import asyncio
         asyncio.create_task(notify_rfq_assigned(r.id))
     except Exception:
-        pass
+        logger.warning("rfq assign notification failed", exc_info=True)
 
     return {"rfq_number": r.rfq_number, "status": r.status, "assigned_to": str(r.assigned_to)}
 

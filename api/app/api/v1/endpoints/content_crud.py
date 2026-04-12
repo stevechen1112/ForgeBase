@@ -139,9 +139,11 @@ def make_crud_router(
         dump = payload.model_dump()
         if slug_field and generated_slug:
             dump[slug_field] = generated_slug
-        # inject created_by for PageBrief
+        # inject created_by and tenant_id for models that support them
         if hasattr(Model, "created_by") and _user:
             dump["created_by"] = _user.id
+        if hasattr(Model, "tenant_id") and _user and _user.tenant_id:
+            dump.setdefault("tenant_id", _user.tenant_id)
 
         item = Model(**dump)
         session.add(item)

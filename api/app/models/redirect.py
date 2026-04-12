@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy import UniqueConstraint
 from app.core.datetime import utcnow_naive
 
 
@@ -15,9 +17,13 @@ class Redirect(SQLModel, table=True):
       from_path="/old-category"             → to_path="/products/new-category"
     """
     __tablename__ = "redirects"
+    __table_args__ = (
+        UniqueConstraint("from_path", "tenant_id", name="uq_redirects_from_path_tenant"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    from_path: str = Field(max_length=500, unique=True, index=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
+    from_path: str = Field(max_length=500, index=True)
     # e.g. "/products/old-slug" — always starts with /
     to_path: str = Field(max_length=500)
     # e.g. "/products/new-slug"

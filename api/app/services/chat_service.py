@@ -275,6 +275,7 @@ class ChatService:
         session_id: Optional[uuid.UUID],
         visitor_id: uuid.UUID,
         page_url: Optional[str],
+        tenant_id=None,
     ) -> None:
         if session_id is None:
             return
@@ -287,6 +288,7 @@ class ChatService:
                     visitor_id=visitor_id,
                     entry_page=page_url,
                     exit_page=page_url,
+                    tenant_id=tenant_id,
                 )
             )
             await self.db.flush()
@@ -322,6 +324,7 @@ class ChatService:
             session_id=session_id,
             visitor_id=visitor_id,
             page_url=context_page,
+            tenant_id=tenant_id,
         )
 
         chat_session = ChatSession(

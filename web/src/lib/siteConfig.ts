@@ -34,27 +34,21 @@ const LAYOUT_MAP: Record<ThemeKey, LayoutVariant> = {
 };
 
 // ── Brand identity ─────────────────────────────────────────────────
-function resolveBrandName(): string {
-  const env = process.env.NEXT_PUBLIC_SITE_NAME;
-  if (!env || env === "ForgeBase") return "NorthForge Tools";
-  return env;
-}
-
 export const siteConfig = {
-  /** Display brand name (e.g. "NorthForge Tools") */
-  brandName: resolveBrandName(),
+  /** Display brand name — MUST be set via NEXT_PUBLIC_SITE_NAME */
+  brandName: process.env.NEXT_PUBLIC_SITE_NAME || "",
 
   /** Short logo mark shown inside the header/footer icon */
-  logoMark: process.env.NEXT_PUBLIC_LOGO_MARK || "NF",
+  logoMark: process.env.NEXT_PUBLIC_LOGO_MARK || "",
 
   /** Canonical site URL without trailing slash */
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, ""),
 
-  /** Contact email */
-  contactEmail:
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL?.includes("forgebase")
-      ? "sales@northforgetools.com"
-      : (process.env.NEXT_PUBLIC_CONTACT_EMAIL || "sales@northforgetools.com"),
+  /** Contact email — MUST be set via NEXT_PUBLIC_CONTACT_EMAIL */
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
+
+  /** Careers / HR contact email */
+  careersEmail: process.env.NEXT_PUBLIC_CAREERS_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
 
   /** Primary contact phone */
   contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+886-4-3700-2218",

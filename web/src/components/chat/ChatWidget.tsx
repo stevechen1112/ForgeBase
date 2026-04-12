@@ -59,13 +59,14 @@ interface HandoffResponse {
 function getVisitorId(): string {
   const match = document.cookie.match(/(?:^|;\s*)fb_vid=([^;]*)/);
   if (match) return decodeURIComponent(match[1]);
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     const visitorId = crypto.randomUUID();
-    document.cookie = `fb_vid=${visitorId}; path=/; SameSite=Lax`;
+    document.cookie = `fb_vid=${visitorId}; path=/; SameSite=Lax; Max-Age=31536000${secure}`;
     return visitorId;
   }
   const fallback = `fb-${Date.now()}`;
-  document.cookie = `fb_vid=${fallback}; path=/; SameSite=Lax`;
+  document.cookie = `fb_vid=${fallback}; path=/; SameSite=Lax; Max-Age=31536000${secure}`;
   return fallback;
 }
 

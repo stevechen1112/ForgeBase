@@ -23,6 +23,7 @@ class IntakeProject(SQLModel, table=True):
     __tablename__ = "intake_projects"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     project_name: str = Field(max_length=200)
     source_url: str = Field(max_length=500)
     # overall status: created → crawling → extracting → ready_for_review → committed → archived

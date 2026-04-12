@@ -55,6 +55,8 @@ async def generate_page_content(
     brief = await session.get(PageBrief, payload.brief_id)
     if not brief:
         raise HTTPException(status_code=404, detail="PageBrief not found")
+    if current_user.tenant_id and brief.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="PageBrief not found")
 
     if brief.brief_status not in ("approved", "in_progress"):
         raise HTTPException(

@@ -11,6 +11,7 @@ GET  /tracking/events/summary  — aggregate stats (admin auth required)
 """
 import asyncio
 import json
+import logging
 import uuid
 from datetime import datetime, timedelta
 from app.core.datetime import utcnow_naive
@@ -18,6 +19,8 @@ from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
+
+logger = logging.getLogger(__name__)
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -301,7 +304,7 @@ async def receive_event(
                     })
                     # Nurture engine removed
             except Exception:
-                pass
+                logger.warning("visitor intent stage webhook failed", exc_info=True)
 
     # 1b.5.5 Meta Conversions API — fire server-side event for mapped event types
     if body.visitor_id:

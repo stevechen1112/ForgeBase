@@ -18,7 +18,11 @@ const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 
 const DEFAULT_CONTENT_LOCALE = "en";
 
 const warnedPaths = new Set<string>();
-let apiAvailabilityPromise: Promise<boolean> | null = null;
+// Track availability with retry-after logic: cache successes permanently,
+// retry failures after RECHECK_MS to avoid permanent process-wide degradation.
+let apiAvailableResult: boolean | null = null;
+let apiAvailableCheckedAt = 0;
+const AVAILABILITY_RECHECK_MS = 60_000; // retry 60s after a failure
 
 function logApiFallback(path: string, error: unknown) {
   if (warnedPaths.has(path)) return;
@@ -49,19 +53,26 @@ async function apiListFetchWithLocaleFallback<T>(
 }
 
 async function isApiAvailable(): Promise<boolean> {
-  if (!apiAvailabilityPromise) {
-    apiAvailabilityPromise = fetch(`${BASE}/health`, {
+  const now = Date.now();
+  // Return cached success (Next.js fetch revalidation handles staleness)
+  if (apiAvailableResult === true) return true;
+  // Return cached failure only within the retry window
+  if (apiAvailableResult === false && now - apiAvailableCheckedAt < AVAILABILITY_RECHECK_MS) {
+    return false;
+  }
+  // (Re-)check availability
+  apiAvailableCheckedAt = now;
+  try {
+    const res = await fetch(`${BASE}/health`, {
       headers: { "Content-Type": "application/json" },
       next: { revalidate: 60 },
-    })
-      .then((res) => res.ok)
-      .catch((error) => {
-        logApiFallback("/health", error);
-        return false;
-      });
+    });
+    apiAvailableResult = res.ok;
+  } catch (error) {
+    logApiFallback("/health", error);
+    apiAvailableResult = false;
   }
-
-  return apiAvailabilityPromise;
+  return apiAvailableResult;
 }
 
 // Server Components: no caching by default — use Next.js `fetch` cache options

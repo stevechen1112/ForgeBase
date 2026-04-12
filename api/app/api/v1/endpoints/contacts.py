@@ -6,6 +6,7 @@ GET  /tracking/contacts    — list contacts (admin)
 GET  /tracking/contacts/{id} — contact detail (admin)
 PUT  /tracking/contacts/{id} — update contact notes/etc (admin)
 """
+import logging
 import uuid
 from typing import Optional
 
@@ -139,7 +140,7 @@ async def submit_contact_form(
             "source_page":  body.source_page,
         })
     except Exception:
-        pass
+        logger.warning("contact.created webhook failed", exc_info=True)
 
     return {"contact_id": str(contact.id), "new": True}
 

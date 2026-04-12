@@ -173,15 +173,20 @@ async function flushQueue(): Promise<void> {
     const raw = localStorage.getItem(QUEUE_KEY) || "[]";
     const q: TrackPayload[] = JSON.parse(raw);
     if (q.length === 0) return;
-    localStorage.removeItem(QUEUE_KEY);
 
-    await fetch(`${API_ENDPOINT}/api/v1/tracking/events/batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(q),
-    });
+    // Send in batches of 20 — backend enforces max 20 per batch
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < q.length; i += BATCH_SIZE) {
+      await fetch(`${API_ENDPOINT}/api/v1/tracking/events/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(q.slice(i, i + BATCH_SIZE)),
+      });
+    }
+    // Clear queue only after all batches are sent successfully
+    localStorage.removeItem(QUEUE_KEY);
   } catch {
-    // If flush fails, events are already removed — acceptable loss
+    // Leave queue intact on failure — will retry on next "online" event
   }
 }
 

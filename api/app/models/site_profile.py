@@ -8,14 +8,15 @@ from sqlmodel import SQLModel, Field
 class SiteProfile(SQLModel, table=True):
     """Per-site branding and theme configuration.
 
-    Each deployed ForgeBase site owns one row. The frontend reads these
-    values (via the /api/v1/site-profile endpoint) to configure brand
+    Each deployed ForgeBase site owns one row per tenant. The frontend reads
+    these values (via the /api/v1/site-profile endpoint) to configure brand
     name, logo, contact details, and the CSS theme preset.
     """
 
     __tablename__ = "site_profiles"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
 
     # ── Branding ──
     brand_name: str = Field(max_length=120, default="NorthForge Tools")

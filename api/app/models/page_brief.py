@@ -32,6 +32,7 @@ class PageBrief(SQLModel, table=True):
     ai_status: str = Field(default="pending", max_length=20)
     # "pending" | "processing" | "done" | "error"
     locale: str = Field(default="en", max_length=5)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     created_by: uuid.UUID = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

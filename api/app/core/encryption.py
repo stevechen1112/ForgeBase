@@ -35,6 +35,11 @@ def _get_fernet() -> Fernet:
     if raw:
         key = raw.encode() if isinstance(raw, str) else raw
     else:
+        if settings.is_production:
+            raise RuntimeError(
+                "ENCRYPTION_MASTER_KEY must be set in production. "
+                "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+            )
         # Dev fallback: derive a 32-byte key from SECRET_KEY
         logger.warning(
             "ENCRYPTION_MASTER_KEY not set — using dev fallback derived from SECRET_KEY. "

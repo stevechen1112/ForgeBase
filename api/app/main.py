@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
+from app.core import rate_limit
 from app.api.v1.router import api_router
 from app.services.score_decay import run_daily_score_decay
 from app.services.google_ads import sync_high_intent_to_customer_match
@@ -102,6 +103,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Rate limiting middleware ─────────────────────────────────────────────────
+@app.middleware("http")
+async def enforce_rate_limit(request: Request, call_next):
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown").split(",")[0].strip()
+    if not rate_limit.check(request.method, request.url.path, client_ip):
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"error": "Too many requests", "status_code": 429},
+            headers={"Retry-After": "60"},
+        )
+    return await call_next(request)
+
 
 # ── Request logging middleware ───────────────────────────────────────────────
 @app.middleware("http")
