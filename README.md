@@ -111,11 +111,11 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 ForgeBase/
 ├── api/                    # 後端 API (Python 3.13 + FastAPI)
 │   ├── app/
-│   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake）
-│   │   ├── db/migrations/  # Alembic migrations (34 版本)
+│   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake、AI Copilot）
+│   │   ├── db/migrations/  # Alembic migrations (38 版本)
 │   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id）
 │   │   ├── schemas/        # Pydantic 輸入/輸出 schema
-│   │   └── services/       # 後端服務（含 intake_engine）
+│   │   └── services/       # 後端服務（含 intake_engine、copilot/）
 │   ├── .venv/              # API 專用虛擬環境
 │   └── .env.example
 ├── web/                    # 前台網站 (Next.js 15，生產部署 Linode)
@@ -197,6 +197,142 @@ python -m pytest tests/test_chat.py -q
 cd ../web
 npm run type-check
 ```
+
+---
+
+## AI 行銷專員（AI Marketing Copilot）
+
+ForgeBase v0.22 引入 AI 行銷專員模組—一個串接真實 CRM 資料的 Telegram 對話 AI，讓業務主管可以在 Telegram 直接查詢 RFQ 狀態、識別高意圖訪客、接收事件通知，並獲得針對製造業 B2B 銷售情境的行動建議。
+
+### 架構概覽
+
+```
+[觸發事件]  →  monitor.py  →  notification_router.py  →  TelegramChannel
+  new_rfq           │                   │
+  hot_visitor        │           NotificationPreference
+  chat_handoff       │           NotificationLog
+  churn_risk         │
+                     └──→  send_notification() 統一分發
+
+[APScheduler]  →  digest.py  →  run_daily_digest()  →  TelegramChannel
+  08:00 Asia/Taipei
+
+[Telegram msg]  →  copilot.py webhook  →  BackgroundTasks
+                        │
+                        └──→  CopilotEngine.run()
+                                   │
+                               LLM (gpt-5.4)
+                                   │
+                          function calling (tools.py)
+                                   │
+                              DB query results
+                                   │
+                            Telegram reply (chunked)
+```
+
+### 核心元件
+
+| 檔案 | 說明 |
+|------|------|
+| `api/app/services/copilot/chat_engine.py` | `CopilotEngine` — 多輪對話引擎，含 B2B 系統提示、20 則歷史記憶、最多 6 次 tool call 迴圈 |
+| `api/app/services/copilot/tools.py` | 10 個 DB 查詢工具函式（全 tenant-scoped，LLM 透過 function calling 呼叫）|
+| `api/app/services/copilot/monitor.py` | 4 個事件處理器：`on_new_rfq`、`on_hot_visitor`、`on_chat_handoff`、`on_churn_risk` |
+| `api/app/services/copilot/digest.py` | 每日摘要產生器，產生 24h KPI + AI 建議 |
+| `api/app/services/notification_router.py` | 統一通知分發路由：查詢偏好設定→靜音時段→去重→送出→寫入 log |
+| `api/app/services/channels/telegram.py` | Telegram Bot API 頻道實作（含 webhook 驗證、binding code 發送）|
+| `api/app/api/v1/endpoints/copilot.py` | Preferences CRUD + Telegram 綁定流程 + Telegram webhook 接收器 |
+
+### 可用的 AI 工具（tools.py）
+
+| 工具 | 功能 |
+|------|------|
+| `get_dashboard_stats(hours)` | KPI 快照：新 RFQ、緊急 RFQ、超時未回、熱訪客數、開案漏斗 |
+| `list_rfqs(status, priority, limit)` | 過濾 RFQ 列表 |
+| `get_rfq_detail(rfq_number)` | 單筆 RFQ 完整資料（表單、聯絡人、同公司歷史、產品關聯）|
+| `list_hot_visitors(limit)` | 當前 hot / sales_ready 訪客列表 |
+| `get_visitor_profile(visitor_id)` | 訪客深度檔案（意圖歷程、身份解析、RFQ 歷史）|
+| `list_overdue_rfqs(hours)` | 超 SLA 未回應的 RFQ 列表 |
+| `get_contact_profile(email)` | 聯絡人完整檔案（所有 RFQ + 訪客行為連結）|
+| `search_contacts(query)` | 跨 name / company / country / email 模糊搜尋 |
+| `get_product_interest_stats(days)` | 依 RFQ 量排序的產品需求榜 |
+| `get_funnel_stats(days)` | 訪客 → 聯絡人 → RFQ → 成交漏斗 |
+
+### 初始設定
+
+#### 1. 環境變數
+
+```bash
+# api/.env
+TELEGRAM_BOT_TOKEN=<從 @BotFather 取得>
+TELEGRAM_WEBHOOK_SECRET=<自定義隨機字串，用於驗證 webhook 來源>
+```
+
+#### 2. DB Migration
+
+```bash
+cd api && source .venv/bin/activate
+alembic upgrade head   # 套用 0038_copilot_notifications
+```
+
+#### 3. 註冊 Telegram Webhook
+
+```bash
+# 在 production URL 上操作
+curl -X POST https://mitselect.com/api/v1/copilot/telegram/setup-webhook \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"webhook_url": "https://mitselect.com/api/v1/copilot/webhook/telegram"}'
+```
+
+> `TELEGRAM_WEBHOOK_SECRET` 會自動帶入 `setWebhook` 的 `secret_token` 參數，確保只有 Telegram 才能呼叫此端點。
+
+#### 4. 綁定 Telegram 帳號（Admin 端）
+
+1. 前往 `/backend/dashboard/settings/notifications`
+2. 輸入你的 Telegram chat_id（可在 @userinfobot 取得）
+3. 點「發送驗證碼」— Bot 會發一組 6 位碼
+4. 輸入驗證碼完成綁定
+5. 選擇要開啟的事件通知（新 RFQ、熱訪客、每日摘要等）
+
+### Admin 後台頁面
+
+| 路由 | 功能 |
+|------|------|
+| `/backend/dashboard/notifications` | 通知中心：最近 100 筆通知紀錄，支援 channel / event / status 篩選 |
+| `/backend/dashboard/settings/notifications` | 通知設定：Telegram 綁定流程、各事件開關、靜音時段 |
+
+### API Endpoints
+
+```bash
+GET    /api/v1/copilot/preferences           # 列出目前使用者的通知偏好設定
+POST   /api/v1/copilot/preferences           # 新增偏好設定
+PUT    /api/v1/copilot/preferences/{id}      # 更新開關 / 靜音時段
+DELETE /api/v1/copilot/preferences/{id}      # 刪除
+GET    /api/v1/copilot/notifications         # 通知歷史（最近 100 筆）
+POST   /api/v1/copilot/telegram/bind-start   # 步驟一：產生綁定碼並發到 Telegram
+POST   /api/v1/copilot/telegram/bind-verify  # 步驟二：驗證碼核對，啟用綁定
+POST   /api/v1/copilot/telegram/setup-webhook # （admin）向 Telegram 登記 webhook URL
+POST   /api/v1/copilot/webhook/telegram       # Telegram Bot webhook 接收端（public）
+```
+
+### 事件觸發點
+
+| 事件 | 觸發位置 |
+|------|----------|
+| `new_rfq` | `api/app/api/v1/endpoints/rfqs.py` — RFQ 建立後呼叫 `on_new_rfq()` |
+| `hot_visitor` | `api/app/api/v1/endpoints/events.py` — 訪客升至 hot/sales_ready 時呼叫 `on_hot_visitor()` |
+| `chat_handoff` | `api/app/api/v1/endpoints/chat.py` — AI chat handoff 完成時呼叫 `on_chat_handoff()` |
+| `churn_risk` | `api/app/services/score_decay.py` — 意圖分數衰減觸發降級時呼叫 `on_churn_risk()` |
+| `daily_summary` | APScheduler，每日 08:00 Asia/Taipei 執行 `run_daily_digest()` |
+
+### 通知路由邏輯
+
+`send_notification()` 依序執行：
+
+1. **去重**：同一 `(event_type, event_ref_id)` 在 5 分鐘內只送一次
+2. **靜音時段**：尊重每位使用者設定的 `quiet_hours_start / quiet_hours_end`（支援跨日，例如 22:00 → 08:00）
+3. **逐一發送**：呼叫對應 channel handler（目前支援 `telegram`）
+4. **寫入 log**：每次送出都寫入 `notification_logs`（sent / failed / skipped_quiet_hours）
 
 ---
 
@@ -638,6 +774,50 @@ systemctl restart forgebase-admin
 | **Admin** | `client.ts` 加入 token 自動 refresh 機制（401 → 先嘗試 refresh → 失敗才登出）|
 | **Admin** | Billing 頁方案比較表修正（Starter: 2 管理員；Professional: 無限額）|
 | **Admin** | 側欄導覽重構：移除「自動化」群組、整合設定移入「系統」、`owner` 角色可見系統管理選單 |
+
+### v0.22 — AI 行銷專員（AI Marketing Copilot）（2026-04-14）
+
+Phase 1 完整事件通知系統 + Phase 2 全 LLM 對話引擎，讓業務主管在 Telegram 直接存取真實 CRM 數據並獲得 B2B 製造業行銷建議。
+
+#### Phase 1 — 事件通知系統
+
+| 類別 | 變更 |
+|------|------|
+| **DB Models** | 新增 `NotificationPreference`、`NotificationLog`、`CopilotConversation` 三個資料模型 |
+| **Migration** | `0038_copilot_notifications` |
+| **Channels** | `TelegramChannel`（`services/channels/telegram.py`），含 HMAC webhook 驗證、binding code 流程 |
+| **Router** | `notification_router.py` — 統一分發：去重 → 靜音時段 → 送出 → log |
+| **Monitor** | `copilot/monitor.py` — 4 個事件處理器（new_rfq / hot_visitor / chat_handoff / churn_risk），new_rfq 通知含 AI RFQ 摘要 |
+| **Digest** | `copilot/digest.py` — 每日 08:00 Asia/Taipei 執行，產生 24h KPI + AI 行動建議 |
+| **APScheduler** | `main.py` 新增 `daily_copilot_digest` job |
+| **API** | `/copilot/preferences` CRUD + `/copilot/telegram/bind-start|bind-verify|setup-webhook` |
+| **Admin** | 通知設定頁（Telegram 綁定 + 事件開關 + 靜音時段） |
+| **Admin** | 通知中心頁（最近 100 筆，支援篩選） |
+| **Sidebar** | 新增「AI 行銷專員」群組（通知中心 + 通知設定）|
+
+#### Phase 2 — LLM 對話引擎
+
+| 類別 | 變更 |
+|------|------|
+| **CopilotEngine** | `copilot/chat_engine.py` — 完整 LLM 對話引擎：20 則持久歷史、最多 6 次 tool call 迴圈、Telegram 分段輸出 |
+| **Tools** | `copilot/tools.py` — 10 個 tenant-scoped DB 查詢工具，透過 function calling 供 LLM 呼叫 |
+| **System Prompt** | 內建台灣外銷製造業 B2B 域知識（採購週期、RFQ 優先級框架、買家國家輪廓、跟進策略）|
+| **Webhook 改造** | `copilot.py` webhook 改用 FastAPI `BackgroundTasks`，立即回應 200、非同步送出 LLM reply |
+| **Typing 指示器** | 每次 LLM 運算前發送 `sendChatAction: typing`，長回答分段時也會重新觸發 |
+| **去除舊碼** | 移除 Phase 1 的關鍵字比對邏輯（`_handle_copilot_message`），完全由 LLM 接手 |
+
+#### Code Review Fixes（同次 commit）
+
+| 類別 | 修正 |
+|------|------|
+| 🔴 | `tools.py` `get_product_interest_stats()`：`col("cnt")` runtime 崩潰 → 改為 `func.count(...).desc()` |
+| 🟠 | `monitor.py` `on_new_rfq()`：OpenAI API call 在 DB session 內執行 → 移至 session 關閉後執行 |
+| 🟠 | `copilot.py` webhook：`channel_config.contains(chat_id)` 子字串誤判 → 改 Python 端 JSON 精確比對 |
+| 🟡 | `tools.py` / `digest.py` / `chat_engine.py`：`datetime.utcnow()` 淘汰 API（10 處）→ 全部改用 `utcnow_naive()` |
+| ⚪ | `tools.py`：移除未使用的 `NotificationPreference` import |
+| ⚪ | `notification_router.py`：移除未使用的 `datetime`, `timezone` import |
+
+---
 
 ### v0.21 — 方案驅動功能裁切與權限收斂（2026-04-10）
 
