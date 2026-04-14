@@ -148,7 +148,7 @@ ForgeBase/
 | 前台 | Next.js (App Router) → Linode | 15.5.15 |
 | Admin 後台 | Next.js (App Router) → Linode | 15.5.15 |
 | 檔案儲存 | Cloudflare R2 | S3-compatible |
-| AI | OpenAI API | gpt-5.4 |
+| AI | Gemini OpenAI-compatible API | gemini-3-flash-preview |
 | Email | Resend | — |
 | GeoIP | Cloudflare CF-IPCountry header | — |
 | Hosting | Linode（API + DB + Web + Admin） | — |
@@ -221,7 +221,7 @@ ForgeBase v0.22 引入 AI 行銷專員模組—一個串接真實 CRM 資料的 
                         │
                         └──→  CopilotEngine.run()
                                    │
-                               LLM (gpt-5.4)
+                               LLM (gemini-3-flash-preview)
                                    │
                           function calling (tools.py)
                                    │

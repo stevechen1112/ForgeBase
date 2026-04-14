@@ -21,19 +21,19 @@ import logging
 import uuid
 from typing import Optional
 
-from openai import AsyncOpenAI
 from sqlmodel import col, select
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
+from app.core.tracing import get_openai_client
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
 from app.services.copilot import tools as T
 
 logger = logging.getLogger(__name__)
 
-_openai = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-_MODEL = settings.AI_MODEL_NAME          # gpt-5.4 / gpt-4o
+_openai = get_openai_client()
+_MODEL = settings.AI_MODEL_NAME          # gemini-3-flash-preview / gpt-5.4-mini
 _HISTORY_LIMIT = 20                       # messages kept in context window
 _MAX_TOOL_LOOPS = 6                       # prevent infinite tool call loops
 _TELEGRAM_CHUNK = 4000                    # Telegram message char limit (safe margin)

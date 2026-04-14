@@ -200,13 +200,14 @@ class WorkflowType:
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
-def get_openai_client(api_key: str | None = None):
+def get_openai_client(api_key: str | None = None, base_url: str | None = None):
     """
-    Return an AsyncOpenAI client, traced or plain depending on configuration.
+    Return an AsyncOpenAI-compatible client for the configured provider.
 
-    When Langfuse is running, returns a `langfuse.openai.AsyncOpenAI` instance
-    which automatically captures every `.chat.completions.create()` call as a
-    Langfuse observation span — no changes needed at call sites.
+    The current implementation supports OpenAI and Gemini's OpenAI-compatible
+    endpoint. When Langfuse is running, returns a `langfuse.openai.AsyncOpenAI`
+    instance which automatically captures every `.chat.completions.create()`
+    call as a Langfuse observation span — no changes needed at call sites.
 
     When Langfuse is not configured (or the package is missing), returns a
     plain `openai.AsyncOpenAI` with identical interface.
@@ -229,11 +230,28 @@ def get_openai_client(api_key: str | None = None):
         5. ai_engine.py, content_optimizer.py, relation_recommender.py
         6. seo_optimize.py (endpoint-level)
     """
-    key = api_key or settings.OPENAI_API_KEY
+    provider = (settings.AI_PROVIDER or "openai").strip().lower()
+
+    if provider == "gemini":
+        key = api_key or settings.GEMINI_API_KEY
+        resolved_base_url = base_url or settings.GEMINI_BASE_URL
+        if not key:
+            raise RuntimeError("GEMINI_API_KEY is required when AI_PROVIDER=gemini")
+        client_kwargs = {"api_key": key, "base_url": resolved_base_url}
+    elif provider == "openai":
+        key = api_key or settings.OPENAI_API_KEY
+        if not key:
+            raise RuntimeError("OPENAI_API_KEY is required when AI_PROVIDER=openai")
+        client_kwargs = {"api_key": key}
+        if base_url:
+            client_kwargs["base_url"] = base_url
+    else:
+        raise RuntimeError(f"Unsupported AI_PROVIDER: {settings.AI_PROVIDER}")
+
     if _langfuse_enabled and _TracedAsyncOpenAI is not None:
-        return _TracedAsyncOpenAI(api_key=key)
+        return _TracedAsyncOpenAI(**client_kwargs)
     from openai import AsyncOpenAI
-    return AsyncOpenAI(api_key=key)
+    return AsyncOpenAI(**client_kwargs)
 
 
 def attach_trace_metadata(
