@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/store";
+import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type TenantDetail, type TenantUpdate } from "@/lib/api/platform-admin";
 import {
   ArrowLeft, AlertCircle, Users, Package, ClipboardList, Eye,
@@ -17,12 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const PLAN_OPTIONS = ["starter", "professional", "enterprise"];
+const PLAN_OPTIONS = ["starter", "professional"];
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { state } = useAuth();
+  const { state } = usePlatformAuth();
   const token = state.status === "authenticated" ? state.accessToken : undefined;
 
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
@@ -99,7 +99,7 @@ export default function TenantDetailPage() {
   return (
     <div className="space-y-6">
       <button
-        onClick={() => router.back()}
+        onClick={() => router.push("/platform/tenants")}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -176,11 +176,9 @@ export default function TenantDetailPage() {
             {saving ? "儲存中..." : "儲存"}
           </Button>
         </div>
-        {(tenant.max_products !== undefined || tenant.max_admins !== undefined) && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            商品上限: {tenant.max_products ?? "—"} · 管理員上限: {tenant.max_admins ?? "—"}
+        <p className="mt-3 text-xs text-muted-foreground">
+            商品上限: {tenant.max_products ?? "不限"} · 管理員上限: {tenant.max_admins ?? "不限"}
           </p>
-        )}
       </div>
 
       {/* Users */}

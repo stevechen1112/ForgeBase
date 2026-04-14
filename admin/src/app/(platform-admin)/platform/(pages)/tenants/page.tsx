@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/store";
+import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type TenantSummary, type TenantUpdate } from "@/lib/api/platform-admin";
 import { Search, ChevronRight, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const PLAN_COLORS: Record<string, string> = {
   starter: "bg-gray-100 text-gray-700",
@@ -16,7 +15,7 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 export default function PlatformTenantsPage() {
-  const { state } = useAuth();
+  const { state } = usePlatformAuth();
   const router = useRouter();
   const token = state.status === "authenticated" ? state.accessToken : undefined;
 
@@ -105,7 +104,7 @@ export default function PlatformTenantsPage() {
                 <tr
                   key={t.id}
                   className="cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => router.push(`/dashboard/platform/tenants/${t.id}`)}
+                  onClick={() => router.push(`/platform/tenants/${t.id}`)}
                 >
                   <td className="px-5 py-3">
                     <p className="font-medium">{t.name}</p>

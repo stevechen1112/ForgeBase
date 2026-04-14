@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth/store";
+import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type PlatformDashboard } from "@/lib/api/platform-admin";
 import {
   Building2, Users, Package, ClipboardList, Eye,
@@ -32,9 +32,8 @@ function StatCard({
 }
 
 export default function PlatformOverviewPage() {
-  const { state } = useAuth();
-  const token =
-    state.status === "authenticated" ? state.accessToken : undefined;
+  const { state } = usePlatformAuth();
+  const token = state.status === "authenticated" ? state.accessToken : undefined;
   const [data, setData] = useState<PlatformDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,7 +71,6 @@ export default function PlatformOverviewPage() {
 
       {data && (
         <>
-          {/* Stat cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={Building2} label="租戶總數" value={data.total_tenants} sub={`${data.active_tenants} 個活躍`} />
             <StatCard icon={Users} label="用戶總數" value={data.total_users} sub={`${data.active_users} 個活躍`} />
@@ -81,7 +79,6 @@ export default function PlatformOverviewPage() {
             <StatCard icon={Eye} label="訪客記錄" value={data.total_visitors} />
           </div>
 
-          {/* Charts row */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Daily RFQ trend */}
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -97,20 +94,13 @@ export default function PlatformOverviewPage() {
                     const max = Math.max(...data.daily_rfqs.map((x) => x.count), 1);
                     const pct = (d.count / max) * 100;
                     return (
-                      <div
-                        key={d.date}
-                        className="group relative flex flex-1 flex-col items-center gap-1"
-                      >
+                      <div key={d.date} className="group relative flex flex-1 flex-col items-center gap-1">
                         <div
-                          className="w-full rounded-t bg-primary/70 transition-all group-hover:bg-primary"
+                          className="w-full rounded-t bg-red-500/70 transition-all group-hover:bg-red-500"
                           style={{ height: `${pct}%`, minHeight: 2 }}
                         />
-                        <span className="text-[10px] text-muted-foreground">
-                          {d.date.slice(5)}
-                        </span>
-                        <span className="absolute -top-5 hidden text-[10px] font-medium group-hover:block">
-                          {d.count}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">{d.date.slice(5)}</span>
+                        <span className="absolute -top-5 hidden text-[10px] font-medium group-hover:block">{d.count}</span>
                       </div>
                     );
                   })}

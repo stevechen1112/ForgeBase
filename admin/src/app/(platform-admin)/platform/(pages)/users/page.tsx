@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/lib/auth/store";
+import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type AdminUser } from "@/lib/api/platform-admin";
 import { Search, AlertCircle, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function PlatformUsersPage() {
-  const { state } = useAuth();
+  const { state } = usePlatformAuth();
   const token = state.status === "authenticated" ? state.accessToken : undefined;
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -81,7 +81,7 @@ export default function PlatformUsersPage() {
                     <span className="flex items-center gap-1.5 font-medium">
                       {u.email}
                       {u.is_superuser && (
-                        <ShieldCheck className="h-3.5 w-3.5 text-red-500" title="Superuser" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
                       )}
                     </span>
                   </td>

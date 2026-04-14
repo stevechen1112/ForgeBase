@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth/store";
+import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type SystemHealth } from "@/lib/api/platform-admin";
 import { Database, Clock, Code2, Activity, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,7 @@ function HealthRow({
         <Icon className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">{label}</span>
       </div>
-      <span
-        className={`text-sm font-medium ${
-          isOk ? "text-green-600" : "text-red-500"
-        }`}
-      >
+      <span className={`text-sm font-medium ${isOk ? "text-green-600" : "text-red-500"}`}>
         {value}
       </span>
     </div>
@@ -44,7 +40,7 @@ function formatUptime(seconds: number): string {
 }
 
 export default function PlatformHealthPage() {
-  const { state } = useAuth();
+  const { state } = usePlatformAuth();
   const token = state.status === "authenticated" ? state.accessToken : undefined;
 
   const [health, setHealth] = useState<SystemHealth | null>(null);
@@ -97,7 +93,6 @@ export default function PlatformHealthPage() {
 
       {health && (
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          {/* Overall status badge */}
           <div className="mb-5 flex items-center gap-2">
             <Activity className="h-5 w-5 text-muted-foreground" />
             <span className="text-base font-semibold">整體狀態</span>
@@ -114,24 +109,9 @@ export default function PlatformHealthPage() {
             </span>
           </div>
 
-          <HealthRow
-            icon={Database}
-            label="資料庫"
-            value={health.database}
-            isOk={health.database === "ok"}
-          />
-          <HealthRow
-            icon={Clock}
-            label="API 運行時間"
-            value={formatUptime(health.uptime_seconds)}
-            isOk={true}
-          />
-          <HealthRow
-            icon={Code2}
-            label="Python 版本"
-            value={health.python_version}
-            isOk={true}
-          />
+          <HealthRow icon={Database} label="資料庫" value={health.database} isOk={health.database === "ok"} />
+          <HealthRow icon={Clock} label="API 運行時間" value={formatUptime(health.uptime_seconds)} isOk={true} />
+          <HealthRow icon={Code2} label="Python 版本" value={health.python_version} isOk={true} />
         </div>
       )}
     </div>

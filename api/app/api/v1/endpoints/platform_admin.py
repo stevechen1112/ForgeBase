@@ -119,7 +119,7 @@ async def platform_dashboard(
                 (SELECT COUNT(*) FROM users) AS total_users,
                 (SELECT COUNT(*) FROM users WHERE is_active = TRUE) AS active_users,
                 (SELECT COUNT(*) FROM products) AS total_products,
-                (SELECT COUNT(*) FROM rfqs) AS total_rfqs,
+                (SELECT COUNT(*) FROM rfq_requests) AS total_rfqs,
                 (SELECT COUNT(*) FROM visitors) AS total_visitors
         """)
     )
@@ -129,10 +129,10 @@ async def platform_dashboard(
     since = datetime.now(timezone.utc) - timedelta(days=7)
     daily_rows = await session.execute(
         text("""
-            SELECT DATE(submitted_at) AS day, COUNT(*) AS cnt
-            FROM rfqs
-            WHERE submitted_at >= :since
-            GROUP BY DATE(submitted_at)
+            SELECT DATE(created_at) AS day, COUNT(*) AS cnt
+            FROM rfq_requests
+            WHERE created_at >= :since
+            GROUP BY DATE(created_at)
             ORDER BY day
         """),
         {"since": since},
@@ -147,7 +147,7 @@ async def platform_dashboard(
         text("""
             SELECT t.name, COUNT(r.id) AS rfq_count
             FROM tenants t
-            LEFT JOIN rfqs r ON r.tenant_id = t.id
+            LEFT JOIN rfq_requests r ON r.tenant_id = t.id
             GROUP BY t.name
             ORDER BY rfq_count DESC
             LIMIT 5
@@ -211,7 +211,7 @@ async def list_all_tenants(
             FROM tenants t
             LEFT JOIN (SELECT tenant_id, COUNT(*) cnt FROM users GROUP BY tenant_id) uc ON uc.tenant_id = t.id
             LEFT JOIN (SELECT tenant_id, COUNT(*) cnt FROM products GROUP BY tenant_id) pc ON pc.tenant_id = t.id
-            LEFT JOIN (SELECT tenant_id, COUNT(*) cnt FROM rfqs GROUP BY tenant_id) rc ON rc.tenant_id = t.id
+            LEFT JOIN (SELECT tenant_id, COUNT(*) cnt FROM rfq_requests GROUP BY tenant_id) rc ON rc.tenant_id = t.id
             LEFT JOIN (SELECT tenant_id, COUNT(*) cnt FROM visitors GROUP BY tenant_id) vc ON vc.tenant_id = t.id
             {where_sql}
             ORDER BY t.created_at DESC
@@ -257,7 +257,7 @@ async def get_tenant_detail(
             SELECT
                 COALESCE((SELECT COUNT(*) FROM users WHERE tenant_id = :tid), 0) AS user_count,
                 COALESCE((SELECT COUNT(*) FROM products WHERE tenant_id = :tid), 0) AS product_count,
-                COALESCE((SELECT COUNT(*) FROM rfqs WHERE tenant_id = :tid), 0) AS rfq_count,
+                COALESCE((SELECT COUNT(*) FROM rfq_requests WHERE tenant_id = :tid), 0) AS rfq_count,
                 COALESCE((SELECT COUNT(*) FROM visitors WHERE tenant_id = :tid), 0) AS visitor_count
         """),
         {"tid": str(tenant_id)},
@@ -286,18 +286,21 @@ async def get_tenant_detail(
     # Recent RFQs (last 10)
     rfq_rows = await session.execute(
         text("""
-            SELECT id, contact_name, contact_email, status, submitted_at
-            FROM rfqs WHERE tenant_id = :tid ORDER BY submitted_at DESC LIMIT 10
+            SELECT r.id, r.rfq_number, r.status, r.created_at,
+                   c.email AS contact_email, COALESCE(c.full_name, c.company_name, r.rfq_number) AS contact_name
+            FROM rfq_requests r
+            LEFT JOIN contacts c ON c.id = r.contact_id
+            WHERE r.tenant_id = :tid ORDER BY r.created_at DESC LIMIT 10
         """),
         {"tid": str(tenant_id)},
     )
     recent_rfqs = [
         {
             "id": str(r["id"]),
-            "contact_name": r["contact_name"],
-            "contact_email": r["contact_email"],
+            "contact_name": r["contact_name"] or r["rfq_number"],
+            "contact_email": r["contact_email"] or "",
             "status": r["status"],
-            "submitted_at": r["submitted_at"].isoformat() if r["submitted_at"] else None,
+            "submitted_at": r["created_at"].isoformat() if r["created_at"] else None,
         }
         for r in rfq_rows.mappings().all()
     ]
