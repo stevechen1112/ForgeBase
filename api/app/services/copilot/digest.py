@@ -12,12 +12,13 @@ Public API:
 import logging
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlmodel import select, func, col
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.rfq_request import RFQRequest
 from app.models.visitor import Visitor
@@ -43,7 +44,7 @@ async def _get_tenant_ids_with_active_digest(session: AsyncSession) -> list[uuid
 
 async def _collect_stats(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
     """Gather 24h stats for a specific tenant."""
-    now = datetime.utcnow()
+    now = utcnow_naive()
     yesterday = now - timedelta(hours=24)
 
     # New RFQs in last 24h
@@ -140,7 +141,7 @@ async def run_daily_digest() -> dict:
     Returns: {tenants_processed: N, notifications_sent: N}
     """
     stats_summary = {"tenants_processed": 0, "notifications_sent": 0}
-    date_str = datetime.utcnow().strftime("%Y/%m/%d")
+    date_str = utcnow_naive().strftime("%Y/%m/%d")
 
     async with get_session_ctx() as session:
         tenant_ids = await _get_tenant_ids_with_active_digest(session)

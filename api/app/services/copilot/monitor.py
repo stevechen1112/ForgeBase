@@ -110,24 +110,25 @@ async def on_new_rfq(rfq_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
         urgency_icon = _URGENCY_ICON.get(rfq.priority or "normal", "🟢")
         score = rfq.intent_score_at_submit or 0
 
-        # Async AI summary (with fallback)
-        ai_summary = await _ai_rfq_summary(rfq)
+    # AI summary called OUTSIDE the DB session to avoid holding the connection
+    # during external API latency (rfq object is safe to use with expire_on_commit=False)
+    ai_summary = await _ai_rfq_summary(rfq)
 
-        msg = (
-            f"🔔 <b>新 RFQ 詢價通知</b>\n\n"
-            f"編號：<code>{rfq.rfq_number}</code>\n"
-            f"公司：{company}\n"
-            f"聯絡人：{full_name}（{email}）\n"
-            f"數量：{quantity}\n"
-            f"意圖分數：{score} {urgency_icon}\n"
-        )
-        if message_text:
-            msg += f"\n訊息：{message_text}{'…' if len(form.get('message',''))>120 else ''}\n"
-        msg += f"\n<b>AI 摘要：</b>{ai_summary}"
+    msg = (
+        f"🔔 <b>新 RFQ 詢價通知</b>\n\n"
+        f"編號：<code>{rfq.rfq_number}</code>\n"
+        f"公司：{company}\n"
+        f"聯絡人：{full_name}（{email}）\n"
+        f"數量：{quantity}\n"
+        f"意圖分數：{score} {urgency_icon}\n"
+    )
+    if message_text:
+        msg += f"\n訊息：{message_text}{'…' if len(form.get('message',''))>120 else ''}\n"
+    msg += f"\n<b>AI 摘要：</b>{ai_summary}"
 
-        buttons = [
-            {"label": "查看 RFQ 詳情", "url": f"{_ADMIN_URL}/backend/rfq/{rfq_id}"},
-        ]
+    buttons = [
+        {"label": "查看 RFQ 詳情", "url": f"{_ADMIN_URL}/backend/rfq/{rfq_id}"},
+    ]
 
     await send_notification(
         tenant_id=tenant_id,

@@ -19,13 +19,13 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from openai import AsyncOpenAI
 from sqlmodel import col, select
 
 from app.core.config import settings
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
 from app.services.copilot import tools as T
@@ -422,7 +422,7 @@ class CopilotEngine:
         6. Save user message + assistant reply to history
         """
         system_prompt = _SYSTEM_PROMPT.format(
-            today=datetime.utcnow().strftime("%Y-%m-%d (UTC)")
+            today=utcnow_naive().strftime("%Y-%m-%d (UTC)")
         )
         history = await self._load_history()
 

@@ -21,14 +21,14 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 
 from sqlmodel import col, func, select
 
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.contact import Contact
-from app.models.notification_preference import NotificationPreference
 from app.models.product import Product
 from app.models.rfq_request import RFQRequest, RFQProductLink
 from app.models.visitor import Visitor
@@ -61,7 +61,7 @@ async def get_dashboard_stats(tenant_id: uuid.UUID, hours: int = 24) -> dict:
     Covers: RFQ counts, visitor activity, hot leads, conversion rate.
     """
     async with get_session_ctx() as s:
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = utcnow_naive() - timedelta(hours=hours)
 
         new_rfqs = (await s.exec(
             select(func.count(RFQRequest.id))
@@ -80,7 +80,7 @@ async def get_dashboard_stats(tenant_id: uuid.UUID, hours: int = 24) -> dict:
             select(func.count(RFQRequest.id))
             .where(RFQRequest.tenant_id == tenant_id)
             .where(RFQRequest.status == "new")
-            .where(RFQRequest.created_at <= (datetime.utcnow() - timedelta(hours=24)))
+            .where(RFQRequest.created_at <= (utcnow_naive() - timedelta(hours=24)))
         )).one() or 0
 
         active_visitors = (await s.exec(
@@ -278,7 +278,7 @@ async def list_hot_visitors(tenant_id: uuid.UUID, limit: int = 5) -> dict:
     enriched with contact info if identified.
     """
     async with get_session_ctx() as s:
-        cutoff = datetime.utcnow() - timedelta(hours=72)  # active in last 3 days
+        cutoff = utcnow_naive() - timedelta(hours=72)  # active in last 3 days
         rows = (await s.exec(
             select(Visitor)
             .where(Visitor.tenant_id == tenant_id)
@@ -386,7 +386,7 @@ async def list_overdue_rfqs(tenant_id: uuid.UUID, hours: int = 24) -> dict:
     after the given number of hours. Default threshold: 24h.
     """
     async with get_session_ctx() as s:
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = utcnow_naive() - timedelta(hours=hours)
         rows = (await s.exec(
             select(RFQRequest)
             .where(RFQRequest.tenant_id == tenant_id)
@@ -399,7 +399,7 @@ async def list_overdue_rfqs(tenant_id: uuid.UUID, hours: int = 24) -> dict:
         items = []
         for r in rows:
             form = _parse_form(r.form_data)
-            hours_elapsed = (datetime.utcnow() - r.created_at).total_seconds() / 3600
+            hours_elapsed = (utcnow_naive() - r.created_at).total_seconds() / 3600
             items.append({
                 "rfq_number": r.rfq_number,
                 "priority": r.priority,
@@ -526,7 +526,7 @@ async def get_product_interest_stats(tenant_id: uuid.UUID, days: int = 30) -> di
     Shows which products are driving the most RFQ demand.
     """
     async with get_session_ctx() as s:
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow_naive() - timedelta(days=days)
 
         # RFQs in period for this tenant
         rfq_ids_result = await s.exec(
@@ -544,7 +544,7 @@ async def get_product_interest_stats(tenant_id: uuid.UUID, days: int = 30) -> di
             select(RFQProductLink.product_id, func.count(RFQProductLink.rfq_id).label("cnt"))
             .where(RFQProductLink.rfq_id.in_(rfq_ids))
             .group_by(RFQProductLink.product_id)
-            .order_by(col("cnt").desc())
+            .order_by(func.count(RFQProductLink.rfq_id).desc())
             .limit(10)
         )).all()
 
@@ -570,7 +570,7 @@ async def get_funnel_stats(tenant_id: uuid.UUID, days: int = 30) -> dict:
     Also breaks down RFQ pipeline by status and stage distribution of current visitors.
     """
     async with get_session_ctx() as s:
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow_naive() - timedelta(days=days)
 
         total_visitors = (await s.exec(
             select(func.count(Visitor.visitor_id))

@@ -334,13 +334,18 @@ async def telegram_webhook(
         return {"ok": True}
 
     # Find bound preference for this chat_id
+    # Use Python-side JSON comparison to avoid substring false positives
+    # (e.g. chat_id "123" must not match "1234567")
     result = await db.exec(
         select(NotificationPreference)
         .where(NotificationPreference.channel == "telegram")
-        .where(NotificationPreference.channel_config.contains(chat_id))
         .where(NotificationPreference.enabled == True)
     )
-    pref = result.first()
+    pref = next(
+        (p for p in result.all()
+         if json.loads(p.channel_config or "{}").get("chat_id") == chat_id),
+        None,
+    )
 
     if not pref:
         await _telegram.send(
