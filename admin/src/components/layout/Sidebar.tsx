@@ -8,7 +8,7 @@ import {
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
-  Lock,
+  Lock, ShieldAlert, Building2, Activity,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
@@ -120,6 +120,17 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+// Platform-level nav group (superuser only — rendered separately)
+const PLATFORM_NAV_GROUP: NavGroup = {
+  title: "平台管理",
+  items: [
+    { label: "平台總覽", href: "/dashboard/platform/overview", icon: ShieldAlert },
+    { label: "租戶管理", href: "/dashboard/platform/tenants", icon: Building2 },
+    { label: "平台用戶", href: "/dashboard/platform/users", icon: Users },
+    { label: "系統健康", href: "/dashboard/platform/health", icon: Activity },
+  ],
+};
 
 function getInitials(email: string) {
   return email.split("@")[0].slice(0, 2).toUpperCase();
@@ -282,6 +293,37 @@ export function Sidebar() {
                 </div>
               );
             })}
+
+            {/* ─── Platform Admin (superuser only) ─── */}
+            {user?.is_superuser && (
+              <div>
+                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-red-400/60">
+                  {PLATFORM_NAV_GROUP.title}
+                </p>
+                <ul className="space-y-0.5">
+                  {PLATFORM_NAV_GROUP.items.map((item) => {
+                    const active = isActive(item);
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                            active
+                              ? "bg-red-500/20 text-red-300"
+                              : "text-[hsl(var(--sidebar-foreground))]/60 hover:bg-red-500/10 hover:text-red-300"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </nav>
         </ScrollArea>
 

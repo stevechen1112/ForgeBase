@@ -24,6 +24,7 @@ class User(SQLModel, table=True):
     full_name: str = Field(max_length=100)
     role: str = Field(default="marketing_manager", sa_type=String)
     is_active: bool = Field(default=True)
+    is_superuser: bool = Field(default=False)
     tenant_id: Optional[uuid.UUID] = Field(
         default=None,
         sa_column=Column(PG_UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=True),

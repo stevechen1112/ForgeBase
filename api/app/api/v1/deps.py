@@ -101,6 +101,16 @@ async def require_owner(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+async def require_superuser(current_user: User = Depends(get_current_user)) -> User:
+    """Platform-level super admin access only."""
+    if not getattr(current_user, "is_superuser", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superuser access required",
+        )
+    return current_user
+
+
 async def require_content_editor(current_user: User = Depends(get_current_user)) -> User:
     """Allow admin, owner, and marketing_manager to create/edit content."""
     if current_user.role not in ("admin", "owner", "marketing_manager"):

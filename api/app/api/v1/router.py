@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, categories, products, subscription
+from app.api.v1.endpoints import auth, categories, products, subscription, platform_admin
 from app.api.v1.endpoints.content_crud import (
     applications_router,
     faqs_router,
@@ -28,6 +28,7 @@ api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth.router)
 api_router.include_router(subscription.router)
+api_router.include_router(platform_admin.router)  # Platform super-admin
 
 # Content CRUD — all under /api/v1/content/
 content_router = APIRouter(prefix="/content")

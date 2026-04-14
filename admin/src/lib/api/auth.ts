@@ -11,6 +11,7 @@ export type UserRead = {
   full_name: string;
   role: "admin" | "owner" | "marketing_manager" | "sales";
   is_active: boolean;
+  is_superuser?: boolean;
   created_at: string;
   last_login_at: string | null;
   tenant_id?: string;
