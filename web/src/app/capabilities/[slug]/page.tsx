@@ -4,10 +4,9 @@ import type { Metadata } from "next";
 import { getCapabilityBySlug } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ slug: string }> };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -20,6 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CapabilityDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const { slug } = await params;
   const capability = await getCapabilityBySlug(slug);
   if (!capability) notFound();

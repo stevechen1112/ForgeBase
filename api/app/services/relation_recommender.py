@@ -14,14 +14,14 @@ import json
 import logging
 from typing import Any
 
-from openai import AsyncOpenAI
 from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
+from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
 
 logger = logging.getLogger(__name__)
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+client = get_openai_client()
 
 RELATION_SYSTEM = """You are a B2B industrial product expert.
 Given co-occurrence data from website visitor behavior, identify which product-application

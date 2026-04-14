@@ -1,8 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useMessageNamespace } from "@/lib/messages";
-import { siteConfig } from "@/lib/siteConfig";
+import { resolveLocalizedText, type SiteConfig, type SiteFooterSection } from "@/lib/siteConfig";
 
 type FooterMessages = {
   description: string;
@@ -17,43 +18,8 @@ type FooterMessages = {
   };
 };
 
-const SOCIAL_LINKS = [
-  {
-    label: "LinkedIn",
-    href: "#",
-    icon: (
-      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
-        <circle cx="4" cy="4" r="2" />
-      </svg>
-    ),
-  },
-  {
-    label: "X / Twitter",
-    href: "#",
-    icon: (
-      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-      </svg>
-    ),
-  },
-  {
-    label: "YouTube",
-    href: "#",
-    icon: (
-      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-      </svg>
-    ),
-  },
-];
-
-export function Footer() {
-  const copy = useMessageNamespace<FooterMessages>("footer");
-  const siteName = siteConfig.brandName;
-  const year = new Date().getFullYear();
-
-  const sections = [
+function getDefaultSections(copy: FooterMessages): SiteFooterSection[] {
+  return [
     {
       heading: copy.sections.products.heading,
       items: [
@@ -90,6 +56,15 @@ export function Footer() {
       ],
     },
   ];
+}
+
+export function Footer({ siteConfig }: { siteConfig: SiteConfig }) {
+  const copy = useMessageNamespace<FooterMessages>("footer");
+  const locale = useLocale();
+  const siteName = siteConfig.brandName;
+  const year = new Date().getFullYear();
+  const sections = siteConfig.footerSections?.length ? siteConfig.footerSections : getDefaultSections(copy);
+  const badges = siteConfig.footerBadges?.length ? siteConfig.footerBadges : copy.certifications;
 
   return (
     <footer className="border-t border-gray-200 bg-gray-900 text-gray-400">
@@ -119,30 +94,32 @@ export function Footer() {
               </li>
             </ul>
 
-            <div className="mt-5 flex items-center gap-3">
-              {SOCIAL_LINKS.map((social) => (
+            {siteConfig.socialLinks?.length ? (
+              <div className="mt-5 flex items-center gap-3">
+                {siteConfig.socialLinks.map((social) => (
                 <a
-                  key={social.label}
+                  key={`${social.href}-${String(social.label)}`}
                   href={social.href}
-                  aria-label={social.label}
+                  aria-label={resolveLocalizedText(social.label, locale, social.href)}
                   className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-800 text-gray-400 transition-colors hover:bg-blue-700 hover:text-white"
                 >
-                  {social.icon}
+                  <span className="text-[10px] font-bold uppercase">{resolveLocalizedText(social.label, locale, "Link").slice(0, 2)}</span>
                 </a>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           {sections.map((section) => (
-            <div key={section.heading}>
+            <div key={resolveLocalizedText(section.heading, locale, "section")}>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-300">
-                {section.heading}
+                {resolveLocalizedText(section.heading, locale, "Section")}
               </h3>
               <ul className="mt-4 space-y-2">
                 {section.items.map((item) => (
                   <li key={item.href}>
                     <Link href={item.href} className="text-sm transition-colors hover:text-white">
-                      {item.label}
+                      {resolveLocalizedText(item.label, locale, item.href)}
                     </Link>
                   </li>
                 ))}
@@ -152,12 +129,12 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-gray-800 pt-8">
-          {copy.certifications.map((cert) => (
+          {badges.map((cert, index) => (
             <span
-              key={cert}
+              key={`${index}-${String(cert)}`}
               className="rounded-full border border-gray-700 px-3 py-1 text-xs font-medium text-gray-400"
             >
-              {cert}
+              {resolveLocalizedText(cert, locale, "Badge")}
             </span>
           ))}
         </div>

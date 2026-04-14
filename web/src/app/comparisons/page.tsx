@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedComparisons } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 export const metadata: Metadata = {
   title: "Product Comparisons",
@@ -9,9 +10,8 @@ export const metadata: Metadata = {
     "Comparison guides for hand tool buyers evaluating material, format, and sourcing tradeoffs before product selection or RFQ.",
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-
 export default async function ComparisonsPage() {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const comparisons = await getPublishedComparisons("en");
 
   return (

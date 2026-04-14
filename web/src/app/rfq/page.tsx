@@ -9,21 +9,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RFQForm } from "@/components/forms/RFQForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const BRAND = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName: BRAND } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: `Request a Quotation — ${BRAND}`,
-  description: "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day.",
-  robots: { index: false, follow: false }, // noindex — private conversion page
-};
+  return {
+    title: `Request a Quotation — ${BRAND}`,
+    description: "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day.",
+    robots: { index: false, follow: false },
+  };
+}
 
 interface Props {
   searchParams: Promise<{ product_id?: string; application_id?: string }>;
 }
 
 export default async function RFQPage({ searchParams }: Props) {
+  const { siteName: BRAND } = await getRuntimeSiteContext();
   const sp = await searchParams;
   const productIds = sp.product_id ? [sp.product_id] : [];
   const applicationId = sp.application_id;

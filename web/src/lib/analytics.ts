@@ -19,6 +19,8 @@
  * IMPORTANT: This module is client-only. Never import in Server Components.
  */
 
+import { withTenantHeaders } from "@/lib/tenant";
+
 export type EventName =
   | "page_view"
   | "category_view"
@@ -56,6 +58,9 @@ export interface TrackPayload {
 const API_ENDPOINT =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL) ||
   "";
+const TRACKING_DISABLED =
+  typeof process !== "undefined" &&
+  process.env?.NEXT_PUBLIC_TRACKING_DISABLED === "true";
 const EVENTS_URL = `${API_ENDPOINT}/api/v1/tracking/events`;
 const VISITOR_COOKIE = "fb_vid";   // first-party cookie name
 const SESSION_KEY = "fb_sid";      // sessionStorage key
@@ -168,7 +173,7 @@ function enqueue(payload: TrackPayload): void {
 }
 
 async function flushQueue(): Promise<void> {
-  if (typeof localStorage === "undefined") return;
+  if (typeof localStorage === "undefined" || TRACKING_DISABLED) return;
   try {
     const raw = localStorage.getItem(QUEUE_KEY) || "[]";
     const q: TrackPayload[] = JSON.parse(raw);
@@ -179,7 +184,7 @@ async function flushQueue(): Promise<void> {
     for (let i = 0; i < q.length; i += BATCH_SIZE) {
       await fetch(`${API_ENDPOINT}/api/v1/tracking/events/batch`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withTenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(q.slice(i, i + BATCH_SIZE)),
       });
     }
@@ -201,7 +206,7 @@ export async function track(
   eventName: EventName,
   properties: Record<string, unknown> = {}
 ): Promise<void> {
-  if (typeof window === "undefined") return; // SSR guard
+  if (typeof window === "undefined" || TRACKING_DISABLED) return; // SSR guard
 
   const { page_type, page_id, locale, ...rest } = properties as {
     page_type?: string;
@@ -226,7 +231,7 @@ export async function track(
   try {
     const res = await fetch(EVENTS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: withTenantHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       keepalive: true,
     });

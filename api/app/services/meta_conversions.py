@@ -111,7 +111,7 @@ async def fire_meta_event(
             logger.info(
                 "meta_capi.sent event=%s pixel=%s", meta_event, _PIXEL_ID
             )
-    except Exception as exc:
-        logger.warning(
-            "meta_capi.exception event=%s error=%s", meta_event, exc
-        )
+    except httpx.RequestError:
+        logger.exception("meta_capi.request_failed event=%s", meta_event)
+    except Exception:
+        logger.exception("meta_capi.unexpected_error event=%s", meta_event)

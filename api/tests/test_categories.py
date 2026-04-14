@@ -36,19 +36,15 @@ async def test_delete_category_requires_auth():
 # ── DB integration tests (skipped locally when no DB) ────────────────────────
 @requires_db
 @pytest.mark.asyncio
-async def test_list_categories_empty():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/api/v1/content/categories")
-        assert resp.status_code == 200
-        assert "data" in resp.json()
+async def test_list_categories_empty(http_client):
+    resp = await http_client.get("/api/v1/content/categories")
+    assert resp.status_code == 200
+    assert "data" in resp.json()
 
 
 @requires_db
 @pytest.mark.asyncio
-async def test_get_nonexistent_category_returns_404():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get(f"/api/v1/content/categories/{uuid.uuid4()}")
-        assert resp.status_code == 404
+async def test_get_nonexistent_category_returns_404(http_client):
+    resp = await http_client.get(f"/api/v1/content/categories/{uuid.uuid4()}")
+    assert resp.status_code == 404
 

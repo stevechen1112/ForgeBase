@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -23,8 +23,6 @@ type ApplicationsPageMessages = {
   fallbackIndustry: string;
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -36,6 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ApplicationsPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
   const res = await getPublishedApplications(resolvedLocale, 1, 50);
@@ -57,7 +56,7 @@ export default async function ApplicationsPage({ params }: Props) {
     {}
   );
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <ChatWidget contextPage="/applications" contextEntityType="application" />
@@ -91,7 +90,7 @@ export default async function ApplicationsPage({ params }: Props) {
                     </div>
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {apps.map((app) => (
-                        <ApplicationCard key={app.id} application={app} />
+                        <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
                       ))}
                     </div>
                   </div>
@@ -99,7 +98,7 @@ export default async function ApplicationsPage({ params }: Props) {
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {applications.map((app) => (
-                    <ApplicationCard key={app.id} application={app} />
+                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
                   ))}
                 </div>
               )}
@@ -150,7 +149,7 @@ export default async function ApplicationsPage({ params }: Props) {
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {apps.map((app) => (
-                    <ApplicationCard key={app.id} application={app} />
+                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
                   ))}
                 </div>
               </div>
@@ -159,7 +158,7 @@ export default async function ApplicationsPage({ params }: Props) {
             // Single industry or mixed — flat grid
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
               ))}
             </div>
           )}

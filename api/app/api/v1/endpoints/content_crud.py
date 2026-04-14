@@ -15,9 +15,10 @@ from typing import Type, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import or_
 from slugify import slugify
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor
+from app.api.v1.deps import get_current_user, require_admin, require_content_editor, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.application import Application
@@ -78,6 +79,25 @@ def make_crud_router(
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
 
+    def _apply_public_tenant_scope(query, tenant_id: uuid.UUID | None):
+        tenant_col = getattr(Model, "tenant_id", None)
+        if tenant_col is None:
+            return query
+        if tenant_id is None:
+            return query.where(tenant_col.is_(None))
+        return query.where(tenant_col == tenant_id)
+
+    def _ensure_item_access(item: Any, tenant_id: uuid.UUID | None) -> None:
+        if not hasattr(item, "tenant_id"):
+            return
+        item_tenant_id = getattr(item, "tenant_id", None)
+        if tenant_id is None:
+            if item_tenant_id is not None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+            return
+        if item_tenant_id != tenant_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+
     @router.get("", response_model=APIResponse)
     async def list_items(
         page: int = Query(1, ge=1),
@@ -85,15 +105,20 @@ def make_crud_router(
         item_status: str | None = Query(None, alias="status"),
         locale: str | None = Query(None),
         slug: str | None = Query(None),
+        page_type: str | None = Query(None),
         session: AsyncSession = Depends(get_session),
+        tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
     ):
         base_q = select(Model)
+        base_q = _apply_public_tenant_scope(base_q, tenant_id)
         if locale_filter and hasattr(Model, "locale") and locale:
             base_q = base_q.where(Model.locale == locale)
         if item_status and hasattr(Model, "status"):
             base_q = base_q.where(Model.status == item_status)
         if slug and hasattr(Model, "slug"):
             base_q = base_q.where(Model.slug == slug)
+        if page_type and hasattr(Model, "page_type"):
+            base_q = base_q.where(Model.page_type == page_type)
 
         total = (await session.exec(select(func.count()).select_from(base_q.subquery()))).one()
         order_col = getattr(Model, "sort_order", None) or getattr(Model, "created_at")
@@ -112,27 +137,23 @@ def make_crud_router(
 
     @router.post("", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
     async def create_item(
-        payload: CreateSchema,  # type: ignore[valid-type]
+        payload: Any,
         session: AsyncSession = Depends(get_session),
         _user=Depends(require_content_editor),
     ):
         generated_slug = build_slug(payload, slug_field)
+        tenant_id = _user.tenant_id if hasattr(Model, "tenant_id") else None
         if slug_field:
             slug_val = generated_slug
             if slug_val:
                 # if model has locale, uniqueness is per (slug, locale)
                 locale_val = getattr(payload, "locale", None)
+                conflict_q = select(Model).where(getattr(Model, slug_field) == slug_val)
                 if locale_val and hasattr(Model, "locale"):
-                    existing = await session.exec(
-                        select(Model).where(
-                            getattr(Model, slug_field) == slug_val,
-                            Model.locale == locale_val,
-                        )
-                    )
-                else:
-                    existing = await session.exec(
-                        select(Model).where(getattr(Model, slug_field) == slug_val)
-                    )
+                    conflict_q = conflict_q.where(Model.locale == locale_val)
+                if hasattr(Model, "tenant_id"):
+                    conflict_q = conflict_q.where(Model.tenant_id == tenant_id)
+                existing = await session.exec(conflict_q)
                 if existing.first():
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
 
@@ -155,21 +176,25 @@ def make_crud_router(
     async def get_item(
         item_id: uuid.UUID,
         session: AsyncSession = Depends(get_session),
+        tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
     ):
         item = await session.get(Model, item_id)
         if not item:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+        _ensure_item_access(item, tenant_id)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.patch("/{item_id}", response_model=APIResponse)
     async def update_item(
         item_id: uuid.UUID,
-        payload: UpdateSchema,  # type: ignore[valid-type]
+        payload: Any,
         session: AsyncSession = Depends(get_session),
         _user=Depends(require_content_editor),
     ):
         item = await session.get(Model, item_id)
         if not item:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+        if hasattr(item, "tenant_id") and getattr(item, "tenant_id", None) != _user.tenant_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
         updates = payload.model_dump(exclude_unset=True)
@@ -178,18 +203,15 @@ def make_crud_router(
             if new_slug != getattr(item, slug_field):
                 # if model has locale, uniqueness is per (slug, locale)
                 locale_val = updates.get("locale", getattr(item, "locale", None))
+                conflict_q = select(Model).where(
+                    getattr(Model, slug_field) == new_slug,
+                    Model.id != item_id,
+                )
                 if locale_val and hasattr(Model, "locale"):
-                    existing = await session.exec(
-                        select(Model).where(
-                            getattr(Model, slug_field) == new_slug,
-                            Model.locale == locale_val,
-                            Model.id != item_id,
-                        )
-                    )
-                else:
-                    existing = await session.exec(
-                        select(Model).where(getattr(Model, slug_field) == new_slug)
-                    )
+                    conflict_q = conflict_q.where(Model.locale == locale_val)
+                if hasattr(Model, "tenant_id"):
+                    conflict_q = conflict_q.where(Model.tenant_id == _user.tenant_id)
+                existing = await session.exec(conflict_q)
                 if existing.first():
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
 
@@ -211,6 +233,8 @@ def make_crud_router(
     ):
         item = await session.get(Model, item_id)
         if not item:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+        if hasattr(item, "tenant_id") and getattr(item, "tenant_id", None) != _user.tenant_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
         await session.delete(item)
         await session.commit()

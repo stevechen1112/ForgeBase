@@ -1,55 +1,67 @@
 # ForgeBase 技術棧與架構決策紀錄
 
-## 確認日期：2026-03-14
+## 確認日期：2026-04-14
 
 ## 技術選型
 
-| 層級 | 技術 | 版本 |
-|------|------|------|
-| 後端 API | Python + FastAPI | 3.12 / 0.115 |
-| ORM + migration | SQLModel + Alembic | 0.0.21 / 1.13 |
-| 資料庫 | PostgreSQL | 16 |
-| 前台 | Next.js (App Router) | 15.2 |
-| Admin 後台 | Next.js (App Router) | 15.2 |
-| 檔案儲存 | Cloudflare R2 | S3-compatible |
+| 層級 | 技術 | 版本 / 說明 |
+|------|------|-------------|
+| 後端 API | Python + FastAPI | Python 3.13+ / FastAPI |
+| ORM + migration | SQLModel + Alembic | SQLModel + Alembic |
+| 資料庫 | PostgreSQL | 17 |
+| 前台 Web | Next.js App Router + React | Next.js 15.5.15 / React 19 |
+| Admin 後台 | Next.js App Router + React | Next.js 15.5.15 / React 19 |
+| 共用型別 | shared package | TypeScript shared models |
+| 檔案 / 資產 | Cloudflare R2 + repo demo assets | S3-compatible |
 | AI | OpenAI API | model: gpt-5.4 |
-| Email | Resend | — |
-| GeoIP | Cloudflare CF-IPCountry header | 免費，需 DNS 轉到 Cloudflare |
-| 前台 Hosting | Vercel | — |
-| API/DB/Admin Hosting | Linode (Akamai Cloud) | — |
-| CI/CD | GitHub Actions | — |
-| 容器化 | Docker + Docker Compose | 本地開發用 |
+| Email / ESP | Resend / SendGrid / Mailchimp | 依 tenant 與環境設定啟用 |
+| 反向代理 | Nginx | web / admin / api 統一入口 |
+| 容器化 | Docker + Docker Compose | 本地開發與部署輔助 |
 
-## 部署架構
+## 系統拓樸
 
 ```
-訪客瀏覽器
-  └── Cloudflare CDN（提供 CF-IPCountry header）
-        ├── 前台網站 → Vercel（Next.js SSR/SSG）
-        └── /api/v1/* → Linode（FastAPI）
-                          └── PostgreSQL（同 Linode）
-                          └── Cloudflare R2（圖片/PDF）
-                          └── Resend（email）
-Admin 後台 → Linode（Next.js standalone）
+訪客 / 管理者
+  └── Nginx / CDN / Host-based routing
+    ├── Web（Next.js standalone）
+    ├── Admin（Next.js standalone）
+    └── API（FastAPI）
+      ├── PostgreSQL 17
+      ├── Cloudflare R2
+      └── OpenAI / ESP / 外部整合
 ```
 
-## 環境設定原則
+## 核心架構原則
 
-1. 所有機密（API keys、DB 密碼）只存在 `.env`，**絕不 commit**
-2. 每個子專案都有 `.env.example`，說明必填項目
-3. `APP_ENV=production` 時自動關閉 `/docs` 和 debug 輸出
-4. DB URL 格式：`postgresql+asyncpg://user:pass@host:5432/dbname`（asyncpg 驅動）
+1. Web、Admin、API 分離部署，但共用同一套多租戶資料模型。
+2. 所有內容模型採 tenant-scoped 設計，slug / locale 唯一性以 tenant 邊界為準。
+3. Web 品牌資料在 request-time 由 SiteProfile 解析，不再依賴單純的 build-time env branding。
+4. Admin 對 API 的呼叫統一由 `admin/src/lib/api/client.ts` 注入 `X-Tenant-ID`。
+5. Public side 以 Host / Origin / `X-Tenant-Host` 解析租戶，必要時可接受 `X-Tenant-ID`。
 
-## AI 使用原則
+## 多租戶規則
 
-- Model：`gpt-5.4`（由 `AI_MODEL_NAME` 環境變數管理，可切換）
-- 所有 AI 生成必須有對應的 PageBrief（Approved 狀態）才能觸發
-- 每次生成結果完整記錄（model 版本、輸入 IDs、完整輸出）
+1. 後端 `resolve_tenant_id(...)` 先讀 `X-Tenant-ID`，其次回退到 host / origin / referer / forwarded host。
+2. Product、Application、FAQ、Comparison、Capability、Certification、CTA、Page、Category 等內容全部帶 `tenant_id`。
+3. 公開內容 API、關聯 API、chat session、RFQ 與 admin CRUD 都必須做 tenant 邊界驗證。
+4. 所有關鍵唯一鍵以 `(slug, locale, tenant_id)` 或 `(business_key, tenant_id)` 方式定義。
 
-## 安全規範
+## Build 與部署原則
 
-- JWT 認證：access token 60 分鐘，refresh token 30 天
-- CORS 白名單：僅允許 `ALLOWED_ORIGINS` 設定的 origin
-- 密碼雜湊：bcrypt
-- Webhook 簽章：HMAC-SHA256
-- Production 關閉 `/docs`
+1. Web build 以 `FORGEBASE_STRICT_BUILD_API=1` fail-fast；若 build 時 API 不可用，直接失敗，不允許靜默 fallback 產生不完整靜態輸出。
+2. Web 與 Admin 的 `postbuild` 均使用 `prepare-next-standalone.mjs`，避免 `.sh` 腳本造成 Windows 失敗。
+3. Standalone 產物透過 symlink 連接 `.next/static` 與 `public`，供 Nginx / Node runtime 直接服務。
+4. Smoke test 使用 mock site-profile server 驗證多租戶品牌、canonical、robots、sitemap、favicon 隔離。
+
+## AI 與內容生成規則
+
+1. AI 內容生成必須綁定 PageBrief，且寫入 tenant-aware generation log。
+2. AI context 查詢不得跨 tenant 讀取 Product / Application / FAQ / Category。
+3. Chat、handoff、RFQ、tracking 必須共享同一 tenant 與 visitor/session 邏輯。
+
+## 安全與營運規範
+
+1. JWT access token / refresh token 驗證由 API 負責，Admin client 具備 refresh retry 機制。
+2. 所有 secrets 只放在 `.env` 或部署平台 secret store，不得進 repo。
+3. Production 預設關閉不必要 debug / docs 入口。
+4. 新增功能時，必須同時回答三個問題：tenant boundary 在哪裡、runtime branding 從哪裡來、build-time 是否允許 fallback。

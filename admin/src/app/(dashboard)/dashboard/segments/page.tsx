@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Users, PlusCircle } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Segment = {
   id: string;
@@ -34,7 +34,7 @@ export default function SegmentsPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(null);
-    fetch(`${API_BASE}/tracking/segments`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/tracking/segments`, { headers: buildApiHeaders(token) })
       .then(r => r.json())
       .then(d => setSegments(Array.isArray(d) ? d : d.items ?? []))
       .catch(e => setError(e.message))

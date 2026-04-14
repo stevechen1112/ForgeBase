@@ -63,9 +63,21 @@ class Settings(BaseSettings):
     # Registration
     REGISTRATION_KEY: str = ""  # If empty, public registration is disabled
 
+    # Service account tokens for machine-to-machine auth (e.g. ContentFlow)
+    # Format: comma-separated "<token>:<user_id>" pairs
+    # Example: "cftoken123:550e8400-e29b-41d4-a716-446655440000"
+    SERVICE_ACCOUNT_TOKENS: str = ""
+
     # Admin seed
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = ""
+
+    # Langfuse observability (optional — all three must be set to enable tracing)
+    # Values come from the project created by LANGFUSE_INIT_PROJECT_* on first boot.
+    # LANGFUSE_HOST example: http://localhost:3030 (local) or https://langfuse.your-domain.com
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_HOST: str = ""
 
     @property
     def allowed_origins_list(self) -> List[str]:
@@ -79,3 +91,28 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _validate_production_settings() -> None:
+    if not settings.is_production:
+        return
+
+    localhost_prefixes = ("http://localhost", "https://localhost", "http://127.0.0.1", "https://127.0.0.1")
+    production_urls = {
+        "APP_URL": settings.APP_URL,
+        "FRONTEND_URL": settings.FRONTEND_URL,
+        "ADMIN_URL": settings.ADMIN_URL,
+    }
+    invalid_urls = [name for name, value in production_urls.items() if value.startswith(localhost_prefixes)]
+    invalid_origins = [origin for origin in settings.allowed_origins_list if origin.startswith(localhost_prefixes)]
+
+    if invalid_urls or invalid_origins:
+        details = []
+        if invalid_urls:
+            details.append(f"dev URLs in production: {', '.join(invalid_urls)}")
+        if invalid_origins:
+            details.append(f"dev CORS origins in production: {', '.join(invalid_origins)}")
+        raise RuntimeError("Invalid production settings — " + "; ".join(details))
+
+
+_validate_production_settings()

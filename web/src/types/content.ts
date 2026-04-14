@@ -91,6 +91,30 @@ export type CTA = {
   status: string;
 };
 
+export type Page = {
+  id: string;
+  page_type: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  body: string | null;
+  hero_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  canonical_url: string | null;
+  structured_data: string | null;
+  locale: string;
+  status: string;
+  noindex: boolean;
+  entity_type: string | null;
+  entity_id: string | null;
+  brief_id: string | null;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string | null;
+};
+
 export type Capability = {
   id: string;
   capability_name: string;

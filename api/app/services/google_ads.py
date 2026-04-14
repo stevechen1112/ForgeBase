@@ -76,13 +76,22 @@ async def sync_high_intent_to_customer_match() -> dict:
     # 1. Collect hashed emails from high-intent visitors
     hashed_emails: list[str] = []
     async with get_session_ctx() as db:
-        result = await db.exec(
-            select(Visitor, Contact)
-            .join(Contact, Visitor.contact_id == Contact.id)  # type: ignore
-            .where(Visitor.intent_stage.in_(["hot", "sales_ready"]))  # type: ignore
-        )
-        for _visitor, contact in result.all():
-            if contact.email:
+        visitors = (await db.exec(
+            select(Visitor).where(Visitor.intent_stage.in_(["hot", "sales_ready"]))
+        )).all()
+        contact_ids = [visitor.contact_id for visitor in visitors if visitor.contact_id]
+        contacts_by_id: dict[str, Contact] = {}
+        if contact_ids:
+            contacts = (await db.exec(
+                select(Contact).where(Contact.id.in_(contact_ids))
+            )).all()
+            contacts_by_id = {str(contact.id): contact for contact in contacts}
+
+        for visitor in visitors:
+            if not visitor.contact_id:
+                continue
+            contact = contacts_by_id.get(str(visitor.contact_id))
+            if contact and contact.email:
                 hashed_emails.append(_sha256_hash(contact.email))
 
     if not hashed_emails:

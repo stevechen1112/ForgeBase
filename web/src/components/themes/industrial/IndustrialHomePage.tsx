@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { IndustrialHero } from "@/components/themes/industrial/IndustrialHero";
-import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/demoAssets";
+import { getCategoryCardImage, getHomeHeroImage, getProductImage } from "@/lib/demoAssets";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import type { Product, ProductCategory, Application, Certification } from "@/types/content";
+import type { SiteConfig } from "@/lib/siteConfig";
 
 /**
  * Industrial homepage: angular, left-aligned, dark sections, bold typography.
@@ -108,6 +109,7 @@ type IndustrialHomePageProps = {
   applications: Application[];
   certifications: Certification[];
   categorySlugById: Map<string, string>;
+  siteConfig: SiteConfig;
 };
 
 export function IndustrialHomePage({
@@ -117,6 +119,7 @@ export function IndustrialHomePage({
   applications,
   certifications,
   categorySlugById,
+  siteConfig,
 }: IndustrialHomePageProps) {
   return (
     <>
@@ -128,7 +131,7 @@ export function IndustrialHomePage({
         description={copy.hero.description}
         primaryCta={copy.hero.primaryCta}
         secondaryCta={copy.hero.secondaryCta}
-        heroImage={HOME_HERO_IMAGE}
+        heroImage={getHomeHeroImage(siteConfig) ?? undefined}
         stats={copy.stats}
       />
 
@@ -146,7 +149,7 @@ export function IndustrialHomePage({
               {featuredProducts.slice(0, 4).map((product) => {
                 const catSlug = categorySlugById.get(product.category_id);
                 const href = catSlug ? `/products/${catSlug}/${product.slug}` : "/products";
-                const imgSrc = getProductImage(product, catSlug);
+                const imgSrc = getProductImage(product, catSlug, siteConfig);
                 return (
                   <Link
                     key={product.id}
@@ -220,10 +223,10 @@ export function IndustrialHomePage({
                   href={`/products/${cat.slug}`}
                   className="group flex items-center gap-4 bg-white p-5 hover:bg-primary/5 transition-colors"
                 >
-                  {getCategoryCardImage(cat) ? (
+                  {getCategoryCardImage(cat, siteConfig) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={getCategoryCardImage(cat) ?? undefined}
+                      src={getCategoryCardImage(cat, siteConfig) ?? undefined}
                       alt={cat.category_name}
                       className="h-12 w-12 flex-shrink-0 object-cover"
                     />
@@ -295,7 +298,7 @@ export function IndustrialHomePage({
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} siteConfig={siteConfig} />
               ))}
             </div>
 

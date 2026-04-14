@@ -6,10 +6,9 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ tag: string }> };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
@@ -28,6 +27,7 @@ export async function generateStaticParams() {
 }
 
 export default async function FAQTagPage({ params }: Props) {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const { tag } = await params;
   const decoded = decodeURIComponent(tag).replace(/-/g, " ");
 

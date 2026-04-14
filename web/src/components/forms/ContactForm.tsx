@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { useMessageNamespace } from "@/lib/messages";
+import { withTenantHeaders } from "@/lib/tenant";
 
 type OptionItem = {
   value: string;
@@ -70,7 +71,7 @@ export function ContactForm() {
       const payload = { ...form, visitor_id: getVisitorId(), source_page: currentPath };
       const res = await fetch(`${API_BASE}/api/v1/forms/contact`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withTenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
       const data = await res.json();

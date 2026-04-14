@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
+import { getPublishedPageByType } from "@/lib/api";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -37,25 +39,38 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  await params;
+  const { locale } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("contact", resolvedLocale);
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
   return getMessageNamespace<ContactPageMessages>("contactPage").then((copy) => copy.metadata);
 }
 
 export default async function ContactPage({ params }: Props) {
+  const {
+    siteUrl: SITE_URL,
+    siteName: SITE_NAME,
+    contactEmail,
+    contactPhone,
+    isIndustrial,
+  } = await getRuntimeSiteContext();
   const { locale } = await params;
-  resolveLocale(locale);
+  const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("contact", resolvedLocale);
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
   const [copy, common] = await Promise.all([
     getMessageNamespace<ContactPageMessages>("contactPage"),
     getMessageNamespace<CommonMessages>("common"),
   ]);
-  const contactEmail = siteConfig.contactEmail;
-  const contactPhone = siteConfig.contactPhone;
-
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <StructuredData

@@ -24,14 +24,15 @@ if TYPE_CHECKING:
 class Product(SQLModel, table=True):
     __tablename__ = "products"
     __table_args__ = (
-        UniqueConstraint("slug", "locale", name="uq_products_slug_locale"),
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_products_slug_locale_tenant"),
+        UniqueConstraint("model_number", "tenant_id", name="uq_products_model_number_tenant"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     product_name: str = Field(max_length=100, index=True)
     slug: str = Field(max_length=100, index=True)
-    model_number: str = Field(max_length=50, unique=True)
+    model_number: str = Field(max_length=50, index=True)
     short_description: str = Field(max_length=200)
     full_description: Optional[str] = Field(default=None)  # richtext
     specifications: Optional[str] = Field(default=None)    # JSON string: [{name, value, unit}]

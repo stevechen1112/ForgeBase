@@ -58,6 +58,8 @@ async def list_categories(
     base_q = select(ProductCategory).where(ProductCategory.locale == locale)
     if tenant_id:
         base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
+    else:
+        base_q = base_q.where(ProductCategory.tenant_id.is_(None))
     if status:
         base_q = base_q.where(ProductCategory.status == status)
     if slug:
@@ -94,6 +96,8 @@ async def get_category_tree(
     )
     if tenant_id:
         q = q.where(ProductCategory.tenant_id == tenant_id)
+    else:
+        q = q.where(ProductCategory.tenant_id.is_(None))
     cats = (await session.exec(q)).all()
     return APIResponse(data=_build_tree(list(cats)))
 
@@ -106,7 +110,11 @@ async def create_category(
 ):
     # slug uniqueness
     existing = await session.exec(
-        select(ProductCategory).where(ProductCategory.slug == payload.slug)
+        select(ProductCategory).where(
+            ProductCategory.slug == payload.slug,
+            ProductCategory.locale == payload.locale,
+            ProductCategory.tenant_id == _user.tenant_id,
+        )
     )
     if existing.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Slug already exists")
@@ -123,9 +131,14 @@ async def create_category(
 async def get_category(
     category_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     cat = await session.get(ProductCategory, category_id)
     if not cat:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
+    if tenant_id is None and cat.tenant_id is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
+    if tenant_id is not None and cat.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
@@ -148,7 +161,12 @@ async def update_category(
     # Check slug uniqueness if slug is being changed
     if "slug" in updates and updates["slug"] != cat.slug:
         existing = await session.exec(
-            select(ProductCategory).where(ProductCategory.slug == updates["slug"])
+            select(ProductCategory).where(
+                ProductCategory.slug == updates["slug"],
+                ProductCategory.locale == updates.get("locale", cat.locale),
+                ProductCategory.tenant_id == _user.tenant_id,
+                ProductCategory.id != category_id,
+            )
         )
         if existing.first():
             raise HTTPException(status.HTTP_409_CONFLICT, detail="Slug already exists")

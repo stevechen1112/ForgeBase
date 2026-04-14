@@ -1,22 +1,20 @@
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
-import { getPublishedCapabilities, getPublishedCertifications } from "@/lib/api";
+import { getPublishedCapabilities, getPublishedCertifications, getPublishedPageByType } from "@/lib/api";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { ABOUT_HERO_IMAGE } from "@/lib/demoAssets";
+import { getAboutHeroImage } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 interface Props {
   params: Promise<{ locale: string }>;
 }
-
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
 
 type CommonMessages = {
   home: string;
@@ -53,13 +51,25 @@ type AboutMessages = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  resolveLocale(locale);
+  const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("about", resolvedLocale);
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
   return getMessageNamespace<AboutMessages>("about").then((copy) => copy.metadata);
 }
 
 export default async function AboutPage({ params }: Props) {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("about", resolvedLocale);
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
   const [common, copy] = await Promise.all([
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<AboutMessages>("about"),
@@ -70,7 +80,7 @@ export default async function AboutPage({ params }: Props) {
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [...capabilities, ...certifications]);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="about" />
@@ -92,7 +102,7 @@ export default async function AboutPage({ params }: Props) {
             eyebrow="Manufacturer Profile"
             title={copy.heroTitle}
             description={copy.heroDescription}
-            imageSrc={ABOUT_HERO_IMAGE}
+            imageSrc={getAboutHeroImage(runtimeSiteConfig) ?? undefined}
           />
           <section className="border-b border-gray-800 bg-gray-900">
             <div className="mx-auto max-w-7xl px-6 py-8">
@@ -128,7 +138,7 @@ export default async function AboutPage({ params }: Props) {
                 <div className="overflow-hidden border border-gray-300 bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={ABOUT_HERO_IMAGE}
+                    src={getAboutHeroImage(runtimeSiteConfig) ?? undefined}
                     alt={`${SITE_NAME} factory and manufacturing environment`}
                     className="aspect-video w-full object-cover"
                   />
@@ -273,7 +283,7 @@ export default async function AboutPage({ params }: Props) {
       <section className="relative overflow-hidden border-b border-gray-100 py-16 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${ABOUT_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getAboutHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/50" />
         <div className="mx-auto max-w-6xl px-6">
@@ -330,7 +340,7 @@ export default async function AboutPage({ params }: Props) {
             <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={ABOUT_HERO_IMAGE}
+                src={getAboutHeroImage(runtimeSiteConfig) ?? undefined}
                 alt={`${SITE_NAME} factory and manufacturing environment`}
                 className="aspect-video w-full object-cover"
               />

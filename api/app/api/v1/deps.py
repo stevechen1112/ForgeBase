@@ -1,7 +1,8 @@
 from typing import Optional
 from uuid import UUID
+from urllib.parse import urlparse
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
@@ -9,14 +10,56 @@ from app.db.session import get_session
 from app.core.security import decode_token
 from app.models.user import User
 from app.models.tenant import Tenant
+from app.core.config import settings
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _parse_service_account_tokens() -> dict[str, str]:
+    """Parse SERVICE_ACCOUNT_TOKENS config into {token: user_id} mapping."""
+    raw = settings.SERVICE_ACCOUNT_TOKENS.strip()
+    if not raw:
+        return {}
+    mapping: dict[str, str] = {}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if ":" not in pair:
+            continue
+        token, user_id = pair.split(":", 1)
+        mapping[token.strip()] = user_id.strip()
+    return mapping
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_session),
 ) -> User:
+    # --- Try service account token (X-API-Key header) first ---
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        sa_map = _parse_service_account_tokens()
+        user_id = sa_map.get(api_key)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API key",
+            )
+        result = await session.exec(select(User).where(User.id == user_id))
+        user = result.first()
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Service account user not found or inactive",
+            )
+        return user
+
+    # --- Fallback to JWT bearer token ---
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
     token = credentials.credentials
     payload = decode_token(token)
 
@@ -80,7 +123,12 @@ class RequireFeature:
         current_user: User = Depends(get_current_user),
     ) -> User:
         if not current_user.tenant_id:
-            return current_user
+            if current_user.role in ("admin", "owner"):
+                return current_user
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tenant context required",
+            )
 
         tenant = await session.get(Tenant, current_user.tenant_id)
         if not tenant:
@@ -125,7 +173,12 @@ class QuotaEnforcer:
         current_user: User = Depends(get_current_user),
     ):
         if not current_user.tenant_id:
-            return  # legacy user without tenant — skip check
+            if current_user.role in ("admin", "owner"):
+                return
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tenant context required",
+            )
 
         from app.services.subscription import check_quota
 
@@ -144,6 +197,7 @@ class QuotaEnforcer:
 
 
 async def resolve_tenant_id(
+    request: Request,
     x_tenant_id: Optional[str] = Header(None),
     session: AsyncSession = Depends(get_session),
 ) -> Optional[UUID]:
@@ -151,16 +205,61 @@ async def resolve_tenant_id(
 
     Returns tenant UUID if header is present and valid, else None.
     """
-    if not x_tenant_id:
-        return None
-    try:
-        tid = UUID(x_tenant_id)
-    except ValueError:
-        # Try slug lookup
-        from app.models.tenant import Tenant
-        result = await session.exec(select(Tenant).where(Tenant.slug == x_tenant_id))
-        tenant = result.first()
-        if not tenant:
+    async def _resolve_identifier(identifier: str) -> Optional[UUID]:
+        try:
+            return UUID(identifier)
+        except ValueError:
+            from app.models.tenant import Tenant
+
+            result = await session.exec(select(Tenant).where(Tenant.slug == identifier))
+            tenant = result.first()
+            if tenant:
+                return tenant.id
+            return None
+
+    def _extract_host(value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        parsed = urlparse(value if "://" in value else f"https://{value}")
+        host = (parsed.hostname or "").strip().lower()
+        return host or None
+
+    if x_tenant_id:
+        resolved = await _resolve_identifier(x_tenant_id.strip())
+        if not resolved:
             raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID")
-        return tenant.id
-    return tid
+        return resolved
+
+    candidate_hosts = [
+        _extract_host(request.headers.get("x-tenant-host")),
+        _extract_host(request.headers.get("origin")),
+        _extract_host(request.headers.get("referer")),
+        _extract_host(request.headers.get("x-forwarded-host")),
+        _extract_host(request.headers.get("host")),
+    ]
+    candidate_hosts = [host for host in candidate_hosts if host]
+    if not candidate_hosts:
+        return None
+
+    from app.models.site_profile import SiteProfile
+    from app.models.tenant import Tenant
+
+    tenant_column = getattr(SiteProfile, "tenant_id", None)
+    profiles = (
+        await session.exec(select(SiteProfile).where(tenant_column.is_not(None)))
+    ).all()
+    for host in candidate_hosts:
+        for profile in profiles:
+            profile_host = _extract_host(profile.site_url)
+            if profile_host and profile_host == host:
+                return profile.tenant_id
+
+        subdomain = host.split(".", 1)[0]
+        if subdomain and subdomain not in {"www", "app", "api", "localhost"}:
+            tenant = (
+                await session.exec(select(Tenant).where(Tenant.slug == subdomain))
+            ).first()
+            if tenant:
+                return tenant.id
+
+    return None

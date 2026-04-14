@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Mail, CheckCircle2, XCircle, Send, UploadCloud } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 // Matches actual /esp/status response
 type ESPStatus = {
@@ -71,7 +70,7 @@ function TestEmailDialog({ token }: { token: string }) {
     try {
       const r = await fetch(`${API_BASE}/esp/test-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ to: to.trim() }),
       });
       if (!r.ok) throw new Error((await r.json()).detail ?? r.statusText);
@@ -135,7 +134,7 @@ function SyncButton({
     try {
       const r = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail ?? r.statusText);
@@ -161,7 +160,7 @@ function ProviderStats({ token, endpoint }: { token: string; endpoint: string })
   const [stats, setStats] = useState<ProviderStats | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}${endpoint}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}${endpoint}`, { headers: buildApiHeaders(token) })
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setStats(d))
       .catch(() => null);
@@ -194,7 +193,7 @@ export default function EspPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(null);
-    fetch(`${API_BASE}/esp/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/esp/status`, { headers: buildApiHeaders(token) })
       .then(r => r.json()).then(setEspStatus).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [token]);
 

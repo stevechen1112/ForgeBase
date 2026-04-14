@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type RFQ = {
   id: string;
@@ -56,7 +56,7 @@ export default function MyRFQsPage() {
     });
     if (statusFilter) params.set("status", statusFilter);
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: buildApiHeaders(token),
     })
       .then((r) => r.json())
       .then((data) => setRows(Array.isArray(data) ? data : []))

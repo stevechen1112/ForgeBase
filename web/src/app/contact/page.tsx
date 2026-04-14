@@ -1,18 +1,29 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
+import { getPublishedPageByType } from "@/lib/api";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: `Contact ${siteConfig.brandName}`,
-  description:
-    `Contact ${siteConfig.brandName} to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("contact");
 
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
+
+  return {
+    title: `Contact ${siteName}`,
+    description:
+      `Contact ${siteName} to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements.`,
+  };
+}
 
 const OFFICES = [
   {
@@ -36,9 +47,18 @@ const REASONS = [
   { label: "Toolkit Program Planning", desc: "Mixed-SKU sets, drawer systems, and export-ready bundles" },
 ];
 
-export default function ContactPage() {
-  const contactEmail = siteConfig.contactEmail;
-  const contactPhone = siteConfig.contactPhone;
+export default async function ContactPage() {
+  const {
+    siteUrl: SITE_URL,
+    siteName: SITE_NAME,
+    contactEmail,
+    contactPhone,
+  } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("contact");
+
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
 
   return (
     <>

@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type RFQ = {
   id: string;
@@ -58,7 +58,7 @@ export default function RFQsListPage() {
     if (priorityFilter) params.set("priority", priorityFilter);
 
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: buildApiHeaders(token),
     })
       .then((r) => r.json())
       .then((data) => setRows(Array.isArray(data) ? data : []))

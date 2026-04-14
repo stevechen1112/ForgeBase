@@ -3,14 +3,19 @@ from datetime import datetime
 from app.core.datetime import utcnow_naive
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy import UniqueConstraint
 
 
 class CTA(SQLModel, table=True):
     """Call-to-Action blocks — reusable across pages/products/applications."""
     __tablename__ = "ctas"
+    __table_args__ = (
+        UniqueConstraint("cta_key", "locale", "tenant_id", name="uq_ctas_key_locale_tenant"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    cta_key: str = Field(max_length=60, unique=True, index=True)    # machine name, e.g. "get_quote_banner"
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
+    cta_key: str = Field(max_length=60, index=True)    # machine name, e.g. "get_quote_banner"
     cta_type: str = Field(max_length=30)    # "banner" | "inline" | "popup" | "sticky_bar"
     headline: str = Field(max_length=120)
     subheadline: Optional[str] = Field(default=None, max_length=240)

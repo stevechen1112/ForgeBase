@@ -68,7 +68,7 @@ class OrphanSummary(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _orphan_product_ids(session: AsyncSession) -> set[uuid.UUID]:
+async def _orphan_product_ids(session: AsyncSession, tenant_id: uuid.UUID | None) -> set[uuid.UUID]:
     """Products that have no application link AND no FAQ link."""
     # product_ids that have at least one application
     has_app = set(
@@ -79,20 +79,26 @@ async def _orphan_product_ids(session: AsyncSession) -> set[uuid.UUID]:
         (await session.exec(select(ProductFAQLink.product_id).distinct())).all()
     )
     # all product ids
-    all_products = await session.exec(select(Product.id))
+    product_query = select(Product.id)
+    if tenant_id:
+        product_query = product_query.where(Product.tenant_id == tenant_id)
+    all_products = await session.exec(product_query)
     return {pid for pid in all_products.all() if pid not in has_app and pid not in has_faq}
 
 
-async def _orphan_application_ids(session: AsyncSession) -> set[uuid.UUID]:
+async def _orphan_application_ids(session: AsyncSession, tenant_id: uuid.UUID | None) -> set[uuid.UUID]:
     """Applications that have no product link."""
     has_product = set(
         (await session.exec(select(ProductApplicationLink.application_id).distinct())).all()
     )
-    all_apps = await session.exec(select(Application.id))
+    app_query = select(Application.id)
+    if tenant_id:
+        app_query = app_query.where(Application.tenant_id == tenant_id)
+    all_apps = await session.exec(app_query)
     return {aid for aid in all_apps.all() if aid not in has_product}
 
 
-async def _orphan_faq_ids(session: AsyncSession) -> set[uuid.UUID]:
+async def _orphan_faq_ids(session: AsyncSession, tenant_id: uuid.UUID | None) -> set[uuid.UUID]:
     """FAQs not linked to any product or application."""
     has_product = set(
         (await session.exec(select(ProductFAQLink.faq_item_id).distinct())).all()
@@ -100,7 +106,10 @@ async def _orphan_faq_ids(session: AsyncSession) -> set[uuid.UUID]:
     has_app = set(
         (await session.exec(select(ApplicationFAQLink.faq_item_id).distinct())).all()
     )
-    all_faqs = await session.exec(select(FAQItem.id))
+    faq_query = select(FAQItem.id)
+    if tenant_id:
+        faq_query = faq_query.where(FAQItem.tenant_id == tenant_id)
+    all_faqs = await session.exec(faq_query)
     return {fid for fid in all_faqs.all() if fid not in has_product and fid not in has_app}
 
 
@@ -109,12 +118,12 @@ async def _orphan_faq_ids(session: AsyncSession) -> set[uuid.UUID]:
 @router.get("/orphans", response_model=OrphanSummary)
 async def get_orphan_summary(
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> OrphanSummary:
     """Return count summary of all orphaned entities."""
-    orphan_p = await _orphan_product_ids(session)
-    orphan_a = await _orphan_application_ids(session)
-    orphan_f = await _orphan_faq_ids(session)
+    orphan_p = await _orphan_product_ids(session, current_user.tenant_id)
+    orphan_a = await _orphan_application_ids(session, current_user.tenant_id)
+    orphan_f = await _orphan_faq_ids(session, current_user.tenant_id)
     return OrphanSummary(
         orphan_products=len(orphan_p),
         orphan_applications=len(orphan_a),
@@ -125,10 +134,10 @@ async def get_orphan_summary(
 @router.get("/orphans/products", response_model=list[OrphanProductOut])
 async def get_orphan_products(
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> list[OrphanProductOut]:
     """Return products with no application or FAQ links."""
-    orphan_ids = await _orphan_product_ids(session)
+    orphan_ids = await _orphan_product_ids(session, current_user.tenant_id)
     if not orphan_ids:
         return []
     products = await session.exec(
@@ -150,10 +159,10 @@ async def get_orphan_products(
 @router.get("/orphans/applications", response_model=list[OrphanApplicationOut])
 async def get_orphan_applications(
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> list[OrphanApplicationOut]:
     """Return applications with no product links."""
-    orphan_ids = await _orphan_application_ids(session)
+    orphan_ids = await _orphan_application_ids(session, current_user.tenant_id)
     if not orphan_ids:
         return []
     apps = await session.exec(
@@ -175,10 +184,10 @@ async def get_orphan_applications(
 @router.get("/orphans/faqs", response_model=list[OrphanFAQOut])
 async def get_orphan_faqs(
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> list[OrphanFAQOut]:
     """Return FAQs not linked to any product or application."""
-    orphan_ids = await _orphan_faq_ids(session)
+    orphan_ids = await _orphan_faq_ids(session, current_user.tenant_id)
     if not orphan_ids:
         return []
     faqs = await session.exec(

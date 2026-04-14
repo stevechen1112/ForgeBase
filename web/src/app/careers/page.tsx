@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Careers",
-  description: `Career opportunities and hiring information for ${siteConfig.brandName}.`,
-};
+  return {
+    title: "Careers",
+    description: `Career opportunities and hiring information for ${siteName}.`,
+  };
+}
 
 const OPENINGS = [
   "International Sales Executive",
@@ -16,7 +18,8 @@ const OPENINGS = [
   "Packaging and Logistics Planner",
 ];
 
-export default function CareersPage() {
+export default async function CareersPage() {
+  const { siteName: SITE_NAME, careersEmail } = await getRuntimeSiteContext();
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">
@@ -42,7 +45,7 @@ export default function CareersPage() {
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Apply by Email</h2>
-            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to {siteConfig.careersEmail}. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
+            <p className="mt-3 text-sm leading-relaxed text-blue-800">Send your resume and role interest to {careersEmail}. Include language skills, manufacturing experience, and export market exposure where relevant.</p>
           </div>
         </div>
       </section>

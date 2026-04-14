@@ -17,30 +17,34 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # --- Drop FK constraints first ---
-    op.drop_constraint("fk_visitors_account_id", "visitors", type_="foreignkey")
-    op.drop_constraint("nurture_steps_sequence_id_fkey", "nurture_steps", type_="foreignkey")
-    op.drop_constraint("nurture_enrollments_sequence_id_fkey", "nurture_enrollments", type_="foreignkey")
-    op.drop_constraint("nurture_enrollments_contact_id_fkey", "nurture_enrollments", type_="foreignkey")
-    op.drop_constraint("ab_test_views_test_id_fkey", "ab_test_views", type_="foreignkey")
+    # Phase 2 migrations (0006-0013) were converted to no-ops before this
+    # migration was written; the tables/columns may never have been created.
+    # All drops are therefore guarded with IF EXISTS.
+
+    # --- Drop FK constraints (safe even if never created) ---
+    op.execute("ALTER TABLE IF EXISTS visitors DROP CONSTRAINT IF EXISTS fk_visitors_account_id;")
+    op.execute("ALTER TABLE IF EXISTS nurture_steps DROP CONSTRAINT IF EXISTS nurture_steps_sequence_id_fkey;")
+    op.execute("ALTER TABLE IF EXISTS nurture_enrollments DROP CONSTRAINT IF EXISTS nurture_enrollments_sequence_id_fkey;")
+    op.execute("ALTER TABLE IF EXISTS nurture_enrollments DROP CONSTRAINT IF EXISTS nurture_enrollments_contact_id_fkey;")
+    op.execute("ALTER TABLE IF EXISTS ab_test_views DROP CONSTRAINT IF EXISTS ab_test_views_test_id_fkey;")
 
     # --- Drop child tables ---
-    op.drop_table("ab_test_views")
-    op.drop_table("nurture_steps")
-    op.drop_table("nurture_enrollments")
-    op.drop_table("crm_sync_logs")
-    op.drop_table("linkedin_audiences")
+    op.execute("DROP TABLE IF EXISTS ab_test_views;")
+    op.execute("DROP TABLE IF EXISTS nurture_steps;")
+    op.execute("DROP TABLE IF EXISTS nurture_enrollments;")
+    op.execute("DROP TABLE IF EXISTS crm_sync_logs;")
+    op.execute("DROP TABLE IF EXISTS linkedin_audiences;")
 
     # --- Drop parent tables ---
-    op.drop_table("ab_tests")
-    op.drop_table("nurture_sequences")
-    op.drop_table("accounts")
+    op.execute("DROP TABLE IF EXISTS ab_tests;")
+    op.execute("DROP TABLE IF EXISTS nurture_sequences;")
+    op.execute("DROP TABLE IF EXISTS accounts;")
 
     # --- Drop residual columns ---
-    op.drop_column("content_assets", "requires_gate")
-    op.drop_column("visitors", "account_id")
-    op.drop_column("visitors", "last_seen_ip")
-    op.drop_column("visitors", "ip_resolved_at")
+    op.execute("ALTER TABLE IF EXISTS content_assets DROP COLUMN IF EXISTS requires_gate;")
+    op.execute("ALTER TABLE IF EXISTS visitors DROP COLUMN IF EXISTS account_id;")
+    op.execute("ALTER TABLE IF EXISTS visitors DROP COLUMN IF EXISTS last_seen_ip;")
+    op.execute("ALTER TABLE IF EXISTS visitors DROP COLUMN IF EXISTS ip_resolved_at;")
 
 
 def downgrade() -> None:

@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Dealer Locator",
-  description: `Regional distributor and dealer support information for ${siteConfig.brandName}.`,
-};
+  return {
+    title: "Dealer Locator",
+    description: `Regional distributor and dealer support information for ${siteName}.`,
+  };
+}
 
 const REGIONS = [
   "East Asia and Southeast Asia",
@@ -16,7 +18,8 @@ const REGIONS = [
   "Private-label importer programs in North America",
 ];
 
-export default function DealersPage() {
+export default async function DealersPage() {
+  const { siteName: SITE_NAME, contactEmail } = await getRuntimeSiteContext();
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">
@@ -42,7 +45,7 @@ export default function DealersPage() {
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
             <h2 className="text-lg font-semibold text-blue-900">Need a regional contact?</h2>
-            <p className="mt-3 text-sm leading-relaxed text-blue-800">Contact {siteConfig.contactEmail} with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team.</p>
+            <p className="mt-3 text-sm leading-relaxed text-blue-800">Contact {contactEmail} with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team.</p>
           </div>
         </div>
       </section>

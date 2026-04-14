@@ -56,10 +56,18 @@ def _make_publish_routes(prefix: str, Model: Any) -> APIRouter:
     async def publish(
         entity_id: uuid.UUID,
         session: AsyncSession = Depends(get_session),
-        _: User = Depends(require_content_editor),
+        current_user: User = Depends(require_content_editor),
     ):
         obj = await session.get(Model, entity_id)
         if not obj:
+            raise HTTPException(status_code=404, detail=f"{prefix[:-1].capitalize()} not found")
+        # Tenant isolation: if model and user both have tenant_id, enforce match
+        if (
+            hasattr(obj, "tenant_id")
+            and current_user.tenant_id
+            and obj.tenant_id
+            and obj.tenant_id != current_user.tenant_id
+        ):
             raise HTTPException(status_code=404, detail=f"{prefix[:-1].capitalize()} not found")
         if obj.status == "published":
             return {"detail": "Already published"}
@@ -76,10 +84,18 @@ def _make_publish_routes(prefix: str, Model: Any) -> APIRouter:
     async def unpublish(
         entity_id: uuid.UUID,
         session: AsyncSession = Depends(get_session),
-        _: User = Depends(require_content_editor),
+        current_user: User = Depends(require_content_editor),
     ):
         obj = await session.get(Model, entity_id)
         if not obj:
+            raise HTTPException(status_code=404, detail=f"{prefix[:-1].capitalize()} not found")
+        # Tenant isolation: if model and user both have tenant_id, enforce match
+        if (
+            hasattr(obj, "tenant_id")
+            and current_user.tenant_id
+            and obj.tenant_id
+            and obj.tenant_id != current_user.tenant_id
+        ):
             raise HTTPException(status_code=404, detail=f"{prefix[:-1].capitalize()} not found")
         if obj.status != "published":
             return {"detail": "Not currently published"}

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { briefsApi, type PageBrief } from "@/lib/api/content";
+import { buildApiHeaders } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +61,7 @@ export default function BriefForm({ initial, id }: Props) {
     try {
       const res = await fetch(`/api/v1/content/generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ brief_id: id }),
       });
       if (!res.ok) {

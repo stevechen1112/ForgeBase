@@ -5,6 +5,7 @@
  */
 import { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
 import type { UserRead, TokenResponse } from "@/lib/api/auth";
+import { clearAuthStorage, readAuthStorage, writeAuthStorage } from "@/lib/auth/storage";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type AuthState =
@@ -51,8 +52,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_KEY = "fb_auth";
-
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, { status: "loading" });
@@ -60,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hydrate from localStorage on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = readAuthStorage();
       const stored = raw ? (JSON.parse(raw) as TokenResponse) : null;
       dispatch({ type: "HYDRATED", payload: stored });
     } catch {
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Global 401 handler — any API call with expired token triggers logout
   useEffect(() => {
     const handleUnauthorized = () => {
-      localStorage.removeItem(STORAGE_KEY);
+      clearAuthStorage();
       dispatch({ type: "LOGOUT" });
     };
     const handleRefreshed = (e: Event) => {
@@ -87,12 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (tokenResponse: TokenResponse) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tokenResponse));
+    writeAuthStorage(JSON.stringify(tokenResponse));
     dispatch({ type: "SET_AUTH", payload: tokenResponse });
   };
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    clearAuthStorage();
     dispatch({ type: "LOGOUT" });
   };
 

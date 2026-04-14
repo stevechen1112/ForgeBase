@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, AlertTriangle, Link2, Package, Globe, HelpCircle } from "lucide-react";
 import Link from "next/link";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Orphans = { orphan_products: number; orphan_applications: number; orphan_faqs: number };
 type Product = { id: string; product_name: string; slug: string; category_id: string | null; status: string };
@@ -25,7 +24,7 @@ export default function RelationsPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(null);
-    const h = { Authorization: `Bearer ${token}` };
+    const h = buildApiHeaders(token);
     Promise.all([
       fetch(`${API_BASE}/content/entities/orphans`, { headers: h }).then(r => r.json()),
       fetch(`${API_BASE}/content/entities/orphans/products`, { headers: h }).then(r => r.json()),

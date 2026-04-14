@@ -13,8 +13,7 @@ import {
   CheckCircle2, XCircle, Eye, EyeOff, Save, Trash2,
   Mail, Search, UploadCloud, Send,
 } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,7 +76,7 @@ function useCredentials(service: string, fields: FieldDef[], token: string) {
   const reload = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/admin/integrations/${service}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       if (!res.ok) return;
       const data: CredentialStatus[] = await res.json();
@@ -122,7 +121,7 @@ function CredentialForm({ service, fields, token, status, previews, reload }: {
       await Promise.all(pairs.map(([k, v]) =>
         fetch(`${API_BASE}/admin/integrations/${service}/${k}`, {
           method: "PUT",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
           body: JSON.stringify({ value: v }),
         })
       ));
@@ -138,7 +137,7 @@ function CredentialForm({ service, fields, token, status, previews, reload }: {
   const handleDelete = async (key: string) => {
     await fetch(`${API_BASE}/admin/integrations/${service}/${key}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: buildApiHeaders(token),
     });
     await reload();
   };
@@ -227,7 +226,7 @@ function SyncButton({ token, endpoint, label }: { token: string; endpoint: strin
     try {
       const r = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail ?? r.statusText);
@@ -261,7 +260,7 @@ function TestEmailDialog({ token }: { token: string }) {
     try {
       const r = await fetch(`${API_BASE}/esp/test-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ to: to.trim() }),
       });
       if (!r.ok) throw new Error((await r.json()).detail ?? r.statusText);
@@ -299,7 +298,7 @@ function TestEmailDialog({ token }: { token: string }) {
 function ProviderStats({ token, endpoint }: { token: string; endpoint: string }) {
   const [stats, setStats] = useState<ProviderStats | null>(null);
   useEffect(() => {
-    fetch(`${API_BASE}${endpoint}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}${endpoint}`, { headers: buildApiHeaders(token) })
       .then(r => r.ok ? r.json() : null).then(d => d && setStats(d)).catch(() => null);
   }, [token, endpoint]);
 
@@ -396,7 +395,7 @@ function EmailSection({ token }: { token: string }) {
   const [espStatus, setEspStatus] = useState<EspStatus | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/esp/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/esp/status`, { headers: buildApiHeaders(token) })
       .then(r => r.json()).then(setEspStatus).catch(() => null);
   }, [token]);
 

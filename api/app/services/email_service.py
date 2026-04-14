@@ -49,8 +49,11 @@ async def _send_via_resend(
                 return True
             logger.error("Resend API error %s: %s", r.status_code, r.text[:200])
             return False
-    except Exception as e:
-        logger.error("Resend send failed to %s: %s", to, e)
+    except httpx.RequestError:
+        logger.exception("Resend send request failed to %s", to)
+        return False
+    except Exception:
+        logger.exception("Unexpected Resend send failure to %s", to)
         return False
 
 
@@ -95,8 +98,11 @@ async def _send_via_sendgrid(
                 return True
             logger.error("SendGrid API error %s: %s", r.status_code, r.text[:200])
             return False
-    except Exception as e:
-        logger.error("SendGrid send failed to %s: %s", to, e)
+    except httpx.RequestError:
+        logger.exception("SendGrid send request failed to %s", to)
+        return False
+    except Exception:
+        logger.exception("Unexpected SendGrid send failure to %s", to)
         return False
 
 

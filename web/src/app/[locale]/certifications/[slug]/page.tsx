@@ -7,12 +7,11 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 const CERT_BADGE_VERSION = "20260318a";
 
 type CommonMessages = {
@@ -45,6 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CertificationDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial } = await getRuntimeSiteContext();
   const { locale, slug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -58,7 +58,7 @@ export default async function CertificationDetailPage({ params }: Props) {
     : null;
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [certification]);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="certification" pageId={certification.id} />

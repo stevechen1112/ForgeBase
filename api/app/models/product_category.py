@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 from app.core.datetime import utcnow_naive
 
 if TYPE_CHECKING:
@@ -10,11 +11,14 @@ if TYPE_CHECKING:
 
 class ProductCategory(SQLModel, table=True):
     __tablename__ = "product_categories"
+    __table_args__ = (
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_product_categories_slug_locale_tenant"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     category_name: str = Field(max_length=60)
-    slug: str = Field(max_length=60, unique=True, index=True)
+    slug: str = Field(max_length=60, index=True)
     description: Optional[str] = Field(default=None)  # richtext stored as HTML string
     image_url: Optional[str] = Field(default=None)
     og_image_url: Optional[str] = Field(default=None, max_length=500)  # OG-specific image (1200×630)

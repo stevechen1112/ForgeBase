@@ -19,10 +19,10 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
-from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
+from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
 from app.models.intake import (
     IntakeProject,
     IntakeUrlCandidate,
@@ -35,7 +35,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-ai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+ai_client = get_openai_client()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -215,7 +215,7 @@ async def _extract_pdf_contents(project_id: uuid.UUID, db: AsyncSession) -> None
         select(IntakeUrlCandidate).where(
             IntakeUrlCandidate.project_id == project_id,
             IntakeUrlCandidate.page_type == "resource",
-            IntakeUrlCandidate.raw_text.startswith("[PDF]"),  # type: ignore
+            getattr(IntakeUrlCandidate, "raw_text").startswith("[PDF]"),
         )
     )
     pdf_candidates = result.all()

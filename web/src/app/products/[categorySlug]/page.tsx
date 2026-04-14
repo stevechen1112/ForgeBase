@@ -9,13 +9,12 @@ import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/Structur
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getCategoryHeroImage } from "@/lib/demoAssets";
 import { buildTwitterMeta } from "@/lib/seo";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = {
   params: Promise<{ categorySlug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 /** 2.3.1 — any ?q= or ?page= param → noindex, canonical strips all params */
 function isFaceted(filters: Record<string, string | string[] | undefined>): boolean {
@@ -24,6 +23,7 @@ function isFaceted(filters: Record<string, string | string[] | undefined>): bool
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const { categorySlug } = await params;
   const filters = await searchParams;
   const category = await getCategoryBySlug(categorySlug);
@@ -50,6 +50,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
+  const { siteUrl: SITE_URL, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { categorySlug } = await params;
   const filters = await searchParams;
 
@@ -65,7 +66,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const faceted = isFaceted(filters);
   const baseUrl = `/products/${category.slug}`;
-  const heroImage = getCategoryHeroImage(category.slug, category.image_url);
+  const heroImage = getCategoryHeroImage(category.slug, category.image_url, runtimeSiteConfig);
 
   return (
     <>
@@ -155,6 +156,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                   key={product.id}
                   product={product}
                   categorySlug={category.slug}
+                  siteConfig={runtimeSiteConfig}
                 />
               ))}
             </div>

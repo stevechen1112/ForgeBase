@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Users } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Segment = {
   id: string;
@@ -58,13 +58,13 @@ export default function SegmentDetailPage() {
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
   const [evaluating, setEvaluating] = useState(false);
 
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const jsonHeaders = buildApiHeaders(token, { "Content-Type": "application/json" });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/tracking/segments/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       if (!res.ok) throw new Error("Segment 不存在");
       const data: Segment = await res.json();
@@ -82,7 +82,7 @@ export default function SegmentDetailPage() {
     setSaving(true); setMessage("");
     try {
       const res = await fetch(`${API_BASE}/tracking/segments/${id}`, {
-        method: "PATCH", headers,
+        method: "PATCH", headers: jsonHeaders,
         body: JSON.stringify({ name, description }),
       });
       if (!res.ok) throw new Error("儲存失敗");
@@ -97,7 +97,7 @@ export default function SegmentDetailPage() {
     setEvaluating(true);
     try {
       const res = await fetch(`${API_BASE}/tracking/segments/${id}/evaluate`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
+        method: "POST", headers: buildApiHeaders(token),
       });
       if (res.ok) setEvalResult(await res.json());
     } catch { /* ignore */ }

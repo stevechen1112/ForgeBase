@@ -12,10 +12,11 @@ if TYPE_CHECKING:
 class Certification(SQLModel, table=True):
     __tablename__ = "certifications"
     __table_args__ = (
-        UniqueConstraint("slug", "locale", name="uq_certifications_slug_locale"),
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_certifications_slug_locale_tenant"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     cert_name: str = Field(max_length=100, index=True)   # e.g. "ISO 9001", "RoHS"
     slug: str = Field(max_length=120, index=True)
     issuer: Optional[str] = Field(default=None, max_length=120)

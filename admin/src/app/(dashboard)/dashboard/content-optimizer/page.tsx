@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Wand2, Copy, Check, RotateCcw, AlertCircle } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type OptimizeResult = {
   optimized_title?: string;
@@ -41,7 +40,7 @@ export default function ContentOptimizerPage() {
     try {
       const r = await fetch(`${API_BASE}/content/intelligence/optimize`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ title, content, target_keyword: targetKeyword }),
       });
       const d = await r.json();

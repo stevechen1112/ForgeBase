@@ -24,6 +24,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -64,8 +65,11 @@ def _send_email(to: str, subject: str, body_html: str) -> bool:
                 server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SMTP_FROM, to, msg.as_string())
         return True
-    except Exception as exc:
-        logger.error("Email send failed to=%s: %s", to, exc)
+    except smtplib.SMTPException:
+        logger.exception("Email send failed to=%s", to)
+        return False
+    except Exception:
+        logger.exception("Unexpected email send failure to=%s", to)
         return False
 
 
@@ -106,8 +110,10 @@ async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> N
 </body></html>
 """
             _send_email(SALES_NOTIFY_EMAIL, subject, body)
-    except Exception as exc:
-        logger.error("notify_visitor_hot error visitor_id=%s: %s", visitor_id, exc)
+    except SQLAlchemyError:
+        logger.exception("notify_visitor_hot database error visitor_id=%s", visitor_id)
+    except Exception:
+        logger.exception("notify_visitor_hot unexpected error visitor_id=%s", visitor_id)
 
 
 # ── Notification triggers ─────────────────────────────────────────────────────
@@ -124,8 +130,10 @@ async def notify_new_rfq(rfq_id: uuid.UUID) -> None:
             subject = f"[ForgeBase] New RFQ {rfq.rfq_number} — Priority: {rfq.priority.upper()}"
             body = _rfq_email_body(rfq, contact, action="New RFQ Received")
             _send_email(SALES_NOTIFY_EMAIL, subject, body)
-    except Exception as exc:
-        logger.error("notify_new_rfq error rfq_id=%s: %s", rfq_id, exc)
+    except SQLAlchemyError:
+        logger.exception("notify_new_rfq database error rfq_id=%s", rfq_id)
+    except Exception:
+        logger.exception("notify_new_rfq unexpected error rfq_id=%s", rfq_id)
 
 
 async def notify_rfq_assigned(rfq_id: uuid.UUID) -> None:
@@ -144,8 +152,10 @@ async def notify_rfq_assigned(rfq_id: uuid.UUID) -> None:
                 rfq.assigned_notified_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
-    except Exception as exc:
-        logger.error("notify_rfq_assigned error rfq_id=%s: %s", rfq_id, exc)
+    except SQLAlchemyError:
+        logger.exception("notify_rfq_assigned database error rfq_id=%s", rfq_id)
+    except Exception:
+        logger.exception("notify_rfq_assigned unexpected error rfq_id=%s", rfq_id)
 
 
 async def notify_rfq_reminder(rfq_id: uuid.UUID) -> None:
@@ -166,8 +176,10 @@ async def notify_rfq_reminder(rfq_id: uuid.UUID) -> None:
                 rfq.reminder_24h_sent_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
-    except Exception as exc:
-        logger.error("notify_rfq_reminder error rfq_id=%s: %s", rfq_id, exc)
+    except SQLAlchemyError:
+        logger.exception("notify_rfq_reminder database error rfq_id=%s", rfq_id)
+    except Exception:
+        logger.exception("notify_rfq_reminder unexpected error rfq_id=%s", rfq_id)
 
 
 async def notify_rfq_escalation(rfq_id: uuid.UUID) -> None:
@@ -185,8 +197,10 @@ async def notify_rfq_escalation(rfq_id: uuid.UUID) -> None:
                 rfq.escalation_48h_sent_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
-    except Exception as exc:
-        logger.error("notify_rfq_escalation error rfq_id=%s: %s", rfq_id, exc)
+    except SQLAlchemyError:
+        logger.exception("notify_rfq_escalation database error rfq_id=%s", rfq_id)
+    except Exception:
+        logger.exception("notify_rfq_escalation unexpected error rfq_id=%s", rfq_id)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

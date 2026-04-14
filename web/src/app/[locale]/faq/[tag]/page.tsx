@@ -9,7 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; tag: string }> };
@@ -23,8 +23,6 @@ type FaqPageMessages = {
   breadcrumb: string;
   allCategories: string;
 };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, tag } = await params;
@@ -45,6 +43,7 @@ export async function generateStaticParams() {
 }
 
 export default async function FAQTagPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial } = await getRuntimeSiteContext();
   const { locale, tag } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -63,7 +62,7 @@ export default async function FAQTagPage({ params }: Props) {
   const label = decoded.charAt(0).toUpperCase() + decoded.slice(1);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, filtered);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="faq" pageId={tag} />

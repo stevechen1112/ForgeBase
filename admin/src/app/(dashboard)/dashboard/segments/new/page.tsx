@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, PlusCircle, Trash2, Users } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
 
@@ -101,7 +101,7 @@ export default function NewSegmentPage() {
       // For now, create the segment first
       const res = await fetch(`${API_BASE}/tracking/segments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           name: name || "Preview (temp)",
           description,
@@ -115,7 +115,7 @@ export default function NewSegmentPage() {
       // Evaluate
       const evalRes = await fetch(`${API_BASE}/tracking/segments/${seg.id}/evaluate`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       if (evalRes.ok) {
         const evalData = await evalRes.json();
@@ -125,7 +125,7 @@ export default function NewSegmentPage() {
       // Delete temp segment
       await fetch(`${API_BASE}/tracking/segments/${seg.id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
     } catch {
       setPreviewCount(-1);
@@ -138,7 +138,7 @@ export default function NewSegmentPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/segments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           name,
           description,

@@ -3,6 +3,7 @@ from datetime import datetime
 from app.core.datetime import utcnow_naive
 from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 from app.models.associations import ProductComparisonLink
 
 if TYPE_CHECKING:
@@ -12,10 +13,14 @@ if TYPE_CHECKING:
 class ComparisonTopic(SQLModel, table=True):
     """Competitive comparison topics — e.g. 'vs Steel Rivets' with dimension breakdown."""
     __tablename__ = "comparison_topics"
+    __table_args__ = (
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_comparison_topics_slug_locale_tenant"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     topic_title: str = Field(max_length=120, index=True)
-    slug: str = Field(max_length=120, unique=True, index=True)
+    slug: str = Field(max_length=120, index=True)
     summary: Optional[str] = Field(default=None, max_length=500)
     dimensions: Optional[str] = Field(default=None)
     # JSON: [{"dimension": "Cost", "our_value": "Low", "competitor_value": "High", "winner": "us"}]

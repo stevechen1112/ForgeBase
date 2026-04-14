@@ -8,10 +8,10 @@ import {
   getPublishedComparisons,
   getPublishedFAQs,
 } from "@/lib/api";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const now = new Date();
 
   // Fetch ALL published content across all locales

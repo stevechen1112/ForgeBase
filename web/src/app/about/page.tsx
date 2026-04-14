@@ -1,20 +1,30 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getPublishedCapabilities, getPublishedCertifications } from "@/lib/api";
+import { getPublishedCapabilities, getPublishedCertifications, getPublishedPageByType } from "@/lib/api";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { ABOUT_HERO_IMAGE } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { getAboutHeroImage } from "@/lib/demoAssets";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: `About ${siteConfig.brandName} | OEM Hand Tool Manufacturer in Taiwan`,
-  description:
-    `Learn about ${siteConfig.brandName}, a Taiwan-based OEM/ODM hand tool manufacturer focused on quality control, export-ready execution, and private-label tool programs.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("about");
 
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
+
+  return {
+    title: `About ${siteName} | OEM Hand Tool Manufacturer in Taiwan`,
+    description:
+      `Learn about ${siteName}, a Taiwan-based OEM/ODM hand tool manufacturer focused on quality control, export-ready execution, and private-label tool programs.`,
+  };
+}
 
 const TIMELINE = [
   { year: "2001", event: "Company founded in Taichung with a focus on export-ready hand tool programs." },
@@ -26,7 +36,7 @@ const TIMELINE = [
   { year: "2023", event: "Optimized kit assembly and export packaging operations for mixed-SKU programs." },
 ];
 
-const PRODUCT_LINES = [
+const getProductLines = (siteName: string) => [
   {
     title: "Torque and Socket Tools",
     desc: "Built for automotive service, industrial maintenance, and controlled fastening programs where repeatable torque and dependable fit matter.",
@@ -56,7 +66,7 @@ const PRODUCT_LINES = [
   },
   {
     title: "Automotive and Toolkit Programs",
-    desc: `${SITE_NAME} supports service-tool assortments, mechanic drawer sets, electrical kits, and other programs that combine tools, packaging, and documentation.`,
+    desc: `${siteName} supports service-tool assortments, mechanic drawer sets, electrical kits, and other programs that combine tools, packaging, and documentation.`,
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -66,10 +76,10 @@ const PRODUCT_LINES = [
   },
 ];
 
-const OPERATIONAL_STRENGTHS = [
+const getOperationalStrengths = (siteName: string) => [
   {
     title: "Engineering Review",
-    desc: `Standard items can move quickly, but custom items still require responsible review. ${SITE_NAME} supports specification clarification, selection guidance, and selected customization planning before mass production begins.`,
+    desc: `Standard items can move quickly, but custom items still require responsible review. ${siteName} supports specification clarification, selection guidance, and selected customization planning before mass production begins.`,
   },
   {
     title: "Quality Workflow",
@@ -81,11 +91,20 @@ const OPERATIONAL_STRENGTHS = [
   },
   {
     title: "Export Communication",
-    desc: `${SITE_NAME} positions communication clarity as part of the offer because document mistakes and shipment ambiguity carry real cost for importers and distributors.`,
+    desc: `${siteName} positions communication clarity as part of the offer because document mistakes and shipment ambiguity carry real cost for importers and distributors.`,
   },
 ];
 
 export default async function AboutPage() {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("about");
+
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
+
+  const productLines = getProductLines(SITE_NAME);
+  const operationalStrengths = getOperationalStrengths(SITE_NAME);
   const [capabilities, certifications] = await Promise.all([
     getPublishedCapabilities(),
     getPublishedCertifications(),
@@ -108,7 +127,7 @@ export default async function AboutPage() {
       <section className="relative overflow-hidden border-b border-gray-100 py-16 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${ABOUT_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getAboutHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/50" />
         <div className="mx-auto max-w-6xl px-6">
@@ -181,7 +200,7 @@ export default async function AboutPage() {
             <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={ABOUT_HERO_IMAGE}
+                src={getAboutHeroImage(runtimeSiteConfig) ?? undefined}
                 alt={`${SITE_NAME} factory and manufacturing environment`}
                 className="aspect-video w-full object-cover"
               />
@@ -198,7 +217,7 @@ export default async function AboutPage() {
             <h2 className="mt-2 text-3xl font-bold text-gray-900">Professional Tool Lines for Repeat Programs</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {PRODUCT_LINES.map((v) => (
+            {productLines.map((v) => (
               <div key={v.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                   {v.icon}
@@ -241,7 +260,7 @@ export default async function AboutPage() {
             <h2 className="mt-2 text-3xl font-bold text-gray-900">How {SITE_NAME} Reduces Buyer Friction</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {OPERATIONAL_STRENGTHS.map((item) => (
+            {operationalStrengths.map((item) => (
               <div key={item.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">{item.desc}</p>

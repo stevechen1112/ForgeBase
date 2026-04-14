@@ -4,17 +4,20 @@ import { getPublishedApplications } from "@/lib/api";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: "Industry Applications",
-  description:
-    `Explore ${siteConfig.brandName} application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-const SITE_URL = siteConfig.siteUrl;
+  return {
+    title: "Industry Applications",
+    description:
+      `Explore ${siteName} application pages for automotive service, industrial maintenance, electrical work, private-label tool programs, and field-service toolkits.`,
+  };
+}
 
 export default async function ApplicationsPage() {
+  const { siteUrl: SITE_URL, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const res = await getPublishedApplications("en", 1, 50);
   const applications = res.data;
 
@@ -69,7 +72,7 @@ export default async function ApplicationsPage() {
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {apps.map((app) => (
-                    <ApplicationCard key={app.id} application={app} />
+                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
                   ))}
                 </div>
               </div>
@@ -78,7 +81,7 @@ export default async function ApplicationsPage() {
             // Single industry or mixed — flat grid
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
               ))}
             </div>
           )}

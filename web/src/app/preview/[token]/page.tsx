@@ -10,6 +10,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
+import { withTenantHeaders } from "@/lib/tenant";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -23,11 +25,18 @@ interface PagePreview {
   slug: string;
   page_type: string;
   title: string;
-  subtitle?: string;
-  body?: string;
-  hero_image_url?: string;
-  seo_title?: string;
-  seo_description?: string;
+  subtitle: string | null;
+  body: string | null;
+  hero_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  canonical_url: string | null;
+  structured_data: string | null;
+  noindex: boolean;
+  entity_type: string | null;
+  entity_id: string | null;
+  brief_id: string | null;
   locale: string;
   status: string;
 }
@@ -35,6 +44,7 @@ interface PagePreview {
 async function fetchPreviewPage(token: string): Promise<PagePreview | null> {
   try {
     const res = await fetch(`${BASE}/api/v1/content/preview/${token}`, {
+      headers: withTenantHeaders(),
       cache: "no-store", // always fresh — never cache previews
     });
     if (!res.ok) return null;
@@ -63,25 +73,6 @@ export default async function PreviewPage({ params }: Props) {
     notFound();
   }
 
-  // Parse body blocks if JSON; otherwise treat as plain text / HTML
-  let bodyContent: string | null = page.body ?? null;
-  if (bodyContent) {
-    try {
-      const parsed = JSON.parse(bodyContent);
-      // If it's an array of block objects, extract text fields for display
-      if (Array.isArray(parsed)) {
-        bodyContent = parsed
-          .map((block: { text?: string; content?: string; value?: string }) =>
-            block.text ?? block.content ?? block.value ?? ""
-          )
-          .filter(Boolean)
-          .join("\n\n");
-      }
-    } catch {
-      // Not JSON — use as-is (plain text or HTML string)
-    }
-  }
-
   return (
     <>
       {/* ── Preview banner ── */}
@@ -106,43 +97,7 @@ export default async function PreviewPage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── Hero ── */}
-      <section
-        className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-600 py-20 text-white"
-        style={
-          page.hero_image_url
-            ? {
-                backgroundImage: `url(${page.hero_image_url})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
-      >
-        {page.hero_image_url && (
-          <div className="absolute inset-0 bg-slate-900/65" aria-hidden="true" />
-        )}
-        <div className="relative container mx-auto max-w-4xl px-6 text-center">
-          <span className="mb-3 inline-block rounded-full border border-white/30 px-3 py-0.5 text-xs uppercase tracking-widest text-white/70">
-            {page.page_type}
-          </span>
-          <h1 className="text-4xl font-bold sm:text-5xl">{page.title}</h1>
-          {page.subtitle && (
-            <p className="mt-4 text-xl text-slate-200">{page.subtitle}</p>
-          )}
-        </div>
-      </section>
-
-      {/* ── Body ── */}
-      {bodyContent && (
-        <section className="py-14">
-          <div className="container mx-auto max-w-4xl px-6">
-            <div className="prose prose-gray max-w-none text-gray-700 leading-relaxed whitespace-pre-line">
-              {bodyContent}
-            </div>
-          </div>
-        </section>
-      )}
+      <FlexiblePageRenderer page={page} />
 
       {/* ── Meta info (visible in preview only) ── */}
       <section className="border-t bg-gray-50 py-8">

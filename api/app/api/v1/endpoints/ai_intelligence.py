@@ -10,18 +10,26 @@ Phase 3 AI Intelligence Endpoints
        GET  /content/applications/{app_id}/recommend-relations
 """
 import uuid
-from datetime import datetime, timezone
+import json
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import get_current_user, require_content_editor, resolve_tenant_id
 from app.db.session import get_session
+from app.models.application import Application
+from app.models.associations import ProductApplicationLink
+from app.models.cta import CTA
+from app.models.product import Product
+from app.models.product_category import ProductCategory
+from app.models.rfq_request import RFQProductLink, RFQRequest
+from app.models.tracking_event import TrackingEvent
 from app.models.user import User
+from app.models.visitor import Visitor
 from app.services.ai_rfq import analyze_rfq, generate_rfq_reply_draft
 from app.services.content_optimizer import optimize_content
 from app.services.ai_recommend import recommend_cta_for_visitor
@@ -36,6 +44,26 @@ content_ai_router = APIRouter(tags=["AI Intelligence: Content"])
 visitor_ai_router = APIRouter(tags=["AI Intelligence: Visitors"])
 
 
+def _cta_payload(cta: CTA) -> dict[str, str | None]:
+    return {
+        "id": str(cta.id),
+        "name": cta.headline or cta.cta_key,
+        "action_type": cta.button_action,
+        "label": cta.button_label,
+        "description": cta.subheadline or cta.headline,
+        "target_intent_stage": cta.target_intent_stage or "any",
+    }
+
+
+def _parse_properties(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        return json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+
+
 # ── 3.1.1  AI RFQ Analysis ───────────────────────────────────────────────────
 
 @rfq_ai_router.post("/tracking/rfqs/{rfq_id}/analyze")
@@ -45,34 +73,53 @@ async def analyze_rfq_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     """Run AI analysis on an RFQ — match products, classify urgency, extract requirements."""
-    # Fetch RFQ + form data
-    rfq_sql = text("SELECT id, form_data, intent_score_at_submit FROM rfq_requests WHERE id = :id")
-    rfq_result = await session.execute(rfq_sql, {"id": rfq_id})
-    rfq_row = rfq_result.mappings().first()
-    if not rfq_row:
+    rfq = await session.get(RFQRequest, rfq_id)
+    if not rfq or (current_user.tenant_id and rfq.tenant_id != current_user.tenant_id):
         raise HTTPException(status_code=404, detail="RFQ not found")
 
-    rfq_data: dict = dict(rfq_row.get("form_data") or {})
-    rfq_data["intent_score_at_submit"] = rfq_row.get("intent_score_at_submit", 0)
+    rfq_data: dict = _parse_properties(rfq.form_data)
+    rfq_data["intent_score_at_submit"] = rfq.intent_score_at_submit
 
-    # Fetch linked products + details
-    products_sql = text("""
-        SELECT p.id::text, p.model_number, p.name, p.description
-        FROM rfq_product_links rpl
-        JOIN products p ON rpl.product_id = p.id
-        WHERE rpl.rfq_request_id = :rfq_id
-    """)
-    products_result = await session.execute(products_sql, {"rfq_id": rfq_id})
-    products = [dict(r) for r in products_result.mappings().all()]
+    products = [
+        {
+            "id": str(product.id),
+            "model_number": product.model_number,
+            "name": product.product_name,
+            "description": product.full_description or product.short_description,
+        }
+        for product in (
+            await session.exec(
+                select(Product)
+                .join(RFQProductLink, RFQProductLink.product_id == Product.id)
+                .where(
+                    RFQProductLink.rfq_id == rfq_id,
+                    Product.tenant_id == rfq.tenant_id,
+                )
+            )
+        ).all()
+    ]
 
     # If no specific products linked, include top catalog products for matching
     if not products:
-        all_prods_sql = text(
-            "SELECT id::text, model_number, name, description FROM products "
-            "WHERE status = 'published' ORDER BY created_at DESC LIMIT 20"
-        )
-        all_result = await session.execute(all_prods_sql)
-        products = [dict(r) for r in all_result.mappings().all()]
+        products = [
+            {
+                "id": str(product.id),
+                "model_number": product.model_number,
+                "name": product.product_name,
+                "description": product.full_description or product.short_description,
+            }
+            for product in (
+                await session.exec(
+                    select(Product)
+                    .where(
+                        Product.status == "published",
+                        Product.tenant_id == rfq.tenant_id,
+                    )
+                    .order_by(Product.created_at.desc())
+                    .limit(20)
+                )
+            ).all()
+        ]
 
     analysis = await analyze_rfq(rfq_data, products)
     return analysis
@@ -94,26 +141,34 @@ async def draft_rfq_reply_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     """Generate a professional draft reply email for an RFQ."""
-    rfq_sql = text("SELECT form_data, intent_score_at_submit FROM rfq_requests WHERE id = :id")
-    rfq_result = await session.execute(rfq_sql, {"id": rfq_id})
-    rfq_row = rfq_result.mappings().first()
-    if not rfq_row:
+    rfq = await session.get(RFQRequest, rfq_id)
+    if not rfq or (current_user.tenant_id and rfq.tenant_id != current_user.tenant_id):
         raise HTTPException(status_code=404, detail="RFQ not found")
 
-    rfq_data: dict = dict(rfq_row.get("form_data") or {})
-    rfq_data["intent_score_at_submit"] = rfq_row.get("intent_score_at_submit", 0)
+    rfq_data: dict = _parse_properties(rfq.form_data)
+    rfq_data["intent_score_at_submit"] = rfq.intent_score_at_submit
 
     # Run analysis if not provided
     analysis = payload.analysis
     if not analysis:
-        products_sql = text("""
-            SELECT p.id::text, p.model_number, p.name, p.description
-            FROM rfq_product_links rpl
-            JOIN products p ON rpl.product_id = p.id
-            WHERE rpl.rfq_request_id = :rfq_id
-        """)
-        products_result = await session.execute(products_sql, {"rfq_id": rfq_id})
-        products = [dict(r) for r in products_result.mappings().all()]
+        products = [
+            {
+                "id": str(product.id),
+                "model_number": product.model_number,
+                "name": product.product_name,
+                "description": product.full_description or product.short_description,
+            }
+            for product in (
+                await session.exec(
+                    select(Product)
+                    .join(RFQProductLink, RFQProductLink.product_id == Product.id)
+                    .where(
+                        RFQProductLink.rfq_id == rfq_id,
+                        Product.tenant_id == rfq.tenant_id,
+                    )
+                )
+            ).all()
+        ]
         analysis = await analyze_rfq(rfq_data, products)
 
     sender_name = payload.sender_name or current_user.full_name or current_user.email
@@ -144,54 +199,65 @@ async def optimize_page_content_endpoint(
     eid = payload.entity_id
     days = payload.period_days
 
-    # Fetch entity info
-    pages_sql_map = {
-        "product": "SELECT name, seo_title, seo_description AS description, full_description FROM products WHERE id = :id",
-        "application": "SELECT name, seo_title, seo_description AS description, full_description FROM applications WHERE id = :id",
-        "category": "SELECT name, seo_title, seo_description AS description, NULL AS full_description FROM product_categories WHERE id = :id",
-    }
-    if etype not in pages_sql_map:
+    if etype not in {"product", "application", "category"}:
         raise HTTPException(status_code=400, detail=f"Unsupported entity_type: {etype}")
 
-    entity_result = await session.execute(text(pages_sql_map[etype]), {"id": eid})
-    entity_row = entity_result.mappings().first()
-    if not entity_row:
-        raise HTTPException(status_code=404, detail="Entity not found")
+    entity_name = ""
+    description = None
+    full_description = None
+    if etype == "product":
+        entity = await session.get(Product, uuid.UUID(eid))
+        if not entity or entity.tenant_id != current_user.tenant_id:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        entity_name = entity.product_name
+        description = entity.seo_description or entity.short_description
+        full_description = entity.full_description
+    elif etype == "application":
+        entity = await session.get(Application, uuid.UUID(eid))
+        if not entity or entity.tenant_id != current_user.tenant_id:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        entity_name = entity.application_name
+        description = entity.seo_description or entity.description
+        full_description = "\n\n".join(part for part in [entity.description, entity.challenge, entity.solution] if part)
+    else:
+        entity = await session.get(ProductCategory, uuid.UUID(eid))
+        if not entity or entity.tenant_id != current_user.tenant_id:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        entity_name = entity.category_name
+        description = entity.seo_description or entity.description
 
-    # Fetch analytics data for this entity
-    analytics_sql = text("""
-        SELECT
-            COUNT(*) FILTER (WHERE event_name = 'page_view') AS page_views,
-            COUNT(DISTINCT visitor_id) FILTER (WHERE event_name = 'page_view') AS unique_visitors,
-            COUNT(*) FILTER (WHERE event_name = 'spec_download') AS spec_downloads,
-            COUNT(DISTINCT v.visitor_id) FILTER (WHERE r.id IS NOT NULL) AS rfq_count,
-            COALESCE(AVG(v.intent_score), 0) AS avg_intent_score
-        FROM tracking_events e
-        LEFT JOIN visitors v ON e.visitor_id = v.visitor_id
-        LEFT JOIN rfq_requests r ON v.visitor_id = r.visitor_id
-        WHERE e.properties->>'entity_id' = :entity_id
-          AND e.created_at > NOW() - (:days || ' days')::interval
-    """)
-    analytics_result = await session.execute(
-        analytics_sql, {"entity_id": eid, "days": days}
-    )
-    analytics_row = analytics_result.mappings().first() or {}
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    events = (
+        await session.exec(
+            select(TrackingEvent).where(
+                TrackingEvent.tenant_id == current_user.tenant_id,
+                TrackingEvent.page_id == uuid.UUID(eid),
+                TrackingEvent.timestamp >= cutoff,
+            )
+        )
+    ).all()
+    visitor_ids = {event.visitor_id for event in events if event.visitor_id}
+    visitors = []
+    if visitor_ids:
+        visitors = (
+            await session.exec(select(Visitor).where(Visitor.visitor_id.in_(visitor_ids)))
+        ).all()
     analytics = {
-        "page_views": int(analytics_row.get("page_views") or 0),
-        "unique_visitors": int(analytics_row.get("unique_visitors") or 0),
-        "spec_downloads": int(analytics_row.get("spec_downloads") or 0),
-        "rfq_count": int(analytics_row.get("rfq_count") or 0),
-        "avg_intent_score": float(analytics_row.get("avg_intent_score") or 0),
+        "page_views": sum(1 for event in events if event.event_name == "page_view"),
+        "unique_visitors": len(visitor_ids),
+        "spec_downloads": sum(1 for event in events if event.event_name == "spec_download"),
+        "rfq_count": sum(1 for event in events if event.event_name == "rfq_submit"),
+        "avg_intent_score": round(sum(visitor.intent_score for visitor in visitors) / len(visitors), 2) if visitors else 0,
         "period_days": days,
     }
 
     page_info = {
         "page_type": etype,
-        "entity_name": entity_row.get("name", ""),
-        "title": entity_row.get("name", ""),
-        "seo_title": entity_row.get("seo_title"),
-        "description": entity_row.get("description"),
-        "full_description": entity_row.get("full_description"),
+        "entity_name": entity_name,
+        "title": entity_name,
+        "seo_title": getattr(entity, "seo_title", None),
+        "description": description,
+        "full_description": full_description,
     }
 
     suggestions = await optimize_content(page_info, analytics)
@@ -209,48 +275,54 @@ async def recommend_cta_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     """Get the AI-recommended CTA for a specific visitor."""
-    # Fetch visitor
-    visitor_sql = text("""
-        SELECT intent_score, intent_stage, total_page_views, total_visits, country, device_type
-        FROM visitors WHERE visitor_id = :vid
-    """)
-    v_result = await session.execute(visitor_sql, {"vid": visitor_id})
-    visitor_row = v_result.mappings().first()
-    if not visitor_row:
+    visitor = await session.get(Visitor, visitor_id)
+    if not visitor or (current_user.tenant_id and visitor.tenant_id != current_user.tenant_id):
         raise HTTPException(status_code=404, detail="Visitor not found")
 
-    # Fetch recent event history
-    events_sql = text("""
-        SELECT event_name, properties
-        FROM tracking_events
-        WHERE visitor_id = :vid
-        ORDER BY created_at DESC
-        LIMIT 30
-    """)
-    events_result = await session.execute(events_sql, {"vid": visitor_id})
-    events = events_result.mappings().all()
-    recent_events = [e["event_name"] for e in events]
+    events = (
+        await session.exec(
+            select(TrackingEvent)
+            .where(
+                TrackingEvent.visitor_id == visitor_id,
+                TrackingEvent.tenant_id == visitor.tenant_id,
+            )
+            .order_by(TrackingEvent.timestamp.desc())
+            .limit(30)
+        )
+    ).all()
+    recent_events = [event.event_name for event in events]
 
     # Extract product/application interest from events
     product_names: list[str] = []
     app_names: list[str] = []
     for ev in events:
-        props = ev.get("properties") or {}
-        if ev["event_name"] == "product_view" and props.get("product_name"):
+        props = _parse_properties(ev.properties)
+        if ev.event_name == "product_view" and props.get("product_name"):
             product_names.append(props["product_name"])
-        if ev["event_name"] == "application_view" and props.get("application_name"):
+        if ev.event_name == "application_view" and props.get("application_name"):
             app_names.append(props["application_name"])
 
-    # Fetch all published CTAs
-    ctas_sql = text("""
-        SELECT id::text, name, action_type, label, description
-        FROM ctas WHERE status = 'published' LIMIT 20
-    """)
-    ctas_result = await session.execute(ctas_sql)
-    ctas = [dict(r) for r in ctas_result.mappings().all()]
+    ctas = [
+        _cta_payload(cta)
+        for cta in (
+            await session.exec(
+                select(CTA)
+                .where(
+                    CTA.tenant_id == visitor.tenant_id,
+                    CTA.status.in_(["active", "published"]),
+                )
+                .limit(20)
+            )
+        ).all()
+    ]
 
     visitor_profile = {
-        **dict(visitor_row),
+        "intent_score": visitor.intent_score,
+        "intent_stage": visitor.intent_stage,
+        "total_page_views": visitor.total_page_views,
+        "total_visits": visitor.total_visits,
+        "country": visitor.country,
+        "device_type": visitor.device_type,
         "top_products_viewed": list(dict.fromkeys(product_names))[:3],
         "top_applications_viewed": list(dict.fromkeys(app_names))[:3],
         "has_downloaded_spec": "spec_download" in recent_events,
@@ -271,6 +343,7 @@ async def dynamic_cta_endpoint(
     entity_id: Optional[str] = Query(None),
     entity_name: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     """
     Return the optimal CTA for a visitor in the current page context.
@@ -281,44 +354,49 @@ async def dynamic_cta_endpoint(
     top_products: list[str] = []
 
     if visitor_id:
-        v_sql = text(
-            "SELECT intent_score, intent_stage FROM visitors WHERE visitor_id = :vid::uuid"
-        )
         try:
-            v_result = await session.execute(v_sql, {"vid": visitor_id})
-            v_row = v_result.mappings().first()
-            if v_row:
-                intent_stage = v_row["intent_stage"] or "cold"
-                intent_score = int(v_row["intent_score"] or 0)
+            visitor = await session.get(Visitor, uuid.UUID(visitor_id))
+            if visitor and visitor.tenant_id == tenant_id:
+                intent_stage = visitor.intent_stage or "cold"
+                intent_score = int(visitor.intent_score or 0)
         except Exception:
             pass
 
         # Get recently viewed products
-        ev_sql = text("""
-            SELECT properties->>'product_name' AS pname
-            FROM tracking_events
-            WHERE visitor_id = :vid::uuid
-              AND event_name = 'product_view'
-              AND properties->>'product_name' IS NOT NULL
-            ORDER BY created_at DESC LIMIT 5
-        """)
         try:
-            ev_result = await session.execute(ev_sql, {"vid": visitor_id})
-            top_products = list(
-                dict.fromkeys(
-                    r["pname"] for r in ev_result.mappings().all() if r["pname"]
+            event_rows = (
+                await session.exec(
+                    select(TrackingEvent)
+                    .where(
+                        TrackingEvent.visitor_id == uuid.UUID(visitor_id),
+                        TrackingEvent.tenant_id == tenant_id,
+                        TrackingEvent.event_name == "product_view",
+                    )
+                    .order_by(TrackingEvent.timestamp.desc())
+                    .limit(5)
                 )
-            )
+            ).all()
+            top_products = list(dict.fromkeys([
+                _parse_properties(row.properties).get("product_name")
+                for row in event_rows
+                if _parse_properties(row.properties).get("product_name")
+            ]))
         except Exception:
             pass
 
-    # Fetch published CTAs
-    ctas_sql = text(
-        "SELECT id::text, name, action_type, label, description, target_intent_stage FROM ctas "
-        "WHERE status = 'published' LIMIT 15"
-    )
-    ctas_result = await session.execute(ctas_sql)
-    ctas = [dict(r) for r in ctas_result.mappings().all()]
+    ctas = [
+        _cta_payload(cta)
+        for cta in (
+            await session.exec(
+                select(CTA)
+                .where(
+                    CTA.tenant_id == tenant_id,
+                    CTA.status.in_(["active", "published"]),
+                )
+                .limit(15)
+            )
+        ).all()
+    ]
 
     page_context = {"page_type": page_type, "entity_name": entity_name, "entity_id": entity_id}
     return select_dynamic_cta(intent_stage, intent_score, ctas, page_context, top_products)
@@ -333,38 +411,46 @@ async def recommend_product_relations(
     current_user: User = Depends(get_current_user),
 ):
     """AI-powered suggestions for new Product ↔ Application relationships."""
-    # Fetch product
-    prod_sql = text(
-        "SELECT id::text, name, description FROM products WHERE id = :id"
-    )
-    prod_result = await session.execute(prod_sql, {"id": product_id})
-    product = prod_result.mappings().first()
-    if not product:
+    product = await session.get(Product, product_id)
+    if not product or (current_user.tenant_id and product.tenant_id != current_user.tenant_id):
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Existing linked applications
-    existing_sql = text("""
-        SELECT a.id::text AS id, a.name
-        FROM product_applications pa
-        JOIN applications a ON pa.application_id = a.id
-        WHERE pa.product_id = :pid
-    """)
-    existing_result = await session.execute(existing_sql, {"pid": product_id})
-    existing = [dict(r) for r in existing_result.mappings().all()]
+    existing_applications = (
+        await session.exec(
+            select(Application)
+            .join(ProductApplicationLink, ProductApplicationLink.application_id == Application.id)
+            .where(
+                ProductApplicationLink.product_id == product_id,
+                Application.tenant_id == product.tenant_id,
+            )
+        )
+    ).all()
+    existing = [{"id": str(app.id), "name": app.application_name} for app in existing_applications]
 
-    # All applications as candidates
-    all_apps_sql = text(
-        "SELECT id::text, name, description FROM applications WHERE status = 'published' LIMIT 50"
-    )
-    all_apps_result = await session.execute(all_apps_sql)
-    candidates = [dict(r) for r in all_apps_result.mappings().all()]
+    candidates = [
+        {
+            "id": str(app.id),
+            "name": app.application_name,
+            "description": app.description,
+        }
+        for app in (
+            await session.exec(
+                select(Application)
+                .where(
+                    Application.status == "published",
+                    Application.tenant_id == product.tenant_id,
+                )
+                .limit(50)
+            )
+        ).all()
+    ]
 
     return await recommend_relations(
         session,
         entity_type="product",
         entity_id=str(product_id),
-        entity_name=product["name"],
-        entity_description=(product.get("description") or "")[:400],
+        entity_name=product.product_name,
+        entity_description=((product.full_description or product.short_description or "")[:400]),
         existing_relations=existing,
         candidate_info=candidates,
     )
@@ -377,35 +463,46 @@ async def recommend_application_relations(
     current_user: User = Depends(get_current_user),
 ):
     """AI-powered suggestions for new Application ↔ Product relationships."""
-    app_sql = text(
-        "SELECT id::text, name, description FROM applications WHERE id = :id"
-    )
-    app_result = await session.execute(app_sql, {"id": app_id})
-    application = app_result.mappings().first()
-    if not application:
+    application = await session.get(Application, app_id)
+    if not application or (current_user.tenant_id and application.tenant_id != current_user.tenant_id):
         raise HTTPException(status_code=404, detail="Application not found")
 
-    existing_sql = text("""
-        SELECT p.id::text AS id, p.name
-        FROM product_applications pa
-        JOIN products p ON pa.product_id = p.id
-        WHERE pa.application_id = :aid
-    """)
-    existing_result = await session.execute(existing_sql, {"aid": app_id})
-    existing = [dict(r) for r in existing_result.mappings().all()]
+    existing_products = (
+        await session.exec(
+            select(Product)
+            .join(ProductApplicationLink, ProductApplicationLink.product_id == Product.id)
+            .where(
+                ProductApplicationLink.application_id == app_id,
+                Product.tenant_id == application.tenant_id,
+            )
+        )
+    ).all()
+    existing = [{"id": str(product.id), "name": product.product_name} for product in existing_products]
 
-    all_prods_sql = text(
-        "SELECT id::text, name, description FROM products WHERE status = 'published' LIMIT 50"
-    )
-    all_prods_result = await session.execute(all_prods_sql)
-    candidates = [dict(r) for r in all_prods_result.mappings().all()]
+    candidates = [
+        {
+            "id": str(product.id),
+            "name": product.product_name,
+            "description": product.full_description or product.short_description,
+        }
+        for product in (
+            await session.exec(
+                select(Product)
+                .where(
+                    Product.status == "published",
+                    Product.tenant_id == application.tenant_id,
+                )
+                .limit(50)
+            )
+        ).all()
+    ]
 
     return await recommend_relations(
         session,
         entity_type="application",
         entity_id=str(app_id),
-        entity_name=application["name"],
-        entity_description=(application.get("description") or "")[:400],
+        entity_name=application.application_name,
+        entity_description=((application.description or "")[:400]),
         existing_relations=existing,
         candidate_info=candidates,
     )

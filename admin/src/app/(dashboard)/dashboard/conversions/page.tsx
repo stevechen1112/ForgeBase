@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, FileText, AlertCircle } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type RFQ = {
   id: string;
@@ -70,7 +70,7 @@ export default function ConversionsPage() {
   const load = useCallback(() => {
     if (!token) return;
     setLoading(true); setError(null);
-    fetch(`${API_BASE}/tracking/rfqs`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/tracking/rfqs`, { headers: buildApiHeaders(token) })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(`API ${r.status}`))))
       .then(d => setRfqs(Array.isArray(d) ? d : d.items ?? []))
       .catch(e => setError(e.message))

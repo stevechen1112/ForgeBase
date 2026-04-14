@@ -29,8 +29,8 @@ router = APIRouter(prefix="/seo-audit", tags=["SEO Audit"])
 
 async def _call_openai(prompt: str) -> str:
     try:
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        from app.core.tracing import get_openai_client
+        client = get_openai_client()
         resp = await client.chat.completions.create(
             model=settings.AI_MODEL_NAME,
             messages=[

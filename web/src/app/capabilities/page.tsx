@@ -3,16 +3,16 @@ import type { Metadata } from "next";
 import { getPublishedCapabilities } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Manufacturing Capabilities",
-  description: `Explore ${siteConfig.brandName} capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support.`,
-};
-
-const SITE_URL = siteConfig.siteUrl;
+  return {
+    title: "Manufacturing Capabilities",
+    description: `Explore ${siteName} capabilities including OEM development, private-label packaging, torque inspection, kit assembly, and export documentation support.`,
+  };
+}
 
 // Maps common capability category tags to a short buyer-facing benefit statement
 const BUYER_BENEFIT: Record<string, string> = {
@@ -25,6 +25,7 @@ const BUYER_BENEFIT: Record<string, string> = {
 };
 
 export default async function CapabilitiesPage() {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME } = await getRuntimeSiteContext();
   const capabilities = await getPublishedCapabilities();
 
   return (

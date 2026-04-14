@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileText, Image as ImageIcon, File, RefreshCw, ExternalLink } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Asset = {
   id: string;
@@ -54,7 +53,7 @@ export default function AssetsPage() {
     setLoading(true); setError(null);
     const params = new URLSearchParams({ page: String(page), page_size: String(PAGE_SIZE) });
     if (typeFilter) params.set("asset_type", typeFilter);
-    fetch(`${API_BASE}/content/assets?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/content/assets?${params}`, { headers: buildApiHeaders(token) })
       .then(r => r.json())
       .then(d => { setItems(d.data ?? []); setMeta(d.meta ?? null); })
       .catch(e => setError(e.message))

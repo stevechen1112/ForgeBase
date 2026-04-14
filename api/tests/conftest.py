@@ -2,14 +2,162 @@
 Shared pytest fixtures.
 
 Unit tests that don't need a DB run with the raw app.
-Integration tests (marked with @pytest.mark.integration) require a live
-DATABASE_URL and are run in CI only (or locally when Docker is up).
+Integration tests require a live DATABASE_URL and are run in CI
+or locally when PostgreSQL is available.
 """
 import os
+import uuid
 import pytest
+import pytest_asyncio
+from httpx import AsyncClient, ASGITransport
 
 # Mark tests that require a running DB so they can be selectively skipped.
 requires_db = pytest.mark.skipif(
     not os.getenv("DATABASE_URL"),
-    reason="DATABASE_URL not set — skipping DB integration tests",
+    reason="DATABASE_URL not set -- skipping DB integration tests",
 )
+
+
+def _make_engine():
+    """Create a fresh NullPool engine for fixture use.
+
+    NullPool makes no connection reuse; every session gets a brand new
+    asyncpg connection that closes immediately on release.  This prevents
+    cross-event-loop contamination when pytest-asyncio runs each test in
+    its own function-scoped event loop.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from sqlalchemy.pool import NullPool
+    from sqlmodel.ext.asyncio.session import AsyncSession
+    from app.core.config import settings
+
+    eng = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+    factory = async_sessionmaker(bind=eng, class_=AsyncSession, expire_on_commit=False)
+    return eng, factory
+
+
+@pytest_asyncio.fixture
+async def http_client():
+    """ASGI test client for the FastAPI app (no real HTTP).
+
+    Overrides get_session with a NullPool-based session so every request
+    within the test's function-scoped event loop uses a fresh asyncpg
+    connection.  This prevents the module-level pool from ever holding
+    connections bound to a different (previous test's) event loop.
+    """
+    from app.main import app
+    from app.db.session import get_session
+
+    eng, factory = _make_engine()
+
+    async def _override_get_session():
+        async with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _override_get_session
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.pop(get_session, None)
+    await eng.dispose()
+
+
+@pytest_asyncio.fixture
+async def two_tenants():
+    """Create two isolated tenants; delete them (and all owned rows) after the test.
+
+    Uses a NullPool engine (no cross-loop connection reuse) so that each
+    function-scoped event loop starts from a clean state.
+    """
+    if not os.getenv("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set")
+
+    from app.models.tenant import Tenant
+
+    eng, factory = _make_engine()
+    tag = uuid.uuid4().hex[:8]
+    tenant_a = Tenant(name="Tenant Alpha", slug=f"alpha-{tag}", plan="professional")
+    tenant_b = Tenant(name="Tenant Beta",  slug=f"beta-{tag}",  plan="starter")
+
+    async with factory() as session:
+        session.add(tenant_a)
+        session.add(tenant_b)
+        await session.commit()
+        await session.refresh(tenant_a)
+        await session.refresh(tenant_b)
+
+    yield tenant_a, tenant_b
+
+    # Teardown: delete all tenant-owned rows in FK-safe order
+    from sqlalchemy import text
+
+    async with factory() as session:
+        for tid in (str(tenant_a.id), str(tenant_b.id)):
+            for table in (
+                "tracking_events",
+                "rfq_events",
+                "rfq_requests",
+                "contacts",
+                "ai_generation_logs",
+                "page_briefs",
+                "chat_sessions",
+                "tracking_sessions",
+                "visitors",
+                "intake_projects",
+                "pages",
+                "redirects",
+                "ctas",
+                "faq_items",
+                "comparison_topics",
+                "certifications",
+                "capabilities",
+                "applications",
+                "products",
+                "product_categories",
+                "site_profiles",
+                "users",
+            ):
+                await session.execute(
+                    text(f"DELETE FROM {table} WHERE tenant_id = :tid"),
+                    {"tid": tid},
+                )
+            await session.execute(text("DELETE FROM tenants WHERE id = :tid"), {"tid": tid})
+        await session.commit()
+
+    await eng.dispose()
+
+
+@pytest_asyncio.fixture
+async def admin_token_for_tenant(two_tenants):
+    """Factory: call with a tenant_id to get a JWT for a fresh admin user.
+
+    Usage::
+
+        token = await admin_token_for_tenant(tenant_a.id)
+    """
+    if not os.getenv("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set")
+
+    from app.models.user import User
+    from app.core.security import get_password_hash, create_access_token
+
+    eng, factory = _make_engine()
+
+    async def _make(tenant_id: uuid.UUID) -> str:
+        async with factory() as session:
+            user = User(
+                email=f"admin-{uuid.uuid4().hex[:8]}@test.invalid",
+                hashed_password=get_password_hash("testpass"),
+                full_name="Test Admin",
+                role="admin",
+                tenant_id=tenant_id,
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            return create_access_token(str(user.id))
+
+    yield _make
+
+    await eng.dispose()
+    # Users are cleaned up by the two_tenants teardown (DELETE WHERE tenant_id)

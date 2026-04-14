@@ -11,7 +11,7 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type RFQPageMessages = {
@@ -31,14 +31,13 @@ type RFQPageMessages = {
   responseWindowHours: string;
 };
 
-const BRAND = siteConfig.brandName;
-
 interface Props {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ product_id?: string; application_id?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteName: BRAND } = await getRuntimeSiteContext();
   await params;
   const copy = await getMessageNamespace<RFQPageMessages>("rfqPage");
   return {
@@ -49,6 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RFQPage({ params, searchParams }: Props) {
+  const { isIndustrial } = await getRuntimeSiteContext();
   const { locale } = await params;
   resolveLocale(locale);
   const copy = await getMessageNamespace<RFQPageMessages>("rfqPage");
@@ -56,7 +56,7 @@ export default async function RFQPage({ params, searchParams }: Props) {
   const productIds = sp.product_id ? [sp.product_id] : [];
   const applicationId = sp.application_id;
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="rfq" />

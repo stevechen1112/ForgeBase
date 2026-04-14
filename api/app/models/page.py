@@ -3,16 +3,20 @@ from datetime import datetime
 from app.core.datetime import utcnow_naive
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy import UniqueConstraint
 
 
 class Page(SQLModel, table=True):
     """Static / landing pages: Home, About, Contact, custom landing pages, etc."""
     __tablename__ = "pages"
+    __table_args__ = (
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_pages_slug_locale_tenant"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     page_type: str = Field(max_length=40, index=True)
     # Values: "home" | "about" | "contact" | "landing" | "blog_post"
-    slug: str = Field(max_length=120, unique=True, index=True)
+    slug: str = Field(max_length=120, index=True)
     title: str = Field(max_length=120)
     subtitle: Optional[str] = Field(default=None, max_length=240)
     body: Optional[str] = Field(default=None)     # richtext / blocks JSON
@@ -30,6 +34,7 @@ class Page(SQLModel, table=True):
     # "product" | "application" | "certification" | "capability" | None
     entity_id: Optional[uuid.UUID] = Field(default=None)
     brief_id: Optional[uuid.UUID] = Field(default=None, foreign_key="page_briefs.id")
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
     published_at: Optional[datetime] = Field(default=None)

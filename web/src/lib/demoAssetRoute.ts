@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteConfig } from "@/lib/runtimeSiteConfig";
+import { siteConfig, type SiteConfig } from "@/lib/siteConfig";
 
 const SVG_WIDTH = 1600;
 const SVG_HEIGHT = 900;
@@ -58,12 +59,12 @@ function titleFromSlug(slug: string): string {
     .join(" ");
 }
 
-function specForFilename(filename: string): VisualSpec {
+function specForFilename(filename: string, config: SiteConfig): VisualSpec {
   const baseName = filename.replace(path.extname(filename), "");
 
   if (baseName.startsWith("homepage-hero") || baseName.startsWith("page-home")) {
     return {
-      eyebrow: siteConfig.brandName,
+      eyebrow: config.brandName,
       title: "Taiwan OEM Hand Tool Manufacturing",
       subtitle: "Professional tool programs for brands, distributors, and industrial buyers.",
       accent: "#1d4ed8",
@@ -141,7 +142,7 @@ function specForFilename(filename: string): VisualSpec {
 
   if (baseName.startsWith("logo-")) {
     return {
-      eyebrow: siteConfig.brandName,
+      eyebrow: config.brandName,
       title: "Brand Asset",
       subtitle: titleFromSlug(baseName.replace("logo-", "")),
       accent: "#1d4ed8",
@@ -182,7 +183,7 @@ function splitTitle(title: string, maxLineLength = 16): string[] {
   return lines.slice(0, 3);
 }
 
-function certificationBadgeSpec(filename: string): CertificationBadgeVisual {
+function certificationBadgeSpec(filename: string, config: SiteConfig): CertificationBadgeVisual {
   const baseName = filename.replace(path.extname(filename), "");
 
   if (baseName.includes("iso-9001")) {
@@ -242,16 +243,16 @@ function certificationBadgeSpec(filename: string): CertificationBadgeVisual {
 
   return {
     title: titleFromSlug(baseName.replace("cert-", "").replace(/-badge$/, "")),
-    kicker: `${siteConfig.brandName} Certification`,
-    shortCode: "NF",
+    kicker: `${config.brandName} Certification`,
+    shortCode: config.logoMark.toUpperCase().slice(0, 3) || "FB",
     accent: "#0f766e",
     secondary: "#134e4a",
     ring: "#ccfbf1",
   };
 }
 
-function buildCertificationBadgeSvg(filename: string, label: string): string {
-  const spec = certificationBadgeSpec(filename);
+function buildCertificationBadgeSvg(filename: string, label: string, config: SiteConfig): string {
+  const spec = certificationBadgeSpec(filename, config);
   const titleLines = splitTitle(spec.title, 14).map(escapeXml);
   const kicker = escapeXml(spec.kicker);
   const shortCode = escapeXml(spec.shortCode);
@@ -280,12 +281,12 @@ function buildCertificationBadgeSvg(filename: string, label: string): string {
   ${titleLines[2] ? `<text x="480" y="526" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="58" font-weight="800">${titleLines[2]}</text>` : ""}
   <rect x="218" y="590" width="524" height="78" rx="39" fill="${spec.accent}" fill-opacity="0.1" />
   <text x="480" y="638" text-anchor="middle" fill="${spec.secondary}" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1.2">${kicker}</text>
-  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">${siteConfig.brandName} Demo Certification Badge</text>
+  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">${config.brandName} Demo Certification Badge</text>
   <text x="480" y="768" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">${fileLabel}</text>
 </svg>`;
 }
 
-function buildSvg(spec: VisualSpec, label: string): string {
+function buildSvg(spec: VisualSpec, label: string, brandName: string): string {
   const eyebrow = escapeXml(spec.eyebrow);
   const title = escapeXml(spec.title);
   const subtitle = escapeXml(spec.subtitle);
@@ -321,15 +322,15 @@ function buildSvg(spec: VisualSpec, label: string): string {
   <circle cx="446" cy="446" r="18" fill="${spec.accent}" />
   <rect x="120" y="672" width="668" height="68" rx="18" fill="#0f172a" fill-opacity="0.06" />
   <text x="152" y="715" fill="#475569" font-family="Arial, sans-serif" font-size="20">${fileLabel}</text>
-  <text x="1010" y="214" fill="white" font-family="Arial, sans-serif" font-size="34" font-weight="700">${siteConfig.brandName} Demo Asset</text>
+  <text x="1010" y="214" fill="white" font-family="Arial, sans-serif" font-size="34" font-weight="700">${brandName} Demo Asset</text>
   <text x="1010" y="264" fill="white" fill-opacity="0.82" font-family="Arial, sans-serif" font-size="24">Served directly from repo source or generated fallback.</text>
 </svg>`;
 }
 
-function buildPdfBuffer(filename: string): Buffer {
-  const spec = specForFilename(filename);
+function buildPdfBuffer(filename: string, config: SiteConfig): Buffer {
+  const spec = specForFilename(filename, config);
   const lines = [
-    `${siteConfig.brandName} Demo Document`,
+    `${config.brandName} Demo Document`,
     spec.title,
     spec.subtitle,
     `Source: ${filename}`,
@@ -376,25 +377,24 @@ function buildPdfBuffer(filename: string): Buffer {
   return Buffer.from(pdf, "utf8");
 }
 
-function getAssetRootCandidates(): string[] {
+function getAssetRootCandidates(demoCompanyFolder: string): string[] {
   const cwd = process.cwd();
-  const folder = siteConfig.demoCompanyFolder;
   return [
-    path.join(cwd, "demo", folder, "assets"),
-    path.join(cwd, "..", "demo", folder, "assets"),
-    path.join(cwd, "..", "..", "demo", folder, "assets"),
-    path.join(cwd, "..", "..", "..", "demo", folder, "assets"),
-    path.join(cwd, "..", "..", "..", "..", "demo", folder, "assets"),
+    path.join(cwd, "demo", demoCompanyFolder, "assets"),
+    path.join(cwd, "..", "demo", demoCompanyFolder, "assets"),
+    path.join(cwd, "..", "..", "demo", demoCompanyFolder, "assets"),
+    path.join(cwd, "..", "..", "..", "demo", demoCompanyFolder, "assets"),
+    path.join(cwd, "..", "..", "..", "..", "demo", demoCompanyFolder, "assets"),
   ];
 }
 
-export async function readDemoAsset(assetSegments: string[]) {
+export async function readDemoAsset(assetSegments: string[], demoCompanyFolder = siteConfig.demoCompanyFolder) {
   const safeSegments = assetSegments.filter(Boolean);
   if (safeSegments.some((segment) => segment === "." || segment === ".." || segment.includes(".."))) {
     return null;
   }
 
-  for (const root of getAssetRootCandidates()) {
+  for (const root of getAssetRootCandidates(demoCompanyFolder)) {
     const candidate = path.join(root, ...safeSegments);
     try {
       const buffer = await readFile(candidate);
@@ -412,7 +412,8 @@ export async function readDemoAsset(assetSegments: string[]) {
 }
 
 export async function createDemoAssetResponse(assetSegments: string[]) {
-  const existing = await readDemoAsset(assetSegments);
+  const runtimeSiteConfig = await getRuntimeSiteConfig();
+  const existing = await readDemoAsset(assetSegments, runtimeSiteConfig.demoCompanyFolder);
   if (existing) {
     return new NextResponse(new Uint8Array(existing.buffer), {
       headers: {
@@ -426,7 +427,7 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   const extension = path.extname(filename).toLowerCase();
 
   if (extension === ".pdf") {
-    return new NextResponse(new Uint8Array(buildPdfBuffer(filename)), {
+    return new NextResponse(new Uint8Array(buildPdfBuffer(filename, runtimeSiteConfig)), {
       headers: {
         "Content-Type": "application/pdf",
         "Cache-Control": "public, max-age=3600",
@@ -436,7 +437,7 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   }
 
   if (filename.startsWith("cert-") && filename.includes("-badge")) {
-    return new NextResponse(buildCertificationBadgeSvg(filename, assetSegments.join("/")), {
+    return new NextResponse(buildCertificationBadgeSvg(filename, assetSegments.join("/"), runtimeSiteConfig), {
       headers: {
         "Content-Type": "image/svg+xml; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
@@ -444,7 +445,7 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
     });
   }
 
-  const svg = buildSvg(specForFilename(filename), assetSegments.join("/"));
+  const svg = buildSvg(specForFilename(filename, runtimeSiteConfig), assetSegments.join("/"), runtimeSiteConfig.brandName);
   return new NextResponse(svg, {
     headers: {
       "Content-Type": "image/svg+xml; charset=utf-8",
@@ -453,11 +454,12 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   });
 }
 
-export function createFaviconSvg() {
+export function createFaviconSvg(config: Pick<SiteConfig, "brandName" | "logoMark"> = siteConfig) {
+  const logoMark = escapeXml(config.logoMark.slice(0, 3).toUpperCase() || "FB");
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${siteConfig.brandName}">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${escapeXml(config.brandName)}">
   <rect width="64" height="64" rx="14" fill="#0f172a"/>
   <rect x="10" y="10" width="44" height="44" rx="10" fill="#1d4ed8"/>
-  <path d="M20 44V20h6l12 15V20h6v24h-6L26 29v15z" fill="white"/>
+  <text x="32" y="39" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="800">${logoMark}</text>
 </svg>`;
 }

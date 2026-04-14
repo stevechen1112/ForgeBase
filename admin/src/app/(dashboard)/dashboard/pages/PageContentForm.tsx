@@ -22,7 +22,7 @@ export default function PageContentForm({ initial, id }: Props) {
   const token = state.status === "authenticated" ? state.accessToken : "";
 
   const [form, setForm] = useState({
-    page_type: initial?.page_type ?? "custom",
+    page_type: initial?.page_type ?? "landing",
     slug: initial?.slug ?? "",
     title: initial?.title ?? "",
     subtitle: initial?.subtitle ?? "",
@@ -88,11 +88,12 @@ export default function PageContentForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>頁面類型</Label>
               <select className={SELECT_CLS} {...f("page_type")}>
-                <option value="custom">Custom</option>
+                <option value="home">Home</option>
                 <option value="about">About</option>
                 <option value="contact">Contact</option>
                 <option value="landing">Landing</option>
                 <option value="campaign">Campaign</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -113,8 +114,14 @@ export default function PageContentForm({ initial, id }: Props) {
             <Input {...f("hero_image_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>頁面內容 (HTML / Markdown)</Label>
-            <Textarea {...f("body")} rows={10} className="font-mono text-xs" />
+            <Label>頁面內容 (HTML / Blocks JSON)</Label>
+            <Textarea
+              {...f("body")}
+              rows={14}
+              className="font-mono text-xs"
+              placeholder={'[{"type":"hero","eyebrow":"Industrial Components","title":"Precision Parts for Mission-Critical Programs","description":"Support different manufacturing verticals without rewriting the frontend.","primaryCta":{"label":"Start RFQ","href":"/rfq"}},{"type":"feature-grid","title":"Why Buyers Work With Us","items":[{"title":"Engineering Review","description":"Quote and specification alignment for custom builds."},{"title":"Production Control","description":"Repeat-order consistency across revisions."}]},{"type":"contact-form","title":"Talk to Sales","description":"Use the built-in ForgeBase contact flow."}]'}
+            />
+            <p className="text-xs text-muted-foreground">建議優先使用 blocks JSON，讓首頁、About、Contact 與 custom landing pages 可依 tenant 自由組裝。若填入純 HTML，前台也會照一般內容頁渲染。</p>
           </div>
         </CardContent>
       </Card>
@@ -165,7 +172,7 @@ export default function PageContentForm({ initial, id }: Props) {
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
                 <option value="en">English</option>
-                <option value="zh-tw">繁體中文</option>
+                <option value="zh-TW">繁體中文</option>
                 <option value="zh-cn">简体中文</option>
                 <option value="ja">日本語</option>
                 <option value="ko">한국어</option>

@@ -49,6 +49,11 @@
     "builtWithPrecision": "以精準製造為本，為成長型通路而設計",
     "allRightsReserved": "版權所有。",
     "certifications": ["ISO 9001:2015", "CE 認證", "RoHS 符合", "SGS 稽核"],
+    "footerCta": {
+      "title": "準備好開始你的合作計畫了嗎？",
+      "description": "合格詢價案件，24 小時內回覆報價。",
+      "requestQuote": "立即詢價"
+    },
     "sections": {
       "products": {
         "heading": "產品",

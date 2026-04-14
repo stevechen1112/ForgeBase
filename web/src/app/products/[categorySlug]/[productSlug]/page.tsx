@@ -21,26 +21,24 @@ import {
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { ProductCTAButtons } from "@/components/ui/ProductCTAButtons";
 import { ChatWidget } from "@/components/chat/ChatWidget";
-import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getProductImage } from "@/lib/demoAssets";
-import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
-import { siteConfig } from "@/lib/siteConfig";
+import { getCustomPackagingImage, getProductImage, getQualityInspectionImage } from "@/lib/demoAssets";
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ categorySlug: string; productSlug: string }> };
 
-const SITE_URL = getSiteUrl();
-const BRAND_NAME = siteConfig.brandName;
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { categorySlug, productSlug } = await params;
   const product = await getProductBySlug(productSlug);
   if (!product) return { title: "Not Found" };
 
   const pagePath = `/products/${categorySlug}/${product.slug}`;
-  const canonical = buildCanonicalUrl(pagePath);
+  const canonical = buildCanonicalUrl(pagePath, undefined, runtimeSiteConfig);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getProductLocales(product.slug).catch(() => []);
-  const languages = buildLocaleAlternates(pagePath, localeVariants);
+  const languages = buildLocaleAlternates(pagePath, localeVariants, runtimeSiteConfig);
 
   const title = product.seo_title ?? `${product.model_number} ${product.product_name}`;
   const description = product.seo_description ?? product.short_description;
@@ -64,6 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, siteName: BRAND_NAME, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { categorySlug, productSlug } = await params;
 
   const [product, category] = await Promise.all([
@@ -106,7 +105,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const extraFaqs = linkedFaqs.filter((f) => !allFaqQuestions.has(f.question));
 
   const productUrl = `${SITE_URL}/products/${category.slug}/${product.slug}`;
-  const productImage = getProductImage(product, category.slug);
+  const productImage = getProductImage(product, category.slug, runtimeSiteConfig);
   const specMap = specs?.length
     ? Object.fromEntries(specs.map((spec) => [spec.name, spec.value]))
     : undefined;
@@ -238,7 +237,7 @@ export default async function ProductDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={QUALITY_INSPECTION_IMAGE}
+                src={getQualityInspectionImage(runtimeSiteConfig) ?? undefined}
                 alt={`${BRAND_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
@@ -252,7 +251,7 @@ export default async function ProductDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={CUSTOM_PACKAGING_IMAGE}
+                src={getCustomPackagingImage(runtimeSiteConfig) ?? undefined}
                 alt={`${BRAND_NAME} private-label packaging support`}
                 className="h-56 w-full object-cover"
               />

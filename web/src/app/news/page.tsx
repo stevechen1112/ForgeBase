@@ -1,21 +1,25 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "News & Updates",
-  description: `Latest company updates, manufacturing milestones, and product news from ${siteConfig.brandName}.`,
-};
+  return {
+    title: "News & Updates",
+    description: `Latest company updates, manufacturing milestones, and product news from ${siteName}.`,
+  };
+}
 
-const NEWS = [
-  { date: "2026-02-10", title: `${SITE_NAME} expands insulated tool line for utility buyers`, summary: "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
+const getNews = (siteName: string) => [
+  { date: "2026-02-10", title: `${siteName} expands insulated tool line for utility buyers`, summary: "New VDE-aligned insulated sets added for contractors, utilities, and private-label programs." },
   { date: "2025-11-22", title: "Factory calibration workflow upgraded for torque verification", summary: "Additional calibration checkpoints introduced to improve repeatability in high-volume torque wrench programs." },
-  { date: "2025-08-15", title: `${SITE_NAME} adds mixed-SKU export packing support`, summary: "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." },
+  { date: "2025-08-15", title: `${siteName} adds mixed-SKU export packing support`, summary: "Consolidated packing workflows now support distributor assortments and multi-market shipping programs." },
 ];
 
-export default function NewsPage() {
+export default async function NewsPage() {
+  const { siteName: SITE_NAME } = await getRuntimeSiteContext();
+  const NEWS = getNews(SITE_NAME);
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

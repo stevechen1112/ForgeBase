@@ -49,6 +49,11 @@
     "builtWithPrecision": "Built with precision · Designed for growth",
     "allRightsReserved": "All rights reserved.",
     "certifications": ["ISO 9001:2015", "CE Certified", "RoHS Compliant", "SGS Audited"],
+    "footerCta": {
+      "title": "Ready to start your program?",
+      "description": "Get a quote within 24 hours for qualified enquiries.",
+      "requestQuote": "Request Quote"
+    },
     "sections": {
       "products": {
         "heading": "Products",

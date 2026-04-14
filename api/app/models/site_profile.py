@@ -26,6 +26,7 @@ class SiteProfile(SQLModel, table=True):
 
     # ── Theme ──
     theme_key: str = Field(max_length=30, default="cobalt")
+    layout_key: str = Field(max_length=30, default="classic")
 
     # ── Contact ──
     contact_email: str = Field(max_length=200, default="sales@northforgetools.com")
@@ -38,6 +39,18 @@ class SiteProfile(SQLModel, table=True):
     # ── Asset base ──
     asset_base: Optional[str] = Field(default=None, max_length=500)
     demo_company_folder: Optional[str] = Field(default=None, max_length=120)
+
+    # ── Flexible site shell / asset manifest ──
+    header_nav_json: Optional[str] = Field(default=None)
+    header_actions_json: Optional[str] = Field(default=None)
+    footer_sections_json: Optional[str] = Field(default=None)
+    footer_badges_json: Optional[str] = Field(default=None)
+    social_links_json: Optional[str] = Field(default=None)
+    footer_cta_title: Optional[str] = Field(default=None, max_length=200)
+    footer_cta_description: Optional[str] = Field(default=None)
+    footer_cta_label: Optional[str] = Field(default=None, max_length=120)
+    footer_cta_href: Optional[str] = Field(default=None, max_length=500)
+    asset_manifest_json: Optional[str] = Field(default=None)
 
     # ── Timestamps ──
     created_at: datetime = Field(default_factory=utcnow_naive)

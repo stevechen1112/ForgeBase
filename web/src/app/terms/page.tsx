@@ -1,15 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: `Terms governing the use of the ${siteConfig.brandName} website and business enquiry channels.`,
-};
+  return {
+    title: "Terms of Service",
+    description: `Terms governing the use of the ${siteName} website and business enquiry channels.`,
+  };
+}
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const { siteName: SITE_NAME } = await getRuntimeSiteContext();
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

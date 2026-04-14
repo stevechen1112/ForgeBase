@@ -9,8 +9,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMessageNamespace } from "@/lib/messages";
+import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
-import { siteConfig } from "@/lib/siteConfig";
 
 type HeaderMessages = {
   rfq: string;
@@ -37,7 +37,18 @@ const NAV_ITEMS: Array<{ href: string; key: keyof HeaderMessages["nav"] }> = [
   { href: "/contact", key: "contact" },
 ];
 
-export function Header() {
+function getDefaultNav(copy: HeaderMessages): SiteNavItem[] {
+  return NAV_ITEMS.map((item) => ({ href: item.href, label: copy.nav[item.key] }));
+}
+
+function getDefaultActions(copy: HeaderMessages): SiteAction[] {
+  return [
+    { href: "/rfq", label: copy.rfq },
+    { href: "/contact", label: copy.contact },
+  ];
+}
+
+export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
   const pathname = usePathname();
   const locale = useLocale();
   const copy = useMessageNamespace<HeaderMessages>("header");
@@ -57,6 +68,10 @@ export function Header() {
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
   const siteName = siteConfig.brandName;
+  const navItems = siteConfig.headerNav?.length ? siteConfig.headerNav : getDefaultNav(copy);
+  const headerActions = siteConfig.headerActions?.length ? siteConfig.headerActions : getDefaultActions(copy);
+  const primaryAction = headerActions[0];
+  const secondaryAction = headerActions[1];
 
   return (
     <header
@@ -85,7 +100,7 @@ export function Header() {
 
         {/* ─── Desktop nav ─── */}
         <nav className="hidden items-center gap-0.5 md:flex">
-          {NAV_ITEMS.map((link) => {
+          {navItems.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
               <Link
@@ -98,7 +113,7 @@ export function Header() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {copy.nav[link.key]}
+                {resolveLocalizedText(link.label, locale, link.href)}
                 {active && (
                   <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-primary" />
                 )}
@@ -117,15 +132,15 @@ export function Header() {
             </NextLink>
           </Button>
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground">
-            <Link href="/rfq">
+            <Link href={secondaryAction?.href ?? "/rfq"}>
               <FileText className="h-3.5 w-3.5" />
-              {copy.rfq}
+              {resolveLocalizedText(secondaryAction?.label, locale, copy.rfq)}
             </Link>
           </Button>
           <Button size="sm" asChild className="gap-1.5 shadow-sm">
-            <Link href="/contact">
+            <Link href={primaryAction?.href ?? "/contact"}>
               <Phone className="h-3.5 w-3.5" />
-              {copy.contact}
+              {resolveLocalizedText(primaryAction?.label, locale, copy.contact)}
             </Link>
           </Button>
         </div>
@@ -154,7 +169,7 @@ export function Header() {
 
           <nav className="px-3 py-4">
             <div className="space-y-0.5">
-              {NAV_ITEMS.map((link) => {
+              {navItems.map((link) => {
                 const active = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
@@ -167,7 +182,7 @@ export function Header() {
                         : "text-foreground hover:bg-muted"
                     )}
                   >
-                    {copy.nav[link.key]}
+                    {resolveLocalizedText(link.label, locale, link.href)}
                     {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
                   </Link>
                 );
@@ -177,18 +192,22 @@ export function Header() {
             <Separator className="my-4" />
 
             <div className="space-y-2 px-1">
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <Link href="/rfq">
-                  <FileText className="h-4 w-4" />
-                  {copy.submitRfq}
-                </Link>
-              </Button>
-              <Button className="w-full justify-start gap-2" asChild>
-                <Link href="/contact">
-                  <Phone className="h-4 w-4" />
-                  {copy.contact}
-                </Link>
-              </Button>
+              {secondaryAction ? (
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <Link href={secondaryAction.href}>
+                    <FileText className="h-4 w-4" />
+                    {resolveLocalizedText(secondaryAction.label, locale, copy.submitRfq)}
+                  </Link>
+                </Button>
+              ) : null}
+              {primaryAction ? (
+                <Button className="w-full justify-start gap-2" asChild>
+                  <Link href={primaryAction.href}>
+                    <Phone className="h-4 w-4" />
+                    {resolveLocalizedText(primaryAction.label, locale, copy.contact)}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
 
             <div className="mt-6 rounded-lg bg-muted p-4">

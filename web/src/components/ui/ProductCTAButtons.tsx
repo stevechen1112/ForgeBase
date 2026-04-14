@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trackCTAClick, getVisitorId } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/siteConfig";
+import { withTenantHeaders } from "@/lib/tenant";
 
 type DynamicCTA = {
   cta: { label?: string; action_type?: string; description?: string } | null;
@@ -35,7 +36,9 @@ export function ProductCTAButtons({ productId, productName, categorySlug, catego
       entity_id: productId,
       entity_name: productName,
     });
-    fetch(`${API_BASE}/api/v1/content/dynamic-cta?${params}`)
+    fetch(`${API_BASE}/api/v1/content/dynamic-cta?${params}`, {
+      headers: withTenantHeaders(),
+    })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setDynamic(data); })
       .catch(() => {});

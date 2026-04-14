@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function NewsPage({ params }: Props) {
+  const { isIndustrial } = await getRuntimeSiteContext();
   const { locale } = await params;
   resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -34,7 +35,7 @@ export default async function NewsPage({ params }: Props) {
     getMessageNamespace<NewsPageMessages>("newsPage"),
   ]);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <main className="bg-white">
         <IndustrialPageHero

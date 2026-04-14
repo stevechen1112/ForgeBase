@@ -27,6 +27,33 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat()
 
 
+def _build_filter_sql(
+    tenant_id: uuid.UUID | None = None,
+    page_type: str | None = None,
+    tenant_column: str = "te.tenant_id",
+) -> tuple[str, dict[str, Any]]:
+    clauses: list[str] = []
+    params: dict[str, Any] = {}
+
+    if page_type:
+        clauses.append("AND te.page_type = :page_type")
+        params["page_type"] = page_type
+    if tenant_id:
+        clauses.append("AND te.tenant_id = :tenant_id")
+        params["tenant_id"] = str(tenant_id)
+
+    if not clauses:
+        return "", params
+
+    return "\n          " + "\n          ".join(clauses), params
+
+
+def _build_visitor_filter_sql(tenant_id: uuid.UUID | None = None) -> tuple[str, dict[str, Any]]:
+    if not tenant_id:
+        return "", {}
+    return "\n          AND tenant_id = :tenant_id", {"tenant_id": str(tenant_id)}
+
+
 # ── 2.5.1  Page-level analytics ───────────────────────────────────────────────
 
 @router.get("/pages")
@@ -42,9 +69,9 @@ async def page_analytics(
     Per-page aggregated metrics over the last N days.
     Joins tracking_events + visitors (for avg intent score) + rfq_requests (for RFQ count).
     """
-    page_type_filter = "AND te.page_type = :page_type" if page_type else ""
-    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
-    sql = text(f"""
+    filter_sql, filter_params = _build_filter_sql(_.tenant_id, page_type)
+    sql = text(
+        """
         SELECT
             te.page_id::text                                              AS page_id,
             te.page_type                                                  AS page_type,
@@ -64,24 +91,20 @@ async def page_analytics(
         LEFT JOIN pages pg ON pg.id = te.page_id AND te.page_type = 'page'
         WHERE te.page_id IS NOT NULL
           AND te.timestamp >= NOW() - make_interval(days => :days)
-          {page_type_filter}
-          {tenant_filter}
+                    __FILTERS__
         GROUP BY te.page_id, te.page_type, p.product_name, app.application_name, pg.title
         ORDER BY page_views DESC
         LIMIT :limit
-    """)
+                """.replace("__FILTERS__", filter_sql)
+        )
 
-    params: dict[str, Any] = {"days": days, "limit": limit}
-    if page_type:
-        params["page_type"] = page_type
-    if _.tenant_id:
-        params["tenant_id"] = str(_.tenant_id)
+    params: dict[str, Any] = {"days": days, "limit": limit} | filter_params
 
     result = await session.execute(sql, params)
     rows = result.mappings().all()
 
     # Summary totals
-    totals_sql = text(f"""
+    totals_sql = text("""
         SELECT
             COUNT(*)                  AS total_events,
             COUNT(DISTINCT te.page_id) AS total_pages,
@@ -89,8 +112,7 @@ async def page_analytics(
         FROM tracking_events te
         WHERE te.page_id IS NOT NULL
           AND te.timestamp >= NOW() - make_interval(days => :days)
-          {page_type_filter}
-          {tenant_filter}
+          """ + filter_sql + """
     """)
     totals_row = (await session.execute(totals_sql, params)).mappings().one()
 
@@ -113,8 +135,9 @@ async def product_analytics(
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Per-product: page views, unique visitors, spec downloads, RFQ count, avg intent score."""
-    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
-    sql = text(f"""
+    filter_sql, filter_params = _build_filter_sql(_.tenant_id)
+    sql = text(
+        """
         SELECT
             te.page_id::text                                 AS product_id,
             p.product_name,
@@ -132,14 +155,13 @@ async def product_analytics(
         LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
         WHERE te.page_type = 'product'
           AND te.timestamp >= NOW() - make_interval(days => :days)
-          {tenant_filter}
+          __FILTERS__
         GROUP BY te.page_id, p.product_name, p.model_number, c.slug
         ORDER BY page_views DESC
         LIMIT :limit
-    """)
-    params: dict[str, Any] = {"days": days, "limit": limit}
-    if _.tenant_id:
-        params["tenant_id"] = str(_.tenant_id)
+        """.replace("__FILTERS__", filter_sql)
+    )
+    params: dict[str, Any] = {"days": days, "limit": limit} | filter_params
     result = await session.execute(sql, params)
     rows = result.mappings().all()
 
@@ -161,8 +183,9 @@ async def application_analytics(
     _: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Per-application: page views, unique visitors, RFQ count, avg intent score."""
-    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
-    sql = text(f"""
+    filter_sql, filter_params = _build_filter_sql(_.tenant_id)
+    sql = text(
+        """
         SELECT
             te.page_id::text                                 AS application_id,
             app.application_name,
@@ -177,12 +200,13 @@ async def application_analytics(
         LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
         WHERE te.page_type = 'application'
           AND te.timestamp >= NOW() - make_interval(days => :days)
-          {tenant_filter}
+          __FILTERS__
         GROUP BY te.page_id, app.application_name, app.industry
         ORDER BY page_views DESC
         LIMIT :limit
-    """)
-    result = await session.execute(sql, {"days": days, "limit": limit} | ({"tenant_id": str(_.tenant_id)} if _.tenant_id else {}))
+        """.replace("__FILTERS__", filter_sql)
+    )
+    result = await session.execute(sql, {"days": days, "limit": limit} | filter_params)
     rows = result.mappings().all()
 
     return {
@@ -211,8 +235,9 @@ async def strategy_map_analytics(
     """
     # Fetch all strategy entries with linked page metrics
     # content_strategies uses entity_id + entity_type (not page_id / funnel_stage)
-    tenant_filter = "AND te.tenant_id = :tenant_id" if _.tenant_id else ""
-    sql = text(f"""
+    filter_sql, filter_params = _build_filter_sql(_.tenant_id)
+    sql = text(
+        """
         WITH page_metrics AS (
             SELECT
                 te.page_id                                       AS page_id,
@@ -226,7 +251,7 @@ async def strategy_map_analytics(
             LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
             WHERE te.page_id IS NOT NULL
               AND te.timestamp >= NOW() - make_interval(days => :days)
-              {tenant_filter}
+                            __FILTERS__
             GROUP BY te.page_id
         )
         SELECT
@@ -256,9 +281,10 @@ async def strategy_map_analytics(
         LEFT JOIN page_metrics pm ON pm.page_id = cs.entity_id
         ORDER BY
             COALESCE(pm.page_views, 0) DESC
-    """)
+        """.replace("__FILTERS__", filter_sql)
+    )
 
-    result = await session.execute(sql, {"days": days} | ({"tenant_id": str(_.tenant_id)} if _.tenant_id else {}))
+    result = await session.execute(sql, {"days": days} | filter_params)
     rows = result.mappings().all()
 
     # Aggregate tier counts
@@ -294,31 +320,35 @@ async def funnel_analytics(
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Visitors by intent stage
-    tenant_filter = "AND tenant_id = :tenant_id" if _.tenant_id else ""
+    visitor_filter_sql, visitor_params = _build_visitor_filter_sql(_.tenant_id)
 
-    stage_sql = text(f"""
+    stage_sql = text(
+        """
         SELECT
             COALESCE(intent_stage, 'cold') AS stage,
             COUNT(*) AS count
         FROM visitors
         WHERE created_at >= :since
-          {tenant_filter}
+          __FILTERS__
         GROUP BY COALESCE(intent_stage, 'cold')
         ORDER BY count DESC
-    """)
-    params = {"since": since} | ({"tenant_id": _.tenant_id} if _.tenant_id else {})
+        """.replace("__FILTERS__", visitor_filter_sql)
+    )
+    params = {"since": since} | visitor_params
     stage_result = await session.execute(stage_sql, params)
     stage_rows = {r["stage"]: r["count"] for r in stage_result.mappings().all()}
 
     # RFQ counts by status
-    rfq_sql = text(f"""
+    rfq_sql = text(
+        """
         SELECT status, COUNT(*) AS count
         FROM rfq_requests
         WHERE created_at >= :since
-          {tenant_filter}
+          __FILTERS__
         GROUP BY status
         ORDER BY count DESC
-    """)
+        """.replace("__FILTERS__", visitor_filter_sql)
+    )
     rfq_result = await session.execute(rfq_sql, params)
     rfq_rows = {r["status"]: r["count"] for r in rfq_result.mappings().all()}
 

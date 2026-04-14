@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { siteConfig, type SiteConfig } from "@/lib/siteConfig";
 
-export function getSiteUrl() {
-  return siteConfig.siteUrl;
+export function getSiteUrl(config: SiteConfig = siteConfig) {
+  return config.siteUrl;
 }
 
-export function buildCanonicalUrl(path: string, locale?: string) {
-  const siteUrl = getSiteUrl();
+export function buildCanonicalUrl(path: string, locale?: string, config: SiteConfig = siteConfig) {
+  const siteUrl = getSiteUrl(config);
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const localePrefix = locale && locale !== "en" ? `/${locale}` : "";
   return `${siteUrl}${localePrefix}${cleanPath}`;
@@ -15,18 +15,19 @@ export function buildCanonicalUrl(path: string, locale?: string) {
 export function buildLocaleAlternates(
   path: string,
   locales: Array<{ locale: string }> = [],
+  config: SiteConfig = siteConfig,
 ): Record<string, string> | undefined {
-  const canonical = buildCanonicalUrl(path);
+  const canonical = buildCanonicalUrl(path, undefined, config);
   const languages: Record<string, string> = { "x-default": canonical, en: canonical };
   for (const variant of locales) {
-    languages[variant.locale] = buildCanonicalUrl(path, variant.locale);
+    languages[variant.locale] = buildCanonicalUrl(path, variant.locale, config);
   }
   return Object.keys(languages).length > 2 ? languages : undefined;
 }
 
-export function buildDefaultMetadata(input?: Partial<Metadata>): Metadata {
-  const siteName = siteConfig.brandName;
-  const siteUrl = getSiteUrl();
+export function buildDefaultMetadata(input?: Partial<Metadata>, config: SiteConfig = siteConfig): Metadata {
+  const siteName = config.brandName;
+  const siteUrl = getSiteUrl(config);
   return {
     metadataBase: new URL(siteUrl),
     title: {

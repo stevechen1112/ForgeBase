@@ -8,7 +8,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -34,14 +34,13 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await params;
   return getMessageNamespace<FAQPageMessages>("faqPage").then((copy) => copy.metadata);
 }
 
 export default async function FAQPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
   const faqs = await getPublishedFAQs(resolvedLocale);
@@ -61,7 +60,7 @@ export default async function FAQPage({ params }: Props) {
 
   const tags = Object.keys(grouped).sort();
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="faq" />

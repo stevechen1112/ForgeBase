@@ -12,15 +12,13 @@ import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { buildTwitterMeta } from "@/lib/seo";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
 type Props = {
   params: Promise<{ locale: string; categorySlug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 type CommonMessages = {
   home: string;
@@ -54,6 +52,7 @@ function isFaceted(filters: Record<string, string | string[] | undefined>): bool
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const { categorySlug } = await params;
   const filters = await searchParams;
   const category = await getCategoryBySlug(categorySlug);
@@ -82,6 +81,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale, categorySlug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -103,9 +103,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const faceted = isFaceted(filters);
   const baseUrl = `/products/${category.slug}`;
-  const heroImage = getCategoryHeroImage(category.slug, category.image_url);
+  const heroImage = getCategoryHeroImage(category.slug, category.image_url, runtimeSiteConfig);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="category" pageId={category.id} />
@@ -166,7 +166,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
               ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {products.map((product) => (
-                    <ProductCard key={product.id} product={product} categorySlug={category.slug} />
+                    <ProductCard key={product.id} product={product} categorySlug={category.slug} siteConfig={runtimeSiteConfig} />
                   ))}
                 </div>
               )}
@@ -291,6 +291,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                   key={product.id}
                   product={product}
                   categorySlug={category.slug}
+                  siteConfig={runtimeSiteConfig}
                 />
               ))}
             </div>

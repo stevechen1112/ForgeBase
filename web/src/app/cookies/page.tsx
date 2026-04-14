@@ -1,15 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Cookie Policy",
-  description: `Cookie usage policy for the ${siteConfig.brandName} website.`,
-};
+  return {
+    title: "Cookie Policy",
+    description: `Cookie usage policy for the ${siteName} website.`,
+  };
+}
 
-export default function CookiesPage() {
+export default async function CookiesPage() {
+  const { siteName: SITE_NAME } = await getRuntimeSiteContext();
   return (
     <main>
       <section className="border-b border-gray-100 bg-gray-50 py-14">

@@ -5,13 +5,13 @@ import uuid
 from typing import Any, Optional
 from urllib.parse import urlencode
 
-from openai import AsyncOpenAI
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
+from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
 from app.models.application import Application
 from app.models.certification import Certification
 from app.models.chat import ChatMessage, ChatSession
@@ -33,7 +33,14 @@ from app.services.intent_scoring import calculate_score_delta, get_intent_stage
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+client = get_openai_client()
+
+
+def _tenant_matches(entity: Any, tenant_id: uuid.UUID | None) -> bool:
+    entity_tenant_id = getattr(entity, "tenant_id", None)
+    if tenant_id is None:
+        return entity_tenant_id is None
+    return entity_tenant_id == tenant_id
 
 
 def _product_greeting(product_name: Optional[str]) -> str:
@@ -308,16 +315,22 @@ class ChatService:
         application_name: Optional[str] = None
         if context_entity_type == "product" and context_entity_id:
             product = await self.db.get(Product, context_entity_id)
-            if product:
+            if product and _tenant_matches(product, tenant_id):
                 product_name = product.product_name
+            else:
+                context_entity_id = None
         elif context_entity_type == "category" and context_entity_id:
             category = await self.db.get(ProductCategory, context_entity_id)
-            if category:
+            if category and _tenant_matches(category, tenant_id):
                 category_name = category.category_name
+            else:
+                context_entity_id = None
         elif context_entity_type == "application" and context_entity_id:
             application = await self.db.get(Application, context_entity_id)
-            if application:
+            if application and _tenant_matches(application, tenant_id):
                 application_name = application.application_name
+            else:
+                context_entity_id = None
 
         await self._ensure_visitor_exists(visitor_id, tenant_id=tenant_id)
         await self._ensure_tracking_session_exists(
@@ -522,7 +535,10 @@ class ChatService:
         if context_entity_type == "product" and chat_session.context_entity_id:
             statement = (
                 select(Product)
-                .where(Product.id == chat_session.context_entity_id)
+                .where(
+                    Product.id == chat_session.context_entity_id,
+                    Product.tenant_id == chat_session.tenant_id,
+                )
                 .options(
                     selectinload(Product.category),
                     selectinload(Product.faqs),
@@ -583,7 +599,10 @@ class ChatService:
         if context_entity_type == "category" and chat_session.context_entity_id:
             statement = (
                 select(ProductCategory)
-                .where(ProductCategory.id == chat_session.context_entity_id)
+                .where(
+                    ProductCategory.id == chat_session.context_entity_id,
+                    ProductCategory.tenant_id == chat_session.tenant_id,
+                )
                 .options(
                     selectinload(ProductCategory.products).selectinload(Product.certifications),
                     selectinload(ProductCategory.products).selectinload(Product.faqs),
@@ -647,7 +666,10 @@ class ChatService:
         if context_entity_type == "application" and chat_session.context_entity_id:
             statement = (
                 select(Application)
-                .where(Application.id == chat_session.context_entity_id)
+                .where(
+                    Application.id == chat_session.context_entity_id,
+                    Application.tenant_id == chat_session.tenant_id,
+                )
                 .options(
                     selectinload(Application.products).selectinload(Product.category),
                     selectinload(Application.products).selectinload(Product.certifications),
@@ -727,7 +749,14 @@ class ChatService:
                 return entity_summary, sources
 
         # FAQ context fallback
-        faq_statement = select(FAQItem).where(FAQItem.status == "published").order_by(FAQItem.sort_order)
+        faq_statement = (
+            select(FAQItem)
+            .where(
+                FAQItem.status == "published",
+                FAQItem.tenant_id == chat_session.tenant_id,
+            )
+            .order_by(FAQItem.sort_order)
+        )
         faqs = list((await self.db.exec(faq_statement)).all())[:5]
         faq_lines = []
         for faq in faqs:

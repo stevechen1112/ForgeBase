@@ -109,16 +109,17 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 
 ```
 ForgeBase/
-├── api/                    # 後端 API (Python 3.10 + FastAPI)
+├── api/                    # 後端 API (Python 3.13 + FastAPI)
 │   ├── app/
 │   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake）
-│   │   ├── db/migrations/  # Alembic migrations (25 版本)
-│   │   ├── models/         # SQLModel 資料模型
+│   │   ├── db/migrations/  # Alembic migrations (34 版本)
+│   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id）
 │   │   ├── schemas/        # Pydantic 輸入/輸出 schema
 │   │   └── services/       # 後端服務（含 intake_engine）
 │   ├── .venv/              # API 專用虛擬環境
 │   └── .env.example
 ├── web/                    # 前台網站 (Next.js 15，生產部署 Linode)
+│   ├── src/lib/runtimeSiteConfig.ts  # 多租戶 runtime 白標品牌核心
 │   └── .env.local.example
 ├── admin/                  # 管理後台 (Next.js 15，生產部署 Linode)
 │   ├── src/app/(dashboard)/dashboard/intake/  # Legacy Site Intake 審核介面
@@ -126,6 +127,9 @@ ForgeBase/
 ├── demo/                   # Demo 示範資料與種子腳本
 │   └── handtool-company/   # 示範公司（手工具製造商）
 │       └── seed/           # 模擬訪客行為注入腳本
+├── scripts/
+│   ├── mock-site-profile-server.mjs  # 多租戶品牌 mock API（本地 smoke test 用）
+│   └── smoke-test.ps1                # 前台多租戶 smoke test 腳本
 ├── intake_output/          # 網站擷取實測輸出（crawl raw / seed / analysis）
 ├── shared/                 # 共用型別與常數
 ├── ARCHITECTURE.md         # 技術架構決策紀錄
@@ -138,9 +142,9 @@ ForgeBase/
 
 | 層級 | 技術 | 版本 |
 |------|------|------|
-| 後端 API | Python + FastAPI + SQLModel + Alembic | 3.10 / 0.115 / 0.0.21 / 1.13 |
+| 後端 API | Python + FastAPI + SQLModel + Alembic | 3.13 / 0.115 / 0.0.21 / 1.13 |
 | 資料庫驅動 | asyncpg (async PostgreSQL) | — |
-| 資料庫 | PostgreSQL | 16 |
+| 資料庫 | PostgreSQL | 17 |
 | 前台 | Next.js (App Router) → Linode | 15.5.15 |
 | Admin 後台 | Next.js (App Router) → Linode | 15.5.15 |
 | 檔案儲存 | Cloudflare R2 | S3-compatible |
@@ -282,20 +286,28 @@ python scripts/intake_pipeline_king_a.py
 
 ### 環境需求
 
-- Python 3.10+
+- Python 3.13+
 - Node.js 20+
-- PostgreSQL 16（本地直接安裝 或透過 Docker）
+- PostgreSQL 17（本地直接安裝 或透過 Docker）
 
 ### 本地開發啟動
 
 ```bash
+# 0. 建立本地 PostgreSQL user 與 database（首次設定）
+#    Windows：使用 psql 或 pgAdmin；macOS/Linux：
+createuser -s forgebase
+createctl forgebase --owner=forgebase
+# 或直接執行：
+# psql -U postgres -c "CREATE USER forgebase WITH PASSWORD 'forgebase_dev';"
+# psql -U postgres -c "CREATE DATABASE forgebase OWNER forgebase;"
+
 # 1. 後端 API
 cd api
 cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 DB migrations
+alembic upgrade head           # 套用全部 DB migrations（0001 → 0034）
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -319,6 +331,30 @@ npm run dev
 ```bash
 curl http://localhost:8000/health
 # → {"status": "ok"}
+```
+
+### 多租戶前台 Smoke Test
+
+驗證多租戶品牌隔離是否正常（title、canonical、theme、layout、robots、sitemap、favicon）：
+
+```powershell
+# Windows PowerShell（自動啟動 mock server + Next.js dev server）
+.\scripts\smoke-test.ps1
+
+# 若 server 已在執行
+.\scripts\smoke-test.ps1 -SkipServerStart
+```
+
+Smoke test 成功輸出範例：
+
+```
+--- Tenant: tenant-a.localhost:3000
+  [PASS] Title contains brand
+  [PASS] Canonical URL
+  [PASS] data-theme
+  [PASS] data-layout
+  ...
+  Smoke Test Results: 13 passed, 0 failed
 ```
 
 ### Demo 資料注入（選用）
@@ -528,6 +564,40 @@ systemctl restart forgebase-admin
 ---
 
 ## 版本更新紀錄
+
+### v0.20 — 多租戶修復 + 前台 Runtime 白標收斂（2026-04-14）
+
+本次改造聚焦多租戶正確性與前台 SaaS 白標彈性，共完成 3 個方向的系統性修補。
+
+#### 後端多租戶修復
+
+| 類別 | 變更 |
+|------|------|
+| **DB Models** | 所有剩餘 content tables 補上 `tenant_id` 欄位 |
+| **Unique constraints** | 由全域唯一改為 `(slug, tenant_id)` 或 `(slug, locale, tenant_id)` 複合唯一 |
+| **Endpoints** | 全部 content / chat / intake / publish / relations API 修正 tenant 隔離邏輯 |
+| **AI 生成** | `AIGenerationLog` 補上 `tenant_id`，生成結果不跨租戶混讀 |
+| **Migration** | 新增 `0034_multitenant_content_phase3`（head）|
+| **Migration 修復** | `0025_drop_phase2_residuals` 改用 `IF EXISTS`，修正對新 DB 的相容性問題 |
+
+#### 前台 Runtime 白標收斂
+
+| 類別 | 變更 |
+|------|------|
+| **核心** | 新增 `web/src/lib/runtimeSiteConfig.ts`，每次請求從 API `/api/v1/site-profile` 取得租戶品牌設定 |
+| **全頁面遷移** | `web/src/app/**` 所有頁面從靜態 `siteConfig` 改為 `getRuntimeSiteContext()` + async `generateMetadata()` |
+| **robots / sitemap** | `robots.ts`、`sitemap.ts` 改用 runtime site URL，每個租戶獨立 |
+| **favicon** | 動態路由根據 `SiteProfile.favicon_url` 供應不同圖示 |
+| **SEO** | canonical、`og:url`、`og:site_name` 全部 runtime 化 |
+
+#### 驗證結果
+
+- **Alembic**：`0001 → 0034` 全部 migration 成功
+- **後端測試**：`52 passed, 3 skipped, 0 failed`
+- **前台 Smoke Test**：`13 passed, 0 failed`（兩個測試租戶品牌、canonical、theme、favicon 完全隔離）
+- **TypeScript type-check**：zero errors
+
+---
 
 ### v0.18 — 成長網站強化改造（2026-03-15）
 

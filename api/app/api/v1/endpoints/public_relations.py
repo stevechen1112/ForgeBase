@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.api.v1.deps import resolve_tenant_id
 from app.db.session import get_session
 from sqlalchemy import or_
 from app.models.associations import (
@@ -32,6 +33,13 @@ from app.models.product import Product
 from app.models.product_category import ProductCategory
 
 router = APIRouter(tags=["Public Relations"])
+
+
+def _matches_tenant(entity, tenant_id: uuid.UUID | None) -> bool:
+    entity_tenant_id = getattr(entity, "tenant_id", None)
+    if tenant_id is None:
+        return entity_tenant_id is None
+    return entity_tenant_id == tenant_id
 
 
 # ── Lightweight public schemas ────────────────────────────────────────────────
@@ -79,9 +87,10 @@ class PublicRelatedFAQ(BaseModel):
 async def public_list_product_applications(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     product = await session.get(Product, product_id)
-    if not product:
+    if not product or not _matches_tenant(product, tenant_id):
         raise HTTPException(status_code=404, detail="Product not found")
     await session.refresh(product, ["applications"])
     return [
@@ -93,7 +102,7 @@ async def public_list_product_applications(
             description=a.description,
         )
         for a in product.applications
-        if a.status == "published"
+        if a.status == "published" and _matches_tenant(a, tenant_id)
     ]
 
 
@@ -108,9 +117,10 @@ async def public_list_product_applications(
 async def public_list_application_products(
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     app = await session.get(Application, application_id)
-    if not app:
+    if not app or not _matches_tenant(app, tenant_id):
         raise HTTPException(status_code=404, detail="Application not found")
 
     # Reverse lookup via ProductApplicationLink
@@ -133,6 +143,7 @@ async def public_list_application_products(
             .where(
                 Product.id.in_(product_ids),
                 Product.status == "published",
+                Product.tenant_id == app.tenant_id,
             )
         )
     ).all()
@@ -161,9 +172,10 @@ async def public_list_application_products(
 async def public_list_product_certifications(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     product = await session.get(Product, product_id)
-    if not product:
+    if not product or not _matches_tenant(product, tenant_id):
         raise HTTPException(status_code=404, detail="Product not found")
     await session.refresh(product, ["certifications"])
     return [
@@ -175,7 +187,7 @@ async def public_list_product_certifications(
             badge_icon_url=c.badge_image_url,
         )
         for c in product.certifications
-        if c.status == "published"
+        if c.status == "published" and _matches_tenant(c, tenant_id)
     ]
 
 
@@ -190,9 +202,10 @@ async def public_list_product_certifications(
 async def public_list_product_faqs(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     product = await session.get(Product, product_id)
-    if not product:
+    if not product or not _matches_tenant(product, tenant_id):
         raise HTTPException(status_code=404, detail="Product not found")
     await session.refresh(product, ["faqs"])
     return [
@@ -203,7 +216,7 @@ async def public_list_product_faqs(
             locale=f.locale,
         )
         for f in product.faqs
-        if f.status == "published"
+        if f.status == "published" and _matches_tenant(f, tenant_id)
     ]
 
 
@@ -218,9 +231,10 @@ async def public_list_product_faqs(
 async def public_list_product_alternatives(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     product = await session.get(Product, product_id)
-    if not product:
+    if not product or not _matches_tenant(product, tenant_id):
         raise HTTPException(status_code=404, detail="Product not found")
 
     rows = (
@@ -248,6 +262,7 @@ async def public_list_product_alternatives(
             .where(
                 Product.id.in_(partner_ids),
                 Product.status == "published",
+                Product.tenant_id == product.tenant_id,
             )
         )
     ).all()
@@ -276,9 +291,10 @@ async def public_list_product_alternatives(
 async def public_list_application_faqs(
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     app = await session.get(Application, application_id)
-    if not app:
+    if not app or not _matches_tenant(app, tenant_id):
         raise HTTPException(status_code=404, detail="Application not found")
     await session.refresh(app, ["faqs"])
     return [
@@ -289,7 +305,7 @@ async def public_list_application_faqs(
             locale=f.locale,
         )
         for f in app.faqs
-        if f.status == "published"
+        if f.status == "published" and _matches_tenant(f, tenant_id)
     ]
 
 
@@ -312,11 +328,16 @@ class LocaleVariant(BaseModel):
 async def public_product_locales(
     slug: str,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     """Returns every published locale variant that shares the same slug."""
     results = (
         await session.exec(
-            select(Product).where(Product.slug == slug, Product.status == "published")
+            select(Product).where(
+                Product.slug == slug,
+                Product.status == "published",
+                Product.tenant_id == tenant_id,
+            )
         )
     ).all()
     return [

@@ -66,8 +66,8 @@ async def _do_route(rfq_id: uuid.UUID, db: AsyncSession) -> None:
             country = _json.loads(rfq.form_data).get("country", "")
             if country and country.upper() in HIGH_VALUE_COUNTRIES and rfq.priority == "normal":
                 rfq.priority = "high"
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, _json.JSONDecodeError):
+            logger.debug("rfq_routing: unable to parse country for rfq_id=%s", rfq_id)
 
     # Assign to a sales user from the pool
     if not rfq.assigned_to and SALES_POOL_IDS:

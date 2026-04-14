@@ -11,27 +11,24 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
-import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
-
-const SITE_NAME = siteConfig.brandName;
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
+import { getApplicationImage, getCustomPackagingImage, getProductImage, getQualityInspectionImage } from "@/lib/demoAssets";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ applicationSlug: string }> };
 
-const SITE_URL = getSiteUrl();
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { applicationSlug } = await params;
   const application = await getApplicationBySlug(applicationSlug);
   if (!application) return { title: "Not Found" };
 
   const pagePath = `/applications/${application.slug}`;
-  const canonical = buildCanonicalUrl(pagePath);
+  const canonical = buildCanonicalUrl(pagePath, undefined, runtimeSiteConfig);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getApplicationLocales(application.slug).catch(() => []);
-  const languages = buildLocaleAlternates(pagePath, localeVariants);
+  const languages = buildLocaleAlternates(pagePath, localeVariants, runtimeSiteConfig);
 
   const title = application.seo_title ?? application.application_name;
   const description = application.seo_description ?? application.description ?? undefined;
@@ -52,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ApplicationDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { applicationSlug } = await params;
   const application = await getApplicationBySlug(applicationSlug);
   if (!application) notFound();
@@ -61,7 +59,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
     getApplicationRelatedProducts(application.id).catch(() => []),
     getApplicationRelatedFAQs(application.id).catch(() => []),
   ]);
-  const heroImage = getApplicationImage(application.slug, application.hero_image_url);
+  const heroImage = getApplicationImage(application, runtimeSiteConfig);
 
   return (
     <>
@@ -163,7 +161,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={QUALITY_INSPECTION_IMAGE}
+                src={getQualityInspectionImage(runtimeSiteConfig) ?? undefined}
                 alt={`${SITE_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
@@ -177,7 +175,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={CUSTOM_PACKAGING_IMAGE}
+                src={getCustomPackagingImage(runtimeSiteConfig) ?? undefined}
                 alt={`${SITE_NAME} OEM and private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
@@ -257,7 +255,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                     {product.model_number ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getProductImage({ model_number: product.model_number }, product.category_slug) ?? undefined}
+                        src={getProductImage({ model_number: product.model_number }, product.category_slug, runtimeSiteConfig) ?? undefined}
                         alt={product.product_name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

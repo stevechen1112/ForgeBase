@@ -4,16 +4,17 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { buildDefaultMetadata } from "@/lib/seo";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteConfig } from "@/lib/runtimeSiteConfig";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { IndustrialHeader, IndustrialFooter } from "@/components/themes";
 
-const isIndustrial = siteConfig.layout === "industrial";
-
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-export const metadata: Metadata = buildDefaultMetadata();
+export async function generateMetadata(): Promise<Metadata> {
+  const runtimeSiteConfig = await getRuntimeSiteConfig();
+  return buildDefaultMetadata(undefined, runtimeSiteConfig);
+}
 
 export default async function RootLayout({
   children,
@@ -22,9 +23,11 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const runtimeSiteConfig = await getRuntimeSiteConfig();
+  const isIndustrial = runtimeSiteConfig.layout === "industrial";
 
   return (
-    <html lang={locale} data-theme={siteConfig.theme}>
+    <html lang={locale} data-theme={runtimeSiteConfig.theme} data-layout={runtimeSiteConfig.layout}>
       <head>
         {/* Preconnect to CDN (Cloudflare R2) and Google services to reduce TTFB */}
         <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_R2_HOSTNAME ?? "assets.example.com"}`} />
@@ -56,9 +59,9 @@ export default async function RootLayout({
         )}
 
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {isIndustrial ? <IndustrialHeader /> : <Header />}
+          {isIndustrial ? <IndustrialHeader siteConfig={runtimeSiteConfig} /> : <Header siteConfig={runtimeSiteConfig} />}
           <main className="flex-1">{children}</main>
-          {isIndustrial ? <IndustrialFooter /> : <Footer />}
+          {isIndustrial ? <IndustrialFooter siteConfig={runtimeSiteConfig} /> : <Footer siteConfig={runtimeSiteConfig} />}
         </NextIntlClientProvider>
       </body>
     </html>

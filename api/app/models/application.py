@@ -14,10 +14,11 @@ if TYPE_CHECKING:
 class Application(SQLModel, table=True):
     __tablename__ = "applications"
     __table_args__ = (
-        UniqueConstraint("slug", "locale", name="uq_applications_slug_locale"),
+        UniqueConstraint("slug", "locale", "tenant_id", name="uq_applications_slug_locale_tenant"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     application_name: str = Field(max_length=100, index=True)
     slug: str = Field(max_length=100, index=True)
     industry: str = Field(max_length=60)      # e.g. "Automotive", "Electronics"

@@ -4,13 +4,9 @@ import type { Metadata } from "next";
 import { getPublishedComparisons, getComparisonBySlug } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
-
-const SITE_NAME = siteConfig.brandName;
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ slug: string }> };
-
-const SITE_URL = siteConfig.siteUrl;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -28,6 +24,7 @@ export async function generateStaticParams() {
 }
 
 export default async function ComparisonDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME } = await getRuntimeSiteContext();
   const { slug } = await params;
   const topic = await getComparisonBySlug(slug);
   if (!topic) notFound();

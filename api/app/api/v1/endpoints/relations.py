@@ -40,6 +40,11 @@ from app.models.user import User
 router = APIRouter(tags=["Entity Relations"])
 
 
+def _ensure_tenant_match(entity, tenant_id: uuid.UUID | None, detail: str = "Not found"):
+    if tenant_id and getattr(entity, "tenant_id", None) != tenant_id:
+        raise HTTPException(status_code=404, detail=detail)
+
+
 # ── Small read schemas ────────────────────────────────────────────────────────
 
 class RelatedItemOut(BaseModel):
@@ -62,10 +67,11 @@ def _faq_out(f: FAQItem) -> RelatedItemOut:
 
 # ── Helper: get product or 404 ────────────────────────────────────────────────
 
-async def _get_product(product_id: uuid.UUID, session: AsyncSession) -> Product:
+async def _get_product(product_id: uuid.UUID, session: AsyncSession, tenant_id: uuid.UUID | None = None) -> Product:
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    _ensure_tenant_match(product, tenant_id, "Product not found")
     return product
 
 
@@ -77,11 +83,11 @@ async def _get_product(product_id: uuid.UUID, session: AsyncSession) -> Product:
 async def list_product_applications(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    product = await _get_product(product_id, session)
+    product = await _get_product(product_id, session, current_user.tenant_id)
     await session.refresh(product, ["applications"])
-    return [_app_out(a) for a in product.applications]
+    return [_app_out(a) for a in product.applications if a.tenant_id == current_user.tenant_id]
 
 
 @router.post("/products/{product_id}/applications/{application_id}",
@@ -90,10 +96,11 @@ async def link_product_application(
     product_id: uuid.UUID,
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
-    await _get_product(product_id, session)
-    if not await session.get(Application, application_id):
+    await _get_product(product_id, session, current_user.tenant_id)
+    application = await session.get(Application, application_id)
+    if not application or application.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Application not found")
 
     existing = (await session.exec(
@@ -116,8 +123,12 @@ async def unlink_product_application(
     product_id: uuid.UUID,
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
+    await _get_product(product_id, session, current_user.tenant_id)
+    application = await session.get(Application, application_id)
+    if not application or application.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Application not found")
     link = (await session.exec(
         select(ProductApplicationLink).where(
             ProductApplicationLink.product_id == product_id,
@@ -138,11 +149,11 @@ async def unlink_product_application(
 async def list_product_certifications(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    product = await _get_product(product_id, session)
+    product = await _get_product(product_id, session, current_user.tenant_id)
     await session.refresh(product, ["certifications"])
-    return [_cert_out(c) for c in product.certifications]
+    return [_cert_out(c) for c in product.certifications if c.tenant_id == current_user.tenant_id]
 
 
 @router.post("/products/{product_id}/certifications/{certification_id}",
@@ -151,10 +162,11 @@ async def link_product_certification(
     product_id: uuid.UUID,
     certification_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
-    await _get_product(product_id, session)
-    if not await session.get(Certification, certification_id):
+    await _get_product(product_id, session, current_user.tenant_id)
+    certification = await session.get(Certification, certification_id)
+    if not certification or certification.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Certification not found")
 
     existing = (await session.exec(
@@ -177,8 +189,9 @@ async def unlink_product_certification(
     product_id: uuid.UUID,
     certification_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
+    await _get_product(product_id, session, current_user.tenant_id)
     link = (await session.exec(
         select(ProductCertificationLink).where(
             ProductCertificationLink.product_id == product_id,
@@ -199,11 +212,11 @@ async def unlink_product_certification(
 async def list_product_faqs(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    product = await _get_product(product_id, session)
+    product = await _get_product(product_id, session, current_user.tenant_id)
     await session.refresh(product, ["faqs"])
-    return [_faq_out(f) for f in product.faqs]
+    return [_faq_out(f) for f in product.faqs if f.tenant_id == current_user.tenant_id]
 
 
 @router.post("/products/{product_id}/faqs/{faq_id}", status_code=status.HTTP_201_CREATED)
@@ -211,10 +224,11 @@ async def link_product_faq(
     product_id: uuid.UUID,
     faq_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
-    await _get_product(product_id, session)
-    if not await session.get(FAQItem, faq_id):
+    await _get_product(product_id, session, current_user.tenant_id)
+    faq = await session.get(FAQItem, faq_id)
+    if not faq or faq.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="FAQ not found")
 
     existing = (await session.exec(
@@ -236,8 +250,9 @@ async def unlink_product_faq(
     product_id: uuid.UUID,
     faq_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
+    await _get_product(product_id, session, current_user.tenant_id)
     link = (await session.exec(
         select(ProductFAQLink).where(
             ProductFAQLink.product_id == product_id,
@@ -254,10 +269,11 @@ async def unlink_product_faq(
 # Application ↔ FAQs
 # ═══════════════════════════════════════════════════════════════════════════════
 
-async def _get_application(app_id: uuid.UUID, session: AsyncSession) -> Application:
+async def _get_application(app_id: uuid.UUID, session: AsyncSession, tenant_id: uuid.UUID | None = None) -> Application:
     app = await session.get(Application, app_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+    _ensure_tenant_match(app, tenant_id, "Application not found")
     return app
 
 
@@ -265,11 +281,11 @@ async def _get_application(app_id: uuid.UUID, session: AsyncSession) -> Applicat
 async def list_application_faqs(
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    app = await _get_application(application_id, session)
+    app = await _get_application(application_id, session, current_user.tenant_id)
     await session.refresh(app, ["faqs"])
-    return [_faq_out(f) for f in app.faqs]
+    return [_faq_out(f) for f in app.faqs if f.tenant_id == current_user.tenant_id]
 
 
 @router.post("/applications/{application_id}/faqs/{faq_id}",
@@ -278,10 +294,11 @@ async def link_application_faq(
     application_id: uuid.UUID,
     faq_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
-    await _get_application(application_id, session)
-    if not await session.get(FAQItem, faq_id):
+    await _get_application(application_id, session, current_user.tenant_id)
+    faq = await session.get(FAQItem, faq_id)
+    if not faq or faq.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="FAQ not found")
 
     existing = (await session.exec(
@@ -304,8 +321,9 @@ async def unlink_application_faq(
     application_id: uuid.UUID,
     faq_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
+    await _get_application(application_id, session, current_user.tenant_id)
     link = (await session.exec(
         select(ApplicationFAQLink).where(
             ApplicationFAQLink.application_id == application_id,
@@ -326,9 +344,9 @@ async def unlink_application_faq(
 async def list_product_alternatives(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    product = await _get_product(product_id, session)
+    product = await _get_product(product_id, session, current_user.tenant_id)
     # Query both directions of the self-M2M
     links_a = (await session.exec(
         select(AlternativePartLink).where(AlternativePartLink.product_id == product_id)
@@ -342,13 +360,13 @@ async def list_product_alternatives(
         if link.alternative_product_id not in seen:
             seen.add(link.alternative_product_id)
             alt = await session.get(Product, link.alternative_product_id)
-            if alt:
+            if alt and alt.tenant_id == current_user.tenant_id:
                 result.append(RelatedItemOut(id=alt.id, name=alt.product_name, slug=alt.slug))
     for link in links_b:
         if link.product_id not in seen and link.product_id != product_id:
             seen.add(link.product_id)
             alt = await session.get(Product, link.product_id)
-            if alt:
+            if alt and alt.tenant_id == current_user.tenant_id:
                 result.append(RelatedItemOut(id=alt.id, name=alt.product_name, slug=alt.slug))
     return result
 
@@ -359,12 +377,13 @@ async def link_product_alternative(
     product_id: uuid.UUID,
     alternative_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
     if product_id == alternative_id:
         raise HTTPException(status_code=400, detail="Cannot link a product to itself")
-    await _get_product(product_id, session)
-    if not await session.get(Product, alternative_id):
+    await _get_product(product_id, session, current_user.tenant_id)
+    alternative = await session.get(Product, alternative_id)
+    if not alternative or alternative.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Alternative product not found")
 
     # Check both directions to avoid duplicates
@@ -414,9 +433,9 @@ async def unlink_product_alternative(
 async def list_related_applications(
     application_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    await _get_application(application_id, session)
+    await _get_application(application_id, session, current_user.tenant_id)
     links_a = (await session.exec(
         select(ApplicationRelatedLink).where(ApplicationRelatedLink.application_id == application_id)
     )).all()
@@ -429,13 +448,13 @@ async def list_related_applications(
         if link.related_application_id not in seen:
             seen.add(link.related_application_id)
             rel = await session.get(Application, link.related_application_id)
-            if rel:
+            if rel and rel.tenant_id == current_user.tenant_id:
                 result.append(RelatedItemOut(id=rel.id, name=rel.application_name, slug=rel.slug))
     for link in links_b:
         if link.application_id not in seen and link.application_id != application_id:
             seen.add(link.application_id)
             rel = await session.get(Application, link.application_id)
-            if rel:
+            if rel and rel.tenant_id == current_user.tenant_id:
                 result.append(RelatedItemOut(id=rel.id, name=rel.application_name, slug=rel.slug))
     return result
 
@@ -446,12 +465,13 @@ async def link_related_application(
     application_id: uuid.UUID,
     related_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
     if application_id == related_id:
         raise HTTPException(status_code=400, detail="Cannot link an application to itself")
-    await _get_application(application_id, session)
-    if not await session.get(Application, related_id):
+    await _get_application(application_id, session, current_user.tenant_id)
+    related = await session.get(Application, related_id)
+    if not related or related.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Related application not found")
 
     existing = (await session.exec(

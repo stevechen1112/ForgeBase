@@ -4,19 +4,20 @@ import { getPublishedCertifications } from "@/lib/api";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Certifications & Quality",
-  description:
-    `Review ${siteConfig.brandName} quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.`,
-};
-
-const SITE_URL = siteConfig.siteUrl;
+  return {
+    title: "Certifications & Quality",
+    description:
+      `Review ${siteName} quality and compliance support, including ISO workflow, RoHS and REACH documentation handling, and inspection coordination.`,
+  };
+}
 
 export default async function CertificationsPage() {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME } = await getRuntimeSiteContext();
   const certifications = await getPublishedCertifications();
 
   return (

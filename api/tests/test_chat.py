@@ -135,7 +135,7 @@ def test_finalize_generated_chat_response_uses_recent_messages_to_advance_state(
 
 @requires_db
 @pytest.mark.asyncio
-async def test_chat_session_create_auto_bootstraps_tracking_context():
+async def test_chat_session_create_auto_bootstraps_tracking_context(http_client):
     payload = {
         "visitor_id": str(uuid.uuid4()),
         "session_id": str(uuid.uuid4()),
@@ -143,10 +143,7 @@ async def test_chat_session_create_auto_bootstraps_tracking_context():
         "context_entity_type": "faq",
     }
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        response = await client.post("/api/v1/chat/sessions", json=payload)
+    response = await http_client.post("/api/v1/chat/sessions", json=payload)
 
     assert response.status_code == 201
     body = response.json()

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles } from "lucide-react";
-import { API_BASE } from "@/lib/api/client";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -88,7 +88,7 @@ export default function RFQDetailPage() {
   async function fetchEvents() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/events`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       if (res.ok) setEvents(await res.json());
     } catch { /* non-critical */ }
@@ -99,7 +99,7 @@ export default function RFQDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ [field]: new Date().toISOString() }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -116,7 +116,7 @@ export default function RFQDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ lost_reason: lostReason }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -131,7 +131,7 @@ export default function RFQDetailPage() {
     setAnalysisLoading(true); setAnalysisError("");
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/analyze`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
+        method: "POST", headers: buildApiHeaders(token),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Analysis failed");
@@ -145,7 +145,7 @@ export default function RFQDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/draft-reply`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ analysis }),
       });
       const data = await res.json();
@@ -156,7 +156,7 @@ export default function RFQDetailPage() {
   }
 
   useEffect(() => {
-    fetch(`${API_BASE}/tracking/rfqs/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/tracking/rfqs/${id}`, { headers: buildApiHeaders(token) })
       .then((r) => r.json())
       .then((data) => { setRfq(data); setNewStatus(data.status); setAssignTo(data.assigned_to ?? ""); })
       .finally(() => setLoading(false));
@@ -169,7 +169,7 @@ export default function RFQDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
@@ -187,7 +187,7 @@ export default function RFQDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/assign`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({ assigned_to: assignTo }),
       });
       const data = await res.json();

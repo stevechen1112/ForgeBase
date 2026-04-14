@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
 
-export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {

@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, CheckCircle2, XCircle, Webhook, BarChart2, Link2, Mail, Megaphone } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type WebhookEndpoint = { url: string; events?: string[] };
 type IntegrationStatus = {
@@ -37,7 +36,7 @@ export default function SettingsIntegrationsPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(null);
-    fetch(`${API_BASE}/admin/integrations/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/admin/integrations/status`, { headers: buildApiHeaders(token) })
       .then(r => r.json()).then(setStatus).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [token]);
 

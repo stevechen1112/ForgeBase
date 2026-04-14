@@ -1,1 +1,1 @@
-export { metadata, default } from "../rfq/page";
+export { generateMetadata, default } from "../rfq/page";

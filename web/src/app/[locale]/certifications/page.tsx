@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -36,8 +36,6 @@ type CertificationsPageMessages = {
   commitmentCta: string;
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -49,6 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CertificationsPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
   const certifications = await getPublishedCertifications(resolvedLocale);
@@ -58,7 +57,7 @@ export default async function CertificationsPage({ params }: Props) {
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, certifications);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="certification" />

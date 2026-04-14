@@ -12,10 +12,13 @@ import type {
   CTA,
   Capability,
   ComparisonTopic,
+  Page,
 } from "@/types/content";
+import { withTenantHeaders } from "@/lib/tenant";
 
 const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEFAULT_CONTENT_LOCALE = "en";
+const STRICT_BUILD_API = process.env.FORGEBASE_STRICT_BUILD_API === "1";
 
 const warnedPaths = new Set<string>();
 // Track availability with retry-after logic: cache successes permanently,
@@ -64,12 +67,14 @@ async function isApiAvailable(): Promise<boolean> {
   apiAvailableCheckedAt = now;
   try {
     const res = await fetch(`${BASE}/health`, {
-      headers: { "Content-Type": "application/json" },
+      headers: withTenantHeaders({ "Content-Type": "application/json" }),
       next: { revalidate: 60 },
     });
     apiAvailableResult = res.ok;
   } catch (error) {
-    logApiFallback("/health", error);
+    if (!STRICT_BUILD_API) {
+      logApiFallback("/health", error);
+    }
     apiAvailableResult = false;
   }
   return apiAvailableResult;
@@ -80,20 +85,30 @@ async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Pr
   const url = `${BASE}/api/v1${path}`;
   const available = await isApiAvailable();
   if (!available) {
+    if (STRICT_BUILD_API) {
+      throw new Error(`Backend API unavailable during build for ${path}`);
+    }
     return fallback;
   }
 
   try {
+    const headers = withTenantHeaders({
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {}),
+    });
     const res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
-      next: { revalidate: 60 },  // ISR: revalidate every 60s
       ...options,
+      headers,
+      next: options?.next ?? { revalidate: 60 },  // ISR: revalidate every 60s
     });
     if (!res.ok) {
       throw new Error(`API ${path} → ${res.status} ${res.statusText}`);
     }
     return res.json();
   } catch (error) {
+    if (STRICT_BUILD_API) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
     logApiFallback(path, error);
     return fallback;
   }
@@ -202,6 +217,50 @@ export async function getFeaturedProducts(locale = "en"): Promise<Product[]> {
     emptyListResponse<Product>()
   );
   return res.data;
+}
+
+async function getPublishedPage(
+  params: Record<string, string>,
+  locale = DEFAULT_CONTENT_LOCALE
+): Promise<Page | null> {
+  const search = new URLSearchParams({
+    status: "published",
+    locale,
+    page_size: "1",
+    ...params,
+  });
+
+  const response = await apiFetch<ListResponse<Page>>(
+    `/content/pages?${search.toString()}`,
+    emptyListResponse<Page>()
+  );
+  if (response.data[0]) {
+    return response.data[0];
+  }
+
+  if (locale !== DEFAULT_CONTENT_LOCALE) {
+    const fallback = new URLSearchParams({
+      status: "published",
+      locale: DEFAULT_CONTENT_LOCALE,
+      page_size: "1",
+      ...params,
+    });
+    const fallbackResponse = await apiFetch<ListResponse<Page>>(
+      `/content/pages?${fallback.toString()}`,
+      emptyListResponse<Page>()
+    );
+    return fallbackResponse.data[0] ?? null;
+  }
+
+  return null;
+}
+
+export async function getPublishedPageByType(pageType: string, locale = DEFAULT_CONTENT_LOCALE): Promise<Page | null> {
+  return getPublishedPage({ page_type: pageType }, locale);
+}
+
+export async function getPublishedPageBySlug(slug: string, locale = DEFAULT_CONTENT_LOCALE): Promise<Page | null> {
+  return getPublishedPage({ slug }, locale);
 }
 
 /** Fetch all published applications for a locale. */

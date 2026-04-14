@@ -76,8 +76,11 @@ async def mailchimp_upsert_member(
                 return res.json()
             logger.error("Mailchimp upsert error %s: %s", res.status_code, res.text[:200])
             return {"error": res.text[:200]}
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Mailchimp upsert exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("Mailchimp upsert request failed for %s", email)
+        return {"error": "request_failed"}
+    except Exception as exc:
+        logger.exception("Mailchimp upsert unexpected error for %s", email)
         return {"error": str(exc)}
 
 
@@ -96,8 +99,11 @@ async def mailchimp_add_tags(email: str, tags: list[str]) -> bool:
         async with httpx.AsyncClient(timeout=10) as client:
             res = await client.post(url, auth=("_", settings.MAILCHIMP_API_KEY), json=body)
             return res.status_code in (200, 201, 204)
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Mailchimp add_tags exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("Mailchimp add_tags request failed for %s", email)
+        return False
+    except Exception:
+        logger.exception("Mailchimp add_tags unexpected error for %s", email)
         return False
 
 
@@ -120,8 +126,10 @@ async def mailchimp_get_audience_stats() -> dict:
                     "unsubscribe_count": d.get("stats", {}).get("unsubscribe_count"),
                     "campaign_last_sent": d.get("campaign_last_sent"),
                 }
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Mailchimp stats exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("Mailchimp stats request failed")
+    except Exception:
+        logger.exception("Mailchimp stats unexpected error")
     return {}
 
 
@@ -176,8 +184,11 @@ async def sendgrid_upsert_contact(
                 return res.json() if res.content else {"success": True}
             logger.error("SendGrid upsert error %s: %s", res.status_code, res.text[:200])
             return {"error": res.text[:200]}
-    except Exception as exc:  # noqa: BLE001
-        logger.error("SendGrid upsert exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("SendGrid upsert request failed for %s", email)
+        return {"error": "request_failed"}
+    except Exception as exc:
+        logger.exception("SendGrid upsert unexpected error for %s", email)
         return {"error": str(exc)}
 
 
@@ -218,8 +229,11 @@ async def sendgrid_send_email(
                 json=body,
             )
             return res.status_code in (200, 201, 202)
-    except Exception as exc:  # noqa: BLE001
-        logger.error("SendGrid send exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("SendGrid send request failed for %s", to)
+        return False
+    except Exception:
+        logger.exception("SendGrid send unexpected error for %s", to)
         return False
 
 
@@ -236,6 +250,8 @@ async def sendgrid_get_stats() -> dict:
             if res.status_code == 200:
                 d = res.json()
                 return {"contact_count": d.get("contact_count"), "name": d.get("name")}
-    except Exception as exc:  # noqa: BLE001
-        logger.error("SendGrid get_stats exception: %s", exc)
+    except httpx.RequestError:
+        logger.exception("SendGrid get_stats request failed")
+    except Exception:
+        logger.exception("SendGrid get_stats unexpected error")
     return {}

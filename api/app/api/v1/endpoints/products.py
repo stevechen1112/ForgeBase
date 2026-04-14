@@ -39,6 +39,8 @@ async def list_products(
     base_q = select(Product)
     if tenant_id:
         base_q = base_q.where(Product.tenant_id == tenant_id)
+    else:
+        base_q = base_q.where(Product.tenant_id.is_(None))
     if locale:
         base_q = base_q.where(Product.locale == locale)
     if status:
@@ -50,7 +52,7 @@ async def list_products(
     if q:
         term = f"%{q}%"
         base_q = base_q.where(
-            Product.product_name.ilike(term) | Product.model_number.ilike(term)  # type: ignore[attr-defined]
+            Product.product_name.ilike(term) | Product.model_number.ilike(term)
         )
     if featured is not None:
         base_q = base_q.where(Product.is_featured == featured)
@@ -77,14 +79,21 @@ async def create_product(
     _user=Depends(require_content_editor),
     _quota=Depends(QuotaEnforcer("product")),
 ):
-    # slug uniqueness is per-locale; model_number is globally unique
+    # slug uniqueness is per tenant+locale; model_number is per tenant
     slug_conflict = await session.exec(
-        select(Product).where(Product.slug == payload.slug, Product.locale == payload.locale)
+        select(Product).where(
+            Product.slug == payload.slug,
+            Product.locale == payload.locale,
+            Product.tenant_id == _user.tenant_id,
+        )
     )
     if slug_conflict.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="slug already exists for this locale")
     mn_conflict = await session.exec(
-        select(Product).where(Product.model_number == payload.model_number)
+        select(Product).where(
+            Product.model_number == payload.model_number,
+            Product.tenant_id == _user.tenant_id,
+        )
     )
     if mn_conflict.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="model_number already exists")
@@ -101,9 +110,14 @@ async def create_product(
 async def get_product(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
     product = await session.get(Product, product_id)
     if not product:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    if tenant_id is None and product.tenant_id is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    if tenant_id is not None and product.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     return APIResponse(data=ProductRead.model_validate(product))
 
@@ -129,13 +143,17 @@ async def update_product(
                 Product.slug == updates["slug"],
                 Product.locale == locale_to_check,
                 Product.id != product_id,
+                Product.tenant_id == _user.tenant_id,
             )
         )
         if slug_conflict.first():
             raise HTTPException(status.HTTP_409_CONFLICT, detail="slug already exists for this locale")
     if "model_number" in updates and updates["model_number"] != product.model_number:
         mn_conflict = await session.exec(
-            select(Product).where(Product.model_number == updates["model_number"])
+            select(Product).where(
+                Product.model_number == updates["model_number"],
+                Product.tenant_id == _user.tenant_id,
+            )
         )
         if mn_conflict.first():
             raise HTTPException(status.HTTP_409_CONFLICT, detail="model_number already exists")

@@ -5,23 +5,34 @@ import {
   getPublishedApplications,
   getPublishedCertifications,
   getFeaturedProducts,
+  getPublishedPageByType,
 } from "@/lib/api";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { StructuredData, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
+import { getCategoryCardImage, getHomeHeroImage, getProductImage } from "@/lib/demoAssets";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: `${siteConfig.brandName} | OEM Hand Tool Manufacturer in Taiwan`,
-  description:
-    "Taiwan-based OEM/ODM hand tool manufacturer specializing in torque tools, insulated tools, workshop tools, and private-label toolkit programs for distributors and tool brands.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("home");
 
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
+
+  return {
+    title: `${siteName} | OEM Hand Tool Manufacturer in Taiwan`,
+    description:
+      "Taiwan-based OEM/ODM hand tool manufacturer specializing in torque tools, insulated tools, workshop tools, and private-label toolkit programs for distributors and tool brands.",
+  };
+}
 
 const STATS = [
   { value: "20+", label: "Years Export Experience" },
@@ -30,10 +41,10 @@ const STATS = [
   { value: "98%", label: "Shipment-Readiness KPI" },
 ];
 
-const WHY_US = [
+const getWhyUs = (siteName: string) => [
   {
     title: "Stable Repeat Orders",
-    desc: `${SITE_NAME} reduces drift between approved samples and recurring production through tighter drawing control, verification workflow, and packaging discipline.`,
+    desc: `${siteName} reduces drift between approved samples and recurring production through tighter drawing control, verification workflow, and packaging discipline.`,
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -42,7 +53,7 @@ const WHY_US = [
   },
   {
     title: "OEM and Private Label Execution",
-    desc: `From logo application and insert cards to barcode labels and retail-ready assortments, ${SITE_NAME} supports programs that need more than loose tools in cartons.`,
+    desc: `From logo application and insert cards to barcode labels and retail-ready assortments, ${siteName} supports programs that need more than loose tools in cartons.`,
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M6.115 5.19l.319 1.913A6 6 0 008.11 10.36L9.75 12l-.387.775c-.217.433-.132.956.21 1.298l1.348 1.348c.21.21.329.497.329.795v1.089c0 .426.24.815.622 1.006l.153.076c.433.217.956.132 1.298-.21l.723-.723a8.7 8.7 0 002.288-4.042 1.087 1.087 0 00-.358-1.099l-1.33-1.108c-.251-.21-.582-.299-.905-.245l-1.17.195a1.125 1.125 0 01-.98-.314l-.295-.295a1.125 1.125 0 010-1.591l.017-.017c.372-.372.596-.878.596-1.414 0-.523-.199-1.026-.554-1.403L9.62 5.498a1.875 1.875 0 00-2.346-.271l-1.16.58z" />
@@ -51,7 +62,7 @@ const WHY_US = [
   },
   {
     title: "Documentation Discipline",
-    desc: `Export buyers need clean packing lists, carton marks, barcode accuracy, and compliance-support paperwork. ${SITE_NAME} treats those details as part of the product program.`,
+    desc: `Export buyers need clean packing lists, carton marks, barcode accuracy, and compliance-support paperwork. ${siteName} treats those details as part of the product program.`,
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
@@ -78,7 +89,7 @@ const WHY_US = [
   },
   {
     title: "Compliance-Support Ready",
-    desc: `${SITE_NAME} supports ISO 9001 workflow, insulated-tool process discipline, RoHS and REACH documentation, and third-party inspection coordination when needed.`,
+    desc: `${siteName} supports ISO 9001 workflow, insulated-tool process discipline, RoHS and REACH documentation, and third-party inspection coordination when needed.`,
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -107,6 +118,14 @@ const OEM_FLOW = [
 ];
 
 export default async function HomePage() {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const pageOverride = await getPublishedPageByType("home");
+
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
+
+  const whyUs = getWhyUs(SITE_NAME);
   const [categories, applicationsRes, certifications, featuredProducts] = await Promise.all([
     getPublishedCategories(),
     getPublishedApplications(),
@@ -128,7 +147,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-blue-950 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HOME_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getHomeHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/80 to-blue-900/55" />
         {/* Background grid pattern */}
@@ -213,10 +232,10 @@ export default async function HomePage() {
                   className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
                   <div className="mb-3 h-32 w-full overflow-hidden rounded-lg bg-blue-50">
-                    {getProductImage(product, categorySlugById.get(product.category_id)) ? (
+                    {getProductImage(product, categorySlugById.get(product.category_id), runtimeSiteConfig) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getProductImage(product, categorySlugById.get(product.category_id)) ?? undefined}
+                        src={getProductImage(product, categorySlugById.get(product.category_id), runtimeSiteConfig) ?? undefined}
                         alt={product.product_name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -276,10 +295,10 @@ export default async function HomePage() {
                   href={`/products/${cat.slug}`}
                   className="group flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
-                  {getCategoryCardImage(cat) ? (
+                  {getCategoryCardImage(cat, runtimeSiteConfig) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={getCategoryCardImage(cat) ?? undefined}
+                      src={getCategoryCardImage(cat, runtimeSiteConfig) ?? undefined}
                       alt={cat.category_name}
                       className="mb-3 h-20 w-full rounded-lg object-cover"
                     />
@@ -324,7 +343,7 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {WHY_US.map((item) => (
+            {whyUs.map((item) => (
               <div
                 key={item.title}
                 className="rounded-xl border border-gray-100 bg-gray-50 p-6 hover:border-blue-200 hover:bg-blue-50/30 transition-colors"
@@ -356,7 +375,7 @@ export default async function HomePage() {
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
               ))}
             </div>
 

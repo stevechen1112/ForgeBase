@@ -8,13 +8,12 @@ import json
 import logging
 from typing import Any
 
-from openai import AsyncOpenAI
-
 from app.core.config import settings
+from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+client = get_openai_client()
 
 
 # ── Page-type prompt templates ────────────────────────────────────────────────

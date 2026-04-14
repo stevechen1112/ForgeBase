@@ -34,7 +34,7 @@ async def _get_or_create_profile(
     if tenant_id:
         stmt = stmt.where(SiteProfile.tenant_id == tenant_id)
     else:
-        stmt = stmt.where(SiteProfile.tenant_id.is_(None))  # type: ignore[attr-defined]
+        stmt = stmt.where(SiteProfile.tenant_id.is_(None))
     result = await db.exec(stmt.limit(1))
     profile = result.first()
     if profile is None:

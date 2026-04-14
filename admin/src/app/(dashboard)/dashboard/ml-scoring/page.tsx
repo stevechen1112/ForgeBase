@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Brain, PlayCircle, CheckCircle2, XCircle } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type MLStatus = {
   model_type?: string;
@@ -37,7 +36,7 @@ export default function MLScoringPage() {
 
   const loadStatus = useCallback(() => {
     setLoading(true); setError(null);
-    fetch(`${API_BASE}/tracking/ml/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/tracking/ml/status`, { headers: buildApiHeaders(token) })
       .then(r => r.json()).then(setStatus).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [token]);
 
@@ -48,7 +47,7 @@ export default function MLScoringPage() {
     try {
       const r = await fetch(`${API_BASE}/tracking/ml/train`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.detail ?? "訓練失敗");

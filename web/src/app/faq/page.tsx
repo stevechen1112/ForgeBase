@@ -5,17 +5,20 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: "Frequently Asked Questions",
-  description:
-    `Find answers to common questions about ${siteConfig.brandName} MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-const SITE_URL = siteConfig.siteUrl;
+  return {
+    title: "Frequently Asked Questions",
+    description:
+      `Find answers to common questions about ${siteName} MOQ, lead times, OEM packaging, compliance support, sampling, and technical documentation.`,
+  };
+}
 
 export default async function FAQPage() {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const faqs = await getPublishedFAQs("en");
 
   // Group by category_tag

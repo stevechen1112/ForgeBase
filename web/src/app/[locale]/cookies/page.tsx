@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { INDUSTRIAL_PROSE_CLASS, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CookiesPage({ params }: Props) {
+  const { isIndustrial } = await getRuntimeSiteContext();
   const { locale } = await params;
   resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -33,7 +34,7 @@ export default async function CookiesPage({ params }: Props) {
     getMessageNamespace<LegalPageMessages>("legal.cookies"),
   ]);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <main className="bg-white">
         <IndustrialPageHero

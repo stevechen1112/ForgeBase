@@ -1,24 +1,29 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import {
   getPublishedCategories,
   getPublishedApplications,
   getPublishedCertifications,
   getFeaturedProducts,
+  getPublishedPageBySlug,
+  getPublishedPageByType,
 } from "@/lib/api";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { StructuredData, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { HOME_HERO_IMAGE, getCategoryCardImage, getProductImage } from "@/lib/demoAssets";
+import { getCategoryCardImage, getHomeHeroImage, getProductImage } from "@/lib/demoAssets";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialHomePage } from "@/components/themes";
 
-const SITE_URL = siteConfig.siteUrl;
-const SITE_NAME = siteConfig.brandName;
+function isSupportedLocale(locale: string): boolean {
+  return locale === "en" || locale === "zh-TW";
+}
 
 const WHY_US_ICONS = [
   (
@@ -112,7 +117,25 @@ type HomeMessages = {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  resolveLocale(locale);
+  if (!isSupportedLocale(locale)) {
+    const customPage = await getPublishedPageBySlug(locale);
+    if (customPage) {
+      return {
+        title: customPage.seo_title ?? customPage.title,
+        description: customPage.seo_description ?? customPage.subtitle ?? undefined,
+      };
+    }
+    return {};
+  }
+
+  const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("home", resolvedLocale);
+  if (pageOverride) {
+    return {
+      title: pageOverride.seo_title ?? pageOverride.title,
+      description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
+    };
+  }
   const copy = await getMessageNamespace<HomeMessages>("home");
   return {
     title: copy.metadata.title,
@@ -122,7 +145,21 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+
+  if (!isSupportedLocale(locale)) {
+    const customPage = await getPublishedPageBySlug(locale);
+    if (!customPage) {
+      notFound();
+    }
+    return <FlexiblePageRenderer page={customPage} />;
+  }
+
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const resolvedLocale = resolveLocale(locale);
+  const pageOverride = await getPublishedPageByType("home", resolvedLocale);
+  if (pageOverride) {
+    return <FlexiblePageRenderer page={pageOverride} />;
+  }
   const copy = await getMessageNamespace<HomeMessages>("home");
   const [categories, applicationsRes, certifications, featuredProducts] = await Promise.all([
     getPublishedCategories(resolvedLocale),
@@ -134,7 +171,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const categorySlugById = new Map(categories.map((category) => [category.id, category.slug]));
 
   // ── Industrial layout: completely different page assembly ──
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="home" />
@@ -149,6 +186,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           applications={applications}
           certifications={certifications}
           categorySlugById={categorySlugById}
+          siteConfig={runtimeSiteConfig}
         />
       </>
     );
@@ -166,7 +204,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="relative overflow-hidden bg-blue-950 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HOME_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getHomeHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/80 to-blue-900/55" />
         {/* Background grid pattern */}
@@ -250,10 +288,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
                   <div className="mb-3 h-32 w-full overflow-hidden rounded-lg bg-blue-50">
-                    {getProductImage(product, categorySlugById.get(product.category_id)) ? (
+                    {getProductImage(product, categorySlugById.get(product.category_id), runtimeSiteConfig) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getProductImage(product, categorySlugById.get(product.category_id)) ?? undefined}
+                        src={getProductImage(product, categorySlugById.get(product.category_id), runtimeSiteConfig) ?? undefined}
                         alt={product.product_name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -313,10 +351,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   href={`/products/${cat.slug}`}
                   className="group flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
-                  {getCategoryCardImage(cat) ? (
+                  {getCategoryCardImage(cat, runtimeSiteConfig) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={getCategoryCardImage(cat) ?? undefined}
+                      src={getCategoryCardImage(cat, runtimeSiteConfig) ?? undefined}
                       alt={cat.category_name}
                       className="mb-3 h-20 w-full rounded-lg object-cover"
                     />
@@ -393,7 +431,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
               ))}
             </div>
 

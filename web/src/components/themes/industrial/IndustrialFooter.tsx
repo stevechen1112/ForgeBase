@@ -1,8 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useMessageNamespace } from "@/lib/messages";
-import { siteConfig } from "@/lib/siteConfig";
+import { resolveLocalizedText, type SiteConfig, type SiteFooterSection } from "@/lib/siteConfig";
 import { ArrowRight } from "lucide-react";
 
 type FooterMessages = {
@@ -10,6 +11,11 @@ type FooterMessages = {
   builtWithPrecision: string;
   allRightsReserved: string;
   certifications: string[];
+  footerCta: {
+    title: string;
+    description: string;
+    requestQuote: string;
+  };
   sections: {
     products: { heading: string; catalog: string; applications: string; rfq: string; custom: string };
     company: { heading: string; about: string; certifications: string; news: string; careers: string };
@@ -18,32 +24,47 @@ type FooterMessages = {
   };
 };
 
+function getDefaultSections(copy: FooterMessages): SiteFooterSection[] {
+  return [
+    {
+      heading: copy.sections.products.heading,
+      items: [
+        { href: "/products", label: copy.sections.products.catalog },
+        { href: "/applications", label: copy.sections.products.applications },
+        { href: "/rfq", label: copy.sections.products.rfq },
+      ],
+    },
+    {
+      heading: copy.sections.company.heading,
+      items: [
+        { href: "/about", label: copy.sections.company.about },
+        { href: "/certifications", label: copy.sections.company.certifications },
+        { href: "/careers", label: copy.sections.company.careers },
+      ],
+    },
+    {
+      heading: copy.sections.support.heading,
+      items: [
+        { href: "/faq", label: copy.sections.support.faq },
+        { href: "/contact", label: copy.sections.support.contact },
+        { href: "/docs", label: copy.sections.support.docs },
+      ],
+    },
+  ];
+}
+
 /**
  * Industrial footer: full-dark with angular CTA banner, compact grid.
  * Contrasts with cobalt's lighter grey footer with rounded social icons.
  */
-export function IndustrialFooter() {
+export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
   const copy = useMessageNamespace<FooterMessages>("footer");
+  const locale = useLocale();
   const siteName = siteConfig.brandName;
   const year = new Date().getFullYear();
-
-  const linkGroups = [
-    { heading: copy.sections.products.heading, items: [
-      { href: "/products", label: copy.sections.products.catalog },
-      { href: "/applications", label: copy.sections.products.applications },
-      { href: "/rfq", label: copy.sections.products.rfq },
-    ]},
-    { heading: copy.sections.company.heading, items: [
-      { href: "/about", label: copy.sections.company.about },
-      { href: "/certifications", label: copy.sections.company.certifications },
-      { href: "/careers", label: copy.sections.company.careers },
-    ]},
-    { heading: copy.sections.support.heading, items: [
-      { href: "/faq", label: copy.sections.support.faq },
-      { href: "/contact", label: copy.sections.support.contact },
-      { href: "/docs", label: copy.sections.support.docs },
-    ]},
-  ];
+  const linkGroups = siteConfig.footerSections?.length ? siteConfig.footerSections : getDefaultSections(copy);
+  const badges = siteConfig.footerBadges?.length ? siteConfig.footerBadges : copy.certifications;
+  const footerCta = siteConfig.footerCta;
 
   return (
     <footer className="bg-gray-950 text-gray-400">
@@ -58,17 +79,17 @@ export function IndustrialFooter() {
         <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div>
             <p className="text-sm font-black uppercase tracking-wider text-primary-foreground">
-              Ready to start your tool program?
+              {resolveLocalizedText(footerCta?.title, locale, copy.footerCta.title)}
             </p>
             <p className="mt-0.5 text-xs text-primary-foreground/70">
-              Get a quote within 24 hours for qualified enquiries.
+              {resolveLocalizedText(footerCta?.description, locale, copy.footerCta.description)}
             </p>
           </div>
           <Link
-            href="/rfq"
+            href={footerCta?.action.href ?? "/rfq"}
             className="flex items-center gap-2 bg-gray-950 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white skew-x-[-3deg] hover:bg-gray-800 transition-colors"
           >
-            <span className="skew-x-[3deg]">Request Quote</span>
+            <span className="skew-x-[3deg]">{resolveLocalizedText(footerCta?.action.label, locale, copy.footerCta.requestQuote)}</span>
             <ArrowRight className="h-3.5 w-3.5 skew-x-[3deg]" />
           </Link>
         </div>
@@ -96,15 +117,15 @@ export function IndustrialFooter() {
 
           {/* Link columns */}
           {linkGroups.map((group) => (
-            <div key={group.heading}>
+            <div key={resolveLocalizedText(group.heading, locale, "section")}>
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                {group.heading}
+                {resolveLocalizedText(group.heading, locale, "Section")}
               </h3>
               <ul className="mt-4 space-y-2.5">
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <Link href={item.href} className="text-sm transition-colors hover:text-white">
-                      {item.label}
+                      {resolveLocalizedText(item.label, locale, item.href)}
                     </Link>
                   </li>
                 ))}
@@ -115,12 +136,12 @@ export function IndustrialFooter() {
 
         {/* Certification badges */}
         <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-gray-800 pt-8">
-          {copy.certifications.map((cert) => (
+          {badges.map((cert, index) => (
             <span
-              key={cert}
+              key={`${index}-${String(cert)}`}
               className="bg-gray-900 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500"
             >
-              {cert}
+              {resolveLocalizedText(cert, locale, "Badge")}
             </span>
           ))}
         </div>

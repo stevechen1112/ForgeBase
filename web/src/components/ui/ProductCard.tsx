@@ -1,19 +1,20 @@
 import Link from "next/link";
 import type { Product } from "@/types/content";
 import { getProductImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";
 
 type Props = {
   product: Product;
   /** Pass undefined when the category slug is not known (e.g. related products on application pages). */
   categorySlug: string | undefined;
+  siteConfig?: SiteConfig;
 };
 
-export function ProductCard({ product, categorySlug }: Props) {
+export function ProductCard({ product, categorySlug, siteConfig = defaultSiteConfig }: Props) {
   const href = categorySlug
     ? `/products/${categorySlug}/${product.slug}`
     : `/products/${product.slug}`;
-  const productImage = getProductImage(product, categorySlug);
+  const productImage = getProductImage(product, categorySlug, siteConfig);
   const isIndustrial = siteConfig.layout === "industrial";
 
   return (

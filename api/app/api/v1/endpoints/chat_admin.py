@@ -62,9 +62,9 @@ async def list_chat_sessions(
     if quality_rating is not None:
         q = q.where(ChatSession.quality_rating == quality_rating)
     if has_notes is True:
-        q = q.where(ChatSession.admin_notes.isnot(None))  # type: ignore[union-attr]
+        q = q.where(ChatSession.admin_notes.isnot(None))
     elif has_notes is False:
-        q = q.where(ChatSession.admin_notes.is_(None))  # type: ignore[union-attr]
+        q = q.where(ChatSession.admin_notes.is_(None))
 
     # Get total count for pagination
     count_q = select(func.count()).select_from(ChatSession)
@@ -75,9 +75,9 @@ async def list_chat_sessions(
     if quality_rating is not None:
         count_q = count_q.where(ChatSession.quality_rating == quality_rating)
     if has_notes is True:
-        count_q = count_q.where(ChatSession.admin_notes.isnot(None))  # type: ignore[union-attr]
+        count_q = count_q.where(ChatSession.admin_notes.isnot(None))
     elif has_notes is False:
-        count_q = count_q.where(ChatSession.admin_notes.is_(None))  # type: ignore[union-attr]
+        count_q = count_q.where(ChatSession.admin_notes.is_(None))
     total = (await db.exec(count_q)).one()
 
     q = q.offset(offset).limit(min(limit, 200))
@@ -88,7 +88,7 @@ async def list_chat_sessions(
     visitors_map: dict[uuid.UUID, Visitor] = {}
     if visitor_ids:
         v_rows = (await db.exec(
-            select(Visitor).where(Visitor.visitor_id.in_(visitor_ids))  # type: ignore[union-attr]
+            select(Visitor).where(Visitor.visitor_id.in_(visitor_ids))
         )).all()
         visitors_map = {v.visitor_id: v for v in v_rows}
 

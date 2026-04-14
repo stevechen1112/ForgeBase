@@ -3,12 +3,12 @@ import { getPublishedCategories } from "@/lib/api";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { PRODUCTS_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
+import { getCategoryCardImage, getProductsHeroImage } from "@/lib/demoAssets";
 import { Link } from "@/i18n/navigation";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type CommonMessages = {
@@ -33,8 +33,6 @@ type ProductsPageMessages = {
   talkCta: string;
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
-
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -46,6 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductsPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
   const categories = await getPublishedCategories(resolvedLocale);
@@ -55,7 +54,7 @@ export default async function ProductsPage({ params }: Props) {
   ]);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, categories);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <ChatWidget contextPage="/products" contextEntityType="category" />
@@ -74,7 +73,7 @@ export default async function ProductsPage({ params }: Props) {
             eyebrow="Catalogue"
             title={pageCopy.heroTitle}
             description={pageCopy.heroDescription}
-            imageSrc={PRODUCTS_HERO_IMAGE}
+            imageSrc={getProductsHeroImage(runtimeSiteConfig) ?? undefined}
           />
           <section className="border-b border-gray-800 bg-gray-900">
             <div className="mx-auto max-w-7xl px-6 py-8">
@@ -121,10 +120,10 @@ export default async function ProductsPage({ params }: Props) {
                       href={`/products/${cat.slug}`}
                       className="group flex gap-4 border border-gray-300 bg-white p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
                     >
-                      {getCategoryCardImage(cat) ? (
+                      {getCategoryCardImage(cat, runtimeSiteConfig) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={getCategoryCardImage(cat) ?? undefined}
+                          src={getCategoryCardImage(cat, runtimeSiteConfig) ?? undefined}
                           alt={cat.category_name}
                           className="h-16 w-16 flex-shrink-0 object-cover"
                         />
@@ -179,7 +178,7 @@ export default async function ProductsPage({ params }: Props) {
       <section className="relative overflow-hidden border-b border-gray-100 py-16 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${PRODUCTS_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getProductsHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/55" />
         <div className="mx-auto max-w-6xl px-6">
@@ -244,10 +243,10 @@ export default async function ProductsPage({ params }: Props) {
                   href={`/products/${cat.slug}`}
                   className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
-                  {getCategoryCardImage(cat) ? (
+                  {getCategoryCardImage(cat, runtimeSiteConfig) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={getCategoryCardImage(cat) ?? undefined}
+                      src={getCategoryCardImage(cat, runtimeSiteConfig) ?? undefined}
                       alt={cat.category_name}
                       className="h-16 w-16 flex-shrink-0 rounded-xl object-cover"
                     />

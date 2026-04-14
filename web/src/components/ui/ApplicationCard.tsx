@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { Application } from "@/types/content";
 import { getApplicationImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";
 
-type Props = { application: Application };
+type Props = {
+  application: Application;
+  siteConfig?: SiteConfig;
+};
 
-export function ApplicationCard({ application }: Props) {
-  const imageUrl = getApplicationImage(application.slug, application.hero_image_url);
+export function ApplicationCard({ application, siteConfig = defaultSiteConfig }: Props) {
+  const imageUrl = getApplicationImage(application, siteConfig);
   const isIndustrial = siteConfig.layout === "industrial";
 
   return (

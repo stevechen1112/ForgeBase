@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 import { getCertificationBySlug } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
 type Props = { params: Promise<{ slug: string }> };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 const CERT_BADGE_VERSION = "20260318a";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CertificationDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const { slug } = await params;
   const certification = await getCertificationBySlug(slug);
   if (!certification) notFound();

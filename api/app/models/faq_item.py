@@ -14,6 +14,7 @@ class FAQItem(SQLModel, table=True):
     __tablename__ = "faq_items"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     question: str = Field(max_length=300)
     answer: str = Field()          # richtext / markdown
     category_tag: Optional[str] = Field(default=None, max_length=60)

@@ -12,16 +12,14 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta, getSiteUrl } from "@/lib/seo";
-import { CUSTOM_PACKAGING_IMAGE, QUALITY_INSPECTION_IMAGE, getApplicationImage, getProductImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
+import { getApplicationImage, getCustomPackagingImage, getProductImage, getQualityInspectionImage } from "@/lib/demoAssets";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; applicationSlug: string }> };
-
-const SITE_URL = getSiteUrl();
 
 type CommonMessages = {
   home: string;
@@ -49,16 +47,17 @@ type ApplicationDetailMessages = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale, applicationSlug } = await params;
   const application = await getApplicationBySlug(applicationSlug, locale);
   if (!application) return { title: "Not Found" };
 
   const pagePath = `/applications/${application.slug}`;
-  const canonical = buildCanonicalUrl(pagePath);
+  const canonical = buildCanonicalUrl(pagePath, undefined, runtimeSiteConfig);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getApplicationLocales(application.slug).catch(() => []);
-  const languages = buildLocaleAlternates(pagePath, localeVariants);
+  const languages = buildLocaleAlternates(pagePath, localeVariants, runtimeSiteConfig);
 
   const title = application.seo_title ?? application.application_name;
   const description = application.seo_description ?? application.description ?? undefined;
@@ -82,6 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ApplicationDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale, applicationSlug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -96,10 +96,10 @@ export default async function ApplicationDetailPage({ params }: Props) {
     getApplicationRelatedProducts(application.id).catch(() => []),
     getApplicationRelatedFAQs(application.id).catch(() => []),
   ]);
-  const heroImage = getApplicationImage(application.slug, application.hero_image_url);
+  const heroImage = getApplicationImage(application, runtimeSiteConfig);
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [application, ...relatedProducts, ...relatedFaqs]);
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="application" pageId={application.id} />
@@ -157,7 +157,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               <div className="mt-10 grid gap-6 lg:grid-cols-2">
                 <div className="overflow-hidden border border-gray-300 bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={QUALITY_INSPECTION_IMAGE} alt={`${siteConfig.brandName} quality inspection workflow`} className="h-56 w-full object-cover" />
+                  <img src={getQualityInspectionImage(runtimeSiteConfig) ?? undefined} alt={`${SITE_NAME} quality inspection workflow`} className="h-56 w-full object-cover" />
                   <div className="p-5">
                     <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.verificationTitle}</h2>
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.verificationDescription}</p>
@@ -165,7 +165,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                 </div>
                 <div className="overflow-hidden border border-gray-300 bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={CUSTOM_PACKAGING_IMAGE} alt={`${siteConfig.brandName} OEM and private-label packaging support`} className="h-56 w-full object-cover" />
+                  <img src={getCustomPackagingImage(runtimeSiteConfig) ?? undefined} alt={`${SITE_NAME} OEM and private-label packaging support`} className="h-56 w-full object-cover" />
                   <div className="p-5">
                     <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.packagingTitle}</h2>
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.packagingDescription}</p>
@@ -212,7 +212,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                           {product.model_number ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={getProductImage({ model_number: product.model_number }, product.category_slug) ?? undefined}
+                              src={getProductImage({ model_number: product.model_number }, product.category_slug, runtimeSiteConfig) ?? undefined}
                               alt={product.product_name}
                               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
@@ -356,8 +356,8 @@ export default async function ApplicationDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={QUALITY_INSPECTION_IMAGE}
-                alt={`${siteConfig.brandName} quality inspection workflow`}
+                src={getQualityInspectionImage(runtimeSiteConfig) ?? undefined}
+                alt={`${SITE_NAME} quality inspection workflow`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -370,8 +370,8 @@ export default async function ApplicationDetailPage({ params }: Props) {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={CUSTOM_PACKAGING_IMAGE}
-                alt={`${siteConfig.brandName} OEM and private-label packaging support`}
+                src={getCustomPackagingImage(runtimeSiteConfig) ?? undefined}
+                alt={`${SITE_NAME} OEM and private-label packaging support`}
                 className="h-56 w-full object-cover"
               />
               <div className="p-5">
@@ -445,7 +445,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                     {product.model_number ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getProductImage({ model_number: product.model_number }, product.category_slug) ?? undefined}
+                        src={getProductImage({ model_number: product.model_number }, product.category_slug, runtimeSiteConfig) ?? undefined}
                         alt={product.product_name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

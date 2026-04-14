@@ -1,4 +1,6 @@
 // Admin API client — 所有對後端 API 的呼叫都經過這個 module
+import { clearAuthStorage, readAuthStorage, writeAuthStorage } from "@/lib/auth/storage";
+
 function resolveApiBase(rawBase?: string): string {
   const base = (rawBase || "http://localhost:8000").replace(/\/$/, "");
   return base.endsWith("/api/v1") ? base : `${base}/api/v1`;
@@ -6,7 +8,23 @@ function resolveApiBase(rawBase?: string): string {
 
 export const API_BASE = resolveApiBase(process.env.NEXT_PUBLIC_API_URL);
 
-const STORAGE_KEY = "fb_auth";
+function getTenantIdentifier(): string | null {
+  const value = process.env.NEXT_PUBLIC_TENANT_ID || process.env.NEXT_PUBLIC_TENANT_SLUG;
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+export function buildApiHeaders(token?: string, extraHeaders?: HeadersInit): Headers {
+  const headers = new Headers(extraHeaders);
+  const tenantIdentifier = getTenantIdentifier();
+  if (tenantIdentifier && !headers.has("X-Tenant-ID")) {
+    headers.set("X-Tenant-ID", tenantIdentifier);
+  }
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return headers;
+}
 
 // Token refresh lock — prevent concurrent refresh calls
 let refreshPromise: Promise<string | null> | null = null;
@@ -16,7 +34,7 @@ async function tryRefreshToken(): Promise<string | null> {
 
   refreshPromise = (async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = readAuthStorage();
       if (!raw) return null;
       const stored = JSON.parse(raw);
       const rt = stored?.refresh_token;
@@ -24,14 +42,14 @@ async function tryRefreshToken(): Promise<string | null> {
 
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildApiHeaders(undefined, { "Content-Type": "application/json" }),
         body: JSON.stringify({ refresh_token: rt }),
       });
 
       if (!res.ok) return null;
 
       const data = await res.json();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      writeAuthStorage(JSON.stringify(data));
       window.dispatchEvent(new CustomEvent("auth:refreshed", { detail: data }));
       return data.access_token as string;
     } catch {
@@ -53,13 +71,7 @@ type RequestOptions = {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, token } = options;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+  const headers = buildApiHeaders(token, { "Content-Type": "application/json" });
 
   let res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -71,7 +83,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (res.status === 401 && !path.startsWith("/auth/refresh")) {
     const newToken = await tryRefreshToken();
     if (newToken) {
-      headers["Authorization"] = `Bearer ${newToken}`;
+      headers.set("Authorization", `Bearer ${newToken}`);
       res = await fetch(`${API_BASE}${path}`, {
         method,
         headers,
@@ -82,6 +94,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!res.ok) {
     if (res.status === 401) {
+      clearAuthStorage();
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -101,8 +114,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 async function requestForm<T>(path: string, formData: FormData, token?: string): Promise<T> {
-  const headers: Record<string, string> = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const headers = buildApiHeaders(token);
 
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -112,6 +124,7 @@ async function requestForm<T>(path: string, formData: FormData, token?: string):
 
   if (!res.ok) {
     if (res.status === 401) {
+      clearAuthStorage();
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
     const err = await res.json().catch(() => ({ error: "Unknown error" }));

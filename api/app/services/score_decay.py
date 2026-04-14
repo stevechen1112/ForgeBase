@@ -75,7 +75,7 @@ async def run_daily_score_decay() -> dict:
 
             await db.commit()
     except Exception as exc:
-        logger.error("Score decay job failed: %s", exc)
+        logger.exception("Score decay job failed")
 
     logger.info(
         "Score decay complete: processed=%d decayed=%d zeroed=%d",

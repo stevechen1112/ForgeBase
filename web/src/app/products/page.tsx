@@ -4,17 +4,17 @@ import { getPublishedCategories } from "@/lib/api";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { PRODUCTS_HERO_IMAGE, getCategoryCardImage } from "@/lib/demoAssets";
-import { siteConfig } from "@/lib/siteConfig";
+import { getCategoryCardImage, getProductsHeroImage } from "@/lib/demoAssets";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-const SITE_NAME = siteConfig.brandName;
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
 
-export const metadata: Metadata = {
-  title: "Products",
-  description: `Browse ${siteConfig.brandName} hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs.`,
-};
-
-const SITE_URL = siteConfig.siteUrl;
+  return {
+    title: "Products",
+    description: `Browse ${siteName} hand tool categories for torque tools, insulated tools, workshop tools, automotive service tools, and toolkit programs.`,
+  };
+}
 
 const HIGHLIGHTS = [
   { label: "30+ Core SKUs", desc: "Demo catalog range" },
@@ -24,6 +24,7 @@ const HIGHLIGHTS = [
 ];
 
 export default async function ProductsPage() {
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const categories = await getPublishedCategories();
 
   return (
@@ -40,7 +41,7 @@ export default async function ProductsPage() {
       <section className="relative overflow-hidden border-b border-gray-100 py-16 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${PRODUCTS_HERO_IMAGE})` }}
+          style={{ backgroundImage: `url(${getProductsHeroImage(runtimeSiteConfig)})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-blue-950/78 to-blue-900/55" />
         <div className="mx-auto max-w-6xl px-6">
@@ -105,10 +106,10 @@ export default async function ProductsPage() {
                   href={`/products/${cat.slug}`}
                   className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
-                  {getCategoryCardImage(cat) ? (
+                  {getCategoryCardImage(cat, runtimeSiteConfig) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={getCategoryCardImage(cat) ?? undefined}
+                      src={getCategoryCardImage(cat, runtimeSiteConfig) ?? undefined}
                       alt={cat.category_name}
                       className="h-16 w-16 flex-shrink-0 rounded-xl object-cover"
                     />

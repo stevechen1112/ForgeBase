@@ -219,7 +219,7 @@ async def visitor_journey(
     if chat_ids:
         chat_messages = (await db.exec(
             select(ChatMessage)
-            .where(ChatMessage.chat_session_id.in_(chat_ids))  # type: ignore[union-attr]
+            .where(ChatMessage.chat_session_id.in_(chat_ids))
             .order_by(col(ChatMessage.chat_session_id).asc(), col(ChatMessage.created_at).asc())
         )).all()
         grouped_messages: dict[uuid.UUID, list[ChatMessage]] = {}

@@ -12,6 +12,7 @@ class AIGenerationLog(SQLModel, table=True):
     __tablename__ = "ai_generation_logs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
 
     brief_id: uuid.UUID = Field(foreign_key="page_briefs.id", index=True)
     triggered_by: uuid.UUID = Field(foreign_key="users.id")

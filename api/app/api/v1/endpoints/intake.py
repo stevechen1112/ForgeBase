@@ -193,6 +193,7 @@ async def _ensure_unique_slug(
     locale: str | None,
     max_length: int,
     global_unique: bool,
+    tenant_id: uuid.UUID | None = None,
 ) -> str:
     candidate = base_slug[:max_length].strip("-") or f"item-{uuid.uuid4().hex[:8]}"
     suffix = 2
@@ -201,6 +202,8 @@ async def _ensure_unique_slug(
         stmt = select(Model).where(Model.slug == candidate)
         if not global_unique and locale is not None and hasattr(Model, "locale"):
             stmt = stmt.where(Model.locale == locale)
+        if hasattr(Model, "tenant_id"):
+            stmt = stmt.where(Model.tenant_id == tenant_id)
         existing = (await db.exec(stmt)).first()
         if not existing:
             return candidate
@@ -640,6 +643,7 @@ async def commit_to_forgebase(
         stmt = select(ProductCategory).where(
             ProductCategory.category_name == fallback_name,
             ProductCategory.locale == locale,
+            ProductCategory.tenant_id == project.tenant_id,
         )
         existing = (await db.exec(stmt)).first()
         if existing:
@@ -653,6 +657,7 @@ async def commit_to_forgebase(
                 locale=locale,
                 max_length=60,
                 global_unique=True,
+                tenant_id=project.tenant_id,
             )
             fallback_category = ProductCategory(
                 category_name=fallback_name,
@@ -660,6 +665,7 @@ async def commit_to_forgebase(
                 description=f"Auto-created fallback category for intake project {project.project_name}.",
                 status="published",
                 locale=locale,
+                tenant_id=project.tenant_id,
             )
             db.add(fallback_category)
             await db.flush()
@@ -699,13 +705,17 @@ async def commit_to_forgebase(
             base_slug = _slug_candidate(category_name, f"category-{entity.id.hex[:8]}", 60)
 
             existing = (await db.exec(
-                select(ProductCategory).where(ProductCategory.slug == base_slug)
+                select(ProductCategory).where(
+                    ProductCategory.slug == base_slug,
+                    ProductCategory.tenant_id == project.tenant_id,
+                )
             )).first()
             if not existing:
                 existing = (await db.exec(
                     select(ProductCategory).where(
                         ProductCategory.category_name == category_name,
                         ProductCategory.locale == locale,
+                        ProductCategory.tenant_id == project.tenant_id,
                     )
                 )).first()
 
@@ -722,6 +732,7 @@ async def commit_to_forgebase(
                     locale=locale,
                     max_length=60,
                     global_unique=True,
+                    tenant_id=project.tenant_id,
                 )
                 category = ProductCategory(
                     category_name=category_name,
@@ -729,6 +740,7 @@ async def commit_to_forgebase(
                     description=data.get("description"),
                     status="published",
                     locale=locale,
+                    tenant_id=project.tenant_id,
                 )
                 db.add(category)
                 await db.flush()
@@ -759,6 +771,7 @@ async def commit_to_forgebase(
                 select(Application).where(
                     Application.slug == base_slug,
                     Application.locale == locale,
+                    Application.tenant_id == project.tenant_id,
                 )
             )).first()
             if not existing:
@@ -766,6 +779,7 @@ async def commit_to_forgebase(
                     select(Application).where(
                         Application.application_name == application_name,
                         Application.locale == locale,
+                        Application.tenant_id == project.tenant_id,
                     )
                 )).first()
 
@@ -788,6 +802,7 @@ async def commit_to_forgebase(
                     locale=locale,
                     max_length=100,
                     global_unique=False,
+                    tenant_id=project.tenant_id,
                 )
                 application = Application(
                     application_name=application_name,
@@ -798,6 +813,7 @@ async def commit_to_forgebase(
                     solution=data.get("solution"),
                     status="published",
                     locale=locale,
+                    tenant_id=project.tenant_id,
                     published_at=utcnow_naive(),
                 )
                 db.add(application)
@@ -831,13 +847,17 @@ async def commit_to_forgebase(
             existing = None
             if cert_number:
                 existing = (await db.exec(
-                    select(Certification).where(Certification.cert_number == cert_number)
+                    select(Certification).where(
+                        Certification.cert_number == cert_number,
+                        Certification.tenant_id == project.tenant_id,
+                    )
                 )).first()
             if not existing:
                 existing = (await db.exec(
                     select(Certification).where(
                         Certification.slug == base_slug,
                         Certification.locale == locale,
+                        Certification.tenant_id == project.tenant_id,
                     )
                 )).first()
             if not existing:
@@ -845,6 +865,7 @@ async def commit_to_forgebase(
                     select(Certification).where(
                         Certification.cert_name == cert_name,
                         Certification.locale == locale,
+                        Certification.tenant_id == project.tenant_id,
                     )
                 )).first()
 
@@ -867,6 +888,7 @@ async def commit_to_forgebase(
                     locale=locale,
                     max_length=120,
                     global_unique=False,
+                    tenant_id=project.tenant_id,
                 )
                 certification = Certification(
                     cert_name=cert_name,
@@ -877,6 +899,7 @@ async def commit_to_forgebase(
                     description=data.get("scope"),
                     status="published",
                     locale=locale,
+                    tenant_id=project.tenant_id,
                 )
                 db.add(certification)
                 await db.flush()
@@ -917,13 +940,17 @@ async def commit_to_forgebase(
                 product_category = await get_or_create_fallback_category()
 
             existing = (await db.exec(
-                select(Product).where(Product.model_number == model_number)
+                select(Product).where(
+                    Product.model_number == model_number,
+                    Product.tenant_id == project.tenant_id,
+                )
             )).first()
             if not existing:
                 existing = (await db.exec(
                     select(Product).where(
                         Product.slug == base_slug,
                         Product.locale == locale,
+                        Product.tenant_id == project.tenant_id,
                     )
                 )).first()
 
@@ -949,6 +976,7 @@ async def commit_to_forgebase(
                     locale=locale,
                     max_length=100,
                     global_unique=False,
+                    tenant_id=project.tenant_id,
                 )
                 product = Product(
                     product_name=product_name,
@@ -960,6 +988,7 @@ async def commit_to_forgebase(
                     category_id=product_category.id,
                     status="published",
                     locale=locale,
+                    tenant_id=project.tenant_id,
                     published_at=utcnow_naive(),
                 )
                 db.add(product)
@@ -1006,6 +1035,7 @@ async def commit_to_forgebase(
                     select(FAQItem).where(
                         FAQItem.question == question,
                         FAQItem.locale == locale,
+                        FAQItem.tenant_id == project.tenant_id,
                     )
                 )).first()
                 if existing:
@@ -1020,6 +1050,7 @@ async def commit_to_forgebase(
                         category_tag=_truncate_text(_first_text(pair.get("category_tag"), data.get("category_tag")), 60),
                         locale=locale,
                         status="published",
+                        tenant_id=project.tenant_id,
                     )
                     db.add(faq_item)
                     await db.flush()
@@ -1126,7 +1157,10 @@ async def commit_to_forgebase(
             continue
 
         redirect = (await db.exec(
-            select(Redirect).where(Redirect.from_path == rc.from_path)
+            select(Redirect).where(
+                Redirect.from_path == rc.from_path,
+                Redirect.tenant_id == project.tenant_id,
+            )
         )).first()
         if redirect:
             redirect.to_path = target_path
@@ -1140,6 +1174,7 @@ async def commit_to_forgebase(
                 to_path=target_path,
                 status_code=301,
                 note=f"Intake project: {project.project_name}",
+                tenant_id=project.tenant_id,
             )
             db.add(redirect)
             await db.flush()
@@ -1181,6 +1216,7 @@ async def commit_to_forgebase(
             brief_status="draft",
             ai_status="pending",
             locale=locale,
+            tenant_id=project.tenant_id,
             created_by=current_user.id,
         )
         db.add(brief)

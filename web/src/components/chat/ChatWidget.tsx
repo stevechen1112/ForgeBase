@@ -13,6 +13,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMessageNamespace } from "@/lib/messages";
+import { getSessionId, getVisitorId } from "@/lib/analytics";
+import { withTenantHeaders } from "@/lib/tenant";
 
 type ChatWidgetMessages = {
   desktopButton: string;
@@ -56,28 +58,7 @@ interface HandoffResponse {
   };
 }
 
-function getVisitorId(): string {
-  const match = document.cookie.match(/(?:^|;\s*)fb_vid=([^;]*)/);
-  if (match) return decodeURIComponent(match[1]);
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    const visitorId = crypto.randomUUID();
-    document.cookie = `fb_vid=${visitorId}; path=/; SameSite=Lax; Max-Age=31536000${secure}`;
-    return visitorId;
-  }
-  const fallback = `fb-${Date.now()}`;
-  document.cookie = `fb_vid=${fallback}; path=/; SameSite=Lax; Max-Age=31536000${secure}`;
-  return fallback;
-}
-
-function getSessionId(): string {
-  const key = "fb_sid";
-  const existing = window.sessionStorage.getItem(key);
-  if (existing) return existing;
-  const sessionId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `fs-${Date.now()}`;
-  window.sessionStorage.setItem(key, sessionId);
-  return sessionId;
-}
+const CHAT_DISABLED = process.env.NEXT_PUBLIC_CHAT_DISABLED === "true";
 
 function getApiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || "";
@@ -111,6 +92,8 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
 
   const apiBase = useMemo(() => getApiBase(), []);
 
+  if (CHAT_DISABLED) return null;
+
   async function ensureSession() {
     if (chatSessionId) return chatSessionId;
 
@@ -119,7 +102,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     try {
       const response = await fetch(`${apiBase}/api/v1/chat/sessions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withTenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           visitor_id: getVisitorId(),
           session_id: getSessionId(),
@@ -171,7 +154,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     try {
       const response = await fetch(`${apiBase}/api/v1/chat/sessions/${sessionId}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withTenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           visitor_id: getVisitorId(),
           content,
@@ -194,7 +177,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
       if (payload.data.handoff_ready || payload.data.suggested_action === "rfq") {
         const handoffResponse = await fetch(`${apiBase}/api/v1/chat/sessions/${sessionId}/handoff`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: withTenantHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             visitor_id: getVisitorId(),
             intent_reason: "chat_handoff_ready",

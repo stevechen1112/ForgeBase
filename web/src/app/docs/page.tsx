@@ -1,11 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
-export const metadata: Metadata = {
-  title: "Technical Docs",
-  description: `Technical documentation, data sheets, and compliance documents for ${siteConfig.brandName} products.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getRuntimeSiteContext();
+
+  return {
+    title: "Technical Docs",
+    description: `Technical documentation, data sheets, and compliance documents for ${siteName} products.`,
+  };
+}
 
 const DOCS = [
   { title: "Product spec sheets", desc: "Available from individual product pages through the download panel." },

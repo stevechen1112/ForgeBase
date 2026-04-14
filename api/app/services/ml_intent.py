@@ -71,8 +71,8 @@ def _load_model() -> Any | None:
                 _model_meta = json.load(f)
         logger.info("ML intent model loaded from disk")
         return _model_cache
-    except Exception as e:
-        logger.warning(f"Failed to load ML model: {e}")
+    except (OSError, pickle.UnpicklingError, json.JSONDecodeError) as exc:
+        logger.warning("Failed to load ML model: %s", exc)
         return None
 
 
@@ -140,8 +140,8 @@ async def predict_ml_score(
         features = await extract_features_for_visitor(visitor_row, event_counts)
         prob = float(model.predict_proba(features)[0][1])
         return round(prob, 4)
-    except Exception as e:
-        logger.error(f"ML prediction failed: {e}")
+    except Exception as exc:
+        logger.exception("ML prediction failed")
         return estimate_score_from_heuristic(visitor_row, event_counts)
 
 

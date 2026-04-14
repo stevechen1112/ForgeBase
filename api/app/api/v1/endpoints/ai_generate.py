@@ -11,6 +11,7 @@ from app.core.datetime import utcnow_naive
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.db.session import get_session
 from app.api.v1.deps import RequireFeature, get_current_user
@@ -76,11 +77,13 @@ async def generate_page_content(
     entity_id: uuid.UUID | None = None
 
     if brief.target_page_type == "product" and brief.target_slug:
-        from sqlmodel import select
-        result = await session.execute(
-            select(Product).where(Product.slug == brief.target_slug)
+        result = await session.exec(
+            select(Product).where(
+                Product.slug == brief.target_slug,
+                Product.tenant_id == brief.tenant_id,
+            )
         )
-        product = result.scalar_one_or_none()
+        product = result.first()
         if product:
             entity_data = {
                 "product_name": product.product_name,
@@ -91,11 +94,13 @@ async def generate_page_content(
             entity_id = product.id
 
     elif brief.target_page_type == "application" and brief.target_slug:
-        from sqlmodel import select
-        result = await session.execute(
-            select(Application).where(Application.slug == brief.target_slug)
+        result = await session.exec(
+            select(Application).where(
+                Application.slug == brief.target_slug,
+                Application.tenant_id == brief.tenant_id,
+            )
         )
-        application = result.scalar_one_or_none()
+        application = result.first()
         if application:
             entity_data = {
                 "application_name": application.application_name,
@@ -131,6 +136,7 @@ async def generate_page_content(
         # Write success log
         log = AIGenerationLog(
             id=log_id,
+            tenant_id=brief.tenant_id,
             brief_id=brief.id,
             triggered_by=current_user.id,
             page_type=brief.target_page_type,
@@ -160,6 +166,7 @@ async def generate_page_content(
         # Write error log
         log = AIGenerationLog(
             id=log_id,
+            tenant_id=brief.tenant_id,
             brief_id=brief.id,
             triggered_by=current_user.id,
             page_type=brief.target_page_type,
@@ -185,16 +192,24 @@ async def get_generation_logs(
     brief_id: uuid.UUID,
     _feature=Depends(RequireFeature("ai_content_generation")),
     session: AsyncSession = Depends(get_session),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     """Return all AI generation attempts for a brief, newest first."""
-    from sqlmodel import select
-    result = await session.execute(
+    brief = await session.get(PageBrief, brief_id)
+    if not brief:
+        raise HTTPException(status_code=404, detail="PageBrief not found")
+    if current_user.tenant_id and brief.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="PageBrief not found")
+
+    result = await session.exec(
         select(AIGenerationLog)
-        .where(AIGenerationLog.brief_id == brief_id)
+        .where(
+            AIGenerationLog.brief_id == brief_id,
+            AIGenerationLog.tenant_id == brief.tenant_id,
+        )
         .order_by(AIGenerationLog.created_at.desc())
     )
-    logs = result.scalars().all()
+    logs = result.all()
     return {
         "data": [
             {

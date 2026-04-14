@@ -5,8 +5,8 @@ import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Menu, X, Globe, ArrowRight } from "lucide-react";
 import { useMessageNamespace } from "@/lib/messages";
+import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
-import { siteConfig } from "@/lib/siteConfig";
 
 type HeaderMessages = {
   rfq: string;
@@ -33,11 +33,19 @@ const NAV_ITEMS: Array<{ href: string; key: keyof HeaderMessages["nav"] }> = [
   { href: "/contact", key: "contact" },
 ];
 
+function getDefaultNav(copy: HeaderMessages): SiteNavItem[] {
+  return NAV_ITEMS.map((item) => ({ href: item.href, label: copy.nav[item.key] }));
+}
+
+function getDefaultActions(copy: HeaderMessages): SiteAction[] {
+  return [{ href: "/rfq", label: copy.rfq }];
+}
+
 /**
  * Industrial header: dark background, bold typography, angled accent.
  * Contrasts with the cobalt classic header (white bg, rounded elements).
  */
-export function IndustrialHeader() {
+export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
   const pathname = usePathname();
   const locale = useLocale();
   const copy = useMessageNamespace<HeaderMessages>("header");
@@ -57,6 +65,9 @@ export function IndustrialHeader() {
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const siteName = siteConfig.brandName;
+  const navItems = siteConfig.headerNav?.length ? siteConfig.headerNav : getDefaultNav(copy);
+  const actions = siteConfig.headerActions?.length ? siteConfig.headerActions : getDefaultActions(copy);
+  const primaryAction = actions[0];
 
   return (
     <>
@@ -102,7 +113,7 @@ export function IndustrialHeader() {
 
           {/* ─── Desktop nav ─── */}
           <nav className="hidden items-center gap-0 md:flex">
-            {NAV_ITEMS.map((link) => {
+            {navItems.map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");
               return (
                 <Link
@@ -115,7 +126,7 @@ export function IndustrialHeader() {
                       : "text-gray-400 hover:text-white"
                   )}
                 >
-                  {copy.nav[link.key]}
+                  {resolveLocalizedText(link.label, locale, link.href)}
                   {active && (
                     <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary" />
                   )}
@@ -127,10 +138,10 @@ export function IndustrialHeader() {
           {/* ─── Desktop CTA ─── */}
           <div className="hidden items-center gap-3 md:flex">
             <Link
-              href="/rfq"
+              href={primaryAction?.href ?? "/rfq"}
               className="flex items-center gap-1.5 bg-primary px-5 py-2 text-xs font-black uppercase tracking-wider text-primary-foreground skew-x-[-3deg] hover:brightness-110 transition-all"
             >
-              <span className="skew-x-[3deg]">{copy.rfq}</span>
+              <span className="skew-x-[3deg]">{resolveLocalizedText(primaryAction?.label, locale, copy.rfq)}</span>
               <ArrowRight className="h-3.5 w-3.5 skew-x-[3deg]" />
             </Link>
           </div>
@@ -149,7 +160,7 @@ export function IndustrialHeader() {
         {menuOpen && (
           <div className="absolute left-0 right-0 top-full z-50 border-t border-gray-800 bg-gray-900 md:hidden">
             <nav className="mx-auto max-w-7xl px-4 py-4">
-              {NAV_ITEMS.map((link) => {
+              {navItems.map((link) => {
                 const active = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
@@ -160,15 +171,15 @@ export function IndustrialHeader() {
                       active ? "text-primary" : "text-gray-300"
                     )}
                   >
-                    {copy.nav[link.key]}
+                    {resolveLocalizedText(link.label, locale, link.href)}
                   </Link>
                 );
               })}
               <Link
-                href="/rfq"
+                href={primaryAction?.href ?? "/rfq"}
                 className="mt-4 flex items-center justify-center gap-2 bg-primary px-5 py-3 text-sm font-black uppercase tracking-wider text-primary-foreground"
               >
-                {copy.rfq}
+                {resolveLocalizedText(primaryAction?.label, locale, copy.rfq)}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </nav>

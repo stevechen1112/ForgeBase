@@ -7,12 +7,10 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { siteConfig } from "@/lib/siteConfig";
+import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
 
 type CommonMessages = {
   home: string;
@@ -50,6 +48,7 @@ export async function generateStaticParams() {
 }
 
 export default async function ComparisonDetailPage({ params }: Props) {
+  const { siteUrl: SITE_URL, isIndustrial } = await getRuntimeSiteContext();
   const { locale, slug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -73,7 +72,7 @@ export default async function ComparisonDetailPage({ params }: Props) {
     }
   }
 
-  if (siteConfig.layout === "industrial") {
+  if (isIndustrial) {
     return (
       <>
         <PageViewTracker pageType="comparison" pageId={topic.id} />

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Globe } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 const LOCALES = [
   { code: "en",    label: "English",   flag: "🇺🇸" },
@@ -34,7 +33,7 @@ type Coverage = Record<string, Record<string, number>>;
 
 async function fetchCount(endpoint: string, locale: string, token: string): Promise<number> {
   const r = await fetch(`${API_BASE}${endpoint}?locale=${locale}&page_size=1`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: buildApiHeaders(token),
   });
   if (!r.ok) return 0;
   const d = await r.json();
