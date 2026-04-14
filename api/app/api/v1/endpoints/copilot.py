@@ -11,6 +11,7 @@ Endpoints:
   POST   /copilot/telegram/bind-verify — verify code and save chat_id
   POST   /copilot/webhook/telegram     — Telegram Bot webhook receiver (public)
 """
+import asyncio
 import json
 import logging
 import random
@@ -19,12 +20,14 @@ import uuid
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import get_current_user
+from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.notification_preference import NotificationPreference
@@ -306,15 +309,16 @@ async def telegram_bind_verify(
 @router.post("/webhook/telegram", include_in_schema=False)
 async def telegram_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_session),
     x_telegram_bot_api_secret_token: Optional[str] = Header(default=None),
 ):
     """
     Receives incoming messages from Telegram (set via setWebhook).
-    Routes user messages to the AI Copilot engine.
-    This endpoint is intentionally unauthenticated — validated by HMAC secret.
+    Validated by HMAC secret — intentionally unauthenticated.
+    Routes to full LLM Copilot engine with persistent conversation history.
+    Returns 200 immediately; reply is sent asynchronously.
     """
-    # Validate Telegram webhook secret
     if not _telegram.verify_webhook_secret(x_telegram_bot_api_secret_token or ""):
         raise HTTPException(status_code=403, detail="Invalid webhook secret")
 
@@ -329,7 +333,7 @@ async def telegram_webhook(
     if not chat_id or not text:
         return {"ok": True}
 
-    # Find the user linked to this chat_id
+    # Find bound preference for this chat_id
     result = await db.exec(
         select(NotificationPreference)
         .where(NotificationPreference.channel == "telegram")
@@ -339,45 +343,71 @@ async def telegram_webhook(
     pref = result.first()
 
     if not pref:
-        # Unregistered chat — send help message
         await _telegram.send(
             {"chat_id": chat_id},
-            "此 Telegram 帳號尚未綁定 ForgeBase。請先在後台設定頁面完成綁定。",
+            "⚠️ 此 Telegram 帳號尚未綁定 ForgeBase。\n請至後台 <b>通知設定</b> 頁面完成 Telegram 綁定。",
         )
         return {"ok": True}
 
-    # Pass to copilot engine (Phase 2 — basic echo for now, full LLM in next phase)
-    reply = await _handle_copilot_message(text, pref, db)
-    await _telegram.send({"chat_id": chat_id}, reply)
+    # Fire and forget — process in background so Telegram doesn't timeout
+    background_tasks.add_task(
+        _process_copilot_message,
+        chat_id=chat_id,
+        text=text,
+        tenant_id=pref.tenant_id,
+        user_id=pref.user_id,
+    )
     return {"ok": True}
 
 
-async def _handle_copilot_message(
+async def _process_copilot_message(
+    chat_id: str,
     text: str,
-    pref: NotificationPreference,
-    db: AsyncSession,
-) -> str:
+    tenant_id: Optional[uuid.UUID],
+    user_id: Optional[uuid.UUID],
+) -> None:
     """
-    Phase 1: Simple keyword-based response.
-    Phase 2: Will use LLM + function calling for full conversational AI.
+    Background task: sends typing indicator, runs the LLM engine, sends reply.
+    Handles chunked responses (Telegram 4096-char limit).
     """
-    text_lower = text.lower()
+    from app.services.copilot.chat_engine import CopilotEngine
 
-    if any(k in text_lower for k in ["你好", "hello", "hi", "help", "幫助"]):
-        return (
-            "👋 你好！我是 ForgeBase AI 行銷專員。\n\n"
-            "我可以主動通知你：\n"
-            "• 🔔 新 RFQ 詢價\n"
-            "• 🔥 高意圖訪客警報\n"
-            "• 📊 每日營運摘要\n"
-            "• ⚠️ 客戶流失風險\n\n"
-            "更多對話功能即將推出，敬請期待！"
+    # Show typing indicator immediately
+    await _send_typing(chat_id)
+
+    if not tenant_id:
+        await _telegram.send({"chat_id": chat_id}, "⚠️ 找不到綁定的租戶資訊，請聯絡管理員。")
+        return
+
+    try:
+        engine = CopilotEngine(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            channel="telegram",
+            channel_user_id=chat_id,
         )
+        chunks = await engine.run(text)
+    except Exception as exc:
+        logger.error("Copilot engine error (chat_id=%s): %s", chat_id, exc, exc_info=True)
+        chunks = ["抱歉，AI 助理暫時無法回應，請稍後再試。"]
 
-    from app.core.config import settings
-    admin_url = settings.ADMIN_URL.rstrip("/")
-    return (
-        f"已收到您的訊息：「{text[:100]}」\n\n"
-        f"完整的 AI 對話功能即將上線。目前請前往後台查看最新數據：\n"
-        f"{admin_url}/backend/overview"
-    )
+    # Send each chunk; show typing between chunks for long responses
+    for i, chunk in enumerate(chunks):
+        if i > 0:
+            await _send_typing(chat_id)
+        await _telegram.send({"chat_id": chat_id}, chunk)
+
+
+async def _send_typing(chat_id: str) -> None:
+    """Send 'typing...' action to Telegram — shows the animated indicator."""
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{token}/sendChatAction",
+                json={"chat_id": chat_id, "action": "typing"},
+            )
+    except Exception:
+        pass  # Typing indicator is best-effort
