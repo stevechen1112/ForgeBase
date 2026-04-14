@@ -72,6 +72,7 @@ async def create_chat_handoff(
     chat_session_id: uuid.UUID,
     body: ChatHandoffCreate,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
     chat_session = await _get_chat_session_or_404(db, chat_session_id)
     if chat_session.visitor_id != body.visitor_id:
@@ -79,4 +80,11 @@ async def create_chat_handoff(
 
     service = ChatService(db)
     result = await service.create_handoff(chat_session=chat_session, prefill=body.prefill)
+
+    # Copilot: notify human handoff
+    if tenant_id:
+        import asyncio
+        from app.services.copilot import on_chat_handoff as _copilot_handoff
+        asyncio.create_task(_copilot_handoff(chat_session_id, tenant_id))
+
     return APIResponse(data=ChatHandoffData(**result))

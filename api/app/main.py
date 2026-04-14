@@ -16,6 +16,7 @@ from app.api.v1.router import api_router
 from app.services.score_decay import run_daily_score_decay
 from app.services.google_ads import sync_high_intent_to_customer_match
 from app.services.scheduled_publishing import run_scheduled_publishing
+from app.services.copilot.digest import run_daily_digest
 
 logger = logging.getLogger("forgebase.api")
 
@@ -50,6 +51,15 @@ async def _scheduled_publishing_job() -> None:
         logger.exception("Scheduled publishing job failed")
 
 
+async def _daily_digest_job() -> None:
+    """Daily digest: send AI marketing summary to all tenants with active preferences."""
+    try:
+        stats = await run_daily_digest()
+        logger.info("Daily digest complete: %s", stats)
+    except Exception:
+        logger.exception("Daily digest job failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup — register scheduled jobs
@@ -79,8 +89,18 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=60,
     )
+    # Daily digest — 08:00 Asia/Taipei (= 00:00 UTC)
+    _scheduler.add_job(
+        _daily_digest_job,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        id="daily_copilot_digest",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     _scheduler.start()
-    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min")
+    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min, daily digest 00:00 UTC")
     yield
     # shutdown
     _scheduler.shutdown(wait=False)

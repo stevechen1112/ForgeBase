@@ -264,9 +264,12 @@ async def submit_rfq(
         from app.services.hubspot import sync_rfq_to_hubspot
         from app.services.webhook import fire_webhook
         import asyncio
+        from app.services.copilot import on_new_rfq as _copilot_on_rfq
         asyncio.create_task(route_rfq(rfq.id))
         asyncio.create_task(notify_new_rfq(rfq.id))
         asyncio.create_task(sync_rfq_to_hubspot(rfq.id))
+        if tenant_id:
+            asyncio.create_task(_copilot_on_rfq(rfq.id, tenant_id))
         fire_webhook("rfq.created", {
             "rfq_id":      str(rfq.id),
             "rfq_number":  rfq_number,

@@ -111,6 +111,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "AI 行銷專員",
+    items: [
+      { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
+      { label: "通知設定", href: "/dashboard/settings/notifications", icon: Settings },
+    ],
+  },
+  {
     title: "系統",
     items: [
       { label: "網站外觀", href: "/dashboard/settings/site-profile", icon: Globe, adminOnly: true },
