@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wand2, Copy, Check, RotateCcw, AlertCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
-// ?€?€ Types matching the actual backend response ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ Types matching the actual backend response ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 
 type Issue = { severity: "high" | "medium" | "low"; category: string; issue: string };
 type Suggestion = { priority: number; category: string; action: string; expected_impact: string };
@@ -26,17 +26,17 @@ type OptimizeResult = {
 type EntityOption = { id: string; name: string };
 
 const ENTITY_TYPES = [
-  { value: "product",     label: "?†å?" },
-  { value: "application", label: "?‰ç”¨?´æ™¯" },
-  { value: "category",    label: "?†å??†é?" },
+  { value: "product",     label: "?ï¿½ï¿½?" },
+  { value: "application", label: "?ï¿½ç”¨?ï¿½æ™¯" },
+  { value: "category",    label: "?ï¿½ï¿½??ï¿½ï¿½?" },
 ] as const;
 
 type EntityType = typeof ENTITY_TYPES[number]["value"];
 
 const PERIOD_OPTIONS = [
-  { value: 7,  label: "?€è¿?7 å¤? },
-  { value: 30, label: "?€è¿?30 å¤? },
-  { value: 90, label: "?€è¿?90 å¤? },
+  { value: 7,  label: "?ï¿½ï¿½?7 ï¿½? },
+  { value: 30, label: "?ï¿½ï¿½?30 ï¿½? },
+  { value: 90, label: "?ï¿½ï¿½?90 ï¿½? },
 ];
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -52,9 +52,9 @@ const IMPACT_STYLES: Record<string, string> = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 70) return { text: "text-green-600", bar: "bg-green-500", label: "?¯å¥½" };
-  if (score >= 50) return { text: "text-yellow-600", bar: "bg-yellow-400", label: "?®é€? };
-  return { text: "text-red-500", bar: "bg-red-400", label: "?€?¹å?" };
+  if (score >= 70) return { text: "text-green-600", bar: "bg-green-500", label: "?ï¿½å¥½" };
+  if (score >= 50) return { text: "text-yellow-600", bar: "bg-yellow-400", label: "?ï¿½ï¿½? };
+  return { text: "text-red-500", bar: "bg-red-400", label: "?ï¿½?ï¿½ï¿½?" };
 }
 
 export default function ContentOptimizerPage() {
@@ -74,7 +74,7 @@ export default function ContentOptimizerPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  // ?€?€ Load entity list when type changes ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+  // ?ï¿½?ï¿½ Load entity list when type changes ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
   const loadEntities = useCallback(async (type: EntityType) => {
     setLoadingEntities(true); setEntityId(""); setEntities([]);
     const endpointMap: Record<EntityType, string> = {
@@ -112,7 +112,7 @@ export default function ContentOptimizerPage() {
         body: JSON.stringify({ entity_type: entityType, entity_id: entityId, period_days: periodDays }),
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.detail ?? "?†æ?å¤±æ?");
+      if (!r.ok) throw new Error(d.detail ?? "?ï¿½ï¿½?å¤±ï¿½?");
       setResult(d);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -132,21 +132,21 @@ export default function ContentOptimizerPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">AI ?§å®¹?ªå?</h1>
+        <h1 className="text-2xl font-bold tracking-tight">AI ?ï¿½å®¹?ï¿½ï¿½?</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          ?¸æ??†å??æ??¨å ´?¯æ??†é?ï¼ŒAI çµå?å¯¦é?æµé??¸æ??†æ??é¢?¥åº·åº¦ä¸¦?ä??¹å?å»ºè­°
+          ?ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½å ´?ï¿½ï¿½??ï¿½ï¿½?ï¼ŒAI çµï¿½?å¯¦ï¿½?æµï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½é¢?ï¿½åº·åº¦ä¸¦?ï¿½ï¿½??ï¿½ï¿½?å»ºè­°
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        {/* ?€?€ å·¦æ?ï¼šé¸?‡è¨­å®??€?€ */}
+        {/* ?ï¿½?ï¿½ å·¦ï¿½?ï¼šé¸?ï¿½è¨­ï¿½??ï¿½?ï¿½ */}
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">?†æ?è¨­å?</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">?ï¿½ï¿½?è¨­ï¿½?</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {/* Entity Type */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium">?§å®¹é¡å?</label>
+                <label className="mb-1.5 block text-sm font-medium">?ï¿½å®¹é¡ï¿½?</label>
                 <div className="flex gap-2">
                   {ENTITY_TYPES.map(t => (
                     <button
@@ -167,7 +167,7 @@ export default function ContentOptimizerPage() {
               {/* Entity Picker */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium">
-                  ?¸æ?{ENTITY_TYPES.find(t => t.value === entityType)?.label}
+                  ?ï¿½ï¿½?{ENTITY_TYPES.find(t => t.value === entityType)?.label}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
                 <select
@@ -176,19 +176,19 @@ export default function ContentOptimizerPage() {
                   disabled={loadingEntities}
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 >
-                  <option value="">{loadingEntities ? "è¼‰å…¥ä¸­â€? : `???¸æ?${ENTITY_TYPES.find(t => t.value === entityType)?.label} ?”`}</option>
+                  <option value="">{loadingEntities ? "è¼‰å…¥ä¸­ï¿½? : `???ï¿½ï¿½?${ENTITY_TYPES.find(t => t.value === entityType)?.label} ?ï¿½`}</option>
                   {entities.map(e => (
                     <option key={e.id} value={e.id}>{e.name}</option>
                   ))}
                 </select>
                 {entities.length === 0 && !loadingEntities && (
-                  <p className="mt-1 text-xs text-muted-foreground">æ­¤é??‹ç›®?ç„¡?¯å??ç??§å®¹</p>
+                  <p className="mt-1 text-xs text-muted-foreground">æ­¤ï¿½??ï¿½ç›®?ï¿½ç„¡?ï¿½ï¿½??ï¿½ï¿½??ï¿½å®¹</p>
                 )}
               </div>
 
               {/* Period */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium">?†æ??‚é?ç¯„å?</label>
+                <label className="mb-1.5 block text-sm font-medium">?ï¿½ï¿½??ï¿½ï¿½?ç¯„ï¿½?</label>
                 <select
                   value={periodDays}
                   onChange={e => setPeriodDays(Number(e.target.value))}
@@ -203,10 +203,10 @@ export default function ContentOptimizerPage() {
               <div className="flex gap-2 pt-1">
                 <Button onClick={analyze} disabled={loading || !entityId} className="flex-1">
                   <Wand2 className="mr-2 h-4 w-4" />
-                  {loading ? "?†æ?ä¸­â€? : "AI ?ªå??†æ?"}
+                  {loading ? "?ï¿½ï¿½?ä¸­ï¿½? : "AI ?ï¿½ï¿½??ï¿½ï¿½?"}
                 </Button>
                 {result && (
-                  <Button variant="outline" onClick={reset} title="æ¸…é™¤çµæ?">
+                  <Button variant="outline" onClick={reset} title="æ¸…é™¤çµï¿½?">
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 )}
@@ -217,15 +217,15 @@ export default function ContentOptimizerPage() {
           {selectedEntity && result && (
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-1">?†æ?å°è±¡</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">?ï¿½ï¿½?å°è±¡</p>
                 <p className="font-semibold">{selectedEntity.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{entityType} Â· ?€è¿?{periodDays} å¤?/p>
+                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{entityType} Â· ?ï¿½ï¿½?{periodDays} ï¿½?/p>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* ?€?€ ?³æ?ï¼šå??ç????€?€ */}
+        {/* ?ï¿½?ï¿½ ?ï¿½ï¿½?ï¼šï¿½??ï¿½ï¿½????ï¿½?ï¿½ */}
         <div className="space-y-4">
           {error && (
             <Alert variant="destructive">
@@ -238,9 +238,9 @@ export default function ContentOptimizerPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-24 text-center">
                 <Wand2 className="mb-3 h-10 w-10 text-muted-foreground/30" />
-                <p className="text-sm font-medium text-muted-foreground">?¸æ??§å®¹å¾Œé??Šã€ŒAI ?ªå??†æ???/p>
+                <p className="text-sm font-medium text-muted-foreground">?ï¿½ï¿½??ï¿½å®¹å¾Œï¿½??ï¿½ã€ŒAI ?ï¿½ï¿½??ï¿½ï¿½???/p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  AI å°‡ç??ˆå¯¦?›æ??ã€ä?è¼‰ç??RFQ è½‰æ??‡å??é??¢å¥åº·åº¦
+                  AI å°‡ï¿½??ï¿½å¯¦?ï¿½ï¿½??ï¿½ã€ï¿½?è¼‰ï¿½??ï¿½RFQ è½‰ï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½å¥åº·åº¦
                 </p>
               </CardContent>
             </Card>
@@ -250,19 +250,19 @@ export default function ContentOptimizerPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-sm text-muted-foreground">AI æ­?œ¨?†æ?æµé??¸æ??‡å…§å®¹ï?è«‹ç??™â€?/p>
+                <p className="text-sm text-muted-foreground">AI ï¿½?ï¿½ï¿½?ï¿½ï¿½?æµï¿½??ï¿½ï¿½??ï¿½å…§å®¹ï¿½?è«‹ï¿½??ï¿½ï¿½?/p>
               </CardContent>
             </Card>
           )}
 
           {result && (
             <div className="space-y-4">
-              {/* ?´é??¥åº·?†æ•¸ */}
+              {/* ?ï¿½ï¿½??ï¿½åº·?ï¿½æ•¸ */}
               <Card>
                 <CardContent className="pt-4">
                   <div className="flex items-end justify-between mb-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">?´é??§å®¹?¥åº·?†æ•¸</p>
+                      <p className="text-sm text-muted-foreground">?ï¿½ï¿½??ï¿½å®¹?ï¿½åº·?ï¿½æ•¸</p>
                       <p className={`text-4xl font-bold mt-0.5 ${scoreColor(result.overall_score).text}`}>
                         {result.overall_score}
                         <span className="text-base font-normal text-muted-foreground"> / 100</span>
@@ -282,11 +282,11 @@ export default function ContentOptimizerPage() {
                 </CardContent>
               </Card>
 
-              {/* ?ªå?è¡Œå? */}
+              {/* ?ï¿½ï¿½?è¡Œï¿½? */}
               {result.priority_actions?.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-orange-600">???ªå?è¡Œå?ï¼ˆç??³è??†ï?</CardTitle>
+                    <CardTitle className="text-sm text-orange-600">???ï¿½ï¿½?è¡Œï¿½?ï¼ˆï¿½??ï¿½ï¿½??ï¿½ï¿½?</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ol className="space-y-2">
@@ -303,16 +303,16 @@ export default function ContentOptimizerPage() {
                 </Card>
               )}
 
-              {/* å»ºè­°æ¨™é? + ?è¿° */}
+              {/* å»ºè­°æ¨™ï¿½? + ?ï¿½è¿° */}
               {(result.revised_title || result.revised_description) && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">AI å»ºè­°?¹å¯«?‡æ?</CardTitle>
+                    <CardTitle className="text-sm">AI å»ºè­°?ï¿½å¯«?ï¿½ï¿½?</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {result.revised_title && (
                       <div>
-                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">æ¨™é?å»ºè­°</p>
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">æ¨™ï¿½?å»ºè­°</p>
                         <div className="flex items-start justify-between gap-2 rounded-md bg-muted/40 px-3 py-2">
                           <p className="text-sm font-medium leading-snug">{result.revised_title}</p>
                           <Button variant="ghost" size="sm" className="h-7 w-16 shrink-0" onClick={() => copy(result.revised_title, "title")}>
@@ -323,7 +323,7 @@ export default function ContentOptimizerPage() {
                     )}
                     {result.revised_description && (
                       <div>
-                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">?è¿°å»ºè­°</p>
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">?ï¿½è¿°å»ºè­°</p>
                         <div className="flex items-start justify-between gap-2 rounded-md bg-muted/40 px-3 py-2">
                           <p className="text-sm text-muted-foreground leading-relaxed">{result.revised_description}</p>
                           <Button variant="ghost" size="sm" className="h-7 w-16 shrink-0" onClick={() => copy(result.revised_description, "desc")}>
@@ -336,11 +336,11 @@ export default function ContentOptimizerPage() {
                 </Card>
               )}
 
-              {/* ?é?æ¸…å–® */}
+              {/* ?ï¿½ï¿½?æ¸…å–® */}
               {result.issues?.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">?¼ç¾?é?ï¼ˆ{result.issues.length}ï¼?/CardTitle>
+                    <CardTitle className="text-sm">?ï¿½ç¾?ï¿½ï¿½?ï¼ˆ{result.issues.length}ï¿½?/CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
@@ -360,11 +360,11 @@ export default function ContentOptimizerPage() {
                 </Card>
               )}
 
-              {/* ?¹å?å»ºè­° */}
+              {/* ?ï¿½ï¿½?å»ºè­° */}
               {result.suggestions?.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">?¹å?å»ºè­°ï¼ˆæ??ªå?ç´šæ?åºï?</CardTitle>
+                    <CardTitle className="text-sm">?ï¿½ï¿½?å»ºè­°ï¼ˆï¿½??ï¿½ï¿½?ç´šï¿½?åºï¿½?</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
@@ -380,7 +380,7 @@ export default function ContentOptimizerPage() {
                               {s.action}
                             </div>
                             <span className={`text-xs font-medium shrink-0 ${IMPACT_STYLES[s.expected_impact] ?? "text-muted-foreground"}`}>
-                              {s.expected_impact === "high" ? "é«˜æ??? : s.expected_impact === "medium" ? "ä¸­æ??? : "ä½æ???}
+                              {s.expected_impact === "high" ? "é«˜ï¿½??? : s.expected_impact === "medium" ? "ä¸­ï¿½??? : "ä½ï¿½???}
                             </span>
                           </div>
                         ))}
@@ -389,11 +389,11 @@ export default function ContentOptimizerPage() {
                 </Card>
               )}
 
-              {/* ?§å®¹ç¼ºå£ */}
+              {/* ?ï¿½å®¹ç¼ºå£ */}
               {result.content_gaps?.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">?§å®¹ç¼ºå£ï¼ˆå»ºè­°è??…ç?ä¸»é?ï¼?/CardTitle>
+                    <CardTitle className="text-sm">?ï¿½å®¹ç¼ºå£ï¼ˆå»ºè­°ï¿½??ï¿½ï¿½?ä¸»ï¿½?ï¿½?/CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
