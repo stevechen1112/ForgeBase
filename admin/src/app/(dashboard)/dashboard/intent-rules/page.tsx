@@ -114,11 +114,9 @@ export default function IntentRulesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isDirty && (
-            <Button variant="outline" size="sm" onClick={reset} disabled={saving}>
-              <RotateCcw className="mr-1.5 h-4 w-4" />還原
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={reset} disabled={saving || !isDirty}>
+            <RotateCcw className="mr-1.5 h-4 w-4" />還原
+          </Button>
           <Button size="sm" onClick={save} disabled={saving || !isDirty}>
             <Save className="mr-1.5 h-4 w-4" />
             {saving ? "儲存中…" : saved ? "✓ 已儲存" : "儲存設定"}
@@ -169,14 +167,23 @@ export default function IntentRulesPage() {
                         </td>
                         <td className="px-3 py-2 text-muted-foreground text-xs">{meta?.note ?? "—"}</td>
                         <td className="px-3 py-2 text-right">
-                          <input
-                            type="number"
-                            min={0}
-                            max={999}
-                            value={score}
-                            onChange={e => handleScoreChange(event, e.target.value)}
-                            className="w-20 rounded border px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
+                          <div className="flex items-center justify-end gap-1.5">
+                            {config && config.base_scores[event] !== score && (
+                              <span className="text-xs text-muted-foreground line-through">{config.base_scores[event]}</span>
+                            )}
+                            <input
+                              type="number"
+                              min={0}
+                              max={999}
+                              value={score}
+                              onChange={e => handleScoreChange(event, e.target.value)}
+                              className={`w-20 rounded border px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary ${
+                                config && config.base_scores[event] !== score
+                                  ? "border-orange-400 bg-orange-50 text-orange-700"
+                                  : ""
+                              }`}
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -205,13 +212,20 @@ export default function IntentRulesPage() {
                       <span className="font-semibold capitalize">{st.stage}</span>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-medium opacity-70">門檻</span>
+                        {config && config.stage_thresholds[i]?.min_score !== st.min_score && (
+                          <span className="text-xs opacity-60 line-through">{config.stage_thresholds[i]?.min_score}</span>
+                        )}
                         <input
                           type="number"
                           min={0}
                           max={9999}
                           value={st.min_score}
                           onChange={e => handleStageChange(i, "min_score", e.target.value)}
-                          className="w-20 rounded border bg-white/70 px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                          className={`w-20 rounded border bg-white/70 px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary ${
+                            config && config.stage_thresholds[i]?.min_score !== st.min_score
+                              ? "border-orange-400"
+                              : ""
+                          }`}
                         />
                         <span className="text-xs opacity-70">分</span>
                       </div>
