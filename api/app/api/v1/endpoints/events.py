@@ -39,6 +39,47 @@ from app.services.ip_resolver import resolve_ip_to_company
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
+# ── Per-tenant scoring config cache (TTL = 120s) ──────────────────────────────
+import json as _json
+import time as _time
+_SCORING_CACHE: dict[str, tuple[dict, float]] = {}
+_SCORING_CACHE_TTL = 120.0
+
+
+async def _load_custom_scores(
+    tenant_id: Optional[uuid.UUID],
+    db: AsyncSession,
+) -> Optional[dict[str, int]]:
+    """Return per-tenant base_scores if configured, else None (use defaults)."""
+    cache_key = str(tenant_id) if tenant_id else "__global__"
+    now = _time.monotonic()
+    cached = _SCORING_CACHE.get(cache_key)
+    if cached is not None:
+        config, ts = cached
+        if now - ts < _SCORING_CACHE_TTL:
+            return config or None
+
+    custom: Optional[dict[str, int]] = None
+    try:
+        from sqlmodel import select as _sel
+        from app.models.site_profile import SiteProfile
+        stmt = _sel(SiteProfile)
+        if tenant_id:
+            stmt = stmt.where(SiteProfile.tenant_id == tenant_id)
+        else:
+            stmt = stmt.where(SiteProfile.tenant_id.is_(None))
+        result = await db.exec(stmt.limit(1))
+        profile = result.first()
+        if profile and profile.intent_scoring_config_json:
+            raw = _json.loads(profile.intent_scoring_config_json)
+            custom = raw.get("base_scores") or None
+    except Exception:
+        pass
+
+    _SCORING_CACHE[cache_key] = (custom, now)
+    return custom
+
+
 # ── Valid event names (spec 12.5.1) ───────────────────────────────────────────
 
 VALID_EVENT_NAMES = {
@@ -203,7 +244,8 @@ async def receive_event(
     Applies intent scoring to the visitor.
     """
     props = body.properties or {}
-    score_delta = calculate_score_delta(body.event_name, props)
+    custom_scores = await _load_custom_scores(tenant_id, db)
+    score_delta = calculate_score_delta(body.event_name, props, custom_scores=custom_scores)
     client_ip = _get_client_ip(request)
 
     new_score: Optional[int] = None

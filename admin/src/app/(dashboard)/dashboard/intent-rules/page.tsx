@@ -1,140 +1,275 @@
 "use client";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth/store";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, TrendingUp, Zap, Eye, Target, RefreshCcw, MousePointerClick, FileText, ClipboardList, Globe, Download, HelpCircle, Scale } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Flame, TrendingUp, Zap, Eye, Target, RefreshCcw,
+  MousePointerClick, FileText, ClipboardList, Globe,
+  Download, HelpCircle, Scale, Save, RotateCcw, MessageSquare, Award, ShieldCheck,
+} from "lucide-react";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
-const SCORE_RULES = [
-  { event: "product_view", label: "商品頁瀏覽", score: 5, icon: Eye, color: "text-blue-500", note: "每次檢視商品頁面" },
-  { event: "application_view", label: "應用場景瀏覽", score: 4, icon: Globe, color: "text-indigo-500", note: "每次檢視應用頁面" },
-  { event: "spec_download", label: "規格書下載", score: 15, icon: Download, color: "text-green-600", note: "下載 PDF 規格書" },
-  { event: "faq_expand", label: "FAQ 展開", score: 3, icon: HelpCircle, color: "text-gray-500", note: "展開任一 FAQ 問答" },
-  { event: "comparison_view", label: "比較表查看", score: 8, icon: Scale, color: "text-purple-500", note: "查看競品比較頁" },
-  { event: "cta_click", label: "CTA 點擊", score: 10, icon: MousePointerClick, color: "text-orange-500", note: "點擊詢價或下載 CTA" },
-  { event: "form_start", label: "表單開始填寫", score: 12, icon: FileText, color: "text-yellow-600", note: "開始填寫非 RFQ 表單" },
-  { event: "rfq_start", label: "RFQ 開始填寫", score: 20, icon: ClipboardList, color: "text-red-500", note: "開始填寫詢價表單" },
-  { event: "rfq_submit", label: "RFQ 提交", score: 50, icon: Flame, color: "text-red-600 font-bold", note: "成功提交詢價" },
-  { event: "return_visit", label: "回訪（24h+）", score: 8, icon: RefreshCcw, color: "text-teal-500", note: "24 小時後再次到訪" },
-  { event: "session_depth_5", label: "深度瀏覽≥5頁", score: 10, icon: TrendingUp, color: "text-blue-600", note: "單次 session 瀏覽 5 頁以上" },
-];
+const EVENT_META: Record<string, { label: string; icon: React.ElementType; color: string; note: string }> = {
+  page_view:             { label: "頁面瀏覽",         icon: Eye,               color: "text-gray-400",    note: "任意頁面瀏覽" },
+  category_view:         { label: "分類頁瀏覽",       icon: Globe,             color: "text-indigo-400",  note: "瀏覽商品分類頁" },
+  product_view:          { label: "商品頁瀏覽",       icon: Eye,               color: "text-blue-500",    note: "瀏覽單一商品頁" },
+  application_view:      { label: "應用場景瀏覽",     icon: Globe,             color: "text-indigo-500",  note: "瀏覽應用場景頁" },
+  faq_expand:            { label: "FAQ 展開",          icon: HelpCircle,        color: "text-gray-500",    note: "展開任一 FAQ 問答" },
+  comparison_view:       { label: "比較表查看",        icon: Scale,             color: "text-purple-500",  note: "查看競品比較頁" },
+  spec_download:         { label: "規格書下載",        icon: Download,          color: "text-green-600",   note: "下載 PDF 規格書" },
+  certification_view:    { label: "認證頁瀏覽",        icon: ShieldCheck,       color: "text-teal-500",    note: "瀏覽認證說明頁" },
+  cta_click:             { label: "CTA 點擊（次要）",  icon: MousePointerClick, color: "text-orange-400",  note: "點擊次要 CTA 按鈕" },
+  form_start:            { label: "表單開始填寫",      icon: FileText,          color: "text-yellow-600",  note: "開始填寫非 RFQ 表單" },
+  form_submit:           { label: "表單提交",          icon: FileText,          color: "text-yellow-700",  note: "提交非 RFQ 表單" },
+  rfq_start:             { label: "RFQ 開始填寫",      icon: ClipboardList,     color: "text-red-400",     note: "開始填寫詢價表單" },
+  rfq_submit:            { label: "RFQ 提交",          icon: Flame,             color: "text-red-600",     note: "成功提交詢價" },
+  return_visit:          { label: "回訪（24h+）",      icon: RefreshCcw,        color: "text-teal-500",    note: "24 小時後再次到訪" },
+  session_depth_reached: { label: "深度瀏覽（≥5頁）", icon: TrendingUp,        color: "text-blue-600",    note: "單次 session 瀏覽 5 頁以上" },
+  chat_start:            { label: "AI 對話開始",       icon: MessageSquare,     color: "text-violet-500",  note: "訪客啟動 AI 聊天" },
+  chat_rfq_handoff:      { label: "AI 對話轉 RFQ",    icon: Award,             color: "text-violet-700",  note: "AI 聊天中觸發詢價轉接" },
+};
 
-const STAGES = [
-  { stage: "Cold", range: "0–19", color: "bg-gray-100 text-gray-700", desc: "未顯示明確購買意圖", action: "持續曝光，不主動跟進" },
-  { stage: "Warm", range: "20–49", color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度意圖", action: "加入再行銷受眾，可發送後續跟進信" },
-  { stage: "Hot", range: "50–99", color: "bg-orange-100 text-orange-800", desc: "高頻瀏覽，強烈購買意圖", action: "發出 Sales Alert，業務主動聯繫" },
-  { stage: "Sales-Ready", range: "100+", color: "bg-red-100 text-red-800", desc: "已提交 RFQ 或極高分", action: "高優先 Alert + 立即業務跟進" },
-];
+const STAGE_META: Record<string, { color: string; desc: string; action: string }> = {
+  cold:        { color: "bg-gray-100 text-gray-700",     desc: "未顯示明確購買意圖",   action: "持續曝光，不主動跟進" },
+  warm:        { color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度意圖", action: "加入再行銷受眾，可發送後續跟進信" },
+  hot:         { color: "bg-orange-100 text-orange-800", desc: "高頻瀏覽，強烈購買意圖", action: "發出 Sales Alert，業務主動聯繫" },
+  sales_ready: { color: "bg-red-100 text-red-800",       desc: "已提交 RFQ 或極高分", action: "高優先 Alert + 立即業務跟進" },
+};
 
-const DECAY_RULES = [
-  { days: "7 天內", multiplier: "×1.0", desc: "分數完整保留" },
-  { days: "8–14 天", multiplier: "×0.8", desc: "分數衰減 20%" },
-  { days: "15–30 天", multiplier: "×0.5", desc: "分數衰減 50%" },
-  { days: "31–60 天", multiplier: "×0.2", desc: "分數衰減 80%" },
-  { days: "60 天以上", multiplier: "×0.0", desc: "分數歸零" },
-];
+type StageThreshold = { min_score: number; stage: string };
+type Config = { base_scores: Record<string, number>; stage_thresholds: StageThreshold[] };
 
 export default function IntentRulesPage() {
+  const { state } = useAuth();
+  const token = state.status === "authenticated" ? state.accessToken : "";
+
+  const [config, setConfig] = useState<Config | null>(null);
+  const [draft, setDraft] = useState<Config | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const r = await fetch(`${API_BASE}/tracking/intent-rules`, { headers: buildApiHeaders(token) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d: Config = await r.json();
+      setConfig(d);
+      setDraft(structuredClone(d));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally { setLoading(false); }
+  }, [token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleScoreChange = (event: string, value: string) => {
+    const n = parseInt(value, 10);
+    if (isNaN(n) || n < 0) return;
+    setDraft(prev => prev ? { ...prev, base_scores: { ...prev.base_scores, [event]: n } } : prev);
+  };
+
+  const handleStageChange = (index: number, field: "min_score" | "stage", value: string) => {
+    setDraft(prev => {
+      if (!prev) return prev;
+      const thresholds = [...prev.stage_thresholds];
+      thresholds[index] = { ...thresholds[index], [field]: field === "min_score" ? parseInt(value, 10) || 0 : value };
+      return { ...prev, stage_thresholds: thresholds };
+    });
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    setSaving(true); setError(null);
+    try {
+      const r = await fetch(`${API_BASE}/tracking/intent-rules`, {
+        method: "PUT",
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
+        body: JSON.stringify(draft),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail ?? "儲存失敗");
+      setConfig(d); setDraft(structuredClone(d));
+      setSaved(true); setTimeout(() => setSaved(false), 3000);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally { setSaving(false); }
+  };
+
+  const reset = () => { if (config) setDraft(structuredClone(config)); };
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(config);
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">評分規則設定</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">意圖評分系統的行為權重、分數衰減與 Stage 門檻設定</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">評分規則設定</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            調整意圖評分的行為權重與 Stage 門檻，變更在 2 分鐘內生效
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <Button variant="outline" size="sm" onClick={reset} disabled={saving}>
+              <RotateCcw className="mr-1.5 h-4 w-4" />還原
+            </Button>
+          )}
+          <Button size="sm" onClick={save} disabled={saving || !isDirty}>
+            <Save className="mr-1.5 h-4 w-4" />
+            {saving ? "儲存中…" : saved ? "✓ 已儲存" : "儲存設定"}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Score Rules */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Zap className="h-4 w-4 text-yellow-500" />行為評分規則
-            </CardTitle>
-            <CardDescription>每個訪客行為對應的意圖分數加分</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">事件</th>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">說明</th>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">加分</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {SCORE_RULES.map(r => (
-                  <tr key={r.event} className="hover:bg-muted/30">
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <r.icon className={`h-4 w-4 ${r.color}`} />
-                        <span className="font-medium">{r.label}</span>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {loading && <p className="text-sm text-muted-foreground">載入設定中…</p>}
+
+      {draft && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* 行為評分規則 */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Zap className="h-4 w-4 text-yellow-500" />行為評分規則
+              </CardTitle>
+              <CardDescription>
+                每個訪客行為觸發時的加分值。數字越高，該行為對意圖分數的貢獻越大。
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">事件</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">說明</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground w-28">分數</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {Object.entries(draft.base_scores).map(([event, score]) => {
+                    const meta = EVENT_META[event];
+                    const Icon = meta?.icon ?? Zap;
+                    return (
+                      <tr key={event} className="hover:bg-muted/30">
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${meta?.color ?? "text-muted-foreground"}`} />
+                            <span className="font-medium">{meta?.label ?? event}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground text-xs">{meta?.note ?? "—"}</td>
+                        <td className="px-3 py-2 text-right">
+                          <input
+                            type="number"
+                            min={0}
+                            max={999}
+                            value={score}
+                            onChange={e => handleScoreChange(event, e.target.value)}
+                            className="w-20 rounded border px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          {/* Intent Stage 門檻 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-primary" />Intent Stage 門檻
+              </CardTitle>
+              <CardDescription>
+                累積分數超過門檻時，訪客晉升至對應 Stage。數字需由高到低排列。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {draft.stage_thresholds.map((st, i) => {
+                const meta = STAGE_META[st.stage];
+                return (
+                  <div key={st.stage} className={`rounded-lg p-3 ${meta?.color ?? "bg-muted text-foreground"}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold capitalize">{st.stage}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium opacity-70">門檻</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={9999}
+                          value={st.min_score}
+                          onChange={e => handleStageChange(i, "min_score", e.target.value)}
+                          className="w-20 rounded border bg-white/70 px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <span className="text-xs opacity-70">分</span>
                       </div>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{r.note}</td>
-                    <td className="px-3 py-2 text-right">
-                      <Badge className={r.score >= 20 ? "bg-red-100 text-red-700" : r.score >= 10 ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}>
-                        +{r.score}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+                    </div>
+                    {meta && (
+                      <>
+                        <p className="mt-1 text-xs opacity-80">{meta.desc}</p>
+                        <p className="mt-0.5 text-xs font-medium">→ {meta.action}</p>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
 
-        {/* Intent Stages */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-primary" />Intent Stage 門檻
-            </CardTitle>
-            <CardDescription>訪客依累積分數判定的購買意圖階段</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {STAGES.map(s => (
-              <div key={s.stage} className={`rounded-lg p-3 ${s.color}`}>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{s.stage}</span>
-                  <Badge variant="outline" className="font-mono text-xs">{s.range} 分</Badge>
-                </div>
-                <p className="mt-1 text-xs opacity-80">{s.desc}</p>
-                <p className="mt-0.5 text-xs font-medium">→ {s.action}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Decay Rules */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <RefreshCcw className="h-4 w-4 text-muted-foreground" />分數衰減規則
-            </CardTitle>
-            <CardDescription>閒置時間越長，意圖分數自動衰減（每日批次計算）</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">閒置時間</th>
-                  <th className="px-3 py-2 text-center font-medium text-muted-foreground">係數</th>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">說明</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {DECAY_RULES.map(d => (
-                  <tr key={d.days} className="hover:bg-muted/30">
-                    <td className="px-3 py-2 font-medium">{d.days}</td>
-                    <td className="px-3 py-2 text-center font-mono font-bold">{d.multiplier}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{d.desc}</td>
+          {/* 衰減規則（唯讀） */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <RefreshCcw className="h-4 w-4 text-muted-foreground" />分數衰減規則
+              </CardTitle>
+              <CardDescription>閒置時間越長，意圖分數自動衰減（每日批次，固定規則）</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">閒置時間</th>
+                    <th className="px-3 py-2 text-center font-medium text-muted-foreground">係數</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">說明</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-3 text-xs text-muted-foreground">
-              * 衰減計算於每日 00:00 UTC 批次執行，不影響即時評分
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+                </thead>
+                <tbody className="divide-y text-xs">
+                  {[
+                    { days: "7 天內",    mult: "×1.0", desc: "分數完整保留" },
+                    { days: "8–14 天",   mult: "×0.8", desc: "衰減 20%" },
+                    { days: "15–30 天",  mult: "×0.5", desc: "衰減 50%" },
+                    { days: "31–60 天",  mult: "×0.2", desc: "衰減 80%" },
+                    { days: "60 天以上", mult: "×0.0", desc: "分數歸零" },
+                  ].map(r => (
+                    <tr key={r.days} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 font-medium">{r.days}</td>
+                      <td className="px-3 py-2 text-center font-mono">
+                        <Badge variant="outline">{r.mult}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{r.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-xs text-muted-foreground">
+                ⓘ 衰減規則為系統固定常數，如需調整請聯繫 ForgeBase 技術支援。
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

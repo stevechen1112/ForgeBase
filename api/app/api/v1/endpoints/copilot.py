@@ -1,5 +1,5 @@
 """
-Copilot API — Notification preferences CRUD + Telegram webhook receiver.
+Copilot API — Notification preferences CRUD + Telegram webhook receiver + Web chat.
 
 Endpoints:
   GET    /copilot/preferences          — list user's notification preferences
@@ -10,6 +10,9 @@ Endpoints:
   POST   /copilot/telegram/bind-start  — generate binding code + send to Telegram
   POST   /copilot/telegram/bind-verify — verify code and save chat_id
   POST   /copilot/webhook/telegram     — Telegram Bot webhook receiver (public)
+  POST   /copilot/chat                 — Web chat: send message, get AI reply
+  GET    /copilot/chat/history         — Web chat: fetch recent conversation history
+  DELETE /copilot/chat/history         — Web chat: clear conversation history
 """
 import asyncio
 import json
@@ -416,3 +419,95 @@ async def _send_typing(chat_id: str) -> None:
             )
     except Exception:
         pass  # Typing indicator is best-effort
+
+
+# ── Web Chat ───────────────────────────────────────────────────────────────────
+
+class WebChatIn(BaseModel):
+    message: str
+
+
+@router.post("/chat")
+async def web_chat(
+    body: WebChatIn,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Web chat endpoint — authenticated users can talk to the AI copilot directly
+    from the admin dashboard without needing Telegram.
+    Conversation history is keyed by (channel='web', channel_user_id=user_id).
+    """
+    from app.services.copilot.chat_engine import CopilotEngine
+
+    message = body.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="訊息不可為空")
+    if len(message) > 4000:
+        raise HTTPException(status_code=400, detail="訊息長度不可超過 4000 字元")
+
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="找不到租戶資訊")
+
+    engine = CopilotEngine(
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        channel="web",
+        channel_user_id=str(current_user.id),
+    )
+    chunks = await engine.run(message)
+    # For web we return all chunks joined — no Telegram limit applies
+    reply = "\n\n".join(chunks)
+    return {"reply": reply}
+
+
+@router.get("/chat/history")
+async def web_chat_history(
+    limit: int = 40,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Return recent web-channel conversation history for the current user.
+    Returned in chronological order (oldest first), skipping tool messages.
+    """
+    from app.models.copilot_conversation import CopilotConversation
+    from sqlmodel import col
+
+    limit = min(max(limit, 1), 100)
+    result = await db.exec(
+        select(CopilotConversation)
+        .where(CopilotConversation.channel == "web")
+        .where(CopilotConversation.channel_user_id == str(current_user.id))
+        .where(CopilotConversation.role.in_(["user", "assistant"]))
+        .order_by(col(CopilotConversation.created_at).desc())
+        .limit(limit)
+    )
+    rows = list(reversed(result.all()))
+    return {
+        "data": [
+            {
+                "id": str(r.id),
+                "role": r.role,
+                "content": r.content,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
+    }
+
+
+@router.delete("/chat/history", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_web_chat_history(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Clear all web-channel conversation history for the current user."""
+    from app.models.copilot_conversation import CopilotConversation
+    from sqlmodel import delete
+
+    await db.exec(
+        delete(CopilotConversation)
+        .where(CopilotConversation.channel == "web")
+        .where(CopilotConversation.channel_user_id == str(current_user.id))
+    )
+    await db.commit()

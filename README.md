@@ -112,7 +112,7 @@ ForgeBase/
 ├── api/                    # 後端 API (Python 3.13 + FastAPI)
 │   ├── app/
 │   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake、AI Copilot）
-│   │   ├── db/migrations/  # Alembic migrations (38 版本)
+│   │   ├── db/migrations/  # Alembic migrations (39 版本)
 │   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id）
 │   │   ├── schemas/        # Pydantic 輸入/輸出 schema
 │   │   └── services/       # 後端服務（含 intake_engine、copilot/）
@@ -271,7 +271,7 @@ TELEGRAM_WEBHOOK_SECRET=<自定義隨機字串，用於驗證 webhook 來源>
 
 ```bash
 cd api && source .venv/bin/activate
-alembic upgrade head   # 套用 0038_copilot_notifications
+alembic upgrade head   # 套用至最新 migration（含 0039_intent_scoring_config）
 ```
 
 #### 3. 註冊 Telegram Webhook
@@ -443,7 +443,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 DB migrations（0001 → 0034）
+alembic upgrade head           # 套用全部 DB migrations（0001 → 0039）
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -599,21 +599,34 @@ curl -sf https://mitselect.com/health
 systemctl is-active forgebase-api forgebase-web forgebase-admin
 ```
 
-### 2026-04-10 本次 GitHub / Linode 更新重點
+### 2026-04-15 本次 GitHub / Linode 更新重點
 
 本次同步到 GitHub 與 Linode 的內容包含：
 
-- 多租戶方案功能裁切正式落地到 Admin 導覽、頁面入口與 inline upgrade UX
-- `chat_admin`、`visitors`、`segments`、`ml_scoring`、`redirects`、`ai_generate`、`analytics`、`events` 等 API 全面補上 plan gate
-- analytics 與 strategy performance 查詢補齊 tenant filter，避免跨租戶混讀資料
-- 多個 admin analytics 頁面改回 `apiClient`，避免 token 過期造成 401 壞頁
+**Admin 後台—意圖評分規則可編輯化**
+- 新增 Alembic migration `0039_intent_scoring_config`：於 `site_profiles` 資料表新增 `intent_scoring_config_json TEXT NULL` 欄位，用於儲存每個 tenant 自訂的評分規則
+- `api/app/services/intent_scoring.py`：匯出 `DEFAULT_BASE_SCORES`、`DEFAULT_STAGES`；`calculate_score_delta()` 與 `get_intent_stage()` 加入 `custom_scores` / `custom_stages` 可覆寫參數
+- `api/app/api/v1/endpoints/ml_scoring.py`：新增 `GET /tracking/intent-rules` 與 `PUT /tracking/intent-rules`，支援 per-tenant 讀寫評分規則（含驗證：分數非負整數、Stage 門檻降序排列）
+- `api/app/api/v1/endpoints/events.py`：加入 120 秒 TTL 的評分設定快取（`_SCORING_CACHE`），`receive_event` 在每次計分時自動載入 tenant 自訂規則
+- `admin/.../intent-rules/page.tsx`：完全重寫為 API 驅動的可編輯頁面（17 種行為事件分數 + 4 個 Stage 門檻均可修改、儲存），修正原本頁面顯示錯誤數值（如 rfq_submit 顯示 +50、實際為 +30）的 bug
 
-這次沒有新增 Alembic migration，但 production 仍建議維持標準部署順序：
+**Admin 後台—AI 內容優化修復（API 契約不符 bug 修正）**
+- `admin/.../content-optimizer/page.tsx`：完全重寫，修正前端送出 `{title, content, target_keyword}` 但後端期望 `{entity_type, entity_id, period_days}` 導致 422 的嚴重 bug
+- 新 UX：Entity type 切換（商品 / 應用場景 / 商品分類）→ 動態載入實體清單 → 選擇分析時間範圍 → 呼叫 `POST /content/intelligence/optimize`
+- 結果顯示對應真實 response schema：`overall_score`、`performance_diagnosis`、`priority_actions`、`revised_title/description`、`issues`、`suggestions`、`content_gaps`
+
+**Admin 後台—側欄精簡**
+- 移除「多語管理」從內容管理群組（低頻功能）
+- 移除整個「網站導入」群組（Legacy Site Intake 為一次性 onboarding 工具，不應佔主導覽層級）
+
+**本次新增 Alembic migration：`0039_intent_scoring_config`**（需執行 `alembic upgrade head`）
+
+建議 production 部署順序：
 
 1. push 分支到 GitHub
 2. Linode `git pull`
 3. `pip install -r requirements.txt`
-4. `alembic upgrade head`
+4. `alembic upgrade head`（**必須執行**，新增 `intent_scoring_config_json` 欄位）
 5. 重建 admin / web
 6. restart systemd services
 

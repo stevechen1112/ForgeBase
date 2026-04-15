@@ -46,6 +46,9 @@ _SYSTEM_PROMPT = """You are **ForgeBase AI 行銷專員** — an elite B2B sales
 ## Your Role
 You are the always-on sales ops partner for a manufacturing company. You have live access to their CRM data: RFQ pipeline, website visitor behavior, lead profiles, product demand patterns, and conversion funnels. You turn raw data into clear, actionable business intelligence.
 
+## About This Company
+{company_context}
+
 ## Platform Context
 The platform tracks the full B2B buyer journey:
 - **Visitors**: Anonymous website visitors scored 0–100 by intent (cold → warm → hot → sales_ready)
@@ -101,7 +104,7 @@ The platform tracks the full B2B buyer journey:
 - For urgent matters (overdue RFQs, hot visitors), be direct about the risk and what to do NOW
 - When drafting follow-up emails, make them specific to the actual RFQ data you retrieved
 - Proactively point out issues the user didn't ask about if the data reveals them (e.g., "順帶一提，你有 3 筆 RFQ 超過 48 小時沒有回應")
-- Use Telegram HTML formatting: <b>bold</b>, <code>code</code>, <i>italic</i>
+- {formatting_instruction}
 
 ## Current Date
 Today is {today}. Use this for relative time calculations.
@@ -296,8 +299,40 @@ _TOOLS = [
                 "required": [],
             },
         },
+    },    {
+        "type": "function",
+        "function": {
+            "name": "get_company_profile",
+            "description": "Return the company\u2019s identity: brand name, contact info, all active certifications (ISO/CE/RoHS etc.), product category list, and published product count. Use when asked about the company, credentials, or what types of products they sell.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
     },
-]
+    {
+        "type": "function",
+        "function": {
+            "name": "search_products",
+            "description": "Search the product catalog by name, model number, or description. Returns product details including specifications. Use when drafting quotes, answering product questions, or looking up specific models.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search keyword: product name, model number, or any term from the description.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results to return. Default 5, max 10.",
+                        "default": 5,
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },]
 
 # Maps tool name → actual async function
 _TOOL_DISPATCH: dict = {
@@ -311,6 +346,8 @@ _TOOL_DISPATCH: dict = {
     "search_contacts": T.search_contacts,
     "get_product_interest_stats": T.get_product_interest_stats,
     "get_funnel_stats": T.get_funnel_stats,
+    "get_company_profile": T.get_company_profile,
+    "search_products": T.search_products,
 }
 
 
@@ -340,6 +377,29 @@ class CopilotEngine:
         self.channel_user_id = channel_user_id
 
     # ── History management ────────────────────────────────────────────────────
+
+    async def _build_company_context(self) -> str:
+        """Load SiteProfile and return a compact company context string for the system prompt."""
+        from app.models.site_profile import SiteProfile  # avoid circular at module level
+        async with get_session_ctx() as s:
+            profile = (await s.exec(
+                select(SiteProfile).where(SiteProfile.tenant_id == self.tenant_id)
+            )).first()
+        if not profile:
+            return "（尚未設定公司資料。請使用 get_company_profile 工具取得最新資訊。）"
+        lines = [
+            f"- **Brand / Company**: {profile.brand_name or '（未設定）'}",
+            f"- **Website**: {profile.site_url or '（未設定）'}",
+            f"- **Sales Email**: {profile.contact_email or '（未設定）'}",
+        ]
+        if profile.contact_phone:
+            lines.append(f"- **Phone**: {profile.contact_phone}")
+        lines.append(f"- **Primary Language**: {profile.default_locale or 'zh-TW'}")
+        lines.append(
+            "When referring to the company by name, always use the brand name above. "
+            "Use get_company_profile to fetch full certifications and product categories."
+        )
+        return "\n".join(lines)
 
     async def _load_history(self) -> list[dict]:
         """Load recent conversation history from DB for context window."""
@@ -421,8 +481,16 @@ class CopilotEngine:
         5. Return final text reply (chunked)
         6. Save user message + assistant reply to history
         """
+        company_context = await self._build_company_context()
+        formatting_instruction = (
+            "Use Markdown formatting: **bold**, `code`, _italic_, bullet lists, ## headings"
+            if self.channel == "web"
+            else "Use Telegram HTML formatting: <b>bold</b>, <code>code</code>, <i>italic</i>"
+        )
         system_prompt = _SYSTEM_PROMPT.format(
-            today=utcnow_naive().strftime("%Y-%m-%d (UTC)")
+            today=utcnow_naive().strftime("%Y-%m-%d (UTC)"),
+            company_context=company_context,
+            formatting_instruction=formatting_instruction,
         )
         history = await self._load_history()
 

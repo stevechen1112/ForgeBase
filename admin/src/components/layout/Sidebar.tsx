@@ -88,7 +88,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "內容管理",
     items: [
-      { label: "多語管理", href: "/dashboard/multilingual", icon: Globe, requiredFeature: "multilingual" },
       { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta" },
       { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
       { label: "媒體庫", href: "/dashboard/assets", icon: Image },
@@ -105,14 +104,10 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "網站導入",
-    items: [
-      { label: "Legacy Site Intake", href: "/dashboard/intake", icon: Globe, badge: "NEW" },
-    ],
-  },
-  {
+
     title: "AI 行銷專員",
     items: [
+      { label: "AI 對話", href: "/dashboard/copilot", icon: Bot },
       { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
       { label: "通知設定", href: "/dashboard/settings/notifications", icon: Settings },
     ],

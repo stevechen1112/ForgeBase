@@ -7,8 +7,9 @@ Score rules sourced from spec 12.6.1.   Stage thresholds from spec 12.6.3.
 from typing import Optional
 
 # ── Scoring rules (spec 12.6.1) ───────────────────────────────────────────────
+# Exported so ml_scoring.py and the admin API can read/present defaults.
 
-_BASE_SCORES: dict[str, int] = {
+DEFAULT_BASE_SCORES: dict[str, int] = {
     "page_view": 1,
     "category_view": 2,
     "product_view": 3,
@@ -28,26 +29,35 @@ _BASE_SCORES: dict[str, int] = {
     "chat_rfq_handoff": 20,
 }
 
-# ── Stage thresholds (spec 12.6.3) ────────────────────────────────────────────
+# Keep legacy alias so existing imports of _BASE_SCORES still work.
+_BASE_SCORES = DEFAULT_BASE_SCORES
 
-_STAGES: list[tuple[int, str]] = [
+# ── Stage thresholds (spec 12.6.3) ────────────────────────────────────────────
+# List of (min_score, stage_name) — checked from highest to lowest.
+
+DEFAULT_STAGES: list[tuple[int, str]] = [
     (60, "sales_ready"),
     (30, "hot"),
     (10, "warm"),
     (0,  "cold"),
 ]
 
+_STAGES = DEFAULT_STAGES
+
 
 def calculate_score_delta(
     event_name: str,
     properties: Optional[dict] = None,
+    custom_scores: Optional[dict[str, int]] = None,
 ) -> int:
     """
     Return the score delta for a single event.
     Applies weighted conditions from spec 12.6.1.
+    Pass custom_scores to override the default per-event weights.
     """
+    scores = custom_scores if custom_scores is not None else DEFAULT_BASE_SCORES
     props = properties or {}
-    base = _BASE_SCORES.get(event_name, 0)
+    base = scores.get(event_name, 0)
     extra = 0
 
     if event_name == "product_view":
@@ -61,9 +71,10 @@ def calculate_score_delta(
             extra += 4
 
     elif event_name == "cta_click":
-        # Primary CTA +8 (overrides base +4)
+        # Primary CTA: use custom score if present, else default +8
+        primary_score = scores.get("cta_click_primary", 8)
         if props.get("cta_type") == "primary":
-            return 8
+            return primary_score
 
     elif event_name == "return_visit":
         # 7 days within last visit +4
@@ -79,9 +90,13 @@ def calculate_score_delta(
     return base + extra
 
 
-def get_intent_stage(score: int) -> str:
+def get_intent_stage(
+    score: int,
+    custom_stages: Optional[list[tuple[int, str]]] = None,
+) -> str:
     """Map a cumulative score to an intent stage name."""
-    for threshold, stage in _STAGES:
+    stages = custom_stages if custom_stages is not None else DEFAULT_STAGES
+    for threshold, stage in stages:
         if score >= threshold:
             return stage
     return "cold"

@@ -28,9 +28,12 @@ from sqlmodel import col, func, select
 
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
+from app.models.certification import Certification
 from app.models.contact import Contact
 from app.models.product import Product
+from app.models.product_category import ProductCategory
 from app.models.rfq_request import RFQRequest, RFQProductLink
+from app.models.site_profile import SiteProfile
 from app.models.visitor import Visitor
 
 logger = logging.getLogger(__name__)
@@ -629,3 +632,125 @@ async def get_funnel_stats(tenant_id: uuid.UUID, days: int = 30) -> dict:
         "visitor_stages": stages,
         "rfq_pipeline": pipeline,
     }
+
+
+# ── Tool: Get Company Profile ─────────────────────────────────────────────────
+
+async def get_company_profile(tenant_id: uuid.UUID) -> dict:
+    """
+    Return the company's identity: brand name, contact details, all active
+    certifications (ISO/CE/RoHS etc.), product category overview, and
+    published product count. Use when asked about the company, credentials,
+    or product range overview.
+    """
+    async with get_session_ctx() as s:
+        profile = (await s.exec(
+            select(SiteProfile).where(SiteProfile.tenant_id == tenant_id)
+        )).first()
+
+        certs = (await s.exec(
+            select(Certification)
+            .where(Certification.tenant_id == tenant_id)
+            .where(Certification.status == "active")
+            .order_by(Certification.cert_name)
+        )).all()
+
+        categories = (await s.exec(
+            select(ProductCategory)
+            .where(ProductCategory.tenant_id == tenant_id)
+            .where(ProductCategory.status == "published")
+            .where(ProductCategory.parent_id == None)  # noqa: E711
+            .order_by(ProductCategory.sort_order)
+        )).all()
+
+        published_count = (await s.exec(
+            select(func.count(Product.id))
+            .where(Product.tenant_id == tenant_id)
+            .where(Product.status == "published")
+        )).one() or 0
+
+    company: dict = {}
+    if profile:
+        company = {
+            "brand_name": profile.brand_name,
+            "contact_email": profile.contact_email,
+            "contact_phone": profile.contact_phone,
+            "site_url": profile.site_url,
+            "default_locale": profile.default_locale,
+        }
+
+    cert_list = [
+        {
+            "name": c.cert_name,
+            "issuer": c.issuer,
+            "cert_number": c.cert_number,
+            "expires_at": c.expires_at.strftime("%Y-%m-%d") if c.expires_at else None,
+        }
+        for c in certs
+    ]
+
+    category_list = [
+        {"name": cat.category_name, "slug": cat.slug}
+        for cat in categories
+    ]
+
+    return {
+        "company": company,
+        "certifications": cert_list,
+        "product_categories": category_list,
+        "published_product_count": published_count,
+    }
+
+
+# ── Tool: Search Products ─────────────────────────────────────────────────────
+
+async def search_products(tenant_id: uuid.UUID, query: str, limit: int = 5) -> dict:
+    """
+    Full-text search over the product catalog by name, model number, or
+    short description. Returns product specs. Use when drafting quotes,
+    answering questions about specific products, or looking up model numbers.
+    """
+    async with get_session_ctx() as s:
+        q = query.strip()
+        rows = (await s.exec(
+            select(Product)
+            .where(Product.tenant_id == tenant_id)
+            .where(Product.status == "published")
+            .where(
+                col(Product.product_name).ilike(f"%{q}%")
+                | col(Product.model_number).ilike(f"%{q}%")
+                | col(Product.short_description).ilike(f"%{q}%")
+            )
+            .order_by(col(Product.display_priority).desc())
+            .limit(min(limit, 10))
+        )).all()
+
+        items = []
+        for p in rows:
+            cat = await s.get(ProductCategory, p.category_id)
+            cat_name = cat.category_name if cat else "—"
+
+            # Parse specifications JSON [{name, value, unit}]
+            specs: list[str] = []
+            if p.specifications:
+                try:
+                    raw = json.loads(p.specifications)
+                    if isinstance(raw, list):
+                        specs = [
+                            f"{sp.get('name', '')}: {sp.get('value', '')} {sp.get('unit', '')}".strip()
+                            for sp in raw[:10]
+                            if sp.get("name") and sp.get("value")
+                        ]
+                except Exception:
+                    pass
+
+            items.append({
+                "product_name": p.product_name,
+                "model_number": p.model_number,
+                "category": cat_name,
+                "short_description": p.short_description,
+                "specifications": specs,
+                "is_featured": p.is_featured,
+            })
+
+    return {"query": query, "count": len(items), "products": items}

@@ -52,6 +52,9 @@ class SiteProfile(SQLModel, table=True):
     footer_cta_href: Optional[str] = Field(default=None, max_length=500)
     asset_manifest_json: Optional[str] = Field(default=None)
 
+    # ── Intent Scoring Config (per-tenant overrides) ──
+    intent_scoring_config_json: Optional[str] = Field(default=None)
+
     # ── Timestamps ──
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

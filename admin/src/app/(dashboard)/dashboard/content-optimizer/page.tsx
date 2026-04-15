@@ -1,50 +1,118 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Wand2, Copy, Check, RotateCcw, AlertCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
+// ?€?€ Types matching the actual backend response ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+
+type Issue = { severity: "high" | "medium" | "low"; category: string; issue: string };
+type Suggestion = { priority: number; category: string; action: string; expected_impact: string };
 type OptimizeResult = {
-  optimized_title?: string;
-  optimized_description?: string;
-  seo_suggestions?: string[];
-  readability_score?: number;
-  keyword_density?: Record<string, number>;
-  meta_title?: string;
-  meta_description?: string;
+  overall_score: number;
+  performance_diagnosis: string;
+  issues: Issue[];
+  suggestions: Suggestion[];
+  priority_actions: string[];
+  revised_title: string;
+  revised_description: string;
+  content_gaps: string[];
 };
 
-function readabilityColor(score: number) {
-  if (score >= 70) return { bar: "bg-green-500", text: "text-green-600", label: "æ˜“è®€" };
-  if (score >= 50) return { bar: "bg-yellow-400", text: "text-yellow-600", label: "æ™®é€š" };
-  return { bar: "bg-red-500", text: "text-red-600", label: "åé›£" };
+type EntityOption = { id: string; name: string };
+
+const ENTITY_TYPES = [
+  { value: "product",     label: "?†å?" },
+  { value: "application", label: "?‰ç”¨?´æ™¯" },
+  { value: "category",    label: "?†å??†é?" },
+] as const;
+
+type EntityType = typeof ENTITY_TYPES[number]["value"];
+
+const PERIOD_OPTIONS = [
+  { value: 7,  label: "?€è¿?7 å¤? },
+  { value: 30, label: "?€è¿?30 å¤? },
+  { value: 90, label: "?€è¿?90 å¤? },
+];
+
+const SEVERITY_STYLES: Record<string, string> = {
+  high:   "bg-red-100 text-red-700 border-red-200",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  low:    "bg-blue-100 text-blue-700 border-blue-200",
+};
+
+const IMPACT_STYLES: Record<string, string> = {
+  high:   "text-green-600",
+  medium: "text-yellow-600",
+  low:    "text-gray-400",
+};
+
+function scoreColor(score: number) {
+  if (score >= 70) return { text: "text-green-600", bar: "bg-green-500", label: "?¯å¥½" };
+  if (score >= 50) return { text: "text-yellow-600", bar: "bg-yellow-400", label: "?®é€? };
+  return { text: "text-red-500", bar: "bg-red-400", label: "?€?¹å?" };
 }
 
 export default function ContentOptimizerPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [targetKeyword, setTargetKeyword] = useState("");
+
+  // Selection state
+  const [entityType, setEntityType] = useState<EntityType>("product");
+  const [entities, setEntities] = useState<EntityOption[]>([]);
+  const [entityId, setEntityId] = useState("");
+  const [periodDays, setPeriodDays] = useState(30);
+  const [loadingEntities, setLoadingEntities] = useState(false);
+
+  // Analysis state
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const optimize = async () => {
-    if (!content.trim()) return;
+  // ?€?€ Load entity list when type changes ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+  const loadEntities = useCallback(async (type: EntityType) => {
+    setLoadingEntities(true); setEntityId(""); setEntities([]);
+    const endpointMap: Record<EntityType, string> = {
+      product:     "/content/products?page_size=200",
+      application: "/content/applications?page_size=200",
+      category:    "/content/categories?page_size=200",
+    };
+    const nameField: Record<EntityType, string> = {
+      product:     "product_name",
+      application: "application_name",
+      category:    "category_name",
+    };
+    try {
+      const r = await fetch(`${API_BASE}${endpointMap[type]}`, { headers: buildApiHeaders(token) });
+      const d = await r.json();
+      const items: EntityOption[] = (Array.isArray(d) ? d : d.data ?? []).map((item: Record<string, string>) => ({
+        id: item.id,
+        name: item[nameField[type]] ?? item.id,
+      }));
+      setEntities(items);
+    } catch {
+      setEntities([]);
+    } finally { setLoadingEntities(false); }
+  }, [token]);
+
+  useEffect(() => { loadEntities(entityType); }, [entityType, loadEntities]);
+
+  const analyze = async () => {
+    if (!entityId) return;
     setLoading(true); setError(null); setResult(null);
     try {
       const r = await fetch(`${API_BASE}/content/intelligence/optimize`, {
         method: "POST",
         headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ title, content, target_keyword: targetKeyword }),
+        body: JSON.stringify({ entity_type: entityType, entity_id: entityId, period_days: periodDays }),
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.detail ?? "æœ€ä½³åŒ–å¤±æ•—");
+      if (!r.ok) throw new Error(d.detail ?? "?†æ?å¤±æ?");
       setResult(d);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -57,81 +125,107 @@ export default function ContentOptimizerPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleReset = () => {
-    setTitle(""); setContent(""); setTargetKeyword(""); setResult(null); setError(null);
-  };
+  const reset = () => { setResult(null); setError(null); };
+
+  const selectedEntity = entities.find(e => e.id === entityId);
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">AI å…§å®¹å„ªåŒ–</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">è¼¸å…¥é é¢æ¨™é¡Œèˆ‡å…§å®¹ï¼ŒAI å°‡åˆ†æä¸¦æä¾› SEO å„ªåŒ–å»ºè­°</p>
+        <h1 className="text-2xl font-bold tracking-tight">AI ?§å®¹?ªå?</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          ?¸æ??†å??æ??¨å ´?¯æ??†é?ï¼ŒAI çµå?å¯¦é?æµé??¸æ??†æ??é¢?¥åº·åº¦ä¸¦?ä??¹å?å»ºè­°
+        </p>
       </div>
 
-      {/* Fix #7: å·¦æ¬„å›ºå®šå¯¬åº¦ï¼Œå³æ¬„å½ˆæ€§ä¼¸å±•ï¼Œè®“çµæœå€æœ‰æ›´å¤šç©ºé–“ */}
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        {/* Input */}
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        {/* ?€?€ å·¦æ?ï¼šé¸?‡è¨­å®??€?€ */}
         <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">è¼¸å…¥å…§å®¹</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">?†æ?è¨­å?</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+              {/* Entity Type */}
               <div>
-                <label className="mb-1 block text-sm font-medium">é é¢æ¨™é¡Œ</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g. Industrial IoT Sensors for Manufacturing"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                />
+                <label className="mb-1.5 block text-sm font-medium">?§å®¹é¡å?</label>
+                <div className="flex gap-2">
+                  {ENTITY_TYPES.map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => setEntityType(t.value)}
+                      className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                        entityType === t.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Entity Picker */}
               <div>
-                {/* Fix #5: åŠ æ ¼å¼èªªæ˜æ–‡å­— */}
-                <label className="mb-1 block text-sm font-medium">
-                  ç›®æ¨™é—œéµå­— <span className="text-muted-foreground">ï¼ˆé¸å¡«ï¼‰</span>
+                <label className="mb-1.5 block text-sm font-medium">
+                  ?¸æ?{ENTITY_TYPES.find(t => t.value === entityType)?.label}
+                  <span className="ml-1 text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={targetKeyword}
-                  onChange={e => setTargetKeyword(e.target.value)}
-                  placeholder="e.g. industrial sensor, smart manufacturing"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">å¤šå€‹é—œéµå­—è«‹ç”¨è‹±æ–‡é€—è™Ÿåˆ†éš”</p>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">é é¢å…§å®¹ <span className="text-red-500">*</span></label>
-                <textarea
-                  rows={10}
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="è²¼ä¸Šé é¢çš„ä¸»è¦æ–‡å­—å…§å®¹â€¦"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">{content.length} å­—å…ƒ</p>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={optimize} disabled={loading || !content.trim()} className="flex-1">
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  {loading ? "åˆ†æä¸­â€¦" : "AI å„ªåŒ–åˆ†æ"}
-                </Button>
-                {/* Fix #6: æ¸…é™¤æŒ‰éˆ•åŠ  title + aria-label */}
-                <Button
-                  variant="outline"
-                  title="æ¸…é™¤æ‰€æœ‰å…§å®¹"
-                  aria-label="æ¸…é™¤æ‰€æœ‰å…§å®¹"
-                  onClick={handleReset}
+                <select
+                  value={entityId}
+                  onChange={e => setEntityId(e.target.value)}
+                  disabled={loadingEntities}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 >
-                  <RotateCcw className="h-4 w-4" />
+                  <option value="">{loadingEntities ? "è¼‰å…¥ä¸­â€? : `???¸æ?${ENTITY_TYPES.find(t => t.value === entityType)?.label} ?”`}</option>
+                  {entities.map(e => (
+                    <option key={e.id} value={e.id}>{e.name}</option>
+                  ))}
+                </select>
+                {entities.length === 0 && !loadingEntities && (
+                  <p className="mt-1 text-xs text-muted-foreground">æ­¤é??‹ç›®?ç„¡?¯å??ç??§å®¹</p>
+                )}
+              </div>
+
+              {/* Period */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">?†æ??‚é?ç¯„å?</label>
+                <select
+                  value={periodDays}
+                  onChange={e => setPeriodDays(Number(e.target.value))}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {PERIOD_OPTIONS.map(p => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button onClick={analyze} disabled={loading || !entityId} className="flex-1">
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  {loading ? "?†æ?ä¸­â€? : "AI ?ªå??†æ?"}
                 </Button>
+                {result && (
+                  <Button variant="outline" onClick={reset} title="æ¸…é™¤çµæ?">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {selectedEntity && result && (
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">?†æ?å°è±¡</p>
+                <p className="font-semibold">{selectedEntity.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{entityType} Â· ?€è¿?{periodDays} å¤?/p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Output */}
+        {/* ?€?€ ?³æ?ï¼šå??ç????€?€ */}
         <div className="space-y-4">
           {error && (
             <Alert variant="destructive">
@@ -142,156 +236,173 @@ export default function ContentOptimizerPage() {
 
           {!result && !loading && !error && (
             <Card>
-              <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+              <CardContent className="flex flex-col items-center justify-center py-24 text-center">
                 <Wand2 className="mb-3 h-10 w-10 text-muted-foreground/30" />
-                <p className="text-sm font-medium text-muted-foreground">è¼¸å…¥å…§å®¹å¾Œé»æ“Šã€ŒAI å„ªåŒ–åˆ†æã€</p>
-                <p className="mt-1 text-xs text-muted-foreground">AI å°‡åˆ†æ SEO é—œéµå­—å¯†åº¦ã€å¯è®€æ€§ä¸¦æä¾›æ”¹å¯«å»ºè­°</p>
+                <p className="text-sm font-medium text-muted-foreground">?¸æ??§å®¹å¾Œé??Šã€ŒAI ?ªå??†æ???/p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  AI å°‡ç??ˆå¯¦?›æ??ã€ä?è¼‰ç??RFQ è½‰æ??‡å??é??¢å¥åº·åº¦
+                </p>
               </CardContent>
             </Card>
           )}
 
           {loading && (
             <Card>
-              <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+              <CardContent className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-sm text-muted-foreground">AI åˆ†æä¸­ï¼Œè«‹ç¨å€™â€¦</p>
+                <p className="text-sm text-muted-foreground">AI æ­?œ¨?†æ?æµé??¸æ??‡å…§å®¹ï?è«‹ç??™â€?/p>
               </CardContent>
             </Card>
           )}
 
           {result && (
-            <div className="space-y-6">
-              {/* Fix #8: è¦–è¦ºåˆ†çµ„ â€” å„ªåŒ–æ–‡æ¡ˆå»ºè­° */}
-              {(result.optimized_title || result.optimized_description || result.meta_description || (result.seo_suggestions && result.seo_suggestions.length > 0)) && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">å„ªåŒ–æ–‡æ¡ˆå»ºè­°</p>
+            <div className="space-y-4">
+              {/* ?´é??¥åº·?†æ•¸ */}
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-end justify-between mb-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">?´é??§å®¹?¥åº·?†æ•¸</p>
+                      <p className={`text-4xl font-bold mt-0.5 ${scoreColor(result.overall_score).text}`}>
+                        {result.overall_score}
+                        <span className="text-base font-normal text-muted-foreground"> / 100</span>
+                      </p>
+                    </div>
+                    <Badge className={`${scoreColor(result.overall_score).text} bg-current/10 rounded-full px-3`}>
+                      {scoreColor(result.overall_score).label}
+                    </Badge>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div
+                      className={`h-2 rounded-full ${scoreColor(result.overall_score).bar} transition-all`}
+                      style={{ width: `${result.overall_score}%` }}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{result.performance_diagnosis}</p>
+                </CardContent>
+              </Card>
 
-                  {result.optimized_title && (
-                    <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">å„ªåŒ–æ¨™é¡Œå»ºè­°</CardTitle></CardHeader>
-                      <CardContent>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-medium leading-snug">{result.optimized_title}</p>
-                          {/* Fix #4: è¤‡è£½æŒ‰éˆ•å›ºå®šå¯¬åº¦ä¸æŠ–å‹• */}
-                          <Button variant="ghost" size="sm" className="w-20 shrink-0" onClick={() => copy(result.optimized_title!, "title")}>
-                            {copied === "title" ? <><Check className="mr-1 h-3.5 w-3.5 text-green-500" /><span className="text-green-500">å·²è¤‡è£½</span></> : <><Copy className="mr-1 h-3.5 w-3.5" />è¤‡è£½</>}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Fix #2: é¡¯ç¤º optimized_description */}
-                  {result.optimized_description && (
-                    <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">å„ªåŒ–æè¿°å»ºè­°</CardTitle></CardHeader>
-                      <CardContent>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm text-muted-foreground leading-relaxed">{result.optimized_description}</p>
-                          <Button variant="ghost" size="sm" className="w-20 shrink-0" onClick={() => copy(result.optimized_description!, "desc")}>
-                            {copied === "desc" ? <><Check className="mr-1 h-3.5 w-3.5 text-green-500" /><span className="text-green-500">å·²è¤‡è£½</span></> : <><Copy className="mr-1 h-3.5 w-3.5" />è¤‡è£½</>}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {result.meta_description && (
-                    <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">Meta Description å»ºè­°</CardTitle></CardHeader>
-                      <CardContent>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm text-muted-foreground leading-relaxed">{result.meta_description}</p>
-                          <Button variant="ghost" size="sm" className="w-20 shrink-0" onClick={() => copy(result.meta_description!, "meta")}>
-                            {copied === "meta" ? <><Check className="mr-1 h-3.5 w-3.5 text-green-500" /><span className="text-green-500">å·²è¤‡è£½</span></> : <><Copy className="mr-1 h-3.5 w-3.5" />è¤‡è£½</>}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {result.seo_suggestions && result.seo_suggestions.length > 0 && (
-                    <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">SEO æ”¹å–„å»ºè­°</CardTitle></CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2">
-                          {result.seo_suggestions.map((s, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm">
-                              <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-primary/10 text-center text-xs font-bold text-primary leading-5">{i + 1}</span>
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+              {/* ?ªå?è¡Œå? */}
+              {result.priority_actions?.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-orange-600">???ªå?è¡Œå?ï¼ˆç??³è??†ï?</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ol className="space-y-2">
+                      {result.priority_actions.map((a, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-orange-100 text-center text-xs font-bold text-orange-700 leading-5">
+                            {i + 1}
+                          </span>
+                          {a}
+                        </li>
+                      ))}
+                    </ol>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* Fix #8: è¦–è¦ºåˆ†çµ„ â€” æŠ€è¡“åˆ†ææ•¸æ“š */}
-              {(result.readability_score !== undefined || (result.keyword_density && Object.keys(result.keyword_density).length > 0)) && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">æŠ€è¡“åˆ†ææ•¸æ“š</p>
+              {/* å»ºè­°æ¨™é? + ?è¿° */}
+              {(result.revised_title || result.revised_description) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">AI å»ºè­°?¹å¯«?‡æ?</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {result.revised_title && (
+                      <div>
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">æ¨™é?å»ºè­°</p>
+                        <div className="flex items-start justify-between gap-2 rounded-md bg-muted/40 px-3 py-2">
+                          <p className="text-sm font-medium leading-snug">{result.revised_title}</p>
+                          <Button variant="ghost" size="sm" className="h-7 w-16 shrink-0" onClick={() => copy(result.revised_title, "title")}>
+                            {copied === "title" ? <><Check className="mr-1 h-3.5 w-3.5 text-green-500" /><span className="text-xs text-green-500">??/span></> : <><Copy className="mr-1 h-3.5 w-3.5" /><span className="text-xs">è¤‡è£½</span></>}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {result.revised_description && (
+                      <div>
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">?è¿°å»ºè­°</p>
+                        <div className="flex items-start justify-between gap-2 rounded-md bg-muted/40 px-3 py-2">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{result.revised_description}</p>
+                          <Button variant="ghost" size="sm" className="h-7 w-16 shrink-0" onClick={() => copy(result.revised_description, "desc")}>
+                            {copied === "desc" ? <><Check className="mr-1 h-3.5 w-3.5 text-green-500" /><span className="text-xs text-green-500">??/span></> : <><Copy className="mr-1 h-3.5 w-3.5" /><span className="text-xs">è¤‡è£½</span></>}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-                  {/* Fix #3: å¯è®€æ€§åˆ†æ•¸èªç¾©é¡è‰² */}
-                  {result.readability_score !== undefined && (() => {
-                    const { bar, text, label } = readabilityColor(result.readability_score);
-                    return (
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="flex items-end justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground">å¯è®€æ€§åˆ†æ•¸</p>
-                              <p className={`mt-0.5 text-3xl font-bold ${text}`}>{result.readability_score}</p>
+              {/* ?é?æ¸…å–® */}
+              {result.issues?.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">?¼ç¾?é?ï¼ˆ{result.issues.length}ï¼?/CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {result.issues.map((issue, i) => (
+                        <div key={i} className={`rounded-md border px-3 py-2 text-sm ${SEVERITY_STYLES[issue.severity] ?? "border-border"}`}>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <Badge variant="outline" className="text-xs capitalize px-1.5 py-0 border-current">
+                              {issue.severity}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground capitalize">{issue.category}</span>
+                          </div>
+                          {issue.issue}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ?¹å?å»ºè­° */}
+              {result.suggestions?.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">?¹å?å»ºè­°ï¼ˆæ??ªå?ç´šæ?åºï?</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {[...result.suggestions]
+                        .sort((a, b) => a.priority - b.priority)
+                        .map((s, i) => (
+                          <div key={i} className="flex items-start gap-3 rounded-md bg-muted/30 px-3 py-2 text-sm">
+                            <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-primary/10 text-center text-xs font-bold text-primary leading-5">
+                              {s.priority}
+                            </span>
+                            <div className="flex-1">
+                              <span className="text-xs text-muted-foreground capitalize mr-2">[{s.category}]</span>
+                              {s.action}
                             </div>
-                            <span className={`mb-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${text} bg-current/10`}
-                              style={{ backgroundColor: "color-mix(in srgb, currentColor 12%, transparent)" }}>
-                              {label}
+                            <span className={`text-xs font-medium shrink-0 ${IMPACT_STYLES[s.expected_impact] ?? "text-muted-foreground"}`}>
+                              {s.expected_impact === "high" ? "é«˜æ??? : s.expected_impact === "medium" ? "ä¸­æ??? : "ä½æ???}
                             </span>
                           </div>
-                          <div className="mt-3 h-2 rounded-full bg-muted">
-                            <div className={`h-2 rounded-full ${bar} transition-all`} style={{ width: `${Math.min(100, result.readability_score)}%` }} />
-                          </div>
-                          <p className="mt-1.5 text-xs text-muted-foreground">æ»¿åˆ† 100ï¼Œå»ºè­° 70 åˆ†ä»¥ä¸Š</p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })()}
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-                  {/* Fix #1: é¡¯ç¤º keyword_density */}
-                  {result.keyword_density && Object.keys(result.keyword_density).length > 0 && (
-                    <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">é—œéµå­—å¯†åº¦åˆ†æ</CardTitle></CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {Object.entries(result.keyword_density)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([kw, density]) => {
-                              const pct = Math.min(100, density * 100);
-                              const isTarget = targetKeyword.toLowerCase().split(",").map(k => k.trim()).includes(kw.toLowerCase());
-                              return (
-                                <div key={kw}>
-                                  <div className="flex items-center justify-between mb-0.5">
-                                    <span className={`text-sm ${isTarget ? "font-semibold text-primary" : ""}`}>
-                                      {kw}{isTarget && <span className="ml-1.5 rounded bg-primary/10 px-1 py-0.5 text-xs text-primary">ç›®æ¨™</span>}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">{(density * 100).toFixed(1)}%</span>
-                                  </div>
-                                  <div className="h-1.5 rounded-full bg-muted">
-                                    <div
-                                      className={`h-1.5 rounded-full ${isTarget ? "bg-primary" : "bg-muted-foreground/40"}`}
-                                      style={{ width: `${pct}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                        <p className="mt-3 text-xs text-muted-foreground">å»ºè­°ç›®æ¨™é—œéµå­—å¯†åº¦è½åœ¨ 1â€“3% ä¹‹é–“</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+              {/* ?§å®¹ç¼ºå£ */}
+              {result.content_gaps?.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">?§å®¹ç¼ºå£ï¼ˆå»ºè­°è??…ç?ä¸»é?ï¼?/CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {result.content_gaps.map((gap, i) => (
+                        <Badge key={i} variant="outline" className="text-sm px-3 py-1">{gap}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}
@@ -300,3 +411,4 @@ export default function ContentOptimizerPage() {
     </div>
   );
 }
+
