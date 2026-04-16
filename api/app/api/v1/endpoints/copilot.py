@@ -25,7 +25,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field as PydanticField
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -50,7 +50,7 @@ _VALID_CHANNELS = {"telegram", "email", "in_app"}
 
 class PreferenceIn(BaseModel):
     channel: str
-    channel_config: dict = {}
+    channel_config: dict = PydanticField(default_factory=dict)
     enabled: bool = True
     notify_new_rfq: bool = True
     notify_hot_visitor: bool = True
@@ -234,6 +234,10 @@ async def telegram_bind_start(
     Step 1: Admin provides their Telegram chat_id.
     We generate a time-limited code and send it via the bot.
     """
+    chat_id = body.telegram_chat_id.strip()
+    if not chat_id:
+        raise HTTPException(status_code=400, detail="Telegram chat_id 不可為空")
+
     # Find or create a telegram preference row (pending binding)
     result = await db.exec(
         select(NotificationPreference)
@@ -246,6 +250,8 @@ async def telegram_bind_start(
     expires_at = utcnow_naive() + timedelta(minutes=_BINDING_CODE_EXPIRY_MINUTES)
 
     if pref:
+        pref.channel_config = json.dumps({"chat_id": chat_id})
+        pref.enabled = False
         pref.binding_code = code
         pref.binding_code_expires_at = expires_at
         pref.updated_at = utcnow_naive()
@@ -254,7 +260,7 @@ async def telegram_bind_start(
             user_id=current_user.id,
             tenant_id=current_user.tenant_id,
             channel="telegram",
-            channel_config=json.dumps({"chat_id": body.telegram_chat_id}),
+            channel_config=json.dumps({"chat_id": chat_id}),
             enabled=False,  # not active until verified
             binding_code=code,
             binding_code_expires_at=expires_at,
@@ -264,7 +270,7 @@ async def telegram_bind_start(
     await db.commit()
 
     # Send verification code via Telegram Bot
-    sent = await _telegram.send_binding_code(body.telegram_chat_id, code)
+    sent = await _telegram.send_binding_code(chat_id, code)
     if not sent:
         raise HTTPException(
             status_code=502,
@@ -284,11 +290,15 @@ async def telegram_bind_verify(
     Step 2: Admin enters the 6-char code received on Telegram.
     If valid, the preference becomes enabled.
     """
+    code = body.code.strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="驗證碼不可為空")
+
     result = await db.exec(
         select(NotificationPreference)
         .where(NotificationPreference.user_id == current_user.id)
         .where(NotificationPreference.channel == "telegram")
-        .where(NotificationPreference.binding_code == body.code.upper())
+        .where(NotificationPreference.binding_code == code)
     )
     pref = result.first()
 
@@ -511,3 +521,67 @@ async def clear_web_chat_history(
         .where(CopilotConversation.channel_user_id == str(current_user.id))
     )
     await db.commit()
+
+
+# ── Observability ─────────────────────────────────────────────────────────────
+
+@router.get("/stats")
+async def get_copilot_stats(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Return aggregate Copilot KPIs for the past 7 days scoped to the current tenant.
+
+    Fields:
+    - period: always "7d"
+    - total_runs: total AI invocations
+    - tool_hit_rate: % of runs that called at least one DB tool
+    - error_rate: % of runs that returned a fallback/error reply
+    - avg_duration_ms: mean wall-clock time per run
+    - top_tools: [{name, count}] top-5 most-called tools
+    """
+    from app.models.copilot_run_log import CopilotRunLog
+
+    since = utcnow_naive() - timedelta(days=7)
+    result = await db.exec(
+        select(CopilotRunLog)
+        .where(CopilotRunLog.tenant_id == current_user.tenant_id)
+        .where(CopilotRunLog.created_at >= since)
+    )
+    logs = result.all()
+
+    total = len(logs)
+    if total == 0:
+        return {
+            "period": "7d",
+            "total_runs": 0,
+            "tool_hit_rate": 0.0,
+            "error_rate": 0.0,
+            "avg_duration_ms": 0,
+            "top_tools": [],
+        }
+
+    with_tools = sum(1 for r in logs if r.tool_count > 0)
+    errors = sum(1 for r in logs if r.had_error)
+    avg_ms = sum(r.duration_ms for r in logs) // total
+
+    tool_counts: dict[str, int] = {}
+    for r in logs:
+        if r.tool_names:
+            import json as _json
+            for name in _json.loads(r.tool_names):
+                tool_counts[name] = tool_counts.get(name, 0) + 1
+    top_tools = sorted(
+        [{"name": k, "count": v} for k, v in tool_counts.items()],
+        key=lambda x: -x["count"],
+    )[:5]
+
+    return {
+        "period": "7d",
+        "total_runs": total,
+        "tool_hit_rate": round(with_tools / total * 100, 1),
+        "error_rate": round(errors / total * 100, 1),
+        "avg_duration_ms": avg_ms,
+        "top_tools": top_tools,
+    }

@@ -94,6 +94,10 @@ async def two_tenants():
     async with factory() as session:
         for tid in (str(tenant_a.id), str(tenant_b.id)):
             for table in (
+                "copilot_run_logs",
+                "notification_preferences",
+                "copilot_conversations",
+                "notification_log",
                 "tracking_events",
                 "rfq_events",
                 "rfq_requests",

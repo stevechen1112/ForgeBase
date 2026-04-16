@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import uuid
 from typing import Optional
 
@@ -28,6 +29,7 @@ from app.core.datetime import utcnow_naive
 from app.core.tracing import get_openai_client
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
+from app.models.copilot_run_log import CopilotRunLog
 from app.services.copilot import tools as T
 
 logger = logging.getLogger(__name__)
@@ -481,6 +483,7 @@ class CopilotEngine:
         5. Return final text reply (chunked)
         6. Save user message + assistant reply to history
         """
+        started_at = time.perf_counter()
         company_context = await self._build_company_context()
         formatting_instruction = (
             "Use Markdown formatting: **bold**, `code`, _italic_, bullet lists, ## headings"
@@ -502,8 +505,11 @@ class CopilotEngine:
 
         final_reply = ""
         tool_calls_for_history: Optional[str] = None
+        tool_names: list[str] = []
+        llm_calls = 0
 
         for loop in range(_MAX_TOOL_LOOPS):
+            llm_calls += 1
             response = await _openai.chat.completions.create(
                 model=_MODEL,
                 messages=messages,
@@ -518,11 +524,12 @@ class CopilotEngine:
 
             # No tool calls → we have the final answer
             if not msg.tool_calls:
-                final_reply = msg.content or ""
+                final_reply = (msg.content or "").strip()
                 break
 
             # Execute all requested tool calls
             tool_results: list[dict] = []
+            tool_names.extend(tc.function.name for tc in msg.tool_calls)
             for tc in msg.tool_calls:
                 logger.debug(
                     "Tool call: %s(%s)", tc.function.name, tc.function.arguments[:80]
@@ -559,11 +566,51 @@ class CopilotEngine:
 
         else:
             # Fallback if loop exhausted (should almost never happen)
+            logger.warning(
+                "Copilot run exhausted tool loop limit tenant=%s channel=%s channel_user_id=%s loops=%s tools=%s",
+                self.tenant_id,
+                self.channel,
+                self.channel_user_id,
+                _MAX_TOOL_LOOPS,
+                tool_names,
+            )
             final_reply = "抱歉，資料查詢時間稍長，請稍後再試。"
+
+        if not final_reply:
+            final_reply = "抱歉，AI 助理暫時沒有可回傳的內容，請稍後再試。"
 
         # Persist to history
         await self._save_message("user", user_message)
         await self._save_message("assistant", final_reply, tool_calls_for_history)
+
+        duration_ms = int((time.perf_counter() - started_at) * 1000)
+        logger.info(
+            "Copilot run complete tenant=%s channel=%s channel_user_id=%s llm_calls=%s tools=%s reply_chars=%s duration_ms=%s",
+            self.tenant_id,
+            self.channel,
+            self.channel_user_id,
+            llm_calls,
+            tool_names,
+            len(final_reply),
+            duration_ms,
+        )
+
+        # Persist run-level observability record (best-effort; never blocks user reply)
+        try:
+            async with get_session_ctx() as _sess:
+                _sess.add(CopilotRunLog(
+                    tenant_id=self.tenant_id,
+                    user_id=self.user_id,
+                    channel=self.channel,
+                    llm_calls=llm_calls,
+                    tool_count=len(tool_names),
+                    tool_names=json.dumps(tool_names) if tool_names else None,
+                    duration_ms=duration_ms,
+                    had_error=final_reply.startswith("抱歉，"),
+                ))
+                await _sess.commit()
+        except Exception:
+            logger.debug("Failed to write copilot_run_log (non-critical)", exc_info=True)
 
         # Chunk reply for Telegram (4096-char limit per message)
         return _chunk_message(final_reply)

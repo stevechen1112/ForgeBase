@@ -44,6 +44,12 @@ jobs:
         working-directory: api
         run: pip install -r requirements.txt
 
+      - name: Run database migrations
+        working-directory: api
+        env:
+          DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
+        run: alembic upgrade head
+
       - name: Run tests
         working-directory: api
         env:

@@ -112,8 +112,8 @@ ForgeBase/
 ├── api/                    # 後端 API (Python 3.13 + FastAPI)
 │   ├── app/
 │   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake、AI Copilot）
-│   │   ├── db/migrations/  # Alembic migrations (39 版本)
-│   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id）
+│   │   ├── db/migrations/  # Alembic migrations (40 版本)
+│   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id、CopilotRunLog）
 │   │   ├── schemas/        # Pydantic 輸入/輸出 schema
 │   │   └── services/       # 後端服務（含 intake_engine、copilot/）
 │   ├── .venv/              # API 專用虛擬環境
@@ -122,7 +122,8 @@ ForgeBase/
 │   ├── src/lib/runtimeSiteConfig.ts  # 多租戶 runtime 白標品牌核心
 │   └── .env.local.example
 ├── admin/                  # 管理後台 (Next.js 15，生產部署 Linode)
-│   ├── src/app/(dashboard)/dashboard/intake/  # Legacy Site Intake 審核介面
+│   ├── src/app/(dashboard)/dashboard/intake/     # Legacy Site Intake 審核介面
+│   ├── src/components/copilot/CopilotFloatingWidget.tsx  # AI 助理浮動視窗
 │   └── .env.local.example
 ├── demo/                   # Demo 示範資料與種子腳本
 │   └── handtool-company/   # 示範公司（手工具製造商）
@@ -301,6 +302,16 @@ curl -X POST https://mitselect.com/api/v1/copilot/telegram/setup-webhook \
 | `/backend/dashboard/notifications` | 通知中心：最近 100 筆通知紀錄，支援 channel / event / status 篩選 |
 | `/backend/dashboard/settings/notifications` | 通知設定：Telegram 綁定流程、各事件開關、靜音時段 |
 
+### Admin 浮動 AI 聊天視窗
+
+v0.23 將原先佔用側欄選單的「AI 對話」全頁面，改為固定在所有後台頁面右下角的浮動 Widget（`CopilotFloatingWidget`）：
+
+- 右下角圓形 Bot 按鈕，點擊展開 380×560 聊天面板
+- 支援最小化（標題欄 minimize）、關閉、未讀訊息 badge
+- 面板含：歷史訊息載入、suggestion chips（初次開啟）、Markdown 渲染、清除記錄
+- 頂部顯示 7 天 KPI stats bar（total_runs / tool_hit_rate / error_rate / avg_duration）
+- 掛載於 `dashboard/layout.tsx`，全後台頁面皆可使用，不影響 `overflow-hidden` 的主要容器
+
 ### API Endpoints
 
 ```bash
@@ -309,6 +320,10 @@ POST   /api/v1/copilot/preferences           # 新增偏好設定
 PUT    /api/v1/copilot/preferences/{id}      # 更新開關 / 靜音時段
 DELETE /api/v1/copilot/preferences/{id}      # 刪除
 GET    /api/v1/copilot/notifications         # 通知歷史（最近 100 筆）
+POST   /api/v1/copilot/chat                  # 送出對話訊息，回傳 AI reply（Admin 聊天視窗用）
+GET    /api/v1/copilot/chat/history          # 最近 N 筆對話歷史
+DELETE /api/v1/copilot/chat/history         # 清除對話記錄
+GET    /api/v1/copilot/stats                 # 7 天可觀測性 KPI（runs / tool_hit_rate / error_rate / avg_duration_ms / top_tools）
 POST   /api/v1/copilot/telegram/bind-start   # 步驟一：產生綁定碼並發到 Telegram
 POST   /api/v1/copilot/telegram/bind-verify  # 步驟二：驗證碼核對，啟用綁定
 POST   /api/v1/copilot/telegram/setup-webhook # （admin）向 Telegram 登記 webhook URL
@@ -443,7 +458,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 DB migrations（0001 → 0039）
+alembic upgrade head           # 套用全部 DB migrations（0001 → 0040）
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -599,6 +614,34 @@ curl -sf https://mitselect.com/health
 systemctl is-active forgebase-api forgebase-web forgebase-admin
 ```
 
+### 2026-04-16 本次 GitHub / Linode 更新重點
+
+本次同步到 GitHub 與 Linode 的內容包含：
+
+**AI 行銷專員 — Observability + Admin 浮動視窗**
+- 新增 `api/app/models/copilot_run_log.py`：`CopilotRunLog` 可觀測性資料表，每次引擎運行後非同步寫入一列（tenant_id / user_id / channel / llm_calls / tool_count / tool_names / duration_ms / had_error）
+- 新增 Alembic migration `0040_copilot_run_log`（`down_revision = "0039_intent_scoring_config"`），含 `(tenant_id, created_at)` 索引
+- `api/app/services/copilot/chat_engine.py`：`run()` 結束後 best-effort 寫入 `CopilotRunLog`（try/except 確保失敗不影響回應）
+- 新增 `GET /api/v1/copilot/stats`：查詢過去 7 天的 total_runs / tool_hit_rate / error_rate / avg_duration_ms / top_tools，scoped to tenant
+- **Admin 後台**：移除側欄「AI 對話」選單項；舊路由 `/dashboard/copilot` 改為 redirect to `/dashboard`
+- 新增 `admin/src/components/copilot/CopilotFloatingWidget.tsx`：右下角浮動聊天視窗（全後台皆可用），含 stats bar、歷史載入、Markdown 渲染、suggestion chips、minimize/close
+- `admin/src/app/(dashboard)/layout.tsx`：掛載 `<CopilotFloatingWidget />`
+- **CI**：`.github/workflows/api.yml` 補上 `alembic upgrade head` 步驟，確保 `@requires_db` 測試不再被 skip
+- 新增 `api/tests/test_copilot.py`：AI 引擎 + stats endpoint 測試；目前測試結果 `11 passed, 3 skipped`
+
+**本次新增 Alembic migration：`0040_copilot_run_log`**（需執行 `alembic upgrade head`）
+
+建議 production 部署順序：
+
+1. push 到 GitHub `main`
+2. Linode `git pull`
+3. `pip install -r requirements.txt`（無新套件，但建議確認）
+4. `alembic upgrade head`（**必須執行**，建立 `copilot_run_logs` 資料表）
+5. 重建 admin（`npm ci && npm run build`）
+6. restart systemd services
+
+---
+
 ### 2026-04-15 本次 GitHub / Linode 更新重點
 
 本次同步到 GitHub 與 Linode 的內容包含：
@@ -713,6 +756,32 @@ systemctl restart forgebase-admin
 ---
 
 ## 版本更新紀錄
+
+### v0.23 — AI 行銷專員可觀測性 + Admin 浮動視窗（2026-04-16）
+
+#### API：CopilotRunLog 可觀測性
+
+| 類別 | 變更 |
+|------|------|
+| **DB Model** | 新增 `CopilotRunLog`（`api/app/models/copilot_run_log.py`）— 每次引擎運行後非同步寫入：`tenant_id`, `user_id`, `channel`, `llm_calls`, `tool_count`, `tool_names`（JSON）, `duration_ms`, `had_error` |
+| **Migration** | `0040_copilot_run_log`（含 `(tenant_id, created_at)` 複合索引）|
+| **chat_engine** | `run()` 結尾以 `try/except` best-effort 寫入 `CopilotRunLog`，失敗不影響使用者回應 |
+| **API** | 新增 `GET /copilot/stats`：查詢 tenant 過去 7 天 `total_runs / tool_hit_rate / error_rate / avg_duration_ms / top_tools`，無資料時回傳 zeros |
+| **CI** | `.github/workflows/api.yml` 補上 `alembic upgrade head` 步驟，確保 `@requires_db` 測試不再 skip |
+| **Tests** | 新增 `api/tests/test_copilot.py`；測試結果 `11 passed, 3 skipped` |
+
+#### Admin：浮動 AI 助理視窗
+
+| 類別 | 變更 |
+|------|------|
+| **新元件** | `admin/src/components/copilot/CopilotFloatingWidget.tsx` — 右下角固定浮動視窗，取代原本佔用側欄的全頁面路由 |
+| **UX** | 56×56px 圓形 Bot 按鈕；面板 380×560px；支援 minimize / close；未讀訊息 badge |
+| **功能** | 歷史記錄載入、傳送、清除、Enter 送出、suggestion chips（首次開啟）、Markdown 渲染 |
+| **Stats bar** | 面板頂部顯示 7 天 KPI（total_runs / tool_hit_rate / error_rate / avg_duration）；僅有資料時顯示 |
+| **Layout** | `admin/src/app/(dashboard)/layout.tsx` 掛載 `<CopilotFloatingWidget />`，放於 `PlanProvider` 內、`div.flex.h-screen` 外層，不受 `overflow-hidden` 裁切 |
+| **Sidebar** | 移除「AI 對話」選單項；舊路由 `/dashboard/copilot` 改為 redirect to `/dashboard` |
+
+---
 
 ### v0.20 — 多租戶修復 + 前台 Runtime 白標收斂（2026-04-14）
 
