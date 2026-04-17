@@ -44,13 +44,22 @@ type NavGroup = { title: string; items: NavItem[] };
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    title: "概覽",
+    title: "AI 工作台",
     items: [
-      { label: "儀表板", href: "/dashboard", icon: LayoutDashboard, exact: true },
+      { label: "AI 晨報", href: "/dashboard", icon: LayoutDashboard, exact: true },
+      { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot },
     ],
   },
   {
-    title: "行銷分析",
+    title: "詢價中心",
+    items: [
+      { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
+      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, adminOnly: true },
+      { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
+    ],
+  },
+  {
+    title: "情報分析",
     items: [
       {
         label: "意圖分析", href: "/dashboard/intent", icon: Brain,
@@ -61,62 +70,50 @@ const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
-      { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
-      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking" },
       { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter, requiredFeature: "full_tracking" },
-      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking" },
+      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking" },
     ],
   },
   {
-    title: "AI / SEO",
+    title: "產品與內容",
     items: [
-      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation" },
-      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects" },
-    ],
-  },
-  {
-    title: "產品內容",
-    items: [
-      { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen },
       { label: "商品管理", href: "/dashboard/products", icon: Package },
-      { label: "應用場景", href: "/dashboard/applications", icon: Factory },
-      { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle },
-      { label: "認證管理", href: "/dashboard/certifications", icon: Trophy },
-      { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench },
+      { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen },
+      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation" },
     ],
   },
   {
-    title: "內容管理",
-    items: [
-      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta" },
-      { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
-      { label: "媒體庫", href: "/dashboard/assets", icon: Image },
-      { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2 },
-      { label: "策略地圖", href: "/dashboard/strategies", icon: Map },
-      { label: "頁面管理", href: "/dashboard/pages", icon: File },
-    ],
-  },
-  {
-    title: "詢價管理",
-    items: [
-      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, adminOnly: true },
-      { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
-    ],
-  },
-  {
-    title: "AI 行銷專員",
+    title: "通知",
     items: [
       { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
       { label: "通知設定", href: "/dashboard/settings/notifications", icon: Settings },
     ],
   },
   {
-    title: "系統",
+    title: "系統設定",
     items: [
+      { label: "團隊成員", href: "/dashboard/users", icon: Users, adminOnly: true },
       { label: "網站外觀", href: "/dashboard/settings/site-profile", icon: Globe, adminOnly: true },
       { label: "整合設定", href: "/dashboard/integrations", icon: Plug, adminOnly: true },
-      { label: "團隊成員", href: "/dashboard/users", icon: Users, adminOnly: true },
       { label: "方案與帳單", href: "/dashboard/settings/billing", icon: Settings, adminOnly: true },
+    ],
+  },
+  {
+    title: "進階工具",
+    items: [
+      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking" },
+      { label: "策略地圖", href: "/dashboard/strategies", icon: Map },
+      { label: "應用場景", href: "/dashboard/applications", icon: Factory },
+      { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle },
+      { label: "認證管理", href: "/dashboard/certifications", icon: Trophy },
+      { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench },
+      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta" },
+      { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
+      { label: "媒體庫", href: "/dashboard/assets", icon: Image },
+      { label: "頁面管理", href: "/dashboard/pages", icon: File },
+      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects" },
+      { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2 },
+      { label: "Legacy Site Intake", href: "/dashboard/intake", icon: ClipboardList, adminOnly: true },
     ],
   },
 ];
@@ -135,6 +132,7 @@ export function Sidebar() {
   const roleLabel = user?.role === "owner" ? "帳號擁有者" : user?.role === "admin" ? "管理員" : "一般使用者";
   const accountSettingsHref = canManageSystem ? "/dashboard/users" : "/dashboard";
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [advancedCollapsed, setAdvancedCollapsed] = useState(true);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -168,13 +166,31 @@ export function Sidebar() {
         <ScrollArea className="flex-1 px-2 py-3">
           <nav className="space-y-5">
             {NAV_GROUPS.map((group) => {
+              const isAdvanced = group.title === "進階工具";
               const visible = group.items.filter((i) => !i.adminOnly || canManageSystem);
               if (!visible.length) return null;
+              // Auto-expand 進階工具 if any child is active
+              const anyAdvancedActive = isAdvanced && visible.some(item =>
+                pathname === item.href || pathname.startsWith(item.href + "/")
+              );
+              const showAdvanced = !isAdvanced || anyAdvancedActive || !advancedCollapsed;
               return (
                 <div key={group.title}>
-                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--sidebar-foreground))]/40">
-                    {group.title}
-                  </p>
+                  <div className="flex items-center justify-between mb-1 px-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--sidebar-foreground))]/40">
+                      {group.title}
+                    </p>
+                    {isAdvanced && (
+                      <button
+                        onClick={() => setAdvancedCollapsed(v => !v)}
+                        className="flex h-4 w-4 items-center justify-center text-[hsl(var(--sidebar-foreground))]/30 hover:text-[hsl(var(--sidebar-foreground))]/70 transition-colors"
+                        aria-label={advancedCollapsed && !anyAdvancedActive ? "展開" : "收合"}
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", showAdvanced && "rotate-90")} />
+                      </button>
+                    )}
+                  </div>
+                  {showAdvanced && (
                   <ul className="space-y-0.5">
                     {visible.map((item) => {
                       const active = isActive(item);
@@ -279,6 +295,7 @@ export function Sidebar() {
                       );
                     })}
                   </ul>
+                  )}
                 </div>
               );
             })}

@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import {
-  Users, ClipboardList,
+  ClipboardList,
   Globe, Eye, MousePointerClick, Percent, ArrowUpRight,
-  RefreshCcw, Download, Lock,
+  RefreshCcw, Lock, Sunrise, AlertTriangle, Flame, Sparkles,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/store";
 import { apiClient } from "@/lib/api/client";
 import { PlanGate, UpgradeChip } from "@/components/plan/PlanGate";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 // ── 型別 ────────────────────────────────────────────────────────────────────
 type FunnelData = {
@@ -53,6 +56,7 @@ function relativeTime(iso: string): string {
 export default function DashboardPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const user = state.status === "authenticated" ? state.user : null;
 
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
@@ -64,7 +68,7 @@ export default function DashboardPage() {
     try {
       const [funnelJson, rfqJson] = await Promise.all([
         apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
-        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=5", token),
+        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=8", token),
       ]);
       setFunnel(funnelJson);
       setRfqs(Array.isArray(rfqJson) ? rfqJson : []);
@@ -79,124 +83,182 @@ export default function DashboardPage() {
   const rfqCount = funnel?.totals.rfqs ?? 0;
   const convRate = funnel?.conversion_rates.visitor_to_rfq ?? 0;
   const newRfqs = funnel?.rfq_by_status["new"] ?? 0;
-
-  const KPI_CARDS = [
-    {
-      title: "近 30 天詢價 (RFQ)",
-      value: loading ? "—" : rfqCount.toLocaleString(),
-      sub: `其中 ${newRfqs} 筆待處理`,
-      icon: ClipboardList,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
-      real: true,
-    },
-    {
-      title: "近 30 天訪客",
-      value: loading ? "—" : visitors.toLocaleString(),
-      sub: "追蹤器記錄的不重複訪客",
-      icon: Eye,
-      color: "text-violet-500",
-      bg: "bg-violet-50",
-      real: true,
-    },
-    {
-      title: "訪客 → 詢價轉換率",
-      value: loading ? "—" : `${convRate}%`,
-      sub: `${visitors} 訪客 → ${rfqCount} 詢價`,
-      icon: Percent,
-      color: "text-amber-500",
-      bg: "bg-amber-50",
-      real: true,
-    },
-  ];
+  const overdueRfqs = rfqs.filter(r => {
+    const hrs = (Date.now() - new Date(r.created_at).getTime()) / 3600000;
+    return (r.status === "new" || r.status === "assigned") && hrs > 24;
+  });
+  const userName = user?.email?.split("@")[0] ?? "您";
 
   return (
     <div className="space-y-6">
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">儀表板</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            歡迎回來！以下是今日的業務摘要。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={loadData} disabled={loading}>
-            <RefreshCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+
+      {/* ─── AI 晨報 Hero ─────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/10 pointer-events-none" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-400">
+              <Sunrise className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold leading-tight">AI 行銷專員・每日晨報</h1>
+              <p className="text-sm text-white/60 mt-0.5">早安，{userName}！以下是今天需要您關注的事項</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 gap-1.5 text-white/60 hover:text-white hover:bg-white/10"
+            onClick={loadData}
+            disabled={loading}
+          >
+            <RefreshCcw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             重新整理
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="h-3.5 w-3.5" />
-            匯出報表
-          </Button>
         </div>
+        <p className="relative mt-4 text-sm text-white/80 leading-relaxed">
+          {loading ? "載入中…" : (
+            <>
+              近 30 天共 <strong className="text-white">{rfqCount} 筆詢價</strong>
+              {overdueRfqs.length > 0 && <>，其中 <strong className="text-red-300">{overdueRfqs.length} 筆逾時未回覆</strong></>}
+              {visitors > 0 && <>，追蹤到 <strong className="text-white">{visitors} 位訪客</strong></>}
+              。轉換率目前 <strong className="text-amber-300">{convRate}%</strong>。
+            </>
+          )}
+        </p>
       </div>
 
-      {/* ─── KPI Grid（真實資料）─── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* RFQ KPI — always available */}
-        {(() => {
-          const kpi = KPI_CARDS[0];
-          const Icon = kpi.icon;
-          return (
-            <Card key={kpi.title} className="hover:shadow-card-hover transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.title}</CardTitle>
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
-                  <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
+      {/* ─── 優先行動卡 ───────────────────────────────────────────────── */}
+      {(overdueRfqs.length > 0 || newRfqs > 0) && (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            🔥 需要您處理的事項
+          </p>
+          <div className="space-y-2">
+            {overdueRfqs.slice(0, 3).map(rfq => (
+              <Link
+                key={rfq.id}
+                href={`/dashboard/rfqs/${rfq.id}`}
+                className="flex items-center gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 transition-colors hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:hover:bg-red-950/30"
+              >
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{rfq.rfq_number}</p>
+                  <p className="text-xs text-muted-foreground">
+                    逾時 {Math.floor((Date.now() - new Date(rfq.created_at).getTime()) / 3600000)} 小時未回覆
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{kpi.sub}</p>
-              </CardContent>
-            </Card>
-          );
-        })()}
+                <Badge variant="destructive" className="shrink-0 text-[10px]">逾時</Badge>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
+            {newRfqs > 0 && overdueRfqs.length === 0 && (
+              <Link
+                href="/dashboard/rfqs"
+                className="flex items-center gap-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 transition-colors hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/20"
+              >
+                <Flame className="h-4 w-4 shrink-0 text-blue-500" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">有 {newRfqs} 筆新詢價待處理</p>
+                  <p className="text-xs text-muted-foreground">點擊前往詢價中心</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* Visitor KPI — requires full_tracking */}
-        {KPI_CARDS.slice(1).map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <PlanGate
-              key={kpi.title}
-              feature="full_tracking"
-              inline
-              fallback={
-                <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                      {kpi.title}
-                      <Lock className="h-3 w-3 text-muted-foreground/60" />
-                    </CardTitle>
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
-                      <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
-                    <div className="mt-1">
-                      <UpgradeChip label="Professional 方案解鎖" />
-                    </div>
-                  </CardContent>
-                </Card>
-              }
-            >
-              <Card className="hover:shadow-card-hover transition-shadow duration-200">
+      {/* ─── KPI Grid（真實資料）─── */}
+      <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">📊 營運數據概覽</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* RFQ KPI — always available */}
+          <Card className="hover:shadow-card-hover transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天詢價 (RFQ)</CardTitle>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
+                <ClipboardList className="h-4 w-4 text-blue-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold tracking-tight">{loading ? "—" : rfqCount.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">其中 {newRfqs} 筆待處理</p>
+            </CardContent>
+          </Card>
+
+          {/* Visitor KPI — requires full_tracking */}
+          <PlanGate
+            feature="full_tracking"
+            inline
+            fallback={
+              <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.title}</CardTitle>
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${kpi.bg}`}>
-                    <Icon className={`h-4.5 w-4.5 ${kpi.color}`} />
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                    近 30 天訪客
+                    <Lock className="h-3 w-3 text-muted-foreground/60" />
+                  </CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
+                    <Eye className="h-4 w-4 text-violet-500" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{kpi.sub}</p>
+                  <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
+                  <div className="mt-1"><UpgradeChip label="Professional 方案解鎖" /></div>
                 </CardContent>
               </Card>
-            </PlanGate>
-          );
-        })}
+            }
+          >
+            <Card className="hover:shadow-card-hover transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天訪客</CardTitle>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
+                  <Eye className="h-4 w-4 text-violet-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold tracking-tight">{loading ? "—" : visitors.toLocaleString()}</p>
+                <p className="mt-1 text-xs text-muted-foreground">追蹤器記錄的不重複訪客</p>
+              </CardContent>
+            </Card>
+          </PlanGate>
+
+          {/* Conversion rate — requires full_tracking */}
+          <PlanGate
+            feature="full_tracking"
+            inline
+            fallback={
+              <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                    訪客 → 詢價轉換率
+                    <Lock className="h-3 w-3 text-muted-foreground/60" />
+                  </CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50">
+                    <Percent className="h-4 w-4 text-amber-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
+                  <div className="mt-1"><UpgradeChip label="Professional 方案解鎖" /></div>
+                </CardContent>
+              </Card>
+            }
+          >
+            <Card className="hover:shadow-card-hover transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">訪客 → 詢價轉換率</CardTitle>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50">
+                  <Percent className="h-4 w-4 text-amber-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold tracking-tight">{loading ? "—" : `${convRate}%`}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{visitors} 訪客 → {rfqCount} 詢價</p>
+              </CardContent>
+            </Card>
+          </PlanGate>
+        </div>
       </div>
 
       {/* ─── Main content grid ─── */}
@@ -209,7 +271,7 @@ export default function DashboardPage() {
               <CardDescription className="text-xs mt-0.5">近 30 天共 {rfqCount} 筆</CardDescription>
             </div>
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary" asChild>
-              <a href="/backend/dashboard/rfqs">查看全部 <ArrowUpRight className="h-3.5 w-3.5" /></a>
+              <Link href="/dashboard/rfqs">查看全部 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
             </Button>
           </CardHeader>
           <CardContent className="p-0">
@@ -222,21 +284,23 @@ export default function DashboardPage() {
                 {rfqs.map((rfq) => {
                   const cfg = STATUS_CONFIG[rfq.status] ?? { label: rfq.status, variant: "secondary" as const };
                   return (
-                    <div key={rfq.id} className="flex items-center gap-4 px-6 py-3.5 hover:bg-muted/40 transition-colors">
+                    <Link
+                      key={rfq.id}
+                      href={`/dashboard/rfqs/${rfq.id}`}
+                      className="flex items-center gap-4 px-6 py-3.5 hover:bg-muted/40 transition-colors"
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-sm font-medium font-mono text-foreground">{rfq.rfq_number}</span>
                           <Badge variant={cfg.variant} className="shrink-0 text-[10px] h-4 px-1.5">{cfg.label}</Badge>
-                          {rfq.priority === "high" && (
+                          {(rfq.priority === "high" || rfq.priority === "urgent") && (
                             <Badge variant="destructive" className="shrink-0 text-[10px] h-4 px-1.5">高優先</Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">優先級：{rfq.priority === "urgent" ? "緊急" : rfq.priority === "high" ? "高" : rfq.priority === "normal" ? "一般" : rfq.priority}</p>
+                        <p className="text-xs text-muted-foreground">{relativeTime(rfq.created_at)}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[11px] text-muted-foreground">{relativeTime(rfq.created_at)}</p>
-                      </div>
-                    </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                    </Link>
                   );
                 })}
               </div>
@@ -257,9 +321,7 @@ export default function DashboardPage() {
                   const cfg = STATUS_CONFIG[status] ?? { label: status, variant: "secondary" as const };
                   return (
                     <div key={status} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">{cfg.label}</Badge>
-                      </div>
+                      <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">{cfg.label}</Badge>
                       <span className="text-sm font-semibold">{count}</span>
                     </div>
                   );
@@ -270,30 +332,30 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Quick stats — 標示為參考數據 */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">其他指標</CardTitle>
-                <span className="text-[10px] text-muted-foreground border rounded px-1.5 py-0.5">參考數據</span>
+                <CardTitle className="text-base">快速入口</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2.5">
+            <CardContent className="space-y-1.5">
               {[
-                { label: "平均回應時間", value: "< 2 小時", icon: RefreshCcw },
-                { label: "活躍買家國家", value: "40+", icon: Globe },
-                { label: "本月新用戶", value: "156", icon: Users },
-                { label: "點擊率 (CTR)", value: "4.2%", icon: MousePointerClick },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                { label: "意圖分析", href: "/dashboard/intent", icon: Eye },
+                { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Sparkles },
+                { label: "通知中心", href: "/dashboard/notifications", icon: Globe },
+                { label: "整合設定", href: "/dashboard/integrations", icon: MousePointerClick },
+              ].map(({ label, href, icon: Icon }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted/60 transition-colors"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
                     <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">{value}</p>
-                    <p className="text-[11px] text-muted-foreground">{label}</p>
-                  </div>
-                </div>
+                  <span className="text-sm text-foreground">{label}</span>
+                  <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground/40" />
+                </Link>
               ))}
             </CardContent>
           </Card>
@@ -302,4 +364,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
