@@ -24,6 +24,8 @@ type NavSubItem = {
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  /** Hidden from sales role (visible to marketing_manager, owner, admin). */
+  salesHidden?: boolean;
   /** Feature key from PLAN_MATRIX. Item is locked for plans without this feature. */
   requiredFeature?: string;
 };
@@ -33,6 +35,8 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  /** Hidden from sales role (visible to marketing_manager, owner, admin). */
+  salesHidden?: boolean;
   exact?: boolean;
   badge?: string;
   children?: NavSubItem[];
@@ -47,14 +51,16 @@ const NAV_GROUPS: NavGroup[] = [
     title: "AI 工作台",
     items: [
       { label: "AI 晨報", href: "/dashboard", icon: LayoutDashboard, exact: true },
-      { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot },
+      // Sales 不需要 Copilot 操作介面；他們透過通知接收結果
+      { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
     ],
   },
   {
     title: "詢價中心",
     items: [
       { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
-      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, adminOnly: true },
+      // 全部 RFQ = 全局看板；Sales 與行銷經理都需要看到
+      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
     ],
   },
@@ -66,20 +72,22 @@ const NAV_GROUPS: NavGroup[] = [
         requiredFeature: "intent_scoring",
         children: [
           { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true, requiredFeature: "intent_scoring" },
-          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale, requiredFeature: "intent_scoring" },
+          // 評分規則屬內容操作層，Sales 不需要設定
+          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale, requiredFeature: "intent_scoring", salesHidden: true },
         ],
       },
       { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
-      { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter, requiredFeature: "full_tracking" },
-      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking" },
+      { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter, requiredFeature: "full_tracking", salesHidden: true },
+      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking", salesHidden: true },
     ],
   },
   {
     title: "產品與內容",
     items: [
+      // Sales 需要查閱商品規格以回覆客戶，但不需要管理分類與內容
       { label: "商品管理", href: "/dashboard/products", icon: Package },
-      { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen },
-      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation" },
+      { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen, salesHidden: true },
+      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation", salesHidden: true },
     ],
   },
   {
@@ -101,18 +109,20 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "進階工具",
     items: [
-      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking" },
-      { label: "策略地圖", href: "/dashboard/strategies", icon: Map },
-      { label: "應用場景", href: "/dashboard/applications", icon: Factory },
-      { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle },
-      { label: "認證管理", href: "/dashboard/certifications", icon: Trophy },
-      { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench },
-      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta" },
-      { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine },
-      { label: "媒體庫", href: "/dashboard/assets", icon: Image },
-      { label: "頁面管理", href: "/dashboard/pages", icon: File },
-      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects" },
-      { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2 },
+      // 進階工具全部對 Sales 隱藏；行銷經理可用全部（除 adminOnly 項目外）
+      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking", salesHidden: true },
+      { label: "策略地圖", href: "/dashboard/strategies", icon: Map, salesHidden: true },
+      { label: "應用場景", href: "/dashboard/applications", icon: Factory, salesHidden: true },
+      { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle, salesHidden: true },
+      { label: "認證管理", href: "/dashboard/certifications", icon: Trophy, salesHidden: true },
+      { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench, salesHidden: true },
+      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta", salesHidden: true },
+      { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine, salesHidden: true },
+      { label: "媒體庫", href: "/dashboard/assets", icon: Image, salesHidden: true },
+      { label: "頁面管理", href: "/dashboard/pages", icon: File, salesHidden: true },
+      // Redirect 規則 / Entity 關聯 屬系統層操作，僅 admin/owner
+      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects", adminOnly: true },
+      { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2, adminOnly: true },
       { label: "Legacy Site Intake", href: "/dashboard/intake", icon: ClipboardList, adminOnly: true },
     ],
   },
@@ -129,7 +139,13 @@ export function Sidebar() {
 
   const user = state.status === "authenticated" ? state.user : null;
   const canManageSystem = user?.role === "admin" || user?.role === "owner";
-  const roleLabel = user?.role === "owner" ? "帳號擁有者" : user?.role === "admin" ? "管理員" : "一般使用者";
+  const isSales = user?.role === "sales";
+  const roleLabel =
+    user?.role === "owner" ? "帳號擁有者" :
+    user?.role === "admin" ? "管理員" :
+    user?.role === "marketing_manager" ? "行銷經理" :
+    user?.role === "sales" ? "業務人員" :
+    "一般使用者";
   const accountSettingsHref = canManageSystem ? "/dashboard/users" : "/dashboard";
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [advancedCollapsed, setAdvancedCollapsed] = useState(true);
@@ -167,7 +183,9 @@ export function Sidebar() {
           <nav className="space-y-5">
             {NAV_GROUPS.map((group) => {
               const isAdvanced = group.title === "進階工具";
-              const visible = group.items.filter((i) => !i.adminOnly || canManageSystem);
+              const visible = group.items.filter((i) =>
+                (!i.adminOnly || canManageSystem) && (!i.salesHidden || !isSales)
+              );
               if (!visible.length) return null;
               // Auto-expand 進階工具 if any child is active
               const anyAdvancedActive = isAdvanced && visible.some(item =>
@@ -197,7 +215,9 @@ export function Sidebar() {
                       const locked = isLocked(item);
                       const Icon = item.icon;
                       const hasChildren = !!item.children?.length;
-                      const visibleChildren = item.children?.filter(c => !c.adminOnly || canManageSystem) ?? [];
+                      const visibleChildren = item.children?.filter(c =>
+                        (!c.adminOnly || canManageSystem) && (!c.salesHidden || !isSales)
+                      ) ?? [];
                       const anyChildActive = visibleChildren.some(c => pathname === c.href || pathname.startsWith(c.href + "/"));
                       const isExpanded = anyChildActive || expandedItems.includes(item.href);
                       return (
