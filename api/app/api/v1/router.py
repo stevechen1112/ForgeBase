@@ -16,9 +16,7 @@ from app.api.v1.endpoints import (
     events, visitors, contacts, rfqs, integrations, segments,
     seo_optimize, esp, analytics,
     ml_scoring, chat, chat_admin,
-    redirects, events, visitors, contacts, rfqs, integrations, segments,
-    seo_optimize, esp, analytics,
-    ml_scoring, chat, chat_admin, intake, site_profile,
+    redirects, intake, site_profile,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router,

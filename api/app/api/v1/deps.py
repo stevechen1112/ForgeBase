@@ -214,6 +214,8 @@ async def resolve_tenant_id(
     """Resolve tenant from X-Tenant-ID header (public endpoints).
 
     Returns tenant UUID if header is present and valid, else None.
+    Uses a process-level TTL cache for host→tenant_id lookups to avoid
+    full-table scans on every public request.
     """
     async def _resolve_identifier(identifier: str) -> Optional[UUID]:
         try:
@@ -251,18 +253,38 @@ async def resolve_tenant_id(
     if not candidate_hosts:
         return None
 
+    # Check process-level TTL cache first
+    import time as _time
+    now = _time.monotonic()
+    for host in candidate_hosts:
+        cached = _TENANT_HOST_CACHE.get(host)
+        if cached is not None:
+            tenant_id, cached_at = cached
+            if now - cached_at < _TENANT_HOST_CACHE_TTL:
+                return tenant_id
+
     from app.models.site_profile import SiteProfile
     from app.models.tenant import Tenant
 
     tenant_column = getattr(SiteProfile, "tenant_id", None)
     profiles = (
-        await session.exec(select(SiteProfile).where(tenant_column.is_not(None)))
+        await session.exec(
+            select(SiteProfile.site_url, SiteProfile.tenant_id).where(tenant_column.is_not(None))
+        )
     ).all()
+
+    # Build a host→tenant_id map from profiles for efficient O(1) lookups
+    profile_map: dict[str, UUID] = {}
+    for site_url, tenant_id in profiles:
+        profile_host = _extract_host(site_url)
+        if profile_host and tenant_id is not None:
+            profile_map[profile_host] = tenant_id
+
     for host in candidate_hosts:
-        for profile in profiles:
-            profile_host = _extract_host(profile.site_url)
-            if profile_host and profile_host == host:
-                return profile.tenant_id
+        tid = profile_map.get(host)
+        if tid:
+            _TENANT_HOST_CACHE[host] = (tid, now)
+            return tid
 
         subdomain = host.split(".", 1)[0]
         if subdomain and subdomain not in {"www", "app", "api", "localhost"}:
@@ -270,6 +292,16 @@ async def resolve_tenant_id(
                 await session.exec(select(Tenant).where(Tenant.slug == subdomain))
             ).first()
             if tenant:
+                _TENANT_HOST_CACHE[host] = (tenant.id, now)
                 return tenant.id
 
+        # Cache miss — record negative result to avoid re-querying
+        _TENANT_HOST_CACHE[host] = (None, now)
+
     return None
+
+
+# ── Process-level TTL cache for host→tenant_id ──────────────────────────────
+import time as _time_mod
+_TENANT_HOST_CACHE: dict[str, tuple[Optional[UUID], float]] = {}
+_TENANT_HOST_CACHE_TTL = 120.0  # seconds

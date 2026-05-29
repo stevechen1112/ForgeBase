@@ -269,11 +269,9 @@ async def paypal_webhook(request: Request):
         logger.warning("PayPal webhook missing custom_id: %s", event_type)
         return {"status": "ignored"}
 
-    from app.db.session import async_engine
-    from sqlmodel.ext.asyncio.session import AsyncSession as AS
-    from sqlalchemy.orm import sessionmaker
+    from app.db.session import AsyncSessionLocal
 
-    async_session = sessionmaker(async_engine, class_=AS, expire_on_commit=False)
+    async_session = AsyncSessionLocal
     async with async_session() as db:
         try:
             tenant_uuid = uuid.UUID(custom_id)

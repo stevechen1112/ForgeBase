@@ -263,8 +263,17 @@ async def submit_rfq(
         from app.services.notifications import notify_new_rfq
         from app.services.hubspot import sync_rfq_to_hubspot
         from app.services.webhook import fire_webhook
+        from app.services.agentOS import trigger_agentOS_rfq
         import asyncio
         from app.services.copilot import on_new_rfq as _copilot_on_rfq
+        
+        # Condition 1: Trigger AgentOS workflow (await to ensure agent_run_id is stored before response)
+        try:
+            await trigger_agentOS_rfq(rfq.id, tenant_id)
+        except Exception:
+            logger.warning("agentOS trigger failed (non-blocking)", exc_info=True)
+        
+        # Standard routing + notifications (background)
         asyncio.create_task(route_rfq(rfq.id))
         asyncio.create_task(notify_new_rfq(rfq.id))
         asyncio.create_task(sync_rfq_to_hubspot(rfq.id))
@@ -569,4 +578,7 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
             r.quote_sent_at.isoformat() if r.quote_sent_at else None
         )
         base["lost_reason"] = r.lost_reason
+        base["agent_run_id"] = r.agent_run_id
+        base["agent_analysis_summary"] = r.agent_analysis_summary
+        base["agent_draft_body"] = r.agent_draft_body
     return base

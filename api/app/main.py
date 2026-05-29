@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -20,6 +21,9 @@ from app.services.copilot.digest import run_daily_digest
 
 logger = logging.getLogger("forgebase.api")
 
+# Only start APScheduler in the primary worker to prevent duplicate job execution
+# in multi-worker deployments. Set FORGEBASE_SCHEDULER_ENABLED=0 on non-primary workers.
+_SCHEDULER_ENABLED = os.environ.get("FORGEBASE_SCHEDULER_ENABLED", "1") == "1"
 _scheduler = AsyncIOScheduler(timezone="UTC")
 
 
@@ -62,6 +66,10 @@ async def _daily_digest_job() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not _SCHEDULER_ENABLED:
+        logger.info("APScheduler disabled on this worker (FORGEBASE_SCHEDULER_ENABLED=0)")
+        yield
+        return
     # startup — register scheduled jobs
     _scheduler.add_job(
         _score_decay_job,
@@ -127,7 +135,13 @@ app.add_middleware(
 # ── Rate limiting middleware ─────────────────────────────────────────────────
 @app.middleware("http")
 async def enforce_rate_limit(request: Request, call_next):
-    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown").split(",")[0].strip()
+    # Use the LAST entry in X-Forwarded-For (set by our trusted nginx proxy)
+    # to prevent client-side IP spoofing via a forged X-Forwarded-For header.
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        client_ip = xff.split(",")[-1].strip()
+    else:
+        client_ip = request.client.host if request.client else "unknown"
     if not rate_limit.check(request.method, request.url.path, client_ip):
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

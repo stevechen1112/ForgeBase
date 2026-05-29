@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+/* ────────────────────────────────────────────
+   Base
+──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans TC', 'Inter', -apple-system, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.8;
+  color: #1a2030;
+  background: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+/* ────────────────────────────────────────────
+   Cover Header (first H1 block)
+──────────────────────────────────────────── */
+h1:first-of-type {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1a3a5c 60%, #0e4d8c 100%);
+  color: #ffffff !important;
+  font-size: 22pt;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: -40px -40px 0 -40px;
+  padding: 48px 48px 20px 48px;
+  border-bottom: 3px solid #2a7fd4;
+}
+
+h1:first-of-type + p strong {
+  display: block;
+  background: linear-gradient(135deg, #0d1b2a 0%, #1a3a5c 60%, #0e4d8c 100%);
+  color: #7ec8f7 !important;
+  font-size: 11pt;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: -40px -40px 0 -40px;
+  padding: 0px 48px 40px 48px;
+}
+
+/* ────────────────────────────────────────────
+   Headings
+──────────────────────────────────────────── */
+h1, h2, h3 {
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+h2 {
+  font-size: 14pt;
+  color: #0d1b2a;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2a7fd4;
+  margin-top: 2.4em;
+}
+
+h3 {
+  font-size: 11.5pt;
+  color: #1a3a5c;
+  padding-left: 12px;
+  border-left: 4px solid #2a7fd4;
+  margin-top: 1.8em;
+  background: #f5f9ff;
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* ────────────────────────────────────────────
+   Paragraphs & Text
+──────────────────────────────────────────── */
+p {
+  margin: 0 0 0.9em 0;
+  color: #2d3748;
+}
+
+strong {
+  color: #0d1b2a;
+  font-weight: 600;
+}
+
+/* Opening story paragraphs — slightly larger, italic feel */
+h2:first-of-type + p,
+h2:first-of-type + p + p,
+h2:first-of-type + p + p + p,
+h2:first-of-type + p + p + p + p {
+  font-size: 10.5pt;
+  color: #4a5568;
+  line-height: 2;
+}
+
+/* ────────────────────────────────────────────
+   Horizontal Rules
+──────────────────────────────────────────── */
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 2em 0;
+}
+
+/* ────────────────────────────────────────────
+   Ordered / Unordered Lists
+──────────────────────────────────────────── */
+ul, ol {
+  margin: 0.5em 0 1em 0;
+  padding-left: 1.5em;
+}
+
+li {
+  margin-bottom: 0.35em;
+  color: #2d3748;
+}
+
+li::marker {
+  color: #2a7fd4;
+}
+
+/* Result callout lines ending with "結果：…" */
+p strong:only-child {
+  display: inline;
+}
+
+/* Callout box — paragraphs that start with **結果：** */
+p:has(strong:first-child) {
+  background: #f0f7ff;
+  border-left: 4px solid #2a7fd4;
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  margin-top: 1em;
+  color: #0d3b6e;
+}
+
+/* ────────────────────────────────────────────
+   Tables
+──────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0 1.6em 0;
+  font-size: 10pt;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(13,27,42,0.08);
+}
+
+thead tr {
+  background: linear-gradient(90deg, #0d1b2a, #1a3a5c);
+  color: #ffffff;
+}
+
+thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 10pt;
+}
+
+tbody tr:nth-child(even) {
+  background: #f7faff;
+}
+
+tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e8edf5;
+  vertical-align: top;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ────────────────────────────────────────────
+   Blockquote (use as callout)
+──────────────────────────────────────────── */
+blockquote {
+  border-left: 4px solid #2a7fd4;
+  background: #f0f7ff;
+  margin: 1em 0;
+  padding: 12px 18px;
+  border-radius: 0 8px 8px 0;
+  color: #1a3a5c;
+  font-style: normal;
+}
+
+/* ────────────────────────────────────────────
+   Code
+──────────────────────────────────────────── */
+code {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 9pt;
+  color: #1a3a5c;
+}
+
+/* ────────────────────────────────────────────
+   Links
+──────────────────────────────────────────── */
+a {
+  color: #2a7fd4;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ────────────────────────────────────────────
+   Footer / Last Paragraph
+──────────────────────────────────────────── */
+em {
+  color: #718096;
+  font-style: normal;
+  font-size: 9.5pt;
+}
+
+/* ────────────────────────────────────────────
+   Page Layout for PDF
+──────────────────────────────────────────── */
+@page {
+  margin: 40px 50px 50px 50px;
+}
+
+@media print {
+  h2 {
+    page-break-before: auto;
+    break-before: auto;
+  }
+  
+  h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

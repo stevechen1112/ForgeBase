@@ -394,6 +394,7 @@ class PageBriefUpdate(BaseModel):
     notes: Optional[str] = None
     related_entity_type: Optional[str] = Field(default=None, max_length=40)
     related_entity_id: Optional[uuid.UUID] = None
+    brief_status: Optional[str] = None
     locale: Optional[str] = Field(default=None, max_length=5)
     ai_status: Optional[str] = None
 
@@ -419,6 +420,8 @@ class PageBriefRead(BaseModel):
     created_by: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    agent_run_id: Optional[str] = None
+    agent_approved_content_json: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

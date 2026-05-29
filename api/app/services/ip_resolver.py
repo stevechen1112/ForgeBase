@@ -1,14 +1,22 @@
 """
-IP resolution service — GeoIP country/city lookup via ip-api.com (free tier).
+IP resolution service — GeoIP country/city lookup via ip-api.com.
+
+Uses the HTTPS pro endpoint when IP_API_KEY is set (recommended for production).
+Falls back to the free HTTP endpoint for development.
 """
 import logging
+import os
 from typing import Optional
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-IP_API_URL = "http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,city,org,as,query"
+IP_API_URL = "https://pro.ip-api.com/json/{ip}?fields=status,message,country,countryCode,city,org,as,query&key={key}"
+_IP_API_KEY = os.environ.get("IP_API_KEY", "")
+
+# Fallback for development (free tier, HTTP only, limited to 45 req/min)
+_IP_API_FREE_URL = "http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,city,org,as,query"
 
 
 async def resolve_ip_to_company(ip: str) -> Optional[dict]:
@@ -19,8 +27,13 @@ async def resolve_ip_to_company(ip: str) -> Optional[dict]:
     if _is_private_ip(ip):
         return None
     try:
+        url = (
+            IP_API_URL.format(ip=ip, key=_IP_API_KEY)
+            if _IP_API_KEY
+            else _IP_API_FREE_URL.format(ip=ip)
+        )
         async with httpx.AsyncClient(timeout=5.0) as client:
-            r = await client.get(IP_API_URL.format(ip=ip))
+            r = await client.get(url)
             data = r.json()
             if data.get("status") != "success":
                 return None

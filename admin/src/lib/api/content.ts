@@ -214,6 +214,7 @@ export type PageBrief = {
   main_cta_key: string | null;
   notes: string | null;
   ai_status: string;
+  brief_status: string;
   locale: string;
   created_by: string;
   created_at: string;

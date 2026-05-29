@@ -4,7 +4,7 @@ import {
   ClipboardList,
   Globe, Eye, MousePointerClick, Percent, ArrowUpRight,
   RefreshCcw, Lock, Sunrise, AlertTriangle, Flame, Sparkles,
-  ChevronRight,
+  ChevronRight, Bot,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/api/client";
 import { PlanGate, UpgradeChip } from "@/components/plan/PlanGate";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { agentosApi, type RunView } from "@/lib/api/agentos";
 
 // ── 型別 ────────────────────────────────────────────────────────────────────
 type FunnelData = {
@@ -61,6 +62,7 @@ export default function DashboardPage() {
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [agentRuns, setAgentRuns] = useState<RunView[]>([]);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -72,6 +74,8 @@ export default function DashboardPage() {
       ]);
       setFunnel(funnelJson);
       setRfqs(Array.isArray(rfqJson) ? rfqJson : []);
+      // Load AgentOS run summary (non-critical — swallow errors)
+      agentosApi.listRuns().then((runs) => setAgentRuns(runs)).catch(() => setAgentRuns([]));
     } catch { /* 靜默失敗 */ }
     finally { setLoading(false); }
   }, [token]);
@@ -328,6 +332,54 @@ export default function DashboardPage() {
                 })
               ) : (
                 <p className="text-xs text-muted-foreground py-4 text-center">載入中…</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-1.5">
+                  <Bot className="h-4 w-4 text-muted-foreground" />
+                  Agent 任務狀態
+                </CardTitle>
+                <Link href="/dashboard/agent-runs" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                  查看全部 <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {agentRuns.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2 text-center">無 Agent 任務紀錄</p>
+              ) : (
+                <>
+                  {(["waiting_approval", "running", "failed", "completed"] as const).map((status) => {
+                    const count = agentRuns.filter((r) => r.run.status === status).length;
+                    if (count === 0) return null;
+                    const cfg: Record<string, { label: string; cls: string }> = {
+                      waiting_approval: { label: "等待審批", cls: "text-amber-700 bg-amber-50 border-amber-200" },
+                      running:          { label: "執行中",   cls: "text-blue-700 bg-blue-50 border-blue-200" },
+                      failed:           { label: "失敗",     cls: "text-red-700 bg-red-50 border-red-200" },
+                      completed:        { label: "已完成",   cls: "text-green-700 bg-green-50 border-green-200" },
+                    };
+                    const { label, cls } = cfg[status];
+                    return (
+                      <div key={status} className={`flex items-center justify-between rounded-md border px-2.5 py-1.5 ${cls}`}>
+                        <span className="text-xs font-medium">{label}</span>
+                        <span className="text-sm font-bold">{count}</span>
+                      </div>
+                    );
+                  })}
+                  {agentRuns.some((r) => r.run.status === "waiting_approval") && (
+                    <Link
+                      href="/dashboard/agent-runs"
+                      className="mt-1 flex items-center justify-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                    >
+                      <Bot className="h-3.5 w-3.5" />
+                      前往審批
+                    </Link>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

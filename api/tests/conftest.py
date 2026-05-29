@@ -44,11 +44,75 @@ async def http_client():
     within the test's function-scoped event loop uses a fresh asyncpg
     connection.  This prevents the module-level pool from ever holding
     connections bound to a different (previous test's) event loop.
+    
+    Also ensures DB schema is up-to-date by running pending migrations.
     """
     from app.main import app
     from app.db.session import get_session
+    from sqlalchemy import text
 
     eng, factory = _make_engine()
+    
+    # Ensure DB schema is up-to-date: add agent_run_id and writeback columns if missing
+    async with factory() as session:
+        try:
+            # Check if column exists first
+            result = await session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'rfq_requests' AND column_name = 'agent_run_id'
+            """))
+            column_exists = result.scalar() is not None
+            
+            if not column_exists:
+                # Add agent_run_id column
+                await session.execute(text("""
+                    ALTER TABLE rfq_requests ADD COLUMN agent_run_id VARCHAR(100)
+                """))
+                # Create index
+                await session.execute(text("""
+                    CREATE INDEX ix_rfq_requests_agent_run_id ON rfq_requests(agent_run_id)
+                """))
+                await session.commit()
+
+            # Add writeback columns (Condition 4) if missing
+            for col_name, col_def in [
+                ("agent_analysis_summary", "VARCHAR(2000)"),
+                ("agent_draft_body", "TEXT"),
+            ]:
+                result = await session.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_name = 'rfq_requests' AND column_name = '{col_name}'"
+                ))
+                if result.scalar() is None:
+                    await session.execute(text(
+                        f"ALTER TABLE rfq_requests ADD COLUMN {col_name} {col_def}"
+                    ))
+                    await session.commit()
+
+            # Add page_briefs AgentOS columns if missing
+            for col_name, col_def in [
+                ("agent_run_id", "VARCHAR(100)"),
+                ("agent_approved_content_json", "TEXT"),
+            ]:
+                result = await session.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_name = 'page_briefs' AND column_name = '{col_name}'"
+                ))
+                if result.scalar() is None:
+                    await session.execute(text(
+                        f"ALTER TABLE page_briefs ADD COLUMN {col_name} {col_def}"
+                    ))
+                    if col_name == "agent_run_id":
+                        await session.execute(text(
+                            "CREATE INDEX IF NOT EXISTS ix_page_briefs_agent_run_id "
+                            "ON page_briefs(agent_run_id)"
+                        ))
+                    await session.commit()
+        except Exception as e:
+            await session.rollback()
+            # Column may already exist or other schema issue; continue anyway
+            import logging
+            logging.warning(f"Schema setup failed (may be OK): {e}")
 
     async def _override_get_session():
         async with factory() as session:

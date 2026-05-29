@@ -1,6 +1,7 @@
 """
 AI content generation endpoint — Epic 1a.4.
 POST /content/generate  →  triggers AI generation for a PageBrief.
+GET  /content/briefs/{brief_id}/latest-generation  →  returns latest AIGenerationLog for a brief.
 """
 import json
 import logging
@@ -64,6 +65,17 @@ async def generate_page_content(
             status_code=422,
             detail=f"Brief must be 'approved' or 'in_progress' to generate. Current: '{brief.brief_status}'",
         )
+
+    # ── AgentOS trigger (fire-and-forget, fault-tolerant) ──────────────────
+    # Only trigger once per brief: if agent_run_id is already set, AgentOS
+    # is already governing this brief — skip to avoid double-triggering.
+    if not brief.agent_run_id:
+        try:
+            from app.services.agentOS import trigger_agentOS_content
+            await trigger_agentOS_content(brief.id, brief.tenant_id)
+        except Exception as _agentOS_err:
+            # AgentOS unavailability must never block content generation
+            logger.warning(f"AgentOS trigger failed for brief {brief.id}: {_agentOS_err}")
 
     # Mark as in_progress + processing
     brief.brief_status = "in_progress"
@@ -143,8 +155,8 @@ async def generate_page_content(
             entity_id=entity_id,
             model_name=settings.AI_MODEL_NAME,
             input_summary=json.dumps({"brief_id": str(brief.id), "entity_id": str(entity_id)}),
-            output_json=json.dumps(result_data),
-            status="success",
+            output_json=result_data,
+            status="done",
         )
         session.add(log)
 
@@ -223,4 +235,40 @@ async def get_generation_logs(
             }
             for log in logs
         ]
+    }
+
+
+@router.get("/briefs/{brief_id}/latest-generation", tags=["ai"])
+async def get_latest_generation(
+    brief_id: uuid.UUID,
+    _feature=Depends(RequireFeature("ai_content_generation")),
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    """Return the latest successful AIGenerationLog for a brief (used by AgentOS adapter)."""
+    brief = await session.get(PageBrief, brief_id)
+    if not brief:
+        raise HTTPException(status_code=404, detail="PageBrief not found")
+    if current_user.tenant_id and brief.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="PageBrief not found")
+
+    result = await session.exec(
+        select(AIGenerationLog)
+        .where(
+            AIGenerationLog.brief_id == brief_id,
+            AIGenerationLog.status == "done",
+        )
+        .order_by(AIGenerationLog.created_at.desc())
+    )
+    log = result.first()
+    if not log:
+        raise HTTPException(status_code=404, detail="No successful generation found for this brief")
+
+    return {
+        "brief_id": str(brief_id),
+        "log_id": str(log.id),
+        "page_type": log.page_type,
+        "result": log.output_json if log.output_json else {},
+        "model_name": log.model_name,
+        "created_at": log.created_at.isoformat(),
     }

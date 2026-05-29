@@ -163,8 +163,8 @@ export const siteConfig: SiteConfig = {
 
   /** Default asset manifest keeps the existing demo experience as a legacy fallback. */
   assetManifest: {
-    homeHero: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/homepage-hero-manufacturer.png`,
-    aboutHero: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/about-factory-hero.png`,
+    homeHero: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/homepage-hero-northforge-manufacturer.png`,
+    aboutHero: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/about-factory-hero-northforge.png`,
     productsHero: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/category-toolkits-storage-hero.png`,
     qualityInspection: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/capability-quality-inspection.png`,
     customPackaging: `${process.env.NEXT_PUBLIC_ASSET_BASE || "/demo/handtool-company/assets"}/generated/capability-custom-packaging-oem.png`,

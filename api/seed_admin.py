@@ -13,9 +13,14 @@ async def seed():
     conn = await asyncpg.connect(
         settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql")
     )
-    email = "admin@forgebase.com"
+    email = settings.ADMIN_EMAIL or "admin@forgebase.com"
+    password = settings.ADMIN_PASSWORD
+    if not password:
+        print("ERROR: ADMIN_PASSWORD env var is not set. Aborting seed.")
+        await conn.close()
+        return
     existing = await conn.fetchrow("SELECT id FROM users WHERE email=$1", email)
-    hashed = get_password_hash("ForgeBase2026!")
+    hashed = get_password_hash(password)
     now = datetime.now(timezone.utc)
 
     if existing:

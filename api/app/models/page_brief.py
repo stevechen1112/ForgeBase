@@ -36,3 +36,6 @@ class PageBrief(SQLModel, table=True):
     created_by: uuid.UUID = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
+    # AgentOS integration fields
+    agent_run_id: Optional[str] = Field(default=None, max_length=100, index=True)
+    agent_approved_content_json: Optional[str] = Field(default=None)

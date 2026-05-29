@@ -8,7 +8,7 @@ import {
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
-  Lock,
+  Lock, ListOrdered,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "AI 晨報", href: "/dashboard", icon: LayoutDashboard, exact: true },
       // Sales 不需要 Copilot 操作介面；他們透過通知接收結果
       { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
+      { label: "Agent 任務佇列", href: "/dashboard/agent-runs", icon: ListOrdered, salesHidden: true },
     ],
   },
   {

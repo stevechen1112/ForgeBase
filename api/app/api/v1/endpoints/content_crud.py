@@ -10,7 +10,7 @@ Remaining content CRUD endpoints:
   /api/v1/content/briefs
 """
 import uuid
-from typing import Type, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func, SQLModel
@@ -137,7 +137,7 @@ def make_crud_router(
 
     @router.post("", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
     async def create_item(
-        payload: Any,
+        payload: CreateSchema,
         session: AsyncSession = Depends(get_session),
         _user=Depends(require_content_editor),
     ):
@@ -187,7 +187,7 @@ def make_crud_router(
     @router.patch("/{item_id}", response_model=APIResponse)
     async def update_item(
         item_id: uuid.UUID,
-        payload: Any,
+        payload: UpdateSchema,
         session: AsyncSession = Depends(get_session),
         _user=Depends(require_content_editor),
     ):

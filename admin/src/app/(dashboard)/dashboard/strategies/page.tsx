@@ -8,7 +8,7 @@ import { UpgradeChip } from "@/components/plan/PlanGate";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, BarChart2 } from "lucide-react";
+import { Plus, BarChart2, Bot } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -220,6 +220,15 @@ export default function StrategiesPage() {
                           {s.entity_type && <p className="font-medium">{s.entity_type}</p>}
                           {s.locale && <p className="text-muted-foreground">{s.locale}</p>}
                         </div>
+                        {s.brief_id && (
+                          <span
+                            title="已連結 Brief，可透過 AgentOS AI Workflow 生成"
+                            className="shrink-0 flex items-center gap-0.5 rounded bg-indigo-100 text-indigo-600 px-1 py-0.5"
+                          >
+                            <Bot className="h-3 w-3" />
+                            <span className="text-[10px] font-medium">AI</span>
+                          </span>
+                        )}
                       </div>
                       {showPerf && perf && perf.page_views > 0 && (
                         <div className="flex gap-2 text-muted-foreground border-t pt-1">

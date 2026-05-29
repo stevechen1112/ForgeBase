@@ -7,17 +7,38 @@ $SSHKeyPath = "$env:USERPROFILE\.ssh\id_rsa_linode"
 function Step($msg) { Write-Host "`n>>> $msg" -ForegroundColor Cyan }
 
 function Invoke-RemoteScript($Script, $Label) {
-        $output = $Script | & ssh -i $SSHKeyPath $SSHHost "bash -s" 2>&1
-        if ($output) {
-                $output | Out-String | Write-Host
-        }
+        # PowerShell's pipe forces CRLF when writing to external stdin.
+        # Use Process directly and set NewLine=LF to avoid garbled refspecs/options.
+        $Script = ($Script -replace "`r`n", "`n" -replace "`r", "`n").TrimStart("`n") + "`n"
 
-        if ($LASTEXITCODE -ne 0) {
+        $psi = [System.Diagnostics.ProcessStartInfo]::new("ssh")
+        $psi.Arguments  = "-i `"$SSHKeyPath`" $SSHHost `"bash -s`""
+        $psi.UseShellExecute        = $false
+        $psi.RedirectStandardInput  = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError  = $true
+
+        $proc = [System.Diagnostics.Process]::new()
+        $proc.StartInfo = $psi
+        $proc.Start() | Out-Null
+
+        $proc.StandardInput.NewLine = "`n"   # force LF
+        $proc.StandardInput.Write($Script)
+        $proc.StandardInput.Close()
+
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+
+        $combined = (@($stdout, $stderr) | Where-Object { $_ }) -join ""
+        if ($combined) { Write-Host $combined }
+
+        if ($proc.ExitCode -ne 0) {
                 Write-Host "`n=== DEPLOY FAILED: $Label ===" -ForegroundColor Red
                 exit 1
         }
 
-        return ($output | Out-String)
+        return $stdout
 }
 
 function Assert-RemoteHttp200($Url, $Label) {
@@ -88,6 +109,19 @@ git checkout -- .
 git pull --ff-only origin main
 "@ "Pull latest code on server" | Out-Null
 
+# 1b. Ensure web/public/demo symlink exists (must survive git pull)
+Step "Ensuring web/public/demo asset symlink..."
+Invoke-RemoteScript @"
+set -euo pipefail
+mkdir -p /opt/forgebase/app/web/public
+# Remove stale file/dir if any; recreate as absolute symlink
+if [ ! -L /opt/forgebase/app/web/public/demo ]; then
+  rm -rf /opt/forgebase/app/web/public/demo
+  ln -s /opt/forgebase/app/demo /opt/forgebase/app/web/public/demo
+fi
+ls -la /opt/forgebase/app/web/public/demo
+"@ "Ensure web/public/demo asset symlink" | Out-Null
+
 # 2. API: deps + migrations + restart
 Step "Updating API (deps + migrations + restart)..."
 Invoke-RemoteScript @"
@@ -115,6 +149,18 @@ systemctl restart forgebase-web forgebase-admin
 sleep 5
 systemctl is-active forgebase-api forgebase-web forgebase-admin
 "@ "Restart frontend services" | Out-Null
+
+# 5b. Re-verify symlink (Next.js build may have wiped public/)
+Step "Re-verifying web/public/demo symlink after build..."
+Invoke-RemoteScript @"
+set -euo pipefail
+mkdir -p /opt/forgebase/app/web/public
+if [ ! -L /opt/forgebase/app/web/public/demo ]; then
+  rm -rf /opt/forgebase/app/web/public/demo
+  ln -s /opt/forgebase/app/demo /opt/forgebase/app/web/public/demo
+  echo 'Symlink recreated after build'
+fi
+"@ "Re-verify web/public/demo symlink" | Out-Null
 
 Step "Runtime permission checks..."
 Invoke-RemoteScript @'

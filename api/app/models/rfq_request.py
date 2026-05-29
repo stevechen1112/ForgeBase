@@ -60,6 +60,16 @@ class RFQRequest(SQLModel, table=True):
     # CRM  
     hubspot_deal_id: Optional[str] = Field(default=None, max_length=50)
 
+    # AgentOS integration (Condition 1: auto-trigger)
+    agent_run_id: Optional[str] = Field(default=None, max_length=100, index=True)
+    # Stores the AgentOS run_id returned when RFQ is auto-triggered
+
+    # AgentOS writeback (Condition 4: writeback)
+    agent_analysis_summary: Optional[str] = Field(default=None, max_length=2000)
+    # Summary from AgentOS analyze-rfq evidence (forgebase_analyze_rfq)
+    agent_draft_body: Optional[str] = Field(default=None)
+    # Approved reply draft body from AgentOS send-reply evidence (forgebase_send_reply)
+
     # Notification flags (1b.4.7)
     assigned_notified_at: Optional[datetime] = Field(default=None)
     reminder_24h_sent_at: Optional[datetime] = Field(default=None)

@@ -5,13 +5,22 @@ No external dependencies — uses a plain dict + threading.Lock.
 Works correctly for single-worker deployments (Docker uvicorn default).
 
 For multi-worker deployments move to Redis (slowapi + redis backend).
+
+WARNING: In multi-worker mode (uvicorn --workers N), each worker maintains
+its own counter. Effective limits are multiplied by the number of workers.
+This is acceptable for basic abuse prevention but should be upgraded to a
+shared Redis store before scaling horizontally.
 """
 from __future__ import annotations
 
+import logging
+import os
 import threading
 import time
 from collections import defaultdict
 from typing import Dict, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 # (method, path) -> (max_requests, window_seconds)
 RULES: Dict[Tuple[str, str], Tuple[int, int]] = {
@@ -66,3 +75,13 @@ def check(method: str, path: str, client_ip: str) -> bool:
     limit, window = rule
     key = f"{client_ip}|{method}:{path}"
     return _store.is_allowed(key, limit, window)
+
+
+# Warn on import if running in a multi-worker setup
+_workers = os.environ.get("WEB_CONCURRENCY", "1")
+if _workers != "1":
+    logger.warning(
+        "In-process rate limiter running with %s workers — effective limits are per-worker. "
+        "Consider switching to a Redis-backed limiter for accurate cross-worker enforcement.",
+        _workers,
+    )

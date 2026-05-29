@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""
 
+    # AgentOS integration (Condition 1: auto-trigger RFQ workflows)
+    AGENTOSS_URL: str = "http://localhost:8000"
+
     @property
     def allowed_origins_list(self) -> List[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
@@ -130,6 +133,20 @@ def _validate_production_settings() -> None:
         if invalid_origins:
             details.append(f"dev CORS origins in production: {', '.join(invalid_origins)}")
         raise RuntimeError("Invalid production settings — " + "; ".join(details))
+
+    # Ensure ENCRYPTION_MASTER_KEY is set — fail early instead of at first encrypt/decrypt call
+    if not settings.ENCRYPTION_MASTER_KEY:
+        raise RuntimeError(
+            "ENCRYPTION_MASTER_KEY must be set in production. "
+            'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+        )
+
+    # Ensure Telegram webhook secret is set when bot token is configured
+    if settings.TELEGRAM_BOT_TOKEN and not settings.TELEGRAM_WEBHOOK_SECRET:
+        raise RuntimeError(
+            "TELEGRAM_WEBHOOK_SECRET must be set in production when TELEGRAM_BOT_TOKEN is configured. "
+            "This prevents unauthenticated webhook injection."
+        )
 
 
 _validate_production_settings()

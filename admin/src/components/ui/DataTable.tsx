@@ -30,6 +30,7 @@ type Props<T extends { id: string }> = {
   onDelete?: (id: string) => void;
   isDeleting?: string | null;
   searchPlaceholder?: string;
+  extraActions?: (row: T) => React.ReactNode;
 };
 
 export function DataTable<T extends { id: string }>({
@@ -39,6 +40,7 @@ export function DataTable<T extends { id: string }>({
   onDelete,
   isDeleting,
   searchPlaceholder = "搜尋…",
+  extraActions,
 }: Props<T>) {
   const [query, setQuery]     = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -182,6 +184,7 @@ export function DataTable<T extends { id: string }>({
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {extraActions?.(row)}
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" asChild>
                             <Link href={`${editBasePath}/${row.id}/edit`} aria-label="編輯">
                               <Pencil className="h-3.5 w-3.5" />

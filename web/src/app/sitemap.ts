@@ -14,11 +14,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
   const now = new Date();
 
-  // Fetch ALL published content across all locales
+  // Fetch ALL published content across all locales — paginate to capture all items
+  const MAX_SITEMAP_ITEMS = 5000;
   const [categories, productsRes, applicationsRes, capabilities, certifications, comparisons, faqs] = await Promise.all([
     getPublishedCategories(),
-    getAllPublishedProducts("en", 1, 100),
-    getAllPublishedApplications("en", 1, 100),
+    getAllPublishedProducts("en", 1, MAX_SITEMAP_ITEMS),
+    getAllPublishedApplications("en", 1, MAX_SITEMAP_ITEMS),
     getPublishedCapabilities(),
     getPublishedCertifications(),
     getPublishedComparisons(),

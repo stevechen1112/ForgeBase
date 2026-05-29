@@ -101,7 +101,12 @@ class TelegramChannel(BaseChannel):
     def verify_webhook_secret(self, token: str) -> bool:
         """Validate X-Telegram-Bot-Api-Secret-Token header."""
         if not TELEGRAM_WEBHOOK_SECRET:
-            return True  # not configured → skip verification
+            from app.core.config import settings
+            if settings.is_production:
+                logger.error("TELEGRAM_WEBHOOK_SECRET not set in production — rejecting webhook")
+                return False
+            logger.warning("TELEGRAM_WEBHOOK_SECRET not set — skipping verification (dev only)")
+            return True
         return hmac.compare_digest(token or "", TELEGRAM_WEBHOOK_SECRET)
 
     async def send_binding_code(self, chat_id: str, code: str) -> bool:
