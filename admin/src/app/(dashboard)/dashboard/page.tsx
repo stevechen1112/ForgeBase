@@ -106,7 +106,7 @@ export default function DashboardPage() {
               <Sunrise className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold leading-tight">AI 行銷專員・每日晨報</h1>
+              <h1 className="text-lg font-semibold leading-tight">每日營運總覽</h1>
               <p className="text-sm text-white/60 mt-0.5">早安，{userName}！以下是今天需要您關注的事項</p>
             </div>
           </div>
