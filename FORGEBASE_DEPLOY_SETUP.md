@@ -89,18 +89,16 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ---
 
-## 3. Secrets 輪替狀態（重要）
+## 3. Secrets 狀態（重要）
 
-`.gitignore` 已涵蓋 `.env.*`，且以下檔案已從版本控制移除：
+`.gitignore` 涵蓋 `.env.*`；以下檔案**從未進入目前的 git 歷史**：
 - `api/.env.kinga`
 - `admin/.env.production`
 
-**截至 2026-08-03，含洩漏的 commit（`6e9fb96`、`91eb14f` 等）尚未 push 到遠端**
-（`git branch -r --contains` 無結果），因此：
+**2026-08-03：首次 push 前已用 `git filter-repo` 抹除整段歷史中的上述檔案與 README 內的 production DB 密碼**，再推送至 [stevechen1112/ForgeBase](https://github.com/stevechen1112/ForgeBase)（Public）。
+因此 GitHub 上的歷史不含任何真實金鑰。
 
-- ✅ 若尚未 push：**無需公開輪替**，直接 amend／rebase 或在 push 前確認檔案已移除即可。
-- ⚠️ 若之後曾 push 過這些檔案的任何版本：**必須輪替**其中的所有金鑰
-  （Gemini key、DB 密碼、R2、Resend 等），因 GitHub 會永久保留歷史快照。
+⚠️ **仍建議輪替**：`api/.env.kinga` 內的 DATABASE 密碼、`SECRET_KEY`、`ADMIN_PASSWORD` 曾在本機歷史存在約數月（未外洩），若該 DB 可從外部連線，建議仍換密碼以求保險。往後任何 secret 誤 commit，一律視為已外洩並立即輪替。
 
 ---
 
