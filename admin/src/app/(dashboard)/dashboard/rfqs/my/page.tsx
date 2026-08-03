@@ -26,9 +26,27 @@ const STATUS_COLORS: Record<string, string> = {
   assigned: "bg-yellow-100 text-yellow-800",
   in_progress: "bg-orange-100 text-orange-800",
   quoted: "bg-purple-100 text-purple-800",
+  negotiation: "bg-indigo-100 text-indigo-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-muted text-muted-foreground",
   expired: "bg-red-100 text-red-700",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  new: "新進",
+  assigned: "已指派",
+  in_progress: "處理中",
+  quoted: "已報價",
+  negotiation: "談判中",
+  won: "成交",
+  lost: "流失",
+  expired: "過期",
+};
+
+const PRIORITY_LABEL: Record<string, string> = {
+  normal: "一般",
+  high: "高",
+  urgent: "緊急",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -87,13 +105,9 @@ export default function MyRFQsPage() {
       <div className="mb-4 flex flex-wrap gap-3">
         <select className={SELECT_CLS} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="">全部狀態</option>
-          <option value="new">新建</option>
-          <option value="assigned">已指派</option>
-          <option value="in_progress">處理中</option>
-          <option value="quoted">已報價</option>
-          <option value="won">成交</option>
-          <option value="lost">未成交</option>
-          <option value="expired">已過期</option>
+          {["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"].map((s) => (
+            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+          ))}
         </select>
         <Button variant="outline" size="sm" onClick={load}>
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" />重新整理
@@ -122,11 +136,11 @@ export default function MyRFQsPage() {
                 <td className="px-4 py-3 font-mono text-xs">{rfq.rfq_number}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[rfq.status] ?? "bg-muted text-muted-foreground"}`}>
-                    {rfq.status}
+                    {STATUS_LABEL[rfq.status] ?? rfq.status}
                   </span>
                 </td>
                 <td className={`px-4 py-3 text-xs ${PRIORITY_COLORS[rfq.priority] ?? "text-muted-foreground"}`}>
-                  {rfq.priority}
+                  {PRIORITY_LABEL[rfq.priority] ?? rfq.priority}
                 </td>
                 <td className="px-4 py-3"><QualityBadge score={rfq.quality_score ?? 0} /></td>
                 <td className="px-4 py-3">

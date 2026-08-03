@@ -21,6 +21,8 @@ from sqlmodel import select
 sys.path.insert(0, ".")
 
 from app.core.config import settings
+import app.models  # noqa: F401 — 確保所有 table metadata 註冊（FK 解析需要）
+from app.models.contact import Contact  # noqa: F401 — 未列入 app.models __init__，FK 需顯式載入
 from app.models.rfq_request import RFQRequest
 from app.models.tracking_event import TrackingEvent
 from app.models.visitor import Visitor
@@ -41,12 +43,12 @@ async def run(tenant_id: str | None, dry_run: bool) -> None:
         v_q = select(Visitor)
         if tenant_id:
             v_q = v_q.where(Visitor.tenant_id == tenant_id)
-        visitors = (await session.exec(v_q)).all()
+        visitors = (await session.execute(v_q)).scalars().all()
 
         ev_q = select(TrackingEvent).order_by(TrackingEvent.timestamp.asc())
         if tenant_id:
             ev_q = ev_q.where(TrackingEvent.tenant_id == tenant_id)
-        events = (await session.exec(ev_q)).all()
+        events = (await session.execute(ev_q)).scalars().all()
 
         by_visitor: dict[str, list[TrackingEvent]] = defaultdict(list)
         for e in events:
@@ -56,7 +58,7 @@ async def run(tenant_id: str | None, dry_run: bool) -> None:
         rfq_q = select(RFQRequest.visitor_id).where(RFQRequest.visitor_id.is_not(None)).distinct()
         if tenant_id:
             rfq_q = rfq_q.where(RFQRequest.tenant_id == tenant_id)
-        rfq_visitors = {str(x) for x in (await session.exec(rfq_q)).all() if x}
+        rfq_visitors = {str(x) for x in (await session.execute(rfq_q)).scalars().all() if x}
 
         updated = 0
         for v in visitors:

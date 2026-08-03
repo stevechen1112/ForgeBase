@@ -43,7 +43,7 @@ router = APIRouter(prefix="/copilot", tags=["Copilot"])
 _telegram = TelegramChannel()
 
 _BINDING_CODE_EXPIRY_MINUTES = 10
-_VALID_CHANNELS = {"telegram", "email", "in_app"}
+_VALID_CHANNELS = {"telegram", "line", "email", "in_app"}
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────

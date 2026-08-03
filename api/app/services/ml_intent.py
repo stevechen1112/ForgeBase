@@ -323,5 +323,5 @@ def get_model_status() -> dict[str, Any]:
     return {
         "model_type": "intent_v1",
         "trained": False,
-        "message": "Model not yet trained. Use POST /tracking/ml/train to train.",
+        "message": "模型尚未訓練。請累積足夠的訪客行為與 RFQ 資料後，點擊「重新訓練」開始首次訓練。",
     }

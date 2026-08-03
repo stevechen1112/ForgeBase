@@ -95,6 +95,25 @@ function isValidJson(value: string): boolean {
   }
 }
 
+const JSON_FIELD_LABELS: Record<string, string> = {
+  header_nav_json: "Header 導覽",
+  header_actions_json: "Header CTA",
+  footer_sections_json: "Footer 區塊",
+  footer_badges_json: "Footer 標章",
+  social_links_json: "社群連結",
+  asset_manifest_json: "Asset Manifest",
+};
+
+/** 即時格式提示：非空且格式錯誤時顯示紅字，正確時顯示綠勾 */
+function JsonHint({ value }: { value: string }) {
+  if (!value.trim()) return null;
+  return isValidJson(value) ? (
+    <p className="text-xs text-green-600">JSON 格式正確 ✓</p>
+  ) : (
+    <p className="text-xs text-red-600">JSON 格式有誤：請檢查括號、引號與逗號（可多行貼上後再檢查）</p>
+  );
+}
+
 export default function SiteProfileSettingsPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -147,7 +166,7 @@ export default function SiteProfileSettingsPage() {
 
     const invalidField = jsonFields.find((field) => !isValidJson(form[field]));
     if (invalidField) {
-      setError(`欄位 ${invalidField} 不是有效 JSON。`);
+      setError(`「${JSON_FIELD_LABELS[invalidField] ?? invalidField}」不是有效的 JSON 格式，請檢查括號、引號與逗號後再儲存。`);
       setSuccess(null);
       return;
     }
@@ -284,29 +303,37 @@ export default function SiteProfileSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Header / Footer 結構</CardTitle>
-          <CardDescription>請輸入 JSON。欄位留白時，前台會回退到系統預設資訊架構。</CardDescription>
+          <CardDescription>
+            以 JSON 定義導覽與頁尾。文字欄位使用多語物件格式 {'{"en":"English","zh-TW":"繁體中文"}'}；
+            每個欄位下方都有範例，留白時前台會回退到系統預設資訊架構。
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="space-y-2">
             <Label htmlFor="header_nav_json">Header 導覽 JSON</Label>
             <Textarea id="header_nav_json" rows={6} value={form.header_nav_json} onChange={(e) => updateField("header_nav_json", e.target.value)} placeholder='[{"href":"/products","label":{"en":"Products","zh-TW":"產品"}}]' />
+            <JsonHint value={form.header_nav_json} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="header_actions_json">Header CTA JSON</Label>
             <Textarea id="header_actions_json" rows={5} value={form.header_actions_json} onChange={(e) => updateField("header_actions_json", e.target.value)} placeholder='[{"href":"/rfq","label":{"en":"Request Quote","zh-TW":"立即詢價"}}]' />
+            <JsonHint value={form.header_actions_json} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="footer_sections_json">Footer 區塊 JSON</Label>
             <Textarea id="footer_sections_json" rows={8} value={form.footer_sections_json} onChange={(e) => updateField("footer_sections_json", e.target.value)} placeholder='[{"heading":{"en":"Products","zh-TW":"產品"},"items":[{"href":"/products","label":{"en":"Catalogue","zh-TW":"產品型錄"}}]}]' />
+            <JsonHint value={form.footer_sections_json} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="footer_badges_json">Footer 標章 JSON</Label>
               <Textarea id="footer_badges_json" rows={5} value={form.footer_badges_json} onChange={(e) => updateField("footer_badges_json", e.target.value)} placeholder='[{"en":"ISO 9001","zh-TW":"ISO 9001"}]' />
+              <JsonHint value={form.footer_badges_json} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="social_links_json">社群連結 JSON</Label>
               <Textarea id="social_links_json" rows={5} value={form.social_links_json} onChange={(e) => updateField("social_links_json", e.target.value)} placeholder='[{"href":"https://linkedin.com/company/example","label":{"en":"LinkedIn","zh-TW":"LinkedIn"}}]' />
+              <JsonHint value={form.social_links_json} />
             </div>
           </div>
         </CardContent>
@@ -339,6 +366,7 @@ export default function SiteProfileSettingsPage() {
           <div className="space-y-2">
             <Label htmlFor="asset_manifest_json">Asset Manifest JSON</Label>
             <Textarea id="asset_manifest_json" rows={12} value={form.asset_manifest_json} onChange={(e) => updateField("asset_manifest_json", e.target.value)} placeholder='{"homeHero":"/uploads/tenant-a/home-hero.jpg","categoryBySlug":{"precision-casting":"/uploads/tenant-a/categories/casting.jpg"},"applicationBySlug":{"medical-components":"/uploads/tenant-a/apps/medical.jpg"},"productByKey":{"MC-1001":"/uploads/tenant-a/products/mc-1001.jpg"}}' />
+            <JsonHint value={form.asset_manifest_json} />
           </div>
         </CardContent>
       </Card>

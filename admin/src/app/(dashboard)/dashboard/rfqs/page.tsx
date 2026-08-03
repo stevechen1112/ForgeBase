@@ -28,6 +28,8 @@ type RfqStats = {
   sla_achievement_rate: number | null;
   sla_breached: number;
   avg_quality_score: number | null;
+  unquoted?: number;
+  unassigned?: number;
 };
 
 const STATUS_VARIANT: Record<string, string> = {
@@ -35,9 +37,27 @@ const STATUS_VARIANT: Record<string, string> = {
   assigned: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
   in_progress: "bg-orange-100 text-orange-800 hover:bg-orange-100",
   quoted: "bg-purple-100 text-purple-800 hover:bg-purple-100",
+  negotiation: "bg-indigo-100 text-indigo-800 hover:bg-indigo-100",
   won: "bg-green-100 text-green-800 hover:bg-green-100",
   lost: "bg-muted text-muted-foreground hover:bg-muted",
   expired: "bg-red-100 text-red-700 hover:bg-red-100",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  new: "新進",
+  assigned: "已指派",
+  in_progress: "處理中",
+  quoted: "已報價",
+  negotiation: "談判中",
+  won: "成交",
+  lost: "流失",
+  expired: "過期",
+};
+
+const PRIORITY_LABEL: Record<string, string> = {
+  normal: "一般",
+  high: "高",
+  urgent: "緊急",
 };
 
 const PRIORITY_CLS: Record<string, string> = {
@@ -97,16 +117,30 @@ export default function RFQsListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">RFQ Requests</h1>
+          <h1 className="text-2xl font-bold tracking-tight">全部 RFQ</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">管理所有入站詢價單，依狀態、負責業務篩選並追蹤跟進進度</p>
         </div>
       </div>
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {/* T8：首回速度摘要卡（近 30 天） */}
+      {/* T8：首回速度摘要卡（近 30 天）＋ 待處理追蹤（原詢價單追蹤頁，併入） */}
       {stats && (
-        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">未報價</div>
+            <div className={`mt-1 text-xl font-bold ${(stats.unquoted ?? 0) > 0 ? "text-orange-600" : ""}`}>
+              {stats.unquoted ?? "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">待處理</div>
+          </div>
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">未指派</div>
+            <div className={`mt-1 text-xl font-bold ${(stats.unassigned ?? 0) > 0 ? "text-red-600" : ""}`}>
+              {stats.unassigned ?? "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">需指派負責人</div>
+          </div>
           <div className="rounded-lg border bg-card p-3">
             <div className="text-xs text-muted-foreground">平均首回時間</div>
             <div className="mt-1 text-xl font-bold">
@@ -137,19 +171,19 @@ export default function RFQsListPage() {
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
         <select className={SELECT_CLS} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-          <option value="">All Statuses</option>
-          {["new", "assigned", "in_progress", "quoted", "won", "lost", "expired"].map((s) => (
-            <option key={s} value={s}>{s.replace("_", " ")}</option>
+          <option value="">全部狀態</option>
+          {["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"].map((s) => (
+            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
           ))}
         </select>
         <select className={SELECT_CLS} value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}>
-          <option value="">All Priorities</option>
+          <option value="">全部優先級</option>
           {["normal", "high", "urgent"].map((p) => (
-            <option key={p} value={p}>{p}</option>
+            <option key={p} value={p}>{PRIORITY_LABEL[p] ?? p}</option>
           ))}
         </select>
         <select className={SELECT_CLS} value={slaFilter} onChange={(e) => { setSlaFilter(e.target.value); setPage(1); }}>
-          <option value="">All SLA</option>
+          <option value="">全部 SLA</option>
           <option value="due_soon">SLA 即將逾期</option>
           <option value="breached">SLA 已逾期</option>
         </select>
@@ -158,7 +192,7 @@ export default function RFQsListPage() {
           <option value="">最新優先</option>
         </select>
         <Button variant="outline" size="sm" onClick={load} className="ml-auto">
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />Refresh
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />重新整理
         </Button>
       </div>
 
@@ -167,12 +201,12 @@ export default function RFQsListPage() {
         {loading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">載入中…</div>
         ) : rows.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">No RFQs found</div>
+          <div className="py-12 text-center text-sm text-muted-foreground">沒有符合條件的 RFQ</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b">
               <tr>
-                {["RFQ #", "Status", "Priority", "Quality", "SLA", "Intent", "Submitted", "Actions"].map((h) => (
+                {["RFQ 編號", "狀態", "優先級", "品質", "SLA", "意圖", "提交時間", "操作"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -187,10 +221,10 @@ export default function RFQsListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_VARIANT[rfq.status] ?? "bg-muted text-muted-foreground"}`}>
-                      {rfq.status.replace("_", " ")}
+                      {STATUS_LABEL[rfq.status] ?? rfq.status}
                     </span>
                   </td>
-                  <td className={`px-4 py-3 ${PRIORITY_CLS[rfq.priority] ?? ""}`}>{rfq.priority}</td>
+                  <td className={`px-4 py-3 ${PRIORITY_CLS[rfq.priority] ?? ""}`}>{PRIORITY_LABEL[rfq.priority] ?? rfq.priority}</td>
                   <td className="px-4 py-3"><QualityBadge score={rfq.quality_score ?? 0} /></td>
                   <td className="px-4 py-3">
                     <SlaCountdown slaDueAt={rfq.sla_due_at} slaBreached={rfq.sla_breached} status={rfq.status} />
@@ -201,7 +235,7 @@ export default function RFQsListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Button asChild variant="ghost" size="sm">
-                      <Link href={`/dashboard/rfqs/${rfq.id}`}>View →</Link>
+                      <Link href={`/dashboard/rfqs/${rfq.id}`}>檢視 →</Link>
                     </Button>
                   </td>
                 </tr>
@@ -213,10 +247,10 @@ export default function RFQsListPage() {
 
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-        <span>{rows.length} results</span>
+        <span>{rows.length} 筆結果</span>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-          <Button variant="outline" size="sm" disabled={rows.length < PAGE_SIZE} onClick={() => setPage((p) => p + 1)}>Next</Button>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>上一頁</Button>
+          <Button variant="outline" size="sm" disabled={rows.length < PAGE_SIZE} onClick={() => setPage((p) => p + 1)}>下一頁</Button>
         </div>
       </div>
     </div>

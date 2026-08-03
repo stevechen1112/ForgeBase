@@ -126,6 +126,37 @@ export default function NotificationSettingsPage() {
   };
 
   const telegramPref = prefs.find((p) => p.channel === "telegram" && p.enabled);
+  const linePref = prefs.find((p) => p.channel === "line" && p.enabled);
+
+  // LINE bind form
+  const [lineUserId, setLineUserId] = useState("");
+  const [lineLoading, setLineLoading] = useState(false);
+
+  const bindLine = async () => {
+    if (!lineUserId.trim()) return;
+    setLineLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/copilot/preferences`, {
+        method: "POST",
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          channel: "line",
+          channel_config: { line_user_id: lineUserId.trim() },
+          enabled: true,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(typeof d.detail === "string" ? d.detail : "綁定失敗");
+      setSuccess("LINE 綁定成功！");
+      setLineUserId("");
+      loadPrefs();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "未知錯誤");
+    } finally {
+      setLineLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -205,6 +236,46 @@ export default function NotificationSettingsPage() {
                 {bindLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "發送驗證碼"}
               </Button>
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* LINE Binding */}
+      <section className="rounded-lg border p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-green-600" />
+          <h2 className="text-base font-semibold">LINE 通知綁定</h2>
+          {linePref && (
+            <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 font-medium">
+              已綁定
+            </span>
+          )}
+        </div>
+        {linePref ? (
+          <p className="text-sm text-muted-foreground">
+            已成功綁定 LINE（User ID：{linePref.channel_config?.line_user_id}）。
+            高品質 RFQ 與緊急事件通知將推播到此帳號。如需更換，請先移除下方管道設定再重新綁定。
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              輸入你的 LINE User ID（U 開頭 33 碼）。取得方式：加入官方帳號好友後，於 LINE Developers Console
+              的 Messaging API 頁面透過 webhook 或「Your user ID」欄位查詢。
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="例如：U1234567890abcdef..."
+                value={lineUserId}
+                onChange={(e) => setLineUserId(e.target.value)}
+              />
+              <Button onClick={bindLine} disabled={lineLoading || !lineUserId.trim()}>
+                {lineLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "綁定"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              注意：LINE 推播需由系統管理員在伺服器設定環境變數 LINE_CHANNEL_ACCESS_TOKEN（官方帳號 Channel Access Token），未設定時通知會被略過。
+            </p>
           </div>
         )}
       </section>

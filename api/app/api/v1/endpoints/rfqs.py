@@ -499,6 +499,17 @@ async def rfq_stats(
     quality_scores = [r.quality_score for r in rows if r.quality_score]
     avg_quality = round(sum(quality_scores) / len(quality_scores), 1) if quality_scores else None
 
+    # 追蹤視圖指標（原 /dashboard/conversions 獨有，2026-08 併入 RFQ 列表頁）
+    # 「待處理」採全量未結案單計算，不受上方 30 天窗口限制：
+    # 超過 30 天未報價／未指派的單仍是營運待辦，不應從摘要消失。
+    _OPEN_STATUSES = ("new", "assigned", "in_progress")
+    q_open = select(RFQRequest).where(col(RFQRequest.status).in_(_OPEN_STATUSES))
+    if _.tenant_id:
+        q_open = q_open.where(RFQRequest.tenant_id == _.tenant_id)
+    open_rows = (await db.exec(q_open)).all()
+    unquoted = len(open_rows)
+    unassigned = sum(1 for r in open_rows if not r.assigned_to)
+
     return {
         "period_days": days,
         "total_rfqs": total,
@@ -512,6 +523,8 @@ async def rfq_stats(
         "sla_achievement_rate": sla_achievement_rate,
         "avg_quality_score": avg_quality,
         "status_counts": status_counts,
+        "unquoted": unquoted,
+        "unassigned": unassigned,
     }
 
 

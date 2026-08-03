@@ -36,8 +36,9 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
   in_progress: { label: "處理中", variant: "warning" },
   reviewing:   { label: "審核中", variant: "warning" },
   quoted:      { label: "已報價", variant: "success" },
+  negotiation: { label: "談判中", variant: "warning" },
   won:         { label: "成交", variant: "success" },
-  lost:        { label: "未成交", variant: "secondary" },
+  lost:        { label: "流失", variant: "secondary" },
   expired:     { label: "過期", variant: "secondary" },
   closed:      { label: "已結案", variant: "secondary" },
 };
@@ -320,7 +321,9 @@ export default function DashboardPage() {
               <CardDescription className="text-xs">近 30 天各狀態數量</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2.5">
-              {funnel && Object.entries(funnel.rfq_by_status).length > 0 ? (
+              {funnel === null ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">載入中…</p>
+              ) : Object.entries(funnel.rfq_by_status).length > 0 ? (
                 Object.entries(funnel.rfq_by_status).map(([status, count]) => {
                   const cfg = STATUS_CONFIG[status] ?? { label: status, variant: "secondary" as const };
                   return (
@@ -331,7 +334,7 @@ export default function DashboardPage() {
                   );
                 })
               ) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">載入中…</p>
+                <p className="text-xs text-muted-foreground py-4 text-center">近 30 天尚無詢價</p>
               )}
             </CardContent>
           </Card>

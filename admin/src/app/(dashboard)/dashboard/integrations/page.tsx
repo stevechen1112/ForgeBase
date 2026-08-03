@@ -437,12 +437,16 @@ function EmailSection({ token }: { token: string }) {
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          切換寄信供應商：在 <code className="rounded bg-muted px-1">.env</code> 中設定{" "}
-          <code className="rounded bg-muted px-1">ESP_PROVIDER</code> 為{" "}
-          <code className="rounded bg-muted px-1">&quot;resend&quot;</code> 或{" "}
-          <code className="rounded bg-muted px-1">&quot;sendgrid&quot;</code>
-        </p>
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer font-medium text-foreground/80">環境變數配置說明（展開）</summary>
+          <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
+            <li><code className="rounded bg-muted px-1 text-foreground">ESP_PROVIDER</code> — <code className="text-foreground">&quot;resend&quot;</code> 或 <code className="text-foreground">&quot;sendgrid&quot;</code>（決定寄信用哪個）</li>
+            <li><code className="rounded bg-muted px-1 text-foreground">RESEND_API_KEY</code> — Resend 郵件服務</li>
+            <li><code className="rounded bg-muted px-1 text-foreground">SENDGRID_API_KEY</code> + <code className="rounded bg-muted px-1 text-foreground">SENDGRID_LIST_ID</code></li>
+            <li><code className="rounded bg-muted px-1 text-foreground">MAILCHIMP_API_KEY</code> + <code className="rounded bg-muted px-1 text-foreground">MAILCHIMP_AUDIENCE_ID</code></li>
+            <li><code className="rounded bg-muted px-1 text-foreground">EMAIL_FROM</code> + <code className="rounded bg-muted px-1 text-foreground">EMAIL_FROM_NAME</code> — 發件人地址與名稱</li>
+          </ul>
+        </details>
       </CardContent>
     </Card>
   );

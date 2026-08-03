@@ -45,6 +45,13 @@ const STAGE_COLOR: Record<string, string> = {
   cold: "bg-gray-100 text-gray-600",
 };
 
+const STAGE_LABEL: Record<string, string> = {
+  sales_ready: "可成交",
+  hot: "高意圖",
+  warm: "觀望中",
+  cold: "初次瀏覽",
+};
+
 const SELECT_CLS =
   "rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
 
@@ -245,7 +252,7 @@ export default function ChatSessionsPage() {
                           <Badge
                             className={`text-[10px] px-1.5 py-0 ${STAGE_COLOR[s.visitor_intent_stage] ?? ""}`}
                           >
-                            {s.visitor_intent_stage}
+                            {STAGE_LABEL[s.visitor_intent_stage] ?? s.visitor_intent_stage}
                           </Badge>
                         )}
                         {s.visitor_country && (

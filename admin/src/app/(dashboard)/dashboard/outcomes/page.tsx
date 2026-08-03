@@ -22,6 +22,23 @@ type Outcomes = {
 type FunnelLayer = { layer: string; label: string; count: number; conversion_from_prev_pct: number | null };
 type Funnel = { days: number; layers: FunnelLayer[]; bottleneck_layer: string | null };
 
+// 訪客意圖分佈快照（原「行銷漏斗」頁獨有資料，2026-08 併入本頁）
+type IntentStageRow = { stage: string; visitors: number };
+type VisitorFunnel = { funnel_stages: IntentStageRow[]; totals: { visitors: number } };
+
+const STAGE_LABEL: Record<string, string> = {
+  cold: "Cold — 初次瀏覽",
+  warm: "Warm — 多次互動",
+  hot: "Hot — 高意圖",
+  sales_ready: "Sales Ready — 可成交",
+};
+const STAGE_COLOR: Record<string, string> = {
+  cold: "bg-blue-500",
+  warm: "bg-yellow-500",
+  hot: "bg-orange-500",
+  sales_ready: "bg-red-500",
+};
+
 // Intent facet 成交迴路觀察（§8.3）：成交訪客 vs 全體 RFQ 訪客的 facet 輪廓 lift
 type FacetFeedback = {
   facet: string;
@@ -54,6 +71,7 @@ export default function OutcomesPage() {
   const token = state.status === "authenticated" ? state.accessToken : "";
   const [outcomes, setOutcomes] = useState<Outcomes | null>(null);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
+  const [visitorFunnel, setVisitorFunnel] = useState<VisitorFunnel | null>(null);
   const [feedback, setFeedback] = useState<OutcomeFeedback | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,14 +80,16 @@ export default function OutcomesPage() {
     if (!token) return;
     setLoading(true); setError(null);
     try {
-      const [o, f, fb] = await Promise.all([
+      const [o, f, fb, vf] = await Promise.all([
         apiClient.get<Outcomes>("/tracking/outcomes", token),
         apiClient.get<Funnel>("/tracking/funnel?days=30", token),
         apiClient.get<OutcomeFeedback>("/tracking/intent/outcome-feedback", token),
+        apiClient.get<VisitorFunnel>("/tracking/analytics/funnel?days=30", token).catch(() => null),
       ]);
       setOutcomes(o);
       setFunnel(f);
       setFeedback(fb);
+      setVisitorFunnel(vf);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -248,6 +268,45 @@ export default function OutcomesPage() {
                 <Link href="/dashboard/tasks">前往今日必處理 →</Link>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 訪客意圖分佈（原行銷漏斗頁，併入） */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Filter className="h-4 w-4 text-primary" />訪客意圖分佈（目前快照）
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              各意圖階段的訪客人數，反映累積行為得分（非線性漏斗）；想看個別訪客請前往「意圖分析」
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!visitorFunnel?.funnel_stages?.length ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">尚無訪客追蹤資料</p>
+            ) : (
+              visitorFunnel.funnel_stages.map((s) => {
+                const total = Math.max(visitorFunnel.totals?.visitors ?? 0, 1);
+                const maxV = Math.max(...visitorFunnel.funnel_stages.map((x) => x.visitors), 1);
+                const pct = Math.round((s.visitors / total) * 100);
+                return (
+                  <div key={s.stage} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>{STAGE_LABEL[s.stage] ?? s.stage}</span>
+                      <span className="font-medium">
+                        {s.visitors} <span className="text-xs text-muted-foreground">({pct}%)</span>
+                      </span>
+                    </div>
+                    <div className="h-5 w-full rounded bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded ${STAGE_COLOR[s.stage] ?? "bg-gray-500"} transition-all`}
+                        style={{ width: `${(s.visitors / maxV) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </CardContent>
         </Card>
 

@@ -1,17 +1,18 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Brain, FileText, BarChart2, Target,
   Sparkles, Bot,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
-  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
-  Lock, ListOrdered, TrendingUp, ListChecks,
+  Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Globe, MessageSquare,
+  Lock, ListOrdered, TrendingUp, ListChecks, Languages,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
+import { agentosApi } from "@/lib/api/agentos";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -65,7 +66,6 @@ const NAV_GROUPS: NavGroup[] = [
       // 全部 RFQ = 全局看板；Sales 與行銷經理都需要看到
       { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, exact: true },
       { label: "回覆範本", href: "/dashboard/rfqs/templates", icon: FileText },
-      { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
     ],
   },
   {
@@ -81,7 +81,6 @@ const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
-      { label: "行銷漏斗", href: "/dashboard/analytics/funnel", icon: Filter, requiredFeature: "full_tracking", salesHidden: true },
       { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking", salesHidden: true },
     ],
   },
@@ -92,6 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "商品管理", href: "/dashboard/products", icon: Package },
       { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen, salesHidden: true },
       { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation", salesHidden: true },
+      { label: "多語覆蓋率", href: "/dashboard/multilingual", icon: Languages, requiredFeature: "multilingual", salesHidden: true },
     ],
   },
   {
@@ -153,6 +153,17 @@ export function Sidebar() {
   const accountSettingsHref = canManageSystem ? "/dashboard/users" : "/dashboard";
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [advancedCollapsed, setAdvancedCollapsed] = useState(true);
+  // Agent 佇列僅在 AgentOS 服務可連線時顯示（未部署時自動隱藏，避免無效入口）
+  // null = 尚未確認，先不渲染，避免「先出現再消失」的閃爍
+  const [agentOsOnline, setAgentOsOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    agentosApi.listRuns()
+      .then(() => { if (!cancelled) setAgentOsOnline(true); })
+      .catch(() => { if (!cancelled) setAgentOsOnline(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -189,6 +200,7 @@ export function Sidebar() {
               const isAdvanced = group.title === "進階工具";
               const visible = group.items.filter((i) =>
                 (!i.adminOnly || canManageSystem) && (!i.salesHidden || !isSales)
+                && !(i.href === "/dashboard/agent-runs" && agentOsOnline !== true)
               );
               if (!visible.length) return null;
               // Auto-expand 進階工具 if any child is active
@@ -364,7 +376,7 @@ export function Sidebar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                  <Link href="/dashboard/settings/notifications" className="flex items-center gap-2 cursor-pointer">
                     <Bell className="h-4 w-4" />
                     通知偏好
                   </Link>
