@@ -9,16 +9,26 @@ Remaining content CRUD endpoints:
   /api/v1/content/pages
   /api/v1/content/briefs
 """
+import asyncio
+import json
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import JSONResponse
 from sqlmodel import select, func, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from slugify import slugify
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor, resolve_tenant_id
+from app.api.v1.deps import (
+    get_current_user,
+    optional_current_user,
+    require_admin,
+    require_content_editor,
+    resolve_tenant_id,
+)
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.application import Application
@@ -27,9 +37,12 @@ from app.models.comparison_topic import ComparisonTopic
 from app.models.certification import Certification
 from app.models.capability import Capability
 from app.models.cta import CTA
+from app.models.idempotency_key import IdempotencyKey
 from app.models.page import Page
 from app.models.page_brief import PageBrief
 from app.schemas.base import APIResponse, PaginationMeta
+from app.services.html_sanitize import sanitize_html
+from app.services.revalidate import revalidate_page
 from app.schemas.content import (
     ApplicationCreate, ApplicationRead, ApplicationUpdate,
     FAQItemCreate, FAQItemRead, FAQItemUpdate,
@@ -76,8 +89,26 @@ def make_crud_router(
     UpdateSchema,
     slug_field: str | None = "slug",
     locale_filter: bool = True,
+    sanitize_fields: tuple[str, ...] = (),
+    revalidate_on_change: bool = False,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
+
+    def _sanitize_dump(dump: dict) -> dict:
+        for field in sanitize_fields:
+            if isinstance(dump.get(field), str):
+                dump[field] = sanitize_html(dump[field])
+        return dump
+
+    def _schedule_revalidate(item: Any) -> None:
+        if not revalidate_on_change:
+            return
+        slug = getattr(item, "slug", None)
+        if not slug:
+            return
+        locale = getattr(item, "locale", "en") or "en"
+        task = asyncio.create_task(revalidate_page(slug, locale, include_sitemap=True))
+        task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
 
     def _apply_public_tenant_scope(query, tenant_id: uuid.UUID | None):
         tenant_col = getattr(Model, "tenant_id", None)
@@ -108,7 +139,12 @@ def make_crud_router(
         page_type: str | None = Query(None),
         session: AsyncSession = Depends(get_session),
         tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
+        auth_user=Depends(optional_current_user),
     ):
+        # 帶有效憑證（如 CF service account）時以 caller tenant 為準，
+        # 覆寫 host/header 解析（契約 §5.1 slug 查詢流程依賴此行為）
+        if auth_user is not None and getattr(auth_user, "tenant_id", None):
+            tenant_id = auth_user.tenant_id
         base_q = select(Model)
         base_q = _apply_public_tenant_scope(base_q, tenant_id)
         if locale_filter and hasattr(Model, "locale") and locale:
@@ -138,11 +174,29 @@ def make_crud_router(
     @router.post("", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
     async def create_item(
         payload: CreateSchema,
+        request: Request,
         session: AsyncSession = Depends(get_session),
         _user=Depends(require_content_editor),
     ):
-        generated_slug = build_slug(payload, slug_field)
         tenant_id = _user.tenant_id if hasattr(Model, "tenant_id") else None
+
+        # Idempotency-Key（CF→FB 契約 §6）：重送時回傳首次結果
+        idem_key = request.headers.get("Idempotency-Key")
+        endpoint_id = f"POST {prefix}"
+        if idem_key:
+            idem_q = select(IdempotencyKey).where(
+                IdempotencyKey.key == idem_key,
+                IdempotencyKey.endpoint == endpoint_id,
+                IdempotencyKey.tenant_id == tenant_id,
+            )
+            stored = (await session.exec(idem_q)).first()
+            if stored:
+                return JSONResponse(
+                    status_code=stored.status_code,
+                    content=json.loads(stored.response_json),
+                )
+
+        generated_slug = build_slug(payload, slug_field)
         if slug_field:
             slug_val = generated_slug
             if slug_val:
@@ -165,10 +219,52 @@ def make_crud_router(
             dump["created_by"] = _user.id
         if hasattr(Model, "tenant_id") and _user and _user.tenant_id:
             dump.setdefault("tenant_id", _user.tenant_id)
+        dump = _sanitize_dump(dump)
 
-        item = Model(**dump)
-        session.add(item)
-        await session.commit()
+        # 頁面建立與 Idempotency-Key 寫入同一交易：
+        # 併發同 key 時 loser 整筆 rollback，改回傳 winner 的首次結果（契約 §6）。
+        # flush/commit 皆可能因 slug 或 key 唯一約束失敗，一併捕獲。
+        try:
+            item = Model(**dump)
+            session.add(item)
+            await session.flush()
+            response = APIResponse(data=ReadSchema.model_validate(item))
+            if idem_key:
+                session.add(IdempotencyKey(
+                    tenant_id=tenant_id,
+                    endpoint=endpoint_id,
+                    key=idem_key,
+                    status_code=201,
+                    response_json=response.model_dump_json(),
+                ))
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            if idem_key:
+                stored = (await session.exec(
+                    select(IdempotencyKey).where(
+                        IdempotencyKey.key == idem_key,
+                        IdempotencyKey.endpoint == endpoint_id,
+                        IdempotencyKey.tenant_id == tenant_id,
+                    )
+                )).first()
+                if stored:
+                    return JSONResponse(
+                        status_code=stored.status_code,
+                        content=json.loads(stored.response_json),
+                    )
+            # slug 唯一約束競態（無 key 或 key 尚未寫入）
+            if slug_field and generated_slug:
+                locale_val = getattr(payload, "locale", None)
+                conflict_q = select(Model).where(getattr(Model, slug_field) == generated_slug)
+                if locale_val and hasattr(Model, "locale"):
+                    conflict_q = conflict_q.where(Model.locale == locale_val)
+                if hasattr(Model, "tenant_id"):
+                    conflict_q = conflict_q.where(Model.tenant_id == tenant_id)
+                existing = (await session.exec(conflict_q)).first()
+                if existing:
+                    raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="Conflict creating resource")
         await session.refresh(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
@@ -219,10 +315,15 @@ def make_crud_router(
             setattr(item, field, value)
         if hasattr(item, "updated_at"):
             item.updated_at = utcnow_naive()
+        _sanitize_dump_item = {f: getattr(item, f) for f in sanitize_fields}
+        for f, v in _sanitize_dump(_sanitize_dump_item).items():
+            setattr(item, f, v)
 
         session.add(item)
         await session.commit()
         await session.refresh(item)
+        if getattr(item, "status", None) == "published":
+            _schedule_revalidate(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -286,6 +387,8 @@ pages_router = make_crud_router(
     prefix="/pages", tag="pages",
     Model=Page, ReadSchema=PageRead,
     CreateSchema=PageCreate, UpdateSchema=PageUpdate,
+    sanitize_fields=("body",),
+    revalidate_on_change=True,
 )
 
 briefs_router = make_crud_router(

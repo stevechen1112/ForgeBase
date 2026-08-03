@@ -82,6 +82,22 @@ async def get_current_user(
     return user
 
 
+async def optional_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    session: AsyncSession = Depends(get_session),
+) -> Optional[User]:
+    """get_current_user 的非強制版：無憑證或憑證無效時回傳 None 而非 401。
+
+    用於公開查詢端點——帶有效憑證（如 CF service account）時以其
+    tenant 範圍查詢，未帶憑證時維持原有 host/header 解析行為。
+    """
+    try:
+        return await get_current_user(request, credentials, session)
+    except HTTPException:
+        return None
+
+
 async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in ("admin", "owner"):
         raise HTTPException(

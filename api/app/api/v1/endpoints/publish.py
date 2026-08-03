@@ -17,6 +17,7 @@ Generic publish/unpublish for all publishable content entities:
   POST /api/v1/content/pages/{id}/publish
   POST /api/v1/content/pages/{id}/unpublish
 """
+import asyncio
 import uuid
 from typing import Any
 
@@ -34,6 +35,7 @@ from app.models.page import Page
 from app.models.product import Product
 from app.models.product_category import ProductCategory
 from app.models.user import User
+from app.services.revalidate import revalidate_page
 
 router = APIRouter(tags=["Publish"])
 
@@ -51,6 +53,13 @@ _PUBLISHABLE: dict[str, Any] = {
 
 def _make_publish_routes(prefix: str, Model: Any) -> APIRouter:
     sub = APIRouter(prefix=f"/{prefix}")
+
+    def _schedule_revalidate(obj: Any) -> None:
+        # 契約 §8：publish/unpublish 後觸發前台 revalidate（目前僅 blog page 有公開快取路徑）
+        if not isinstance(obj, Page):
+            return
+        task = asyncio.create_task(revalidate_page(obj.slug, obj.locale or "en", include_sitemap=True))
+        task.add_done_callback(lambda t: None if t.cancelled() else t.exception())
 
     @sub.post("/{entity_id}/publish")
     async def publish(
@@ -78,6 +87,7 @@ def _make_publish_routes(prefix: str, Model: Any) -> APIRouter:
             obj.updated_at = utcnow_naive()
         session.add(obj)
         await session.commit()
+        _schedule_revalidate(obj)
         return {"detail": "Published", "id": str(entity_id)}
 
     @sub.post("/{entity_id}/unpublish")
@@ -106,6 +116,7 @@ def _make_publish_routes(prefix: str, Model: Any) -> APIRouter:
             obj.updated_at = utcnow_naive()
         session.add(obj)
         await session.commit()
+        _schedule_revalidate(obj)
         return {"detail": "Unpublished", "id": str(entity_id)}
 
     return sub

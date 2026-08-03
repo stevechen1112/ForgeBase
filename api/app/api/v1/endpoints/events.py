@@ -14,6 +14,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 from app.core.datetime import utcnow_naive
 from typing import Optional
 
@@ -32,6 +33,7 @@ from app.models.visitor import Visitor
 from app.models.user import User
 from app.models.content_strategy import ContentStrategy
 from app.services.intent_scoring import calculate_score_delta, get_intent_stage, should_alert
+from app.services.intent_facets import apply_event_to_visitor, build_intent_explanation
 from app.services.notifications import notify_visitor_hot
 from app.services.webhook import fire_webhook
 from app.services.meta_conversions import fire_meta_event
@@ -135,6 +137,7 @@ async def _upsert_session(
     visitor_id: uuid.UUID,
     event: EventIn,
     db: AsyncSession,
+    tenant_id: Optional[uuid.UUID] = None,
 ) -> bool:
     """
     Create or update a tracking session record.
@@ -151,6 +154,7 @@ async def _upsert_session(
             referrer=event.referrer,
             device_type=event.device_type,
             entry_page=event.page_url,
+            tenant_id=tenant_id,
         )
         if event.campaign_id:
             # Parse UTM params if campaign_id is a JSON string or plain string
@@ -223,9 +227,50 @@ async def _upsert_visitor(
         visitor.intent_stage = new_stage
         visitor.stage_alert_sent = False  # Reset so alert can fire
 
+    # Intent Score 2.0 facets（§4.1）：事件 facet 累積
+    apply_event_to_visitor(visitor, event.event_name, score_delta, event.page_type)
+
     db.add(visitor)
     # Note: explicit flush moved to receive_event after all upserts
     return new_score, old_stage, new_stage, is_return_visit
+
+
+async def _refresh_intent_explanation(
+    visitor_id: uuid.UUID,
+    db: AsyncSession,
+    tenant_id: Optional[uuid.UUID],
+    current_event: Optional[EventIn] = None,
+) -> None:
+    """依近期事件重建「為何 Hot」解釋字串（§4.1 輸出要求）。"""
+    visitor = await db.get(Visitor, visitor_id)
+    if not visitor:
+        return
+    q = (
+        select(TrackingEvent)
+        .where(TrackingEvent.visitor_id == visitor_id)
+        .order_by(col(TrackingEvent.timestamp).desc())
+        .limit(50)
+    )
+    if tenant_id:
+        q = q.where(TrackingEvent.tenant_id == tenant_id)
+    events = list((await db.exec(q)).all())
+    if current_event is not None:
+        # 當前事件尚未落庫，手動附加（置頂，視為最新）
+        events.insert(0, SimpleNamespace(
+            event_name=current_event.event_name,
+            page_type=current_event.page_type,
+            created_at=utcnow_naive(),
+        ))
+    # 與 has_rfq 一致：表單建立的 RFQ 不一定有 rfq_submit 事件
+    from app.models.rfq_request import RFQRequest
+    rfq_q = select(RFQRequest.id).where(RFQRequest.visitor_id == visitor_id).limit(1)
+    if tenant_id:
+        rfq_q = rfq_q.where(RFQRequest.tenant_id == tenant_id)
+    has_rfq_record = (await db.exec(rfq_q)).first() is not None
+    visitor.intent_explanation = build_intent_explanation(
+        events, now=utcnow_naive(), has_rfq_record=has_rfq_record,
+    ) or None
+    db.add(visitor)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -259,7 +304,7 @@ async def receive_event(
         new_score, old_stage, new_stage, is_return = await _upsert_visitor(
             body.visitor_id, body, db, score_delta, client_ip, tenant_id
         )
-        depth_reached = await _upsert_session(body.session_id, body.visitor_id, body, db)
+        depth_reached = await _upsert_session(body.session_id, body.visitor_id, body, db, tenant_id)
         if is_return:
             computed_events.append("return_visit")
         if depth_reached:
@@ -320,6 +365,9 @@ async def receive_event(
             tenant_id=tenant_id,
         ))
 
+    await db.flush()
+    if body.visitor_id:
+        await _refresh_intent_explanation(body.visitor_id, db, tenant_id)
     await db.commit()
 
     # 1b.3.5 Intent trigger: fire sales alert on stage escalation to hot/sales_ready
@@ -393,7 +441,7 @@ async def receive_events_batch(
                 ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id
             )
             await db.flush()
-            await _upsert_session(ev.session_id, ev.visitor_id, ev, db)
+            await _upsert_session(ev.session_id, ev.visitor_id, ev, db, tenant_id)
             await db.flush()  # Also flush session before inserting event (fk_events_session_id)
         elif ev.visitor_id:
             new_score, _, new_stage, _ = await _upsert_visitor(
@@ -423,6 +471,13 @@ async def receive_events_batch(
             "score_delta": score_delta,
             "new_intent_stage": new_stage,
         })
+    # 與單筆路徑一致：batch 結束後為每位訪客刷新「為何 Hot」
+    await db.flush()
+    refreshed: set[uuid.UUID] = set()
+    for ev in body:
+        if ev.visitor_id and ev.visitor_id not in refreshed:
+            refreshed.add(ev.visitor_id)
+            await _refresh_intent_explanation(ev.visitor_id, db, tenant_id)
     await db.commit()
     return {"processed": len(results), "results": results}
 
@@ -492,6 +547,8 @@ async def events_summary(
         .group_by(TrackingEvent.event_name)
         .order_by(func.count(TrackingEvent.event_id).desc())
     )
+    if _.tenant_id:
+        q = q.where(TrackingEvent.tenant_id == _.tenant_id)
     if from_ts:
         q = q.where(TrackingEvent.timestamp >= from_ts)
     if to_ts:

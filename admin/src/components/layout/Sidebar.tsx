@@ -8,7 +8,7 @@ import {
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Filter, Globe, MessageSquare,
-  Lock, ListOrdered,
+  Lock, ListOrdered, TrendingUp, ListChecks,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "AI 工作台",
     items: [
       { label: "AI 晨報", href: "/dashboard", icon: LayoutDashboard, exact: true },
+      { label: "今日必處理", href: "/dashboard/tasks", icon: ListChecks },
       // Sales 不需要 Copilot 操作介面；他們透過通知接收結果
       { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
       { label: "Agent 任務佇列", href: "/dashboard/agent-runs", icon: ListOrdered, salesHidden: true },
@@ -59,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "詢價中心",
     items: [
+      { label: "成果總覽", href: "/dashboard/outcomes", icon: TrendingUp },
       { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
       // 全部 RFQ = 全局看板；Sales 與行銷經理都需要看到
       { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList },

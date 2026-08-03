@@ -26,8 +26,14 @@ class Visitor(SQLModel, table=True):
 
     # Intent scoring (spec 12.6.3)
     intent_score: int = Field(default=0)
-    intent_stage: str = Field(default="cold", max_length=20)
-    # "cold" | "warm" | "hot" | "sales_ready"
+    intent_stage: str = Field(default="cold", max_length=20)    # "cold" | "warm" | "hot" | "sales_ready"
+
+    # Intent Score 2.0 — 採購 facets（實效計畫 §4.1）
+    facet_product_interest: int = Field(default=0, index=True)
+    facet_trust_validation: int = Field(default=0, index=True)
+    facet_procurement_readiness: int = Field(default=0, index=True)
+    facet_urgency: int = Field(default=0, index=True)
+    intent_explanation: Optional[str] = Field(default=None)     # 「為何 Hot」顧問可讀字串
 
     # Device & location (server-side enrichment)
     device_type: Optional[str] = Field(default=None, max_length=20)

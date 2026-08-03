@@ -79,6 +79,25 @@ class RFQRequest(SQLModel, table=True):
     first_response_at: Optional[datetime] = Field(default=None)
     quote_sent_at: Optional[datetime] = Field(default=None)
     lost_reason: Optional[str] = Field(default=None, max_length=500)
+    won_reason: Optional[str] = Field(default=None, max_length=500)   # §6.3 成交原因（必填於 won）
+
+    # Timezone-aware first-response SLA (T7)
+    buyer_timezone: Optional[str] = Field(default=None, max_length=50)
+    sla_due_at: Optional[datetime] = Field(default=None, index=True)
+    sla_breached: bool = Field(default=False)
+
+    # Lead Quality Score (T9: rule-based v1, explainable)
+    quality_score: int = Field(default=0, index=True)
+    quality_reasons_json: Optional[str] = Field(default=None)
+    # JSON list of human-readable scoring reasons, e.g. ["+15 指定貿易條件 FOB"]
+
+    # Trade terms (T10: optional form step 2 — strong buyer signals)
+    incoterm: Optional[str] = Field(default=None, max_length=10)
+    annual_volume: Optional[str] = Field(default=None, max_length=100)
+    is_trial_order: Optional[bool] = Field(default=None)
+    required_certs_json: Optional[str] = Field(default=None)
+    # JSON list of certification names, e.g. ["FDA","CE"]
+    target_price: Optional[str] = Field(default=None, max_length=100)
 
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

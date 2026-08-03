@@ -13,6 +13,13 @@ type Visitor = {
   visitor_id: string;
   intent_score: number;
   intent_stage: string; // API returns lowercase: "cold"|"warm"|"hot"|"sales_ready"
+  intent_explanation?: string | null;
+  facets?: {
+    product_interest: number;
+    trust_validation: number;
+    procurement_readiness: number;
+    urgency: number;
+  };
   first_seen: string;
   last_seen: string;
   total_page_views: number;
@@ -55,13 +62,23 @@ export default function IntentPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Intent Score 2.0 facet 篩選（§4.1／§4.5）
+  const [facetFilter, setFacetFilter] = useState<string>("");
+  const [hasRfqFilter, setHasRfqFilter] = useState<string>("");
 
   const load = useCallback(async () => {
     if (!token) return; // Wait until authenticated
     setLoading(true); setError(null);
     try {
+      const params = new URLSearchParams({ limit: facetFilter || hasRfqFilter ? "50" : "10" });
+      if (facetFilter) {
+        params.set("facet", facetFilter);
+        params.set("facet_min", "10");
+        params.set("sort", facetFilter);
+      }
+      if (hasRfqFilter) params.set("has_rfq", hasRfqFilter);
       const [visitorsData, contactsData] = await Promise.all([
-        apiClient.get<Visitor[]>("/tracking/visitors?limit=10", token),
+        apiClient.get<Visitor[]>(`/tracking/visitors?${params.toString()}`, token),
         apiClient.get<ContactListResponse | Contact[]>("/tracking/contacts?page_size=50", token),
       ]);
       setTopVisitors(Array.isArray(visitorsData) ? visitorsData : []);
@@ -71,7 +88,7 @@ export default function IntentPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, facetFilter, hasRfqFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -140,6 +157,34 @@ export default function IntentPage() {
             <CardTitle className="flex items-center gap-2 text-base">
               <Flame className="h-4 w-4 text-orange-500" />高意圖訪客工作台
             </CardTitle>
+            {/* Intent Score 2.0 facet 篩選（§4.5：依 facet 篩「信任驗證高但尚未 RFQ」名單） */}
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <select
+                className="h-8 rounded-md border bg-background px-2 text-sm"
+                value={facetFilter}
+                onChange={(e) => setFacetFilter(e.target.value)}
+              >
+                <option value="">全部（依總分）</option>
+                <option value="product_interest">產品興趣高</option>
+                <option value="trust_validation">信任驗證高</option>
+                <option value="procurement_readiness">採購準備高</option>
+                <option value="urgency">急迫性高</option>
+              </select>
+              <select
+                className="h-8 rounded-md border bg-background px-2 text-sm"
+                value={hasRfqFilter}
+                onChange={(e) => setHasRfqFilter(e.target.value)}
+              >
+                <option value="">全部（含已 RFQ）</option>
+                <option value="false">尚未 RFQ</option>
+                <option value="true">已送出 RFQ</option>
+              </select>
+              {facetFilter === "trust_validation" && hasRfqFilter === "false" && (
+                <Badge className="bg-emerald-100 text-xs text-emerald-700">
+                  信任驗證高但尚未 RFQ — 優先跟進名單
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {topVisitors.length === 0 ? (
@@ -151,6 +196,7 @@ export default function IntentPage() {
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">Stage</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">分數</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">為何 Hot（facets）</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">瀏覽頁數</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">最後活動</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">動作</th>
@@ -170,6 +216,23 @@ export default function IntentPage() {
                         </Badge>
                       </td>
                       <td className="px-3 py-2 text-right font-bold">{v.intent_score ?? 0}</td>
+                      <td className="max-w-[280px] px-3 py-2">
+                        {v.intent_explanation ? (
+                          <p className="truncate text-xs text-muted-foreground" title={v.intent_explanation}>
+                            {v.intent_explanation}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/50">—</p>
+                        )}
+                        {v.facets && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {v.facets.product_interest >= 10 && <Badge variant="outline" className="px-1 py-0 text-[10px]">產品 {v.facets.product_interest}</Badge>}
+                            {v.facets.trust_validation >= 10 && <Badge variant="outline" className="px-1 py-0 text-[10px]">信任 {v.facets.trust_validation}</Badge>}
+                            {v.facets.procurement_readiness >= 10 && <Badge variant="outline" className="px-1 py-0 text-[10px]">採購 {v.facets.procurement_readiness}</Badge>}
+                            {v.facets.urgency >= 10 && <Badge variant="outline" className="px-1 py-0 text-[10px]">急迫 {v.facets.urgency}</Badge>}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{v.total_page_views ?? 0}</td>
                       <td className="px-3 py-2 text-right text-xs text-muted-foreground">
                         {v.last_seen ? new Date(v.last_seen).toLocaleDateString("zh-TW", { month: "short", day: "numeric" }) : "—"}

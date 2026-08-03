@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
+import { QualityBadge, SlaCountdown } from "@/components/rfq/quality-sla";
 
 type RFQ = {
   id: string;
@@ -13,6 +14,9 @@ type RFQ = {
   status: string;
   priority: string;
   intent_score_at_submit: number;
+  quality_score: number;
+  sla_due_at: string | null;
+  sla_breached: boolean;
   assigned_to: string | null;
   created_at: string;
 };
@@ -53,6 +57,7 @@ export default function MyRFQsPage() {
       limit: String(PAGE_SIZE),
       offset: String((page - 1) * PAGE_SIZE),
       assigned_to: userId,
+      sort: "quality", // T11：品質 × SLA——最該先回的單在最上面
     });
     if (statusFilter) params.set("status", statusFilter);
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
@@ -100,20 +105,20 @@ export default function MyRFQsPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b">
             <tr>
-              {["RFQ 編號", "狀態", "優先級", "意圖分數", "日期", "操作"].map((h) => (
+              {["RFQ 編號", "狀態", "優先級", "品質", "SLA", "意圖分數", "日期", "操作"].map((h) => (
                 <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y">
             {loading && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">載入中…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">載入中…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">目前無指派給您的 RFQ</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">目前無指派給您的 RFQ</td></tr>
             )}
             {rows.map((rfq) => (
-              <tr key={rfq.id} className="hover:bg-muted/30 transition-colors">
+              <tr key={rfq.id} className={`hover:bg-muted/30 transition-colors ${rfq.sla_breached ? "bg-red-50/50" : ""}`}>
                 <td className="px-4 py-3 font-mono text-xs">{rfq.rfq_number}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[rfq.status] ?? "bg-muted text-muted-foreground"}`}>
@@ -122,6 +127,10 @@ export default function MyRFQsPage() {
                 </td>
                 <td className={`px-4 py-3 text-xs ${PRIORITY_COLORS[rfq.priority] ?? "text-muted-foreground"}`}>
                   {rfq.priority}
+                </td>
+                <td className="px-4 py-3"><QualityBadge score={rfq.quality_score ?? 0} /></td>
+                <td className="px-4 py-3">
+                  <SlaCountdown slaDueAt={rfq.sla_due_at} slaBreached={rfq.sla_breached} status={rfq.status} />
                 </td>
                 <td className="px-4 py-3">{rfq.intent_score_at_submit}</td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">

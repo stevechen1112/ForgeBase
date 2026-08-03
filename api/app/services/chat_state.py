@@ -7,7 +7,15 @@ IntentStrength = Literal["low", "medium", "high"]
 ProgramType = Literal["unknown", "standard", "oem"]
 PackagingScope = Literal["unknown", "logo_only", "custom_packaging"]
 MarketRequirement = Literal["unknown", "named_market", "compliance_named"]
-MissingSlot = Literal["program_type", "quantity", "packaging_scope", "market_requirement"]
+MissingSlot = Literal[
+    "program_type",
+    "quantity",
+    "use_case",
+    "spec_detail",
+    "lead_time",
+    "packaging_scope",
+    "market_requirement",
+]
 
 
 @dataclass(frozen=True)
@@ -16,6 +24,9 @@ class CommercialSlotState:
     quantity_known: bool
     packaging_scope: PackagingScope
     market_requirement: MarketRequirement
+    use_case_known: bool = False
+    spec_known: bool = False
+    lead_time_known: bool = False
 
 
 @dataclass(frozen=True)

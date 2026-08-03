@@ -240,7 +240,12 @@ async def optimize_page_content_endpoint(
     visitors = []
     if visitor_ids:
         visitors = (
-            await session.exec(select(Visitor).where(Visitor.visitor_id.in_(visitor_ids)))
+            await session.exec(
+                select(Visitor).where(
+                    Visitor.visitor_id.in_(visitor_ids),
+                    Visitor.tenant_id == current_user.tenant_id,
+                )
+            )
         ).all()
     analytics = {
         "page_views": sum(1 for event in events if event.event_name == "page_view"),
@@ -352,6 +357,7 @@ async def dynamic_cta_endpoint(
     intent_stage = "cold"
     intent_score = 0
     top_products: list[str] = []
+    visitor_facets: dict[str, int] | None = None
 
     if visitor_id:
         try:
@@ -359,6 +365,12 @@ async def dynamic_cta_endpoint(
             if visitor and visitor.tenant_id == tenant_id:
                 intent_stage = visitor.intent_stage or "cold"
                 intent_score = int(visitor.intent_score or 0)
+                visitor_facets = {
+                    "product_interest": visitor.facet_product_interest,
+                    "trust_validation": visitor.facet_trust_validation,
+                    "procurement_readiness": visitor.facet_procurement_readiness,
+                    "urgency": visitor.facet_urgency,
+                }
         except Exception:
             pass
 
@@ -399,7 +411,7 @@ async def dynamic_cta_endpoint(
     ]
 
     page_context = {"page_type": page_type, "entity_name": entity_name, "entity_id": entity_id}
-    return select_dynamic_cta(intent_stage, intent_score, ctas, page_context, top_products)
+    return select_dynamic_cta(intent_stage, intent_score, ctas, page_context, top_products, facets=visitor_facets)
 
 
 # ── 3.3.3  Relation Recommendations ──────────────────────────────────────────

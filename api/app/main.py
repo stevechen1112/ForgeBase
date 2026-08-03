@@ -64,6 +64,17 @@ async def _daily_digest_job() -> None:
         logger.exception("Daily digest job failed")
 
 
+async def _sla_scan_job() -> None:
+    """Every 15 min: first-response SLA reminders & escalations (T7)."""
+    from app.services.sla import scan_sla_breaches
+    try:
+        stats = await scan_sla_breaches()
+        if stats["reminded"] or stats["breached"]:
+            logger.info("SLA scan: %s", stats)
+    except Exception:
+        logger.exception("SLA scan job failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not _SCHEDULER_ENABLED:
@@ -106,6 +117,15 @@ async def lifespan(app: FastAPI):
         id="daily_copilot_digest",
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+    # First-response SLA scan — every 15 min (T7)
+    _scheduler.add_job(
+        _sla_scan_job,
+        trigger="interval",
+        minutes=15,
+        id="rfq_sla_scan",
+        replace_existing=True,
+        misfire_grace_time=300,
     )
     _scheduler.start()
     logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min, daily digest 00:00 UTC")

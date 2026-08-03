@@ -10,7 +10,7 @@ PUT  /tracking/rfqs/{id}/assign   — assign to sales user (admin)
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,10 +22,17 @@ from app.api.v1.deps import get_current_user, require_content_editor, resolve_te
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
+from app.models.reply_template import ReplyTemplate
 from app.models.rfq_request import RFQRequest, RFQProductLink
 from app.models.rfq_event import RFQEvent
 from app.models.visitor import Visitor
 from app.models.user import User
+from app.services.reply_quality import (
+    build_reply_checklist,
+    match_templates,
+    quote_readiness,
+    suggested_questions,
+)
 from uuid import UUID as _UUID
 
 # Two routers — public forms_router + admin tracking_router
@@ -54,7 +61,7 @@ async def _log_rfq_event(
         detail=detail,
     ))
 
-VALID_STATUSES = {"new", "assigned", "in_progress", "quoted", "won", "lost", "expired"}
+VALID_STATUSES = {"new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"}
 VALID_PRIORITIES = {"normal", "high", "urgent"}
 
 HOW_DID_YOU_FIND_VALUES = {
@@ -79,6 +86,13 @@ class RFQFormIn(BaseModel):
     application_id: Optional[str] = None
     quantity: Optional[str] = None
     specifications: Optional[str] = None
+
+    # Trade terms (optional step 2 — strong buyer signals, T10)
+    incoterm: Optional[str] = None
+    annual_volume: Optional[str] = None
+    is_trial_order: Optional[bool] = None
+    required_certs: List[str] = []
+    target_price: Optional[str] = None
 
     # Request details
     timeline: Optional[str] = None
@@ -119,6 +133,23 @@ class RFQFormIn(BaseModel):
             raise ValueError("consent must be accepted")
         return v
 
+    @field_validator("incoterm")
+    @classmethod
+    def validate_incoterm(cls, v):
+        if v:
+            from app.services.rfq_quality import VALID_INCOTERMS
+            v = v.strip().upper()
+            if v not in VALID_INCOTERMS:
+                raise ValueError("Invalid incoterm value")
+        return v
+
+    @field_validator("required_certs")
+    @classmethod
+    def limit_certs(cls, v):
+        if isinstance(v, list) and len(v) > 10:
+            raise ValueError("Maximum 10 certifications")
+        return [c.strip()[:50] for c in v if c and c.strip()]
+
 
 @forms_router.post("/rfq", status_code=status.HTTP_201_CREATED)
 async def submit_rfq(
@@ -152,10 +183,15 @@ async def submit_rfq(
         if v:
             intent_score = v.intent_score
 
-    # ── 2. Upsert Contact ────────────────────────────────────────────────
+    # ── 2. Upsert Contact (dedup within this tenant only) ────────────────
     now = utcnow_naive()
     contact = (
-        await db.exec(select(Contact).where(Contact.email == body.email))
+        await db.exec(
+            select(Contact).where(
+                Contact.email == body.email,
+                Contact.tenant_id == tenant_id,
+            )
+        )
     ).first()
 
     if contact:
@@ -206,6 +242,14 @@ async def submit_rfq(
     elif intent_score >= 30:
         priority = "high"
 
+    # ── 4b. Lead Quality Score (T9, rule-based v1) ────────────────────
+    from app.services.rfq_quality import score_rfq_quality
+    quality_score, quality_reasons = score_rfq_quality(body)
+
+    # ── 4c. Timezone-aware first-response SLA (T7) ────────────────────
+    from app.services.sla import compute_sla
+    buyer_tz, sla_due = await compute_sla(body.country, tenant_id, now, db)
+
     # ── 5. Create RFQRequest ─────────────────────────────────────────
     form_snapshot = json.dumps({
         "full_name": body.full_name,
@@ -221,6 +265,11 @@ async def submit_rfq(
         "how_did_you_find_us": body.how_did_you_find_us,
         "consent": body.consent,
         "product_ids": body.product_ids,
+        "incoterm": body.incoterm,
+        "annual_volume": body.annual_volume,
+        "is_trial_order": body.is_trial_order,
+        "required_certs": body.required_certs,
+        "target_price": body.target_price,
     }, ensure_ascii=False)
 
     rfq = RFQRequest(
@@ -234,6 +283,15 @@ async def submit_rfq(
         priority=priority,
         source_page=body.source_page,
         tenant_id=tenant_id,
+        quality_score=quality_score,
+        quality_reasons_json=json.dumps(quality_reasons, ensure_ascii=False),
+        buyer_timezone=buyer_tz,
+        sla_due_at=sla_due,
+        incoterm=body.incoterm,
+        annual_volume=body.annual_volume[:100] if body.annual_volume else None,
+        is_trial_order=body.is_trial_order,
+        required_certs_json=json.dumps(body.required_certs, ensure_ascii=False) if body.required_certs else None,
+        target_price=body.target_price[:100] if body.target_price else None,
     )
     db.add(rfq)
     await db.flush()
@@ -251,7 +309,11 @@ async def submit_rfq(
         db, rfq.id, "created",
         f"RFQ {rfq_number} submitted by {body.email}",
         tenant_id=tenant_id,
-        detail=json.dumps({"priority": priority, "intent_score": intent_score}),
+        detail=json.dumps({
+            "priority": priority,
+            "intent_score": intent_score,
+            "quality_score": quality_score,
+        }),
     )
 
     await db.commit()
@@ -279,6 +341,9 @@ async def submit_rfq(
         asyncio.create_task(sync_rfq_to_hubspot(rfq.id))
         if tenant_id:
             asyncio.create_task(_copilot_on_rfq(rfq.id, tenant_id))
+            # T6: 自動專業確認信（per-tenant 開關，低品質不發）
+            from app.services.rfq_auto_reply import maybe_auto_reply
+            asyncio.create_task(maybe_auto_reply(rfq.id, tenant_id))
         fire_webhook("rfq.created", {
             "rfq_id":      str(rfq.id),
             "rfq_number":  rfq_number,
@@ -307,6 +372,8 @@ async def submit_rfq(
 
 class StatusUpdate(BaseModel):
     status: str
+    reason: Optional[str] = PydanticField(default=None, max_length=500)
+    # §6.3：won/lost 必須填成交／流失原因（供日後回寫 intent 權重）
 
     @field_validator("status")
     @classmethod
@@ -339,12 +406,22 @@ async def list_rfqs(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     assigned_to: Optional[uuid.UUID] = None,
+    sort: Optional[str] = None,
+    sla: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    q = select(RFQRequest).order_by(col(RFQRequest.created_at).desc())
+    # sort="quality": 品質 × SLA — 最該先回的單在最上面（T11）
+    if sort == "quality":
+        q = select(RFQRequest).order_by(
+            col(RFQRequest.quality_score).desc(),
+            col(RFQRequest.sla_due_at).asc(),
+            col(RFQRequest.created_at).asc(),
+        )
+    else:
+        q = select(RFQRequest).order_by(col(RFQRequest.created_at).desc())
     if _.tenant_id:
         q = q.where(RFQRequest.tenant_id == _.tenant_id)
     if status:
@@ -353,9 +430,209 @@ async def list_rfqs(
         q = q.where(RFQRequest.priority == priority)
     if assigned_to:
         q = q.where(RFQRequest.assigned_to == assigned_to)
+    if sla == "breached":
+        q = q.where(RFQRequest.sla_breached == True)  # noqa: E712
+    elif sla == "due_soon":
+        q = q.where(
+            RFQRequest.first_response_at.is_(None),
+            RFQRequest.sla_due_at.is_not(None),
+            col(RFQRequest.sla_due_at) <= utcnow_naive() + timedelta(hours=1),
+        )
     q = q.offset(offset).limit(min(limit, 200))
     rows = (await db.exec(q)).all()
     return [_rfq_row(r) for r in rows]
+
+
+@tracking_router.get("/rfqs/stats")
+async def rfq_stats(
+    days: int = 30,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    """首回時間與 SLA 達成率統計（T8）。
+
+    注意：必須定義在 /rfqs/{rfq_id} 之前，否則 "stats" 會被當成 UUID 解析。
+    """
+    since = utcnow_naive() - timedelta(days=days)
+    q = select(RFQRequest).where(col(RFQRequest.created_at) >= since)
+    if _.tenant_id:
+        q = q.where(RFQRequest.tenant_id == _.tenant_id)
+    rows = (await db.exec(q)).all()
+
+    def _naive(dt):
+        # created_at（timestamptz）與 SLA 欄位（timestamp）時區感知不一致，統一歸一
+        return dt.replace(tzinfo=None) if dt is not None and dt.tzinfo is not None else dt
+
+    now = utcnow_naive()
+    total = len(rows)
+
+    responded_hours = sorted(
+        (_naive(r.first_response_at) - _naive(r.created_at)).total_seconds() / 3600.0
+        for r in rows
+        if r.first_response_at
+    )
+    avg_first_response_hours = (
+        round(sum(responded_hours) / len(responded_hours), 2) if responded_hours else None
+    )
+    median_first_response_hours = (
+        round(responded_hours[len(responded_hours) // 2], 2) if responded_hours else None
+    )
+
+    sla_applicable = [r for r in rows if r.sla_due_at]
+    sla_met = sum(
+        1 for r in sla_applicable
+        if r.first_response_at and _naive(r.first_response_at) <= _naive(r.sla_due_at)
+    )
+    sla_breached = sum(
+        1 for r in sla_applicable
+        if (r.first_response_at and _naive(r.first_response_at) > _naive(r.sla_due_at))
+        or (not r.first_response_at and _naive(r.sla_due_at) < now)
+    )
+    sla_pending = len(sla_applicable) - sla_met - sla_breached
+    sla_closed = sla_met + sla_breached
+    sla_achievement_rate = round(sla_met / sla_closed, 4) if sla_closed else None
+
+    status_counts: dict[str, int] = {}
+    for r in rows:
+        status_counts[r.status] = status_counts.get(r.status, 0) + 1
+
+    quality_scores = [r.quality_score for r in rows if r.quality_score]
+    avg_quality = round(sum(quality_scores) / len(quality_scores), 1) if quality_scores else None
+
+    return {
+        "period_days": days,
+        "total_rfqs": total,
+        "responded": len(responded_hours),
+        "avg_first_response_hours": avg_first_response_hours,
+        "median_first_response_hours": median_first_response_hours,
+        "sla_applicable": len(sla_applicable),
+        "sla_met": sla_met,
+        "sla_breached": sla_breached,
+        "sla_pending": sla_pending,
+        "sla_achievement_rate": sla_achievement_rate,
+        "avg_quality_score": avg_quality,
+        "status_counts": status_counts,
+    }
+
+
+# ── 回覆品質輔助（§5.4）：checklist／quote readiness／範本庫 ─────────────────
+
+class TemplateIn(BaseModel):
+    name: str = PydanticField(max_length=120)
+    body: str
+    product_line: Optional[str] = PydanticField(default=None, max_length=80)
+    country: Optional[str] = PydanticField(default=None, max_length=2)
+    locale: str = PydanticField(default="en", max_length=5)
+
+
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = PydanticField(default=None, max_length=120)
+    body: Optional[str] = None
+    product_line: Optional[str] = PydanticField(default=None, max_length=80)
+    country: Optional[str] = PydanticField(default=None, max_length=2)
+    locale: Optional[str] = PydanticField(default=None, max_length=5)
+
+
+def _template_row(t: ReplyTemplate) -> dict:
+    return {
+        "id": str(t.id),
+        "name": t.name,
+        "product_line": t.product_line,
+        "country": t.country,
+        "locale": t.locale,
+        "body": t.body,
+        "updated_at": t.updated_at.isoformat(),
+    }
+
+
+@tracking_router.get("/rfqs/templates")
+async def list_reply_templates(
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    q = select(ReplyTemplate).order_by(col(ReplyTemplate.updated_at).desc())
+    if _.tenant_id:
+        q = q.where(ReplyTemplate.tenant_id == _.tenant_id)
+    rows = (await db.exec(q)).all()
+    return [_template_row(t) for t in rows]
+
+
+@tracking_router.post("/rfqs/templates", status_code=201)
+async def create_reply_template(
+    body: TemplateIn,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    t = ReplyTemplate(tenant_id=_.tenant_id, **body.model_dump())
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return _template_row(t)
+
+
+@tracking_router.patch("/rfqs/templates/{template_id}")
+async def update_reply_template(
+    template_id: uuid.UUID,
+    body: TemplateUpdate,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    t = await db.get(ReplyTemplate, template_id)
+    if not t or (_.tenant_id and t.tenant_id != _.tenant_id):
+        raise HTTPException(status_code=404, detail="Template not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(t, field, value)
+    t.updated_at = utcnow_naive()
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return _template_row(t)
+
+
+@tracking_router.delete("/rfqs/templates/{template_id}", status_code=204)
+async def delete_reply_template(
+    template_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(require_content_editor),
+):
+    t = await db.get(ReplyTemplate, template_id)
+    if not t or (_.tenant_id and t.tenant_id != _.tenant_id):
+        raise HTTPException(status_code=404, detail="Template not found")
+    await db.delete(t)
+    await db.commit()
+
+
+@tracking_router.get("/rfqs/{rfq_id}/reply-assist")
+async def get_reply_assist(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    """回覆前 checklist＋Quote Readiness＋建議反問＋匹配範本（§5.4）。"""
+    r = await db.get(RFQRequest, rfq_id)
+    if not r or (_.tenant_id and r.tenant_id != _.tenant_id):
+        raise HTTPException(status_code=404, detail="RFQ not found")
+
+    buyer_country = None
+    if r.contact_id:
+        contact = await db.get(Contact, r.contact_id)
+        if contact:
+            buyer_country = contact.country
+
+    tq = select(ReplyTemplate)
+    if _.tenant_id:
+        tq = tq.where(ReplyTemplate.tenant_id == _.tenant_id)
+    templates = (await db.exec(tq)).all()
+    matched = match_templates(list(templates), country=buyer_country)[:3]
+
+    return {
+        "rfq_id": str(r.id),
+        "checklist": build_reply_checklist(r),
+        "quote_readiness": quote_readiness(r),
+        "suggested_questions": suggested_questions(r),
+        "templates": [_template_row(t) for t in matched],
+        "buyer_country": buyer_country,
+    }
 
 
 @tracking_router.get("/rfqs/{rfq_id}")
@@ -395,8 +672,30 @@ async def update_rfq_status(
     if _.tenant_id and r.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="RFQ not found")
     old_status = r.status
+
+    # §6.3：成交／流失原因必填
+    if body.status in ("won", "lost"):
+        existing_reason = r.won_reason if body.status == "won" else r.lost_reason
+        if not (body.reason and body.reason.strip()) and not existing_reason:
+            raise HTTPException(
+                status_code=422,
+                detail=f"reason is required when closing as {body.status}（成交／流失原因為必填，供漏斗分析與 intent 權重回寫）",
+            )
+        if body.reason and body.reason.strip():
+            if body.status == "won":
+                r.won_reason = body.reason.strip()
+            else:
+                r.lost_reason = body.reason.strip()
+
     r.status = body.status
     r.updated_at = utcnow_naive()
+    # 僅真實跟進狀態記首回；lost/expired 不算回覆（避免 SLA／首回統計偏樂觀）
+    _FIRST_RESPONSE_STATUSES = {"assigned", "in_progress", "quoted", "negotiation"}
+    if old_status == "new" and body.status in _FIRST_RESPONSE_STATUSES and r.first_response_at is None:
+        r.first_response_at = r.updated_at
+    if body.status == "quoted" and r.quote_sent_at is None:
+        # 漏斗量測：首次進入 quoted 視為報價送出（§6.3）
+        r.quote_sent_at = r.updated_at
     if body.status in ("won", "lost", "expired"):
         r.closed_at = r.updated_at
     db.add(r)
@@ -552,14 +851,28 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         "status": r.status,
         "priority": r.priority,
         "intent_score_at_submit": r.intent_score_at_submit,
+        "quality_score": r.quality_score,
+        "sla_due_at": r.sla_due_at.isoformat() if r.sla_due_at else None,
+        "sla_breached": r.sla_breached,
         "assigned_to": str(r.assigned_to) if r.assigned_to else None,
         "created_at": r.created_at.isoformat(),
     }
     if full:
         base["application_id"] = str(r.application_id) if r.application_id else None
         base["source_page"] = r.source_page
+        base["buyer_timezone"] = r.buyer_timezone
         base["hubspot_deal_id"] = r.hubspot_deal_id
         base["form_data"] = json.loads(r.form_data) if r.form_data else None
+        base["quality_reasons"] = (
+            json.loads(r.quality_reasons_json) if r.quality_reasons_json else []
+        )
+        base["incoterm"] = r.incoterm
+        base["annual_volume"] = r.annual_volume
+        base["is_trial_order"] = r.is_trial_order
+        base["required_certs"] = (
+            json.loads(r.required_certs_json) if r.required_certs_json else []
+        )
+        base["target_price"] = r.target_price
         base["assigned_notified_at"] = (
             r.assigned_notified_at.isoformat() if r.assigned_notified_at else None
         )
@@ -578,6 +891,7 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
             r.quote_sent_at.isoformat() if r.quote_sent_at else None
         )
         base["lost_reason"] = r.lost_reason
+        base["won_reason"] = r.won_reason
         base["agent_run_id"] = r.agent_run_id
         base["agent_analysis_summary"] = r.agent_analysis_summary
         base["agent_draft_body"] = r.agent_draft_body

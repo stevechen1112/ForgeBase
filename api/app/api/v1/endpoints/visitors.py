@@ -17,6 +17,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import exists
 from sqlmodel import select, col, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -29,6 +30,7 @@ from app.models.audience_tag import AudienceTag, VisitorTagLink
 from app.models.user import User
 from app.models.chat import ChatSession, ChatMessage
 from app.models.rfq_request import RFQRequest
+from app.services.intent_facets import VISITOR_FACET_COLUMN
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
@@ -40,14 +42,26 @@ async def list_visitors(
     intent_stage: Optional[str] = None,
     min_score: Optional[int] = None,
     country: Optional[str] = None,
+    facet: Optional[str] = None,
+    facet_min: Optional[int] = None,
+    has_rfq: Optional[bool] = None,
+    sort: str = "intent_score",
     limit: int = 50,
     offset: int = 0,
     _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    """List visitors sorted by intent score (desc). Admin only."""
-    q = select(Visitor).order_by(col(Visitor.intent_score).desc())
+    """List visitors sorted by intent score (desc). Admin only.
+
+    Intent Score 2.0（§4.1）：可依 facet 篩選／排序，例如
+    `?facet=trust_validation&facet_min=10&has_rfq=false`
+    → 「信任驗證高但尚未 RFQ」名單。
+    """
+    facet_col = VISITOR_FACET_COLUMN.get(facet or "")
+    sort_col = VISITOR_FACET_COLUMN.get(sort, "intent_score")
+
+    q = select(Visitor).order_by(col(getattr(Visitor, sort_col)).desc())
     if _.tenant_id:
         q = q.where(Visitor.tenant_id == _.tenant_id)
     if intent_stage:
@@ -56,6 +70,18 @@ async def list_visitors(
         q = q.where(Visitor.intent_score >= min_score)
     if country:
         q = q.where(Visitor.country == country)
+    if facet_col and facet_min is not None:
+        q = q.where(col(getattr(Visitor, facet_col)) >= facet_min)
+    if has_rfq is not None:
+        # 以 rfq_requests 為準（表單建立 RFQ 不一定寫入 rfq_submit 事件）
+        rfq_subq = (
+            select(RFQRequest.id)
+            .where(RFQRequest.visitor_id == Visitor.visitor_id)
+            .limit(1)
+        )
+        if _.tenant_id:
+            rfq_subq = rfq_subq.where(RFQRequest.tenant_id == _.tenant_id)
+        q = q.where(exists(rfq_subq) if has_rfq else ~exists(rfq_subq))
     q = q.offset(offset).limit(min(limit, 200))
     rows = (await db.exec(q)).all()
     return [
@@ -63,6 +89,13 @@ async def list_visitors(
             "visitor_id": str(r.visitor_id),
             "intent_score": r.intent_score,
             "intent_stage": r.intent_stage,
+            "intent_explanation": r.intent_explanation,
+            "facets": {
+                "product_interest": r.facet_product_interest,
+                "trust_validation": r.facet_trust_validation,
+                "procurement_readiness": r.facet_procurement_readiness,
+                "urgency": r.facet_urgency,
+            },
             "total_visits": r.total_visits,
             "total_page_views": r.total_page_views,
             "device_type": r.device_type,
@@ -99,6 +132,13 @@ async def get_visitor(
         "visitor_id": str(v.visitor_id),
         "intent_score": v.intent_score,
         "intent_stage": v.intent_stage,
+        "intent_explanation": v.intent_explanation,
+        "facets": {
+            "product_interest": v.facet_product_interest,
+            "trust_validation": v.facet_trust_validation,
+            "procurement_readiness": v.facet_procurement_readiness,
+            "urgency": v.facet_urgency,
+        },
         "total_visits": v.total_visits,
         "total_page_views": v.total_page_views,
         "device_type": v.device_type,
@@ -120,12 +160,18 @@ async def visitor_event_timeline(
 ):
     """Return chronological event timeline for a visitor."""
     import json as _json
-    rows = (await db.exec(
+    v = await db.get(Visitor, visitor_id)
+    if not v or (_.tenant_id and v.tenant_id != _.tenant_id):
+        raise HTTPException(status_code=404, detail="Visitor not found")
+    q = (
         select(TrackingEvent)
         .where(TrackingEvent.visitor_id == visitor_id)
         .order_by(col(TrackingEvent.timestamp).desc())
         .limit(min(limit, 500))
-    )).all()
+    )
+    if _.tenant_id:
+        q = q.where(TrackingEvent.tenant_id == _.tenant_id)
+    rows = (await db.exec(q)).all()
     return [
         {
             "event_id": str(r.event_id),
@@ -152,6 +198,10 @@ async def get_session_detail(
     ts = await db.get(TrackingSession, session_id)
     if not ts:
         raise HTTPException(status_code=404, detail="Session not found")
+    if _.tenant_id:
+        owner = await db.get(Visitor, ts.visitor_id)
+        if not owner or owner.tenant_id != _.tenant_id:
+            raise HTTPException(status_code=404, detail="Session not found")
     return {
         "session_id": str(ts.session_id),
         "visitor_id": str(ts.visitor_id),
@@ -372,7 +422,8 @@ async def assign_tag_to_visitor(
     db: AsyncSession = Depends(get_session),
     _: User = Depends(require_content_editor),
 ):
-    if not await db.get(Visitor, visitor_id):
+    v = await db.get(Visitor, visitor_id)
+    if not v or (_.tenant_id and v.tenant_id != _.tenant_id):
         raise HTTPException(status_code=404, detail="Visitor not found")
     if not await db.get(AudienceTag, tag_id):
         raise HTTPException(status_code=404, detail="Tag not found")
@@ -397,6 +448,9 @@ async def remove_tag_from_visitor(
     db: AsyncSession = Depends(get_session),
     _: User = Depends(require_content_editor),
 ):
+    v = await db.get(Visitor, visitor_id)
+    if not v or (_.tenant_id and v.tenant_id != _.tenant_id):
+        raise HTTPException(status_code=404, detail="Visitor not found")
     link = (await db.exec(
         select(VisitorTagLink).where(
             VisitorTagLink.visitor_id == visitor_id,
@@ -450,6 +504,8 @@ async def get_audience_members(
             .offset(offset)
             .limit(min(limit, 1000))
         )
+        if _.tenant_id:
+            q = q.where(Visitor.tenant_id == _.tenant_id)
         visitors = (await db.exec(q)).all()
         return {
             "tag_id": str(tag_id),
@@ -490,8 +546,10 @@ async def get_audience_members(
         )
         .group_by(TrackingEvent.visitor_id)
         .having(func.count(TrackingEvent.event_id) >= min_count)
-        .subquery()
     )
+    if _.tenant_id:
+        count_subq = count_subq.where(TrackingEvent.tenant_id == _.tenant_id)
+    count_subq = count_subq.subquery()
 
     q = (
         select(Visitor)
@@ -499,6 +557,8 @@ async def get_audience_members(
         .offset(offset)
         .limit(min(limit, 1000))
     )
+    if _.tenant_id:
+        q = q.where(Visitor.tenant_id == _.tenant_id)
     visitors = (await db.exec(q)).all()
 
     return {

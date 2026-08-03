@@ -43,7 +43,8 @@ type RFQDetail = {
   assigned_notified_at: string | null; reminder_24h_sent_at: string | null;
   escalation_48h_sent_at: string | null; closed_at: string | null;
   created_at: string; updated_at: string;
-  first_response_at: string | null; quote_sent_at: string | null; lost_reason: string | null;
+  first_response_at: string | null; quote_sent_at: string | null;
+  lost_reason: string | null; won_reason: string | null;
 };
 
 type RFQAnalysis = {
@@ -54,7 +55,16 @@ type RFQAnalysis = {
 };
 type DraftReply = { subject: string; body: string; language: string };
 
-const STATUSES = ["new", "assigned", "in_progress", "quoted", "won", "lost", "expired"];
+// §5.4 回覆品質輔助
+type ReplyAssist = {
+  checklist: { key: string; label: string; ok: boolean; ask: string | null }[];
+  quote_readiness: { score: number; ready: boolean; gaps: string[]; message: string };
+  suggested_questions: string[];
+  templates: { id: string; name: string; body: string }[];
+  buyer_country: string | null;
+};
+
+const STATUSES = ["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"];
 const PRIORITY_VARIANT: Record<string, string> = {
   urgent: "bg-red-100 text-red-700",
   high: "bg-orange-100 text-orange-700",
@@ -78,6 +88,8 @@ export default function RFQDetailPage() {
   const [analysisError, setAnalysisError] = useState("");
   const [reply, setReply] = useState<DraftReply | null>(null);
   const [replyLoading, setReplyLoading] = useState(false);
+  const [closeReason, setCloseReason] = useState("");
+  const [assist, setAssist] = useState<ReplyAssist | null>(null);
 
   // Follow-up state
   const [followUpSaving, setFollowUpSaving] = useState(false);
@@ -98,6 +110,15 @@ export default function RFQDetailPage() {
         headers: buildApiHeaders(token),
       });
       if (res.ok) setEvents(await res.json());
+    } catch { /* non-critical */ }
+  }
+
+  async function fetchAssist() {
+    try {
+      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/reply-assist`, {
+        headers: buildApiHeaders(token),
+      });
+      if (res.ok) setAssist(await res.json());
     } catch { /* non-critical */ }
   }
 
@@ -168,6 +189,7 @@ export default function RFQDetailPage() {
       .then((data) => { setRfq(data); setNewStatus(data.status); setAssignTo(data.assigned_to ?? ""); })
       .finally(() => setLoading(false));
     fetchEvents();
+    fetchAssist();
   }, [id, token]);
 
   async function saveStatus() {
@@ -177,11 +199,23 @@ export default function RFQDetailPage() {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/status`, {
         method: "PUT",
         headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: newStatus,
+          ...(closeReason.trim() ? { reason: closeReason.trim() } : {}),
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail);
-      setRfq((prev) => prev ? { ...prev, status: data.status } : prev);
+      if (!res.ok) {
+        const d = data.detail;
+        const msg = typeof d === "string"
+          ? d
+          : Array.isArray(d)
+            ? d.map((x: { msg?: string }) => x?.msg || JSON.stringify(x)).join("; ")
+            : (d ? JSON.stringify(d) : res.statusText);
+        throw new Error(msg);
+      }
+      setRfq((prev) => prev ? { ...prev, status: data.status, ...(newStatus === "won" && closeReason.trim() ? { won_reason: closeReason.trim() } : {}), ...(newStatus === "lost" && closeReason.trim() ? { lost_reason: closeReason.trim() } : {}) } : prev);
+      setCloseReason("");
       setMessage("Status updated ✓");
       fetchEvents();
     } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
@@ -333,6 +367,53 @@ export default function RFQDetailPage() {
             </CardContent>
           </Card>
 
+          {/* 回覆品質輔助 Panel（§5.4） */}
+          {assist && (
+            <Card className="border-emerald-200 bg-emerald-50/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base text-emerald-800">回覆前檢查（Quote Readiness）</CardTitle>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${assist.quote_readiness.ready ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                    {assist.quote_readiness.score} 分 — {assist.quote_readiness.message}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <ul className="space-y-1.5">
+                  {assist.checklist.map((item) => (
+                    <li key={item.key} className="flex items-start gap-2">
+                      {item.ok
+                        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />}
+                      <span className={item.ok ? "text-muted-foreground" : "font-medium"}>{item.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                {assist.suggested_questions.length > 0 && (
+                  <div className="border-t border-emerald-200 pt-3">
+                    <p className="mb-1.5 text-xs font-semibold text-muted-foreground">建議反問買家</p>
+                    <ul className="list-inside list-disc space-y-1 text-xs">
+                      {assist.suggested_questions.map((q, i) => <li key={i}>{q}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {assist.templates.length > 0 && (
+                  <div className="border-t border-emerald-200 pt-3">
+                    <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
+                      匹配範本{assist.buyer_country ? `（買家國家：${assist.buyer_country}）` : ""}
+                    </p>
+                    {assist.templates.map((t) => (
+                      <details key={t.id} className="mb-1.5 rounded border bg-background px-3 py-2 text-xs">
+                        <summary className="cursor-pointer font-medium">{t.name}</summary>
+                        <pre className="mt-2 whitespace-pre-wrap font-sans text-muted-foreground">{t.body}</pre>
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* AI Analysis Panel */}
           <Card className="border-indigo-200 bg-indigo-50/30">
             <CardHeader className="pb-2">
@@ -441,7 +522,24 @@ export default function RFQDetailPage() {
               <select className={SELECT_CLS} value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
                 {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
               </select>
-              <Button className="w-full" onClick={saveStatus} disabled={saving || newStatus === rfq.status}>
+              {(newStatus === "won" || newStatus === "lost") && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">
+                    {newStatus === "won" ? "成交原因（必填）" : "流失原因（必填）"}
+                  </Label>
+                  <Input
+                    value={closeReason}
+                    onChange={(e) => setCloseReason(e.target.value)}
+                    placeholder={newStatus === "won" ? "例：價格與交期具競爭力" : "例：報價高於競爭對手 15%"}
+                    className="text-xs"
+                  />
+                </div>
+              )}
+              <Button
+                className="w-full"
+                onClick={saveStatus}
+                disabled={saving || newStatus === rfq.status || ((newStatus === "won" || newStatus === "lost") && !closeReason.trim() && !((newStatus === "won" && rfq.won_reason) || (newStatus === "lost" && rfq.lost_reason)))}
+              >
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
                 Update Status
               </Button>

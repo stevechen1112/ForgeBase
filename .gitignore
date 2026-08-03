@@ -13,9 +13,9 @@ build/
 
 # Environment variables
 .env
-.env.gemini
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 langfuse/.env.langfuse
 
 # Node

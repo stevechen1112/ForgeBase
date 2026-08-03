@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     # Example: "cftoken123:550e8400-e29b-41d4-a716-446655440000"
     SERVICE_ACCOUNT_TOKENS: str = ""
 
+    # Web 前台 on-demand revalidate（CF→FB Publish Contract §8）
+    WEB_REVALIDATE_URL: str = ""        # e.g. https://www.client.com/api/revalidate
+    WEB_REVALIDATE_SECRET: str = ""     # 與 web 端 REVALIDATE_SECRET 相同
+
     # Admin seed
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = ""

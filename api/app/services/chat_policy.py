@@ -1,3 +1,4 @@
+import re
 from typing import Any, Optional
 
 from app.services.chat_response_utils import contains_any, has_quantity_signal, normalize_question
@@ -38,6 +39,55 @@ RFQ_TERMS = [
 ]
 MARKET_TERMS = ["europe", "european", "eu", "germany", "german", "us", "usa", "japan", "middle east", "uk"]
 COMPLIANCE_TERMS = ["ce", "reach", "rohs", "ul", "compliance", "certification", "iso"]
+USE_CASE_TERMS = [
+    "used for",
+    "use case",
+    "application",
+    "for our",
+    "for automotive",
+    "for construction",
+    "for assembly",
+    "production line",
+    "assembly line",
+    "repair",
+    "maintenance",
+    "diy",
+    "professional use",
+    "industry",
+]
+SPEC_TERMS = [
+    "material",
+    "cr-v",
+    "cr-mo",
+    "chrome vanadium",
+    "stainless",
+    "hardness",
+    "hrc",
+    "torque",
+    "dimension",
+    "size",
+    "length",
+    "din",
+    "ansi",
+    "spec",
+    "drawing",
+    "tolerance",
+]
+LEAD_TIME_TERMS = [
+    "lead time",
+    "delivery",
+    "deliver",
+    "ship by",
+    "shipment",
+    "deadline",
+    "urgent",
+    "by q1",
+    "by q2",
+    "by q3",
+    "by q4",
+    "weeks",
+    "days",
+]
 
 
 def _message_role(message: Any) -> str:
@@ -85,6 +135,12 @@ def _clarifying_question_for_slot(missing_slot: Optional[str]) -> Optional[str]:
         return "Are you evaluating a standard supply range, or an OEM/private-label program"
     if missing_slot == "quantity":
         return "What estimated quantity or MOQ target should I use for the first RFQ round"
+    if missing_slot == "use_case":
+        return "What will the product be used for — which application or production scenario"
+    if missing_slot == "spec_detail":
+        return "Which key specifications should I confirm — material, dimensions, or applicable standard"
+    if missing_slot == "lead_time":
+        return "What is your target delivery timeframe or required ship date"
     if missing_slot == "packaging_scope":
         return "For the private-label scope, do you need logo marking only, or custom packaging as well"
     if missing_slot == "market_requirement":
@@ -111,6 +167,9 @@ def resolve_dialogue_state(
         quantity_known=has_quantity_signal(lowered_full_text),
         packaging_scope=_detect_packaging_scope(lowered_full_text),
         market_requirement=_detect_market_requirement(lowered_full_text),
+        use_case_known=contains_any(lowered_full_text, USE_CASE_TERMS),
+        spec_known=contains_any(lowered_full_text, SPEC_TERMS),
+        lead_time_known=contains_any(lowered_full_text, LEAD_TIME_TERMS),
     )
 
     if asks_for_rfq or slots.program_type == "oem" or slots.quantity_known or model_suggested_action == "rfq":
@@ -125,6 +184,12 @@ def resolve_dialogue_state(
         missing_slot = "program_type"
     elif buyer_intent == "high" and not slots.quantity_known:
         missing_slot = "quantity"
+    elif buyer_intent == "high" and not slots.use_case_known:
+        missing_slot = "use_case"
+    elif buyer_intent == "high" and not slots.spec_known:
+        missing_slot = "spec_detail"
+    elif buyer_intent == "high" and not slots.lead_time_known:
+        missing_slot = "lead_time"
     elif slots.program_type == "oem" and slots.packaging_scope == "unknown" and contains_any(lowered_question, OEM_TERMS):
         missing_slot = "packaging_scope"
     elif contains_any(lowered_question, ["compliance", "certification", "market"]) and slots.market_requirement == "unknown":
@@ -147,6 +212,67 @@ def resolve_dialogue_state(
         slots=slots,
         missing_slot=missing_slot,
     )
+
+
+def summarize_quotable_needs(user_text: str) -> dict[str, Any]:
+    """從買家對話文字萃取「可詢價需求」摘要（實效計畫 §4.3）。
+
+    輸出可寫入 RFQ 草稿或 Copilot 工單，讓業務拿到的是結構化需求，
+    而不是一整段對話紀錄。
+    """
+    lowered = user_text.lower()
+    program_type = _detect_program_type(lowered)
+    packaging_scope = _detect_packaging_scope(lowered)
+    market_requirement = _detect_market_requirement(lowered)
+    quantity_known = has_quantity_signal(lowered)
+    use_case_known = contains_any(lowered, USE_CASE_TERMS)
+    spec_known = contains_any(lowered, SPEC_TERMS)
+    lead_time_known = contains_any(lowered, LEAD_TIME_TERMS)
+
+    quantity_match = re.search(r"\b(\d[\d,]*\s?(?:pcs|pieces|units|sets|containers|k))\b", lowered)
+    quantity_hint = quantity_match.group(1) if quantity_match else None
+
+    missing = []
+    if not quantity_known:
+        missing.append("quantity")
+    if not use_case_known:
+        missing.append("use_case")
+    if not spec_known:
+        missing.append("spec_detail")
+    if not lead_time_known:
+        missing.append("lead_time")
+
+    parts: list[str] = []
+    parts.append({"oem": "OEM/private-label program", "standard": "standard supply range"}.get(program_type, "program type TBD"))
+    if quantity_hint:
+        parts.append(f"quantity ~{quantity_hint}")
+    elif quantity_known:
+        parts.append("quantity discussed")
+    if use_case_known:
+        parts.append("use case described")
+    if spec_known:
+        parts.append("specs mentioned")
+    if lead_time_known:
+        parts.append("lead time specified")
+    if market_requirement != "unknown":
+        parts.append("market/compliance named")
+    if packaging_scope != "unknown":
+        parts.append(packaging_scope.replace("_", " "))
+    if missing:
+        parts.append("missing: " + ", ".join(missing))
+
+    return {
+        "program_type": program_type,
+        "quantity_known": quantity_known,
+        "quantity_hint": quantity_hint,
+        "use_case_known": use_case_known,
+        "spec_known": spec_known,
+        "lead_time_known": lead_time_known,
+        "packaging_scope": packaging_scope,
+        "market_requirement": market_requirement,
+        "missing": missing,
+        "summary_text": "; ".join(parts),
+    }
 
 
 def infer_clarifying_question(

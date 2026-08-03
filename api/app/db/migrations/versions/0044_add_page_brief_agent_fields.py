@@ -1,14 +1,18 @@
-"""add agent fields to page_briefs
+"""Add agent fields to page_briefs
 
-Revision ID: 0044
-Revises: 0043
+Revision ID: 0044_add_page_brief_agent_fields
+Revises: 0043_add_rfq_agent_draft_fields
 Create Date: 2026-04-26
+
+（2026-08-03 修正：原檔位於未掛載的 api/alembic/versions/，
+revision/down_revision 使用短代號 "0044"/"0043" 導致斷鏈；
+遷入正式目錄並對齊完整 revision id。）
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = "0044"
-down_revision = "0043"
+revision = "0044_add_page_brief_agent_fields"
+down_revision = "0043_add_rfq_agent_draft_fields"
 branch_labels = None
 depends_on = None
 

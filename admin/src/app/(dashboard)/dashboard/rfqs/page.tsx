@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
+import { QualityBadge, SlaCountdown } from "@/components/rfq/quality-sla";
 
 type RFQ = {
   id: string;
@@ -14,8 +15,19 @@ type RFQ = {
   status: string;
   priority: string;
   intent_score_at_submit: number;
+  quality_score: number;
+  sla_due_at: string | null;
+  sla_breached: boolean;
   assigned_to: string | null;
   created_at: string;
+};
+
+type RfqStats = {
+  total_rfqs: number;
+  avg_first_response_hours: number | null;
+  sla_achievement_rate: number | null;
+  sla_breached: number;
+  avg_quality_score: number | null;
 };
 
 const STATUS_VARIANT: Record<string, string> = {
@@ -41,8 +53,11 @@ export default function RFQsListPage() {
   const token = state.status === "authenticated" ? state.accessToken : "";
 
   const [rows, setRows] = useState<RFQ[]>([]);
+  const [stats, setStats] = useState<RfqStats | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [slaFilter, setSlaFilter] = useState("");
+  const [sort, setSort] = useState("quality"); // T11：預設「品質 × SLA」
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -56,6 +71,8 @@ export default function RFQsListPage() {
     });
     if (statusFilter) params.set("status", statusFilter);
     if (priorityFilter) params.set("priority", priorityFilter);
+    if (slaFilter) params.set("sla", slaFilter);
+    if (sort) params.set("sort", sort);
 
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
       headers: buildApiHeaders(token),
@@ -64,7 +81,15 @@ export default function RFQsListPage() {
       .then((data) => setRows(Array.isArray(data) ? data : []))
       .catch((e) => { setError(e instanceof Error ? e.message : "Load failed"); setRows([]); })
       .finally(() => setLoading(false));
-  }, [token, page, statusFilter, priorityFilter]);
+  }, [token, page, statusFilter, priorityFilter, slaFilter, sort]);
+
+  // T8：首回時間與 SLA 達成率摘要
+  useEffect(() => {
+    fetch(`${API_BASE}/tracking/rfqs/stats?days=30`, { headers: buildApiHeaders(token) })
+      .then((r) => r.json())
+      .then((data) => setStats(data && typeof data === "object" ? data : null))
+      .catch(() => setStats(null));
+  }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -79,6 +104,36 @@ export default function RFQsListPage() {
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
 
+      {/* T8：首回速度摘要卡（近 30 天） */}
+      {stats && (
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">平均首回時間</div>
+            <div className="mt-1 text-xl font-bold">
+              {stats.avg_first_response_hours != null ? `${stats.avg_first_response_hours}h` : "—"}
+            </div>
+          </div>
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">SLA 達成率</div>
+            <div className={`mt-1 text-xl font-bold ${stats.sla_achievement_rate != null && stats.sla_achievement_rate < 0.8 ? "text-red-600" : ""}`}>
+              {stats.sla_achievement_rate != null ? `${Math.round(stats.sla_achievement_rate * 100)}%` : "—"}
+            </div>
+          </div>
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">SLA 逾期單</div>
+            <div className={`mt-1 text-xl font-bold ${stats.sla_breached > 0 ? "text-red-600" : ""}`}>
+              {stats.sla_breached}
+            </div>
+          </div>
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-xs text-muted-foreground">平均品質分</div>
+            <div className="mt-1 text-xl font-bold">
+              {stats.avg_quality_score != null ? stats.avg_quality_score : "—"}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
         <select className={SELECT_CLS} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
@@ -92,6 +147,15 @@ export default function RFQsListPage() {
           {["normal", "high", "urgent"].map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
+        </select>
+        <select className={SELECT_CLS} value={slaFilter} onChange={(e) => { setSlaFilter(e.target.value); setPage(1); }}>
+          <option value="">All SLA</option>
+          <option value="due_soon">SLA 即將逾期</option>
+          <option value="breached">SLA 已逾期</option>
+        </select>
+        <select className={SELECT_CLS} value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>
+          <option value="quality">品質 × SLA（預設）</option>
+          <option value="">最新優先</option>
         </select>
         <Button variant="outline" size="sm" onClick={load} className="ml-auto">
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" />Refresh
@@ -108,14 +172,14 @@ export default function RFQsListPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b">
               <tr>
-                {["RFQ #", "Status", "Priority", "Intent Score", "Submitted", "Actions"].map((h) => (
+                {["RFQ #", "Status", "Priority", "Quality", "SLA", "Intent", "Submitted", "Actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y">
               {rows.map((rfq) => (
-                <tr key={rfq.id} className="hover:bg-muted/30 transition-colors">
+                <tr key={rfq.id} className={`hover:bg-muted/30 transition-colors ${rfq.sla_breached ? "bg-red-50/50" : ""}`}>
                   <td className="px-4 py-3 font-mono font-medium text-primary">
                     <Link href={`/dashboard/rfqs/${rfq.id}`} className="hover:underline">
                       {rfq.rfq_number}
@@ -127,6 +191,10 @@ export default function RFQsListPage() {
                     </span>
                   </td>
                   <td className={`px-4 py-3 ${PRIORITY_CLS[rfq.priority] ?? ""}`}>{rfq.priority}</td>
+                  <td className="px-4 py-3"><QualityBadge score={rfq.quality_score ?? 0} /></td>
+                  <td className="px-4 py-3">
+                    <SlaCountdown slaDueAt={rfq.sla_due_at} slaBreached={rfq.sla_breached} status={rfq.status} />
+                  </td>
                   <td className="px-4 py-3">{rfq.intent_score_at_submit}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(rfq.created_at).toLocaleDateString()}

@@ -90,14 +90,33 @@ async def _ai_rfq_summary(rfq: RFQRequest) -> str:
 
 # ── Event handlers ────────────────────────────────────────────────────────────
 
+# 品質分數門檻（T5）：高於此值立即推播；低品質併入每日摘要，不打擾業務。
+HIGH_QUALITY_THRESHOLD = 70
+
+
+def _should_instant_push(rfq: RFQRequest) -> bool:
+    """通知強度：高品質單立即推；intent urgent 單也立即推；其餘進每日摘要。"""
+    if (rfq.quality_score or 0) >= HIGH_QUALITY_THRESHOLD:
+        return True
+    return rfq.priority == "urgent"
+
+
 async def on_new_rfq(rfq_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
     """
     Triggered when a new RFQ is created.
-    Sends an immediate notification with AI-generated summary.
+    High-quality RFQs push instantly (Telegram/LINE); low-quality ones are
+    left for the daily digest (T5 首回速度工程).
     """
     async with get_session_ctx() as session:
         rfq = await _get_rfq(session, rfq_id)
         if not rfq:
+            return
+
+        if not _should_instant_push(rfq):
+            logger.info(
+                "RFQ %s quality=%s priority=%s — 併入每日摘要，不即時推播",
+                rfq.rfq_number, rfq.quality_score, rfq.priority,
+            )
             return
 
         form = _parse_form_data(rfq.form_data)
@@ -109,22 +128,45 @@ async def on_new_rfq(rfq_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
 
         urgency_icon = _URGENCY_ICON.get(rfq.priority or "normal", "🟢")
         score = rfq.intent_score_at_submit or 0
+        quality = rfq.quality_score or 0
+        country = form.get("country") or "—"
+
+        trade_bits = []
+        if rfq.incoterm:
+            trade_bits.append(f"貿易條件 {rfq.incoterm}")
+        if rfq.annual_volume:
+            trade_bits.append(f"年量 {rfq.annual_volume}")
+        if rfq.required_certs_json:
+            try:
+                certs = json.loads(rfq.required_certs_json)
+                if certs:
+                    trade_bits.append(f"認證 {', '.join(certs[:3])}")
+            except (ValueError, TypeError):
+                pass
+        if rfq.target_price:
+            trade_bits.append(f"目標價 {rfq.target_price}")
 
     # AI summary called OUTSIDE the DB session to avoid holding the connection
     # during external API latency (rfq object is safe to use with expire_on_commit=False)
     ai_summary = await _ai_rfq_summary(rfq)
 
     msg = (
-        f"🔔 <b>新 RFQ 詢價通知</b>\n\n"
+        f"🔔 <b>高品質 RFQ 詢價通知</b>\n\n"
         f"編號：<code>{rfq.rfq_number}</code>\n"
-        f"公司：{company}\n"
+        f"公司：{company}（{country}）\n"
         f"聯絡人：{full_name}（{email}）\n"
         f"數量：{quantity}\n"
+        f"品質分數：<b>{quality}</b>／100\n"
         f"意圖分數：{score} {urgency_icon}\n"
     )
+    if trade_bits:
+        msg += f"採購訊號：{'、'.join(trade_bits)}\n"
+    if rfq.sla_due_at:
+        msg += f"首回 SLA（{rfq.buyer_timezone or 'UTC'}）：<code>{rfq.sla_due_at:%Y-%m-%d %H:%M} UTC</code>\n"
     if message_text:
         msg += f"\n訊息：{message_text}{'…' if len(form.get('message',''))>120 else ''}\n"
     msg += f"\n<b>AI 摘要：</b>{ai_summary}"
+    msg += "\n\n⚡ 先回覆者紅利：建議於 SLA 內完成首次回覆。"
 
     buttons = [
         {"label": "查看 RFQ 詳情", "url": f"{_ADMIN_URL}/backend/rfq/{rfq_id}"},

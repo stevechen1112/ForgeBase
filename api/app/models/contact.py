@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional
+from sqlalchemy import UniqueConstraint
 from sqlmodel import SQLModel, Field
 from app.core.datetime import utcnow_naive
 
@@ -8,15 +9,20 @@ from app.core.datetime import utcnow_naive
 class Contact(SQLModel, table=True):
     """
     Known contact: created from RFQ or Contact form submission.
-    email is the dedup key — same email merges into same Contact.
+    (tenant_id, email) is the dedup key — same email merges into same Contact
+    within a tenant; different tenants may hold separate records for the
+    same email (multi-tenant isolation, 2026-08-03).
     Linked back to original Visitor for full behavioral timeline.
     Spec: 12.7.3, 1b.2.3
     """
     __tablename__ = "contacts"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "email", name="uq_contacts_tenant_email"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    email: str = Field(max_length=100, unique=True, index=True)
+    email: str = Field(max_length=100, index=True)
     full_name: str = Field(max_length=100)
     company_name: Optional[str] = Field(default=None, max_length=100)
     phone: Optional[str] = Field(default=None, max_length=30)

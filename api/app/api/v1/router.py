@@ -12,7 +12,7 @@ from app.api.v1.endpoints.content_crud import (
 )
 from app.api.v1.endpoints import (
     strategy, ai_generate, assets, relations, publish, orphans,
-    public_relations, preview,
+    public_relations, preview, page_meta, growth_ops,
     events, visitors, contacts, rfqs, integrations, segments,
     seo_optimize, esp, analytics,
     ml_scoring, chat, chat_admin,
@@ -40,6 +40,7 @@ content_router.include_router(certifications_router)
 content_router.include_router(capabilities_router)
 content_router.include_router(ctas_router)
 content_router.include_router(pages_router)
+content_router.include_router(page_meta.router)
 content_router.include_router(briefs_router)
 content_router.include_router(strategy.router)
 content_router.include_router(ai_generate.router)
@@ -62,7 +63,9 @@ tracking_router.include_router(rfqs.tracking_router)       # /tracking/rfqs
 tracking_router.include_router(segments.router)            # /tracking/segments
 tracking_router.include_router(esp.router)                 # /tracking/esp/*
 tracking_router.include_router(analytics.router)           # /tracking/analytics/*
+tracking_router.include_router(growth_ops.tracking_router) # /tracking/outcomes, /tracking/funnel
 api_router.include_router(tracking_router)
+api_router.include_router(growth_ops.ops_router)           # /ops/task-queue
 
 # Phase 3: AI Intelligence — full paths defined in each router
 api_router.include_router(rfq_ai_router)       # /tracking/rfqs/{id}/analyze, /draft-reply

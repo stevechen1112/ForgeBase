@@ -176,12 +176,14 @@ async def predict_visitor_intent_score(
     v_sql = text("""
         SELECT visitor_id, intent_score, intent_stage,
                total_page_views, total_visits,
-               first_seen, last_activity_at
+               first_seen, last_activity_at, tenant_id
         FROM visitors WHERE visitor_id = :vid
     """)
     v_result = await session.execute(v_sql, {"vid": visitor_id})
     visitor_row = v_result.mappings().first()
     if not visitor_row:
+        raise HTTPException(status_code=404, detail="Visitor not found")
+    if current_user.tenant_id and visitor_row["tenant_id"] != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Visitor not found")
 
     # Fetch event counts for the visitor
@@ -241,15 +243,19 @@ async def batch_score_visitors(
     Batch-update ml_intent_score for visitors.
     Runs in background. Processes up to `limit` visitors (most recently active first).
     """
-    background_tasks.add_task(_run_batch_scoring, limit)
+    background_tasks.add_task(_run_batch_scoring, limit, current_user.tenant_id)
     return {
         "message": f"Batch scoring started for up to {limit} visitors.",
         "limit": limit,
     }
 
 
-async def _run_batch_scoring(limit: int) -> None:
-    """Background task: score N most recent visitors and persist ml_intent_score."""
+async def _run_batch_scoring(limit: int, tenant_id=None) -> None:
+    """Background task: score N most recent visitors and persist ml_intent_score.
+
+    Scoped to the triggering user's tenant; tenant_id=None (platform-level
+    caller) scores across all tenants.
+    """
     from datetime import datetime
 
     from app.db.session import get_session  # avoid circular at module level
@@ -261,10 +267,14 @@ async def _run_batch_scoring(limit: int) -> None:
                        total_page_views, total_visits,
                        first_seen, last_activity_at
                 FROM visitors
+                WHERE (CAST(:tid AS uuid) IS NULL OR tenant_id = CAST(:tid AS uuid))
                 ORDER BY last_activity_at DESC NULLS LAST
                 LIMIT :lim
             """)
-            v_result = await session.execute(visitors_sql, {"lim": limit})
+            v_result = await session.execute(
+                visitors_sql,
+                {"lim": limit, "tid": str(tenant_id) if tenant_id else None},
+            )
             rows = v_result.mappings().all()
 
             for vrow in rows:

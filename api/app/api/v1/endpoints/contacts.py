@@ -85,9 +85,15 @@ async def submit_contact_form(
         if v:
             intent_score = v.intent_score
 
-    # Dedup by email
+    # Dedup by (tenant_id, email) — same email in another tenant is a
+    # separate Contact (multi-tenant isolation).
     contact = (
-        await db.exec(select(Contact).where(Contact.email == body.email))
+        await db.exec(
+            select(Contact).where(
+                Contact.email == body.email,
+                Contact.tenant_id == tenant_id,
+            )
+        )
     ).first()
 
     now = utcnow_naive()

@@ -12,8 +12,22 @@ Selection logic:
   hot         → RFQ CTA (standard)
   warm        → Download / Comparison / Application CTA
   cold        → Contact / Catalog CTA
+
+Facet overrides（實效計畫 §4.2，訊號強時覆寫 stage 優先序）：
+  產品興趣高＋信任驗證低 → 先補信任：certification/download CTA
+  採購準備高             → RFQ／規格交換
+  產品興趣高（重複瀏覽） → 比較頁／應用頁
 """
 from typing import Any
+
+from app.services.intent_facets import (
+    FACET_PROCUREMENT_READINESS,
+    FACET_PRODUCT_INTEREST,
+    FACET_TRUST_VALIDATION,
+)
+
+# facet 訊號強度門檻（對應規則式 score_delta 累積量級）
+_FACET_STRONG = 15
 
 # ── Stage-to-action priority map ──────────────────────────────────────────────
 
@@ -25,12 +39,45 @@ STAGE_ACTION_PRIORITY: dict[str, list[str]] = {
 }
 
 
+def _facet_action_override(facets: dict[str, int] | None) -> tuple[list[str] | None, dict[str, str]]:
+    """依 facet 組合回傳覆寫的 action 優先序與個人化提示（§4.2）。
+
+    回傳 (None, {}) 表示無強訊號，沿用 stage 優先序。
+    """
+    if not facets:
+        return None, {}
+    product = facets.get(FACET_PRODUCT_INTEREST, 0)
+    trust = facets.get(FACET_TRUST_VALIDATION, 0)
+    procurement = facets.get(FACET_PROCUREMENT_READINESS, 0)
+
+    # 採購準備高 → 短版 RFQ／規格交換
+    if procurement >= _FACET_STRONG:
+        return (
+            ["rfq", "download", "contact", "comparison", "external_link"],
+            {"facet_reason": "procurement_ready", "headline_prefix": "規格已備，直接取得報價"},
+        )
+    # 產品興趣高但信任驗證不足 → 先補信任內容
+    if product >= _FACET_STRONG and trust < _FACET_STRONG:
+        return (
+            ["download", "comparison", "contact", "rfq", "external_link"],
+            {"facet_reason": "trust_gap", "headline_prefix": "先驗證我們的品質與產能"},
+        )
+    # 產品興趣高且已有信任 → 比較頁／應用頁深化
+    if product >= _FACET_STRONG:
+        return (
+            ["comparison", "download", "rfq", "contact", "external_link"],
+            {"facet_reason": "deepen_product", "headline_prefix": "比較規格，找到最合適型號"},
+        )
+    return None, {}
+
+
 def select_dynamic_cta(
     intent_stage: str,
     intent_score: int,
     available_ctas: list[dict[str, Any]],
     page_context: dict[str, Any] | None = None,
     top_products_viewed: list[str] | None = None,
+    facets: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """
     Select the best CTA for this visitor from the available CTA list.
@@ -51,7 +98,8 @@ def select_dynamic_cta(
         }
     """
     stage = intent_stage if intent_stage in STAGE_ACTION_PRIORITY else "cold"
-    action_priority = STAGE_ACTION_PRIORITY[stage]
+    facet_priority, facet_personalization = _facet_action_override(facets)
+    action_priority = facet_priority or STAGE_ACTION_PRIORITY[stage]
 
     # Filter CTAs by target_intent_stage: keep "any" + matching stage
     filtered_ctas = [
@@ -102,6 +150,10 @@ def select_dynamic_cta(
     else:
         variant = "soft"
         personalization["headline_prefix"] = "歡迎聯絡我們"
+
+    # facet 訊號的個人化優先於 stage 預設（§4.2：像銷售助理的下一步）
+    if facet_priority is not None:
+        personalization.update(facet_personalization)
 
     return {
         "cta": selected,

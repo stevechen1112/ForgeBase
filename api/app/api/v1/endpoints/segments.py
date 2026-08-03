@@ -224,8 +224,10 @@ async def evaluate_segment(
     conditions: list[dict] = json.loads(seg.conditions)
     combinator = seg.combinator  # "AND" | "OR"
 
-    # Start with all visitors
+    # Start with all visitors (scoped to the caller's tenant)
     q = select(Visitor.visitor_id)
+    if _.tenant_id:
+        q = q.where(Visitor.tenant_id == _.tenant_id)
     filters = []
 
     for cond in conditions:
@@ -273,6 +275,8 @@ async def evaluate_segment(
                     .group_by(TrackingEvent.visitor_id)
                     .having(func.count(TrackingEvent.event_id) >= int(value))
                 )
+                if _.tenant_id:
+                    event_subq = event_subq.where(TrackingEvent.tenant_id == _.tenant_id)
                 if op == "gte":
                     filters.append(Visitor.visitor_id.in_(event_subq))
 

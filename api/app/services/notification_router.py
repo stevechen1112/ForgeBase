@@ -20,7 +20,7 @@ The router:
 import json
 import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlmodel import select
@@ -31,6 +31,7 @@ from app.db.session import get_session_ctx
 from app.models.notification_preference import NotificationPreference
 from app.models.notification_log import NotificationLog
 from app.services.channels.telegram import TelegramChannel
+from app.services.channels.line import LineChannel
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ _RATE_LIMIT_MINUTES = 5
 
 _CHANNEL_MAP = {
     "telegram": TelegramChannel(),
+    "line": LineChannel(),
 }
 
 # Maps event_type → preference column name on NotificationPreference

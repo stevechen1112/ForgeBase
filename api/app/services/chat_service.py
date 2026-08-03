@@ -23,6 +23,7 @@ from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
 from app.services.chat_orchestrator import finalize_generated_chat_response
 from app.services.chat_policy import infer_clarifying_question as _infer_clarifying_question
+from app.services.chat_policy import summarize_quotable_needs
 from app.services.chat_response_utils import (
     contains_any as _contains_any,
     has_quantity_signal as _has_quantity_signal,
@@ -464,6 +465,15 @@ class ChatService:
         chat_session.status = "handoff_completed"
         chat_session.updated_at = utcnow_naive()
         self.db.add(chat_session)
+
+        # §4.3：對話摘要寫入 RFQ 草稿——讓業務拿到結構化的可詢價需求
+        recent_messages = await self._get_recent_messages(chat_session.id)
+        user_text = "\n".join(m.content for m in reversed(recent_messages) if m.role == "user")
+        requirement_summary = summarize_quotable_needs(user_text) if user_text.strip() else None
+        if requirement_summary:
+            prefill = dict(prefill)
+            prefill["requirement_summary"] = requirement_summary["summary_text"]
+
         await self._record_tracking_event(
             visitor_id=chat_session.visitor_id,
             session_id=chat_session.session_id,
@@ -474,6 +484,7 @@ class ChatService:
             properties={
                 "source": "chat_widget",
                 "prefill_fields": sorted(prefill.keys()),
+                "requirement_summary": requirement_summary,
             },
         )
         await self.db.commit()
