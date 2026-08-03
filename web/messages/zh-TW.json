@@ -155,6 +155,21 @@
         { "value": "3-6 months", "label": "3-6 個月" },
         { "value": "evaluating", "label": "評估中" }
       ],
+      "incotermOptions": [
+        { "value": "", "label": "偏好貿易條件（選填）" },
+        { "value": "EXW", "label": "EXW — 工廠交貨" },
+        { "value": "FCA", "label": "FCA — 貨交運送人" },
+        { "value": "FAS", "label": "FAS — 船邊交貨" },
+        { "value": "FOB", "label": "FOB — 船上交貨" },
+        { "value": "CFR", "label": "CFR — 成本加運費" },
+        { "value": "CIF", "label": "CIF — 成本保險加運費" },
+        { "value": "CPT", "label": "CPT — 運費付訖" },
+        { "value": "CIP", "label": "CIP — 運保費付訖" },
+        { "value": "DAP", "label": "DAP — 目的地交貨" },
+        { "value": "DPU", "label": "DPU — 目的地卸貨交貨" },
+        { "value": "DDP", "label": "DDP — 完稅後交貨" }
+      ],
+      "tradeSectionTitle": "貿易條件（選填，有助於更快報價）",
       "successTitle": "RFQ 已成功送出",
       "referenceNumber": "您的參考編號：",
       "successDescription": "我們會審查需求內容，若規格資訊完整，將於 1 個工作天內回覆。",
@@ -175,12 +190,18 @@
         "timeline": "預計採購時程",
         "message": "補充說明",
         "howFound": "您如何得知我們？",
-        "consent": "我同意隱私政策，並授權處理本次詢價資料。*"
+        "consent": "我同意隱私政策，並授權處理本次詢價資料。*",
+        "incoterm": "貿易條件",
+        "annualVolume": "預估年採購量",
+        "targetPrice": "目標價格",
+        "trialOrder": "這是試單 / 樣品單"
       },
       "placeholders": {
         "quantity": "例如：500 pcs、1200 sets、年度採購",
         "specifications": "請提供工具類型、目標型號、尺寸範圍、扭力需求、絕緣等級、表面處理、包裝、Logo 或現有圖面參考。",
-        "message": "可補充目標市場、目前採購問題、打樣時程或對包裝與文件的期待。"
+        "message": "可補充目標市場、目前採購問題、打樣時程或對包裝與文件的期待。",
+        "annualVolume": "例如：10,000 pcs/年",
+        "targetPrice": "例如：USD 5-8 / pc"
       }
     }
   },

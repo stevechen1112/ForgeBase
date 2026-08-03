@@ -63,7 +63,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "成果總覽", href: "/dashboard/outcomes", icon: TrendingUp },
       { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
       // 全部 RFQ = 全局看板；Sales 與行銷經理都需要看到
-      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList },
+      { label: "全部 RFQ", href: "/dashboard/rfqs", icon: ClipboardList, exact: true },
+      { label: "回覆範本", href: "/dashboard/rfqs/templates", icon: FileText },
       { label: "詢價單追蹤", href: "/dashboard/conversions", icon: FileText },
     ],
   },

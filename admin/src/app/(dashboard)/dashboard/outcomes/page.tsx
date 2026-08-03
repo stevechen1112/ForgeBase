@@ -22,6 +22,27 @@ type Outcomes = {
 type FunnelLayer = { layer: string; label: string; count: number; conversion_from_prev_pct: number | null };
 type Funnel = { days: number; layers: FunnelLayer[]; bottleneck_layer: string | null };
 
+// Intent facet 成交迴路觀察（§8.3）：成交訪客 vs 全體 RFQ 訪客的 facet 輪廓 lift
+type FacetFeedback = {
+  facet: string;
+  avg_all_rfq_visitors: number;
+  avg_won_visitors: number;
+  won_lift: number | null;
+  hint: string;
+};
+type OutcomeFeedback = {
+  sample: { rfq_with_visitor: number; won: number } | number;
+  facets: FacetFeedback[];
+  note: string;
+};
+
+const FACET_LABEL: Record<string, string> = {
+  product_interest: "產品興趣",
+  trust_validation: "信任驗證",
+  procurement_readiness: "採購準備度",
+  urgency: "急迫性",
+};
+
 const STATUS_ORDER = ["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"];
 const STATUS_LABEL: Record<string, string> = {
   new: "新進", assigned: "已指派", in_progress: "處理中", quoted: "已報價",
@@ -33,6 +54,7 @@ export default function OutcomesPage() {
   const token = state.status === "authenticated" ? state.accessToken : "";
   const [outcomes, setOutcomes] = useState<Outcomes | null>(null);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
+  const [feedback, setFeedback] = useState<OutcomeFeedback | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,12 +62,14 @@ export default function OutcomesPage() {
     if (!token) return;
     setLoading(true); setError(null);
     try {
-      const [o, f] = await Promise.all([
+      const [o, f, fb] = await Promise.all([
         apiClient.get<Outcomes>("/tracking/outcomes", token),
         apiClient.get<Funnel>("/tracking/funnel?days=30", token),
+        apiClient.get<OutcomeFeedback>("/tracking/intent/outcome-feedback", token),
       ]);
       setOutcomes(o);
       setFunnel(f);
+      setFeedback(fb);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -224,6 +248,58 @@ export default function OutcomesPage() {
                 <Link href="/dashboard/tasks">前往今日必處理 →</Link>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 成交迴路觀察：Intent Facet Lift（§8.3） */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-primary" />成交迴路觀察（Intent Facet Lift）
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!feedback || !feedback.facets?.length ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {feedback?.note ?? "尚無連結訪客的 RFQ，無法計算"}
+              </p>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-muted-foreground">
+                      <th className="py-1.5 pr-3">面向</th>
+                      <th className="py-1.5 pr-3 text-right">全體 RFQ 訪客均值</th>
+                      <th className="py-1.5 pr-3 text-right">成交訪客均值</th>
+                      <th className="py-1.5 pr-3 text-right">Lift</th>
+                      <th className="py-1.5">建議</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {feedback.facets.map((f) => (
+                      <tr key={f.facet}>
+                        <td className="py-2 pr-3 font-medium">{FACET_LABEL[f.facet] ?? f.facet}</td>
+                        <td className="py-2 pr-3 text-right">{f.avg_all_rfq_visitors}</td>
+                        <td className="py-2 pr-3 text-right">{f.avg_won_visitors}</td>
+                        <td className="py-2 pr-3 text-right">
+                          {f.won_lift != null ? (
+                            <Badge variant={f.won_lift >= 1.5 ? "default" : "secondary"}>
+                              {f.won_lift}x
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 text-xs text-muted-foreground">{f.hint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="pt-3 text-xs text-muted-foreground">
+                  樣本：{typeof feedback.sample === "object" ? `${feedback.sample.rfq_with_visitor} 件 RFQ 連結訪客、${feedback.sample.won} 件成交` : "0"}・{feedback.note}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

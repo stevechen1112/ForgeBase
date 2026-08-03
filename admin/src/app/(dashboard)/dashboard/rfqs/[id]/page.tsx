@@ -45,6 +45,12 @@ type RFQDetail = {
   created_at: string; updated_at: string;
   first_response_at: string | null; quote_sent_at: string | null;
   lost_reason: string | null; won_reason: string | null;
+  quality_score: number | null;
+  sla_due_at: string | null; sla_breached: boolean;
+  quality_reasons?: string[];
+  incoterm?: string | null; annual_volume?: string | null;
+  is_trial_order?: boolean | null; target_price?: string | null;
+  required_certs?: string[]; buyer_timezone?: string | null;
 };
 
 type RFQAnalysis = {
@@ -306,6 +312,55 @@ export default function RFQDetailPage() {
                   <dt className="text-xs text-muted-foreground">Additional Message</dt>
                   <dd className="whitespace-pre-wrap">{String(formData.message ?? "—")}</dd>
                 </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">品質分數與貿易條件</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+                  (rfq.quality_score ?? 0) >= 70 ? "bg-green-100 text-green-800"
+                  : (rfq.quality_score ?? 0) >= 40 ? "bg-yellow-100 text-yellow-800"
+                  : "bg-gray-100 text-gray-600"
+                }`}>
+                  品質 {rfq.quality_score ?? "—"}/100
+                </span>
+                {rfq.sla_breached ? (
+                  <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">SLA 已逾期</span>
+                ) : rfq.sla_due_at ? (
+                  <span className="text-xs text-muted-foreground">SLA 截止 {new Date(rfq.sla_due_at).toLocaleString("zh-TW")}</span>
+                ) : null}
+              </div>
+              {(rfq.quality_reasons?.length ?? 0) > 0 && (
+                <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+                  {rfq.quality_reasons!.map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              )}
+              <dl className="grid grid-cols-2 gap-3">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Incoterm</dt>
+                  <dd className="font-medium">{rfq.incoterm ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">預估年採購量</dt>
+                  <dd className="font-medium">{rfq.annual_volume ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">目標價格</dt>
+                  <dd className="font-medium">{rfq.target_price ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">試單</dt>
+                  <dd className="font-medium">{rfq.is_trial_order == null ? "—" : rfq.is_trial_order ? "是" : "否"}</dd>
+                </div>
+                {(rfq.required_certs?.length ?? 0) > 0 && (
+                  <div className="col-span-2">
+                    <dt className="text-xs text-muted-foreground">需求認證</dt>
+                    <dd className="font-medium">{rfq.required_certs!.join("、")}</dd>
+                  </div>
+                )}
               </dl>
             </CardContent>
           </Card>

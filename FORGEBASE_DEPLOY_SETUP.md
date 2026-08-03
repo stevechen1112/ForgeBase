@@ -30,7 +30,7 @@
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot（@BotFather 取得） |
 | `TELEGRAM_WEBHOOK_SECRET` | Webhook HMAC 驗證密鑰；**設了 BOT_TOKEN 就必須設**，否則啟動時 `RuntimeError` |
-| LINE 通道 | 由每租戶 `SiteProfile.ops_config_json` 的 `notify.line.access_token` 提供（見 §4） |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API 通道金鑰（全域環境變數；未設則 LINE 通道自動略過，不影響其他通道） |
 
 ### 1.4 Web On-Demand Revalidation（Phase 2a）
 
@@ -104,23 +104,36 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## 4. 每租戶營運設定（SiteProfile.ops_config_json）
 
-T6（自動專業回覆）與 T7（時區感知 SLA）皆由每租戶的 `SiteProfile.ops_config_json` 驅動：
+T6（自動專業回覆）與 T7（時區感知 SLA）皆由每租戶的 `SiteProfile.ops_config_json` 驅動。
+**實際生效的鍵為扁平結構**（以 `app/services/rfq_auto_reply.py`、`app/services/sla.py` 為準）：
 
 ```json
 {
-  "auto_reply": { "enabled": true, "min_quality_score": 40 },
-  "sla":        { "business_hours": 4, "timezone": "Asia/Taipei" },
-  "notify":     { "line": { "access_token": "..." }, "min_quality_score": 70 }
+  "auto_reply_enabled": true,
+  "auto_reply_signature": "Export Sales Team",
+  "auto_reply_from_name": "NorthForge Sales",
+  "sla_response_hours": 4
 }
 ```
 
 | 鍵 | 說明 |
 |---|---|
-| `auto_reply.enabled` | 收到 RFQ 後是否自動寄出專業回覆（T6） |
-| `auto_reply.min_quality_score` | 品質分低於此值不自動回覆（品質閘門） |
-| `sla.business_hours` | 首次回應 SLA（營業小時，T7） |
-| `sla.timezone` | 計算 SLA 的時區（IANA 名稱） |
-| `notify.min_quality_score` | 高於此分才即時推播（T5） |
+| `auto_reply_enabled` | 收到 RFQ 後是否自動寄出專業確認信（T6，預設關） |
+| `auto_reply_signature` | 確認信署名（預設 `Sales Team`） |
+| `auto_reply_from_name` | 寄件者顯示名稱（預設沿用系統設定） |
+| `sla_response_hours` | 首次回應 SLA 目標（營業小時，T7；逾時標記 `sla_breached` 並進「今日必處理」） |
+
+**設定方式（2026-08-03 起有 UI）**：
+
+- **Admin UI**：設定 → 網站設定頁底部「營運設定（RFQ 自動回覆 / SLA）」卡片。
+- **API（admin token）**：`GET / PUT /api/v1/site-profile/ops-config`（部分更新、顯式 `null` 清除鍵、保留未知鍵）。
+- 公開端點 `GET /api/v1/site-profile` **不會**回傳 ops_config，避免設定外洩。
+
+注意事項（與直覺不同之處，以代碼為準）：
+
+- **LINE 金鑰不在 ops_config**：為全域環境變數 `LINE_CHANNEL_ACCESS_TOKEN`（`app/services/channels/line.py`）。
+- **SLA 時區不由租戶設定**：SLA 依**買家時區**計時，由 `buyer_timezone` 或表單 `country` 推斷（`app/services/sla.py`）。
+- **高品質即時推播門檻固定為 70 分**：`app/services/copilot/monitor.py` 的 `HIGH_QUALITY_THRESHOLD`，低分 RFQ 併入每日摘要。
 
 ---
 

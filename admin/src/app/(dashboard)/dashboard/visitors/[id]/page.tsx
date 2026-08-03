@@ -28,6 +28,13 @@ type VisitorProfile = {
   visitor_id: string;
   intent_score: number;
   intent_stage: string;
+  intent_explanation?: string | null;
+  facets?: {
+    product_interest: number;
+    trust_validation: number;
+    procurement_readiness: number;
+    urgency: number;
+  };
   total_visits: number;
   total_page_views: number;
   device_type: string | null;
@@ -228,6 +235,36 @@ export default function VisitorDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Intent Score 2.0：facets 與「為何 Hot」 */}
+      {(visitor.facets || visitor.intent_explanation) && (
+        <Card className="mb-6">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            {visitor.intent_explanation && (
+              <p className="text-sm">
+                <span className="font-semibold">為何 Hot：</span>
+                {visitor.intent_explanation}
+              </p>
+            )}
+            {visitor.facets && (
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["product_interest", "產品興趣"],
+                    ["trust_validation", "信任驗證"],
+                    ["procurement_readiness", "採購準備度"],
+                    ["urgency", "急迫性"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Badge key={key} variant="outline" className="text-xs">
+                    {label} {visitor.facets?.[key] ?? 0}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Event breakdown */}
       {Object.keys(summary.event_breakdown).length > 0 && (

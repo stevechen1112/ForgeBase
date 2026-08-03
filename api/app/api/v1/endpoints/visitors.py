@@ -345,6 +345,13 @@ async def visitor_journey(
             "visitor_id": str(v.visitor_id),
             "intent_score": v.intent_score,
             "intent_stage": v.intent_stage,
+            "intent_explanation": v.intent_explanation,
+            "facets": {
+                "product_interest": v.facet_product_interest or 0,
+                "trust_validation": v.facet_trust_validation or 0,
+                "procurement_readiness": v.facet_procurement_readiness or 0,
+                "urgency": v.facet_urgency or 0,
+            },
             "total_visits": v.total_visits,
             "total_page_views": v.total_page_views,
             "device_type": v.device_type,

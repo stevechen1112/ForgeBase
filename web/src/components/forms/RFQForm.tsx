@@ -18,6 +18,7 @@ type OptionItem = {
 type RFQFormMessages = {
   howOptions: OptionItem[];
   timelineOptions: OptionItem[];
+  incotermOptions: OptionItem[];
   successTitle: string;
   referenceNumber: string;
   successDescription: string;
@@ -26,6 +27,7 @@ type RFQFormMessages = {
   footerNote: string;
   submitFailed: string;
   unexpectedError: string;
+  tradeSectionTitle: string;
   labels: {
     fullName: string;
     email: string;
@@ -39,11 +41,17 @@ type RFQFormMessages = {
     message: string;
     howFound: string;
     consent: string;
+    incoterm: string;
+    annualVolume: string;
+    targetPrice: string;
+    trialOrder: string;
   };
   placeholders: {
     quantity: string;
     specifications: string;
     message: string;
+    annualVolume: string;
+    targetPrice: string;
   };
 };
 
@@ -56,11 +64,13 @@ interface FormState {
   full_name: string; email: string; company_name: string; phone: string;
   country: string; job_title: string; quantity: string; specifications: string;
   timeline: string; message: string; how_did_you_find_us: string; consent: boolean;
+  incoterm: string; annual_volume: string; target_price: string; is_trial_order: boolean;
 }
 
 const EMPTY_FORM: FormState = {
   full_name: "", email: "", company_name: "", phone: "", country: "", job_title: "",
   quantity: "", specifications: "", timeline: "", message: "", how_did_you_find_us: "", consent: false,
+  incoterm: "", annual_volume: "", target_price: "", is_trial_order: false,
 };
 
 interface Props {
@@ -195,6 +205,42 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
           {copy.timelineOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
+
+      <fieldset className="space-y-4 rounded-lg border bg-muted/20 p-4">
+        <legend className="px-1 text-sm font-semibold text-muted-foreground">{copy.tradeSectionTitle}</legend>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>{copy.labels.incoterm}</Label>
+            <select name="incoterm" value={form.incoterm} onChange={handleChange} className={SELECT_CLS}>
+              {copy.incotermOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="annual_volume">{copy.labels.annualVolume}</Label>
+            <Input id="annual_volume" name="annual_volume" value={form.annual_volume} onChange={handleChange} placeholder={copy.placeholders.annualVolume} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="target_price">{copy.labels.targetPrice}</Label>
+            <Input id="target_price" name="target_price" value={form.target_price} onChange={handleChange} placeholder={copy.placeholders.targetPrice} />
+          </div>
+          <label className="flex items-center gap-2.5 self-end pb-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              name="is_trial_order"
+              checked={form.is_trial_order}
+              onChange={(e) => {
+                const next = { ...form, is_trial_order: e.target.checked };
+                setForm(next); saveDraft(next);
+                if (!startedRef.current) { startedRef.current = true; trackRFQStart(); }
+              }}
+              className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+            />
+            <span>{copy.labels.trialOrder}</span>
+          </label>
+        </div>
+      </fieldset>
 
       <div className="space-y-1.5">
         <Label htmlFor="message">{copy.labels.message}</Label>

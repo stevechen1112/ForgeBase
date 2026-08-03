@@ -155,6 +155,21 @@
         { "value": "3-6 months", "label": "3-6 months" },
         { "value": "evaluating", "label": "Evaluating" }
       ],
+      "incotermOptions": [
+        { "value": "", "label": "Preferred Incoterm (optional)" },
+        { "value": "EXW", "label": "EXW — Ex Works" },
+        { "value": "FCA", "label": "FCA — Free Carrier" },
+        { "value": "FAS", "label": "FAS — Free Alongside Ship" },
+        { "value": "FOB", "label": "FOB — Free On Board" },
+        { "value": "CFR", "label": "CFR — Cost and Freight" },
+        { "value": "CIF", "label": "CIF — Cost, Insurance & Freight" },
+        { "value": "CPT", "label": "CPT — Carriage Paid To" },
+        { "value": "CIP", "label": "CIP — Carriage & Insurance Paid" },
+        { "value": "DAP", "label": "DAP — Delivered At Place" },
+        { "value": "DPU", "label": "DPU — Delivered at Place Unloaded" },
+        { "value": "DDP", "label": "DDP — Delivered Duty Paid" }
+      ],
+      "tradeSectionTitle": "Trade Terms (optional — helps us quote faster)",
       "successTitle": "RFQ Submitted Successfully",
       "referenceNumber": "Your reference number:",
       "successDescription": "Our team will review your request and reply within 1 business day if the specification details are complete.",
@@ -175,12 +190,18 @@
         "timeline": "Target Purchase Timeline",
         "message": "Additional Message",
         "howFound": "How did you find us?",
-        "consent": "I agree to the Privacy Policy and consent to the processing of my enquiry data. *"
+        "consent": "I agree to the Privacy Policy and consent to the processing of my enquiry data. *",
+        "incoterm": "Incoterm",
+        "annualVolume": "Estimated Annual Volume",
+        "targetPrice": "Target Price",
+        "trialOrder": "This is a trial / sample order"
       },
       "placeholders": {
         "quantity": "e.g. 500 pcs, 1200 sets, annual blanket order",
         "specifications": "Share the tool type, target model, size range, torque requirement, insulation class, finish, packaging, logo, or any reference drawing you already have.",
-        "message": "Tell us about your target market, current sourcing issue, sample timing, or any packaging and documentation expectations."
+        "message": "Tell us about your target market, current sourcing issue, sample timing, or any packaging and documentation expectations.",
+        "annualVolume": "e.g. 10,000 pcs/year",
+        "targetPrice": "e.g. USD 5-8 / pc"
       }
     }
   },

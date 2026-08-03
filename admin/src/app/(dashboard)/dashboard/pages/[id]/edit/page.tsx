@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { pagesApi, previewApi, type Page } from "@/lib/api/content";
 import { useEntityEditorData } from "@/lib/useEntityEditorData";
 import PageContentForm from "../../PageContentForm";
+import { TrustCheckCard } from "@/components/content/TrustCheckCard";
 
 export default function EditPagePage() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +51,7 @@ export default function EditPagePage() {
         </button>
       </div>
       <PageContentForm initial={data} id={id} />
+      <TrustCheckCard pageId={id} />
     </div>
   );
 }
