@@ -18,6 +18,21 @@ requires_db = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limit_store():
+    """Give every test a fresh rate-limit budget.
+
+    The limiter is an in-process module-level store keyed by client IP;
+    ASGI test clients all share one IP, so without a reset the 20/min
+    POST /forms/rfq budget is exhausted midway through the full suite
+    (observed as flaky 429s in test_rfq_speed_features).
+    """
+    from app.core.rate_limit import _store
+
+    _store._store.clear()
+    yield
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _apply_db_migrations():
     """Bring the test database to Alembic head before any DB test runs.
