@@ -1,6 +1,6 @@
 # ForgeBase 技術棧與架構決策紀錄
 
-## 確認日期：2026-04-14
+## 確認日期：2026-04-14（2026-08-03 補充 Leads Growth OS）
 
 ## 技術選型
 
@@ -13,7 +13,7 @@
 | Admin 後台 | Next.js App Router + React | Next.js 15.5.15 / React 19 |
 | 共用型別 | shared package | TypeScript shared models |
 | 檔案 / 資產 | Cloudflare R2 + repo demo assets | S3-compatible |
-| AI | OpenAI API | model: gpt-5.4 |
+| AI | Gemini OpenAI-compatible API | model: gemini-3-flash-preview（亦可切換 OpenAI）|
 | Email / ESP | Resend / SendGrid / Mailchimp | 依 tenant 與環境設定啟用 |
 | 反向代理 | Nginx | web / admin / api 統一入口 |
 | 容器化 | Docker + Docker Compose | 本地開發與部署輔助 |
@@ -65,3 +65,12 @@
 2. 所有 secrets 只放在 `.env` 或部署平台 secret store，不得進 repo。
 3. Production 預設關閉不必要 debug / docs 入口。
 4. 新增功能時，必須同時回答三個問題：tenant boundary 在哪裡、runtime branding 從哪裡來、build-time 是否允許 fallback。
+
+## Leads Growth OS 補充（2026-08-03）
+
+1. **多產品邊界**：ForgeBase、ContentFlow、ExposureFlow 是獨立產品，各自發展租戶；產品間一律走 API 契約（`CF_FB_PUBLISH_CONTRACT.md`），不共用資料庫。
+2. **外部寫入安全**：外部系統（ContentFlow）發佈內容進 FB 時，`Page.body` 一律經白名單 HTML 消毒；`POST /content/pages` 支援 `Idempotency-Key` 防止重複建立（含併發競態處理）。
+3. **快取一致性**：內容發布/更新/下架後，API 非同步呼叫前台 `POST /api/revalidate` 觸發 ISR revalidate；secret 由環境變數管理，不得硬編碼。
+4. **營運設定租戶化**：自動回覆、SLA 時區、通知門檻皆存於 `SiteProfile.ops_config_json`，非全域 env。
+5. **成果可衡量**：RFQ 狀態機延伸至成交（`won`/`lost` 必填原因），漏斗、歸因、任務佇列 API 讓成效可追蹤；成交 facet lift 僅 observational，不自動改權重。
+6. **部署細節**：環境變數、遷移步驟、回填腳本與上線驗證清單統一收錄於 `FORGEBASE_DEPLOY_SETUP.md`。

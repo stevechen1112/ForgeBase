@@ -1,21 +1,22 @@
 # ForgeBase
 
-**RFQ Growth OS for Export Manufacturers** — Capture · Intent · Conversion
+**RFQ Growth OS for Export Manufacturers** — Capture · Intent · Conversion · Outcomes
 
 ForgeBase 是專為外銷製造商打造的 RFQ 成長系統。
 不是幫你做一個網站，而是讓你的網站開始接單——捕捉買家需求、辨識採購意圖、推進詢價、讓業務在對的時間接手。
 
 ---
 
-## 產品核心三層
+## 產品核心四層
 
 ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 
 | 層級 | 核心問題 | ForgeBase 做的事 |
 |------|----------|------------------|
 | **Capture** | 買家找得到你嗎？ | SEO 基礎設施、多語言內容、AI 內容生成、Legacy Site Intake 舊站匯入 |
-| **Intent** | 誰只是逛逛、誰在評估？ | 15 種行為追蹤、意圖評分引擎、GeoIP、Dynamic CTA、AI Product Advisor |
-| **Conversion** | 高意圖訪客有被推進到詢價嗎？ | RFQ 表單、Chat → RFQ handoff、即時通知、逾時催辦、RFQ 事件審計 |
+| **Intent** | 誰只是逛逛、誰在評估？ | 15 種行為追蹤、Intent Score 2.0 採購面向（facets）評分、「為何 Hot」解釋、GeoIP、Facet 驅動 Dynamic CTA、AI Product Advisor |
+| **Conversion** | 高意圖訪客有被推進到詢價嗎？ | RFQ 表單、Chat → RFQ handoff、品質分數、時區感知 SLA、即時通知、自動專業回覆、RFQ 事件審計 |
+| **Outcomes** | 詢價有變成訂單嗎？ | 成交漏斗（流量→成交七層）、客戶成果儀表板、內容→成交歸因、顧問任務佇列 |
 
 ---
 
@@ -36,19 +37,35 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 | 模組 | 說明 |
 |------|------|
 | **訪客追蹤 & 意圖評分** | 自動記錄 page_view / product_view / cta_click 等 15 種事件，計算 Cold → Warm → Hot → Sales-Ready 階段 |
-| **Dynamic CTA** | 依訪客買家階段動態切換行動呼籲按鈕 |
-| **AI Product Advisor** | FAQ 頁、產品詳頁嵌入情境式 AI 對話，導向 RFQ |
+| **Intent Score 2.0 採購面向（facets）** | 四個採購維度獨立計分：產品興趣／信任驗證／採購準備度／急迫性，附「為何 Hot」人話解釋 |
+| **Facet 篩選** | Admin 可依 facet 門檻＋是否已送 RFQ 篩出目標名單（例如「信任驗證高但未 RFQ」）|
+| **Dynamic CTA** | 依訪客買家階段＋facet 組合動態切換行動呼籲按鈕 |
+| **AI Product Advisor** | FAQ 頁、產品詳頁嵌入情境式 AI 對話，收斂為「問出可詢價需求」（用途／規格／交期），導向 RFQ |
 | **GeoIP 國家識別** | 訪客國家自動標記 |
 
 ### Conversion — 推進詢價、讓業務接住
 
 | 模組 | 說明 |
 |------|------|
-| **RFQ 詢價表單** | 結構化詢價，含產品需求、數量、時程等欄位 |
+| **RFQ 詢價表單** | 結構化詢價，含產品需求、數量、時程、Incoterms 等貿易欄位 |
 | **聯絡表單** | 一般詢問留資 |
-| **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ |
+| **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ（含可詢價需求摘要）|
+| **RFQ 品質分數** | 規則式 v1：貿易術語、年採購量、時程、認證需求等維度，0–100 分 |
+| **時區感知 SLA** | 依租戶營業時區計算首次回應期限，APScheduler 自動掃描逾期 |
+| **即時通知 & 自動回覆** | 高品質 RFQ 即時推播 Telegram／LINE；可選自動寄出專業確認信 |
 | **RFQ 事件審計** | RFQ 生命週期完整紀錄，含狀態變更、指派、首次回覆、報價等事件時間軸 |
-| **即時通知 & 逾時催辦** | 新詢價通知、SLA 催辦、業務跟進狀態管理 |
+
+### Outcomes — 成果閉環、讓客戶看得見成效
+
+| 模組 | 說明 |
+|------|------|
+| **客戶成果儀表板** | `GET /tracking/outcomes`：新 RFQ、合格 RFQ、平均首回時間、SLA 達成率、報價/成交數 |
+| **成交漏斗** | `GET /tracking/funnel`：流量→高意圖訪客→RFQ→合格→報價→議價→成交，含瓶頸層識別 |
+| **內容→成交歸因** | `GET /tracking/attribution/content`：哪些頁型帶來會成交的單（path segment 精準比對）|
+| **Intent Outcome Feedback** | `GET /tracking/intent/outcome-feedback`：成交單的 facet lift 觀察（observational）|
+| **顧問任務佇列** | `GET /ops/task-queue`：SLA 逾期、熱訪客未跟進、低品質 RFQ、待審內容一頁清單 |
+| **回覆品質輔助** | RFQ 詳情內建 checklist、Quote Readiness、回覆範本庫（`reply_templates`）|
+| **Admin 新頁面** | `/dashboard/outcomes`（成果總覽）、`/dashboard/tasks`（今日必處理）|
 
 ---
 
@@ -112,10 +129,11 @@ ForgeBase/
 ├── api/                    # 後端 API (Python 3.13 + FastAPI)
 │   ├── app/
 │   │   ├── api/v1/         # REST endpoints（含 Legacy Site Intake、AI Copilot）
-│   │   ├── db/migrations/  # Alembic migrations (40 版本)
-│   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id、CopilotRunLog）
+│   │   ├── db/migrations/  # Alembic migrations (51 版本)
+│   │   ├── models/         # SQLModel 資料模型（含多租戶 tenant_id、CopilotRunLog、ReplyTemplate、IdempotencyKey）
 │   │   ├── schemas/        # Pydantic 輸入/輸出 schema
-│   │   └── services/       # 後端服務（含 intake_engine、copilot/）
+│   │   └── services/       # 後端服務（含 intake_engine、copilot/、rfq_quality、sla、intent_facets、trust_content_standards）
+│   ├── scripts/            # 維運腳本（含 backfill_visitor_facets.py 回填 Intent facets）
 │   ├── .venv/              # API 專用虛擬環境
 │   └── .env.example
 ├── web/                    # 前台網站 (Next.js 15，生產部署 Linode)
@@ -272,7 +290,7 @@ TELEGRAM_WEBHOOK_SECRET=<自定義隨機字串，用於驗證 webhook 來源>
 
 ```bash
 cd api && source .venv/bin/activate
-alembic upgrade head   # 套用至最新 migration（含 0039_intent_scoring_config）
+alembic upgrade head   # 套用至最新 migration（目前 head = 0051_rfq_outcome_and_templates）
 ```
 
 #### 3. 註冊 Telegram Webhook
@@ -458,7 +476,7 @@ cp .env.example .env          # 填入 DB_URL、SECRET_KEY 等環境變數
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 套用全部 DB migrations（0001 → 0040）
+alembic upgrade head           # 套用全部 DB migrations（0001 → 0051）
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000
 
@@ -745,6 +763,16 @@ systemctl restart forgebase-admin
 | 文件 | 說明 |
 |------|------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 技術架構與選型決策紀錄 |
+| [FORGEBASE_DEPLOY_SETUP.md](FORGEBASE_DEPLOY_SETUP.md) | 部署環境變數、遷移步驟、營運設定（Phase 1–5 對應版）|
+| [FORGEBASE_MASTER_ROADMAP.md](FORGEBASE_MASTER_ROADMAP.md) | Leads Growth OS 五線五階段總路線圖與進度追蹤 |
+| [FORGEBASE_LEADS_EFFECTIVENESS_PLAN.md](FORGEBASE_LEADS_EFFECTIVENESS_PLAN.md) | Intent／Conversion／Leads／Ops 強化計畫（含國際貿易行銷設計前提）|
+| [FORGEBASE_SPRINT_TICKETS_P0_SPEED.md](FORGEBASE_SPRINT_TICKETS_P0_SPEED.md) | Phase 1 票級紀錄（T1–T11：地基＋首回速度＋品質分數）|
+| [FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md](FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md) | Phase 3 票級紀錄（Intent Score 2.0 facets）|
+| [FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md](FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md) | Phase 4 票級紀錄（成果與閉環）|
+| [FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md](FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md) | Phase 5 票級紀錄（歸因＋E2E）|
+| [CONTENTFLOW_FORGEBASE_INTEGRATION_PLAN.md](CONTENTFLOW_FORGEBASE_INTEGRATION_PLAN.md) | ContentFlow × ForgeBase API 串接計畫 |
+| [CF_FB_PUBLISH_CONTRACT.md](CF_FB_PUBLISH_CONTRACT.md) | CF→FB 發佈契約（端點、idempotency、錯誤碼、驗收）|
+| [DIGITAL_MARKETING_LEAD_GROWTH_STRATEGY.md](DIGITAL_MARKETING_LEAD_GROWTH_STRATEGY.md) | 主策略文件：ForgeBase 定位為 RFQ Leads Growth OS |
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
 | [ForgeBase_Legacy_Site_Intake_產品規格草案.md](ForgeBase_Legacy_Site_Intake_產品規格草案.md) | Legacy Site Intake 模組規格與產品化方向 |
 | [ForgeBase_Legacy_Site_Intake_操作與Demo指南.md](ForgeBase_Legacy_Site_Intake_操作與Demo指南.md) | Legacy Site Intake 實際操作、審核標準與 demo 順序 |
@@ -756,6 +784,69 @@ systemctl restart forgebase-admin
 ---
 
 ## 版本更新紀錄
+
+### v1.0 — Leads Growth OS Phase 1–5（2026-08-03）
+
+以「產出並接住 qualified leads」為目標的五階段交付，ForgeBase 從 Capture/Intent/Conversion 三層擴展為含 Outcomes 的四層閉環。詳細票級紀錄見 `FORGEBASE_SPRINT_TICKETS_*.md`，總表見 `FORGEBASE_MASTER_ROADMAP.md`。
+
+#### Phase 1 — 工程地基＋首回速度（T1–T11）
+
+| 類別 | 變更 |
+|------|------|
+| **Migration 鏈修復** | 修正 0042–0044 orphan revisions，鏈恢復可升級 |
+| **多租戶** | `contacts.email` 改為 `(tenant_id, email)` 複合唯一（T2）；tracking/events/visitors/segments/ml_scoring 13 處 tenant 隔離缺口修補（T3）|
+| **Secrets** | 移除已追蹤的 `.env.kinga` / `.env.production`（T4）|
+| **即時通知** | 新增 LINE channel；品質分數 gate 高品質 RFQ 即時推播（T5）|
+| **自動專業回覆** | 依 RFQ 內容自動寄出確認信，租戶可開關＋品質閘門（T6）|
+| **時區感知 SLA** | 依租戶營業時區計算首回期限，APScheduler 掃描逾期（T7）|
+| **品質分數** | 規則式 v1 含貿易術語維度：Incoterms／年量／認證／時程（T9/T10）|
+| **Admin** | RFQ 列表品質 badge＋SLA 倒數（T11）|
+| **Migrations** | `0045`–`0048` |
+
+#### Phase 2a — ContentFlow 發佈接收端
+
+| 類別 | 變更 |
+|------|------|
+| **HTML 消毒** | 白名單 stdlib sanitizer，套用到 `Page.body` |
+| **Meta-only 端點** | `PATCH /content/pages/{id}/meta`（僅 SEO 欄位）|
+| **On-demand revalidate** | FB→web `POST /api/revalidate`，發布/更新/下架觸發 |
+| **Idempotency** | `POST /content/pages` 支援 `Idempotency-Key`，含併發競態處理（migration `0049`）|
+| **Tenant 解析修正** | list 端點以 auth user 覆寫 host 解析，修復 CF slug 查詢盲點 |
+
+#### Phase 3 — 看懂買家（Intent Score 2.0）
+
+| 類別 | 變更 |
+|------|------|
+| **Facets** | 四採購面向（產品興趣／信任驗證／採購準備度／急迫性）獨立計分（migration `0050`）|
+| **「為何 Hot」** | 由近期事件產生人話解釋，正確處理表單 RFQ（查 `rfq_requests`）|
+| **Facet→CTA** | 採購準備度高→RFQ 優先；產品興趣高＋信任低→下載型錄優先 |
+| **Advisor 收斂** | 新 slots（用途/規格/交期），handoff 寫入可詢價需求摘要 |
+| **信任內容標準** | `GET /content/pages/{id}/trust-check` 回傳檢核清單與分數 |
+
+#### Phase 4 — 成果與閉環
+
+| 類別 | 變更 |
+|------|------|
+| **狀態機** | 新增 `negotiation`；`won`/`lost` 必填原因（migration `0051`，`ck_rfq_status` 重建）|
+| **回覆品質輔助** | RFQ 詳情 reply-assist 面板＋`reply_templates` 範本庫 CRUD |
+| **Outcomes API** | `GET /tracking/outcomes` 客戶首屏五項 |
+| **成交漏斗** | `GET /tracking/funnel` 七層（流量→成交），含瓶頸層 |
+| **顧問任務佇列** | `GET /ops/task-queue`；`first_response_at` 僅真實回覆才寫入 |
+| **Admin** | 新增 `/dashboard/outcomes`、`/dashboard/tasks` |
+
+#### Phase 5 — 深化與規模化（FB 範圍）
+
+| 類別 | 變更 |
+|------|------|
+| **內容歸因** | `GET /tracking/attribution/content`，path segment 精準比對＋won_rate |
+| **Intent feedback** | `GET /tracking/intent/outcome-feedback` 成交 facet lift（observational）|
+| **E2E 測試** | `test_e2e_growth_loop.py` 全成長迴路＋跨租戶污染驗證 |
+| **回填腳本** | `scripts/backfill_visitor_facets.py` 既有訪客 facets 重算 |
+| **部署文件** | `FORGEBASE_DEPLOY_SETUP.md` 環境變數／遷移／營運設定 |
+
+**驗證結果**：全量回歸 136 passed（既有 2 個 agent_platform 環境性失敗檔案除外）；Admin 前端 tsc 通過。
+
+---
 
 ### v0.23 — AI 行銷專員可觀測性 + Admin 浮動視窗（2026-04-16）
 

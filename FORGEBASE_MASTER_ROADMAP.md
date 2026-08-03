@@ -1,7 +1,7 @@
 # ForgeBase Master Roadmap：全套計畫執行總表
 
 文件日期：2026-08-03  
-狀態：執行中（Phase 1 已開工）
+狀態：FB 範圍 Phase 1/3/4/5 完成；Phase 2a（FB 接收端）完成；待 CF 端開工與部署
 
 ---
 
@@ -26,6 +26,10 @@ DIGITAL_MARKETING_LEAD_GROWTH_STRATEGY.md  ← 主策略（北極星：每月 Qu
     ├─ CONTENTFLOW_FORGEBASE_INTEGRATION_PLAN.md  ← 線 C 串接計畫（Phase 0–4）
     │   └─ CF_FB_PUBLISH_CONTRACT.md              ← 線 C 發佈 API 契約
     ├─ FORGEBASE_LEADS_EFFECTIVENESS_PLAN.md      ← 線 D＋E 設計依據（P0–P5）
+    ├─ FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md   ← Phase 3 票（T3.1–T3.6）
+    ├─ FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md ← Phase 4 票（T4.1–T4.6）
+    ├─ FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md← Phase 5 票（T5.1–T5.5）
+    ├─ FORGEBASE_DEPLOY_SETUP.md                   ← 部署／環境變數／回填／營運設定
     └─ FORGEBASE_REPAIR_OPTIMIZATION_PLAN.md      ← 線 A 的完整修復清單
 ```
 
