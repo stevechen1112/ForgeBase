@@ -567,7 +567,7 @@ python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 
 | 項目 | 值 |
 |------|----|
-| **Git remote** | `git@github.com:stevechen1112/ForgeBase2026.git` |
+| **Git remote** | `https://github.com/stevechen1112/ForgeBase.git` |
 | **CI/CD workflow** | `.github/workflows/deploy.yml` |
 | **自動部署分支** | `main` |
 | **目前常用開發分支** | `refactor/consolidate-analytics-pages` |
