@@ -29,6 +29,57 @@ ops_router = APIRouter(prefix="/ops", tags=["Growth Ops"])
 QUALIFIED_THRESHOLD = 70
 _CLOSED = ("won", "lost", "expired")
 
+# outcome-feedback 高 lift facet → 建議任務（閉環第一步：觀察 → 產生行動）
+_FACET_ACTIONS = {
+    "trust_validation": {
+        "title": "成交訪客更重視信任驗證",
+        "action": "補強認證 / 廠能 / 客戶案例頁",
+        "link": "/dashboard/certifications",
+    },
+    "product_interest": {
+        "title": "成交訪客產品瀏覽更深",
+        "action": "優化熱門商品頁與規格表",
+        "link": "/dashboard/products",
+    },
+    "procurement_readiness": {
+        "title": "成交訪客採購準備度高",
+        "action": "在商品頁強化 MOQ / 交期 / Incoterms 說明",
+        "link": "/dashboard/content-optimizer",
+    },
+    "urgency": {
+        "title": "成交訪客急迫性訊號強",
+        "action": "檢查 RFQ 回覆 SLA 與首回範本",
+        "link": "/dashboard/rfqs/templates",
+    },
+}
+
+
+def _build_facet_tasks(feedback: dict) -> list[dict]:
+    """把 outcome-feedback 中 lift >= 1.5 的 facet 轉成可執行任務。"""
+    tasks = []
+    for f in feedback.get("facets") or []:
+        lift = f.get("won_lift")
+        if lift is None or lift < 1.5:
+            continue
+        meta = _FACET_ACTIONS.get(f["facet"])
+        if not meta:
+            continue
+        tasks.append({
+            "type": "outcome_facet_action",
+            "title": meta["title"],
+            "count": 1,
+            "severity": "medium",
+            "items": [{
+                "facet": f["facet"],
+                "won_lift": lift,
+                "avg_all": f.get("avg_all_rfq_visitors"),
+                "avg_won": f.get("avg_won_visitors"),
+                "action": meta["action"],
+            }],
+            "link": meta["link"],
+        })
+    return tasks
+
 
 def _month_bounds(now):
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -264,6 +315,14 @@ async def get_task_queue(
         drafts_q = drafts_q.where(Page.tenant_id == tid)
     draft_count = await _count(db, drafts_q)
 
+    # 成交迴路觀察：高 lift facet 自動產生行動任務（閉環）
+    facet_tasks: list[dict] = []
+    try:
+        feedback = await get_intent_outcome_feedback(db=db, _=_)
+        facet_tasks = _build_facet_tasks(feedback)
+    except Exception:
+        facet_tasks = []
+
     tasks = [
         {
             "type": "sla_breached_rfq",
@@ -323,6 +382,7 @@ async def get_task_queue(
             "items": [],
             "link": None,
         },
+        *facet_tasks,
     ]
     total_open = sum(t["count"] for t in tasks)
     return {"generated_at": now.isoformat(), "total_open": total_open, "tasks": tasks}

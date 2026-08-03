@@ -21,6 +21,7 @@ import uuid
 from datetime import datetime, timedelta
 from app.core.datetime import utcnow_naive
 from typing import Optional
+import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -33,6 +34,7 @@ from app.models.segment import Segment
 from app.models.visitor import Visitor
 from app.models.tracking_event import TrackingEvent
 from app.models.audience_tag import VisitorTagLink
+from app.models.contact import Contact
 from app.models.user import User
 
 router = APIRouter(prefix="/tracking", tags=["Audience Segments"])
@@ -295,4 +297,146 @@ async def evaluate_segment(
         "segment_id": str(segment_id),
         "total_matches": total,
         "sample_visitor_ids": [str(r) for r in sample_rows],
+    }
+
+
+# ── Sync to ESP ───────────────────────────────────────────────────────────────
+
+@router.post("/segments/{segment_id}/sync-to-esp")
+async def sync_segment_to_esp(
+    segment_id: uuid.UUID,
+    provider: str,
+    _feature: User = Depends(RequireFeature("full_tracking")),
+    db: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_user),
+):
+    """
+    Evaluate the segment and sync matching contacts to the selected ESP.
+
+    Matching logic mirrors evaluate_segment; contacts are resolved via
+    Contact.visitor_id (tenant-scoped). Currently supports SendGrid and
+    Mailchimp. Returns counts for transparency.
+    """
+    if provider not in ("sendgrid", "mailchimp"):
+        raise HTTPException(status_code=422, detail="provider must be 'sendgrid' or 'mailchimp'")
+
+    from app.core.config import settings
+    from app.services.esp_service import sendgrid_upsert_contact, mailchimp_upsert_member
+
+    seg = await db.get(Segment, segment_id)
+    if not seg:
+        raise HTTPException(status_code=404, detail="Segment not found")
+
+    if provider == "sendgrid" and not settings.SENDGRID_API_KEY:
+        raise HTTPException(status_code=400, detail="SendGrid not configured: set SENDGRID_API_KEY.")
+    if provider == "mailchimp" and not (settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_AUDIENCE_ID):
+        raise HTTPException(status_code=400, detail="Mailchimp not configured: set MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID.")
+
+    # Re-run the same evaluation to get the full set of matching visitor_ids
+    conditions: list[dict] = json.loads(seg.conditions)
+    combinator = seg.combinator
+
+    q = select(Visitor.visitor_id)
+    if _.tenant_id:
+        q = q.where(Visitor.tenant_id == _.tenant_id)
+    filters = []
+
+    for cond in conditions:
+        ctype = cond.get("type")
+        op = cond.get("op", "eq")
+        value = cond.get("value")
+
+        if ctype == "intent_stage" and value:
+            if op == "eq":
+                filters.append(Visitor.intent_stage == value)
+        elif ctype == "intent_score" and value is not None:
+            if op == "gte":
+                filters.append(Visitor.intent_score >= int(value))
+            elif op == "lte":
+                filters.append(Visitor.intent_score <= int(value))
+            elif op == "eq":
+                filters.append(Visitor.intent_score == int(value))
+        elif ctype == "country" and value:
+            if op == "eq":
+                filters.append(Visitor.country == value)
+        elif ctype == "tag":
+            tag_id = cond.get("tag_id")
+            if tag_id:
+                tag_subq = select(VisitorTagLink.visitor_id).where(
+                    VisitorTagLink.tag_id == uuid.UUID(tag_id)
+                )
+                filters.append(Visitor.visitor_id.in_(tag_subq))
+        elif ctype == "event_count":
+            event_name = cond.get("event_name")
+            within_days = cond.get("within_days", 30)
+            if event_name and value is not None:
+                since = utcnow_naive() - timedelta(days=int(within_days))
+                event_subq = (
+                    select(TrackingEvent.visitor_id)
+                    .where(
+                        TrackingEvent.event_name == event_name,
+                        TrackingEvent.timestamp >= since,
+                        TrackingEvent.visitor_id.is_not(None),
+                    )
+                    .group_by(TrackingEvent.visitor_id)
+                    .having(func.count(TrackingEvent.event_id) >= int(value))
+                )
+                if _.tenant_id:
+                    event_subq = event_subq.where(TrackingEvent.tenant_id == _.tenant_id)
+                if op == "gte":
+                    filters.append(Visitor.visitor_id.in_(event_subq))
+
+    if filters:
+        from sqlalchemy import and_, or_
+        combined = and_(*filters) if combinator == "AND" else or_(*filters)
+        q = q.where(combined)
+
+    matching_visitor_ids = (await db.exec(q)).all()
+
+    # Resolve to contacts (tenant-scoped)
+    contact_q = select(Contact).where(Contact.visitor_id.in_(matching_visitor_ids))
+    if _.tenant_id:
+        contact_q = contact_q.where(Contact.tenant_id == _.tenant_id)
+    contacts = (await db.exec(contact_q)).all()
+
+    success = 0
+    failed = 0
+    for contact in contacts:
+        full_name: str = contact.full_name or ""
+        parts = full_name.split(" ", 1)
+
+        if provider == "sendgrid":
+            result = await sendgrid_upsert_contact(
+                email=contact.email,
+                first_name=parts[0] if parts else "",
+                last_name=parts[1] if len(parts) > 1 else "",
+            )
+        else:
+            tags = []
+            if contact.lifecycle_stage:
+                tags.append(contact.lifecycle_stage)
+            if contact.company_name:
+                tags.append(f"company:{contact.company_name}")
+            result = await mailchimp_upsert_member(
+                email=contact.email,
+                first_name=parts[0] if parts else "",
+                last_name=parts[1] if len(parts) > 1 else "",
+                tags=tags,
+            )
+
+        if "error" in result or result.get("skipped"):
+            failed += 1
+        else:
+            success += 1
+
+        await asyncio.sleep(0.05)
+
+    return {
+        "segment_id": str(segment_id),
+        "provider": provider,
+        "visitors_matched": len(matching_visitor_ids),
+        "contacts_matched": len(contacts),
+        "total": len(contacts),
+        "success": success,
+        "failed": failed,
     }

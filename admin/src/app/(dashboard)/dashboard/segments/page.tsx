@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Users, PlusCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RefreshCw, Users, PlusCircle, Send } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Segment = {
@@ -22,6 +23,69 @@ type Segment = {
 function fmt(d?: string) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("zh-TW");
+}
+
+/* ── Sync to ESP Dialog ───────────────────────────────────────── */
+function SyncToEspDialog({ token, segmentId, segmentName }: { token: string; segmentId: string; segmentName: string }) {
+  const [open, setOpen] = useState(false);
+  const [provider, setProvider] = useState<"sendgrid" | "mailchimp">("sendgrid");
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function doSync() {
+    setSyncing(true); setResult(null);
+    try {
+      const r = await fetch(`${API_BASE}/tracking/segments/${segmentId}/sync-to-esp?provider=${provider}`, {
+        method: "POST",
+        headers: buildApiHeaders(token),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail ?? r.statusText);
+      setResult(`完成：匹配訪客 ${d.visitors_matched}、聯絡人 ${d.contacts_matched}，成功 ${d.success}、失敗 ${d.failed}`);
+    } catch (e: unknown) {
+      setResult(e instanceof Error ? e.message : "同步失敗");
+    } finally { setSyncing(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setResult(null); } }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" onClick={e => e.stopPropagation()}>
+          <Send className="mr-2 h-4 w-4" />同步到 ESP
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm" onClick={e => e.stopPropagation()}>
+        <DialogHeader><DialogTitle>同步「{segmentName}」到 ESP</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          {result && (
+            <Alert variant={result.includes("失敗") && !result.includes("成功") ? "destructive" : "default"}>
+              <AlertDescription>{result}</AlertDescription>
+            </Alert>
+          )}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">ESP 供應商</label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={provider}
+              onChange={e => setProvider(e.target.value as "sendgrid" | "mailchimp")}
+            >
+              <option value="sendgrid">SendGrid</option>
+              <option value="mailchimp">Mailchimp</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              將此受眾匹配的聯絡人同步到所選 ESP 行銷清單
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>取消</Button>
+            <Button onClick={doSync} disabled={syncing}>
+              {syncing ? "同步中…" : "開始同步"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function SegmentsPage() {
@@ -90,6 +154,7 @@ export default function SegmentsPage() {
                   <th className="px-4 py-2 text-center font-medium text-muted-foreground">狀態</th>
                   <th className="px-4 py-2 text-right font-medium text-muted-foreground">成員數</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">建立時間</th>
+                  <th className="px-4 py-2 text-right font-medium text-muted-foreground">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -104,6 +169,9 @@ export default function SegmentsPage() {
                     </td>
                     <td className="px-4 py-2 text-right font-bold">{s.member_count ?? 0}</td>
                     <td className="px-4 py-2 text-muted-foreground">{fmt(s.created_at)}</td>
+                    <td className="px-4 py-2 text-right" onClick={e => e.stopPropagation()}>
+                      <SyncToEspDialog token={token} segmentId={s.id} segmentName={s.name} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
