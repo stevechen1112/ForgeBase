@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/store";
 import { briefsApi, type PageBrief } from "@/lib/api/content";
 import { apiClient } from "@/lib/api/client";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { pageTypeLabel } from "@/lib/content/displayLabels";
 
 type AILog = {
   id: string;
@@ -37,14 +38,6 @@ export default function BriefPreviewPage() {
     { value: "ko", label: "한국어" },
     { value: "de", label: "Deutsch" },
   ];
-
-  const PAGE_TYPE_LABELS: Record<string, string> = {
-    product: "商品",
-    application: "應用場景",
-    category: "商品分類",
-    comparison: "比較",
-    custom: "自訂",
-  };
 
   const BUYER_STAGE_LABELS: Record<string, string> = {
     awareness: "初步了解",
@@ -106,10 +99,10 @@ export default function BriefPreviewPage() {
             <Link href="/dashboard/briefs" className="text-xs text-muted-foreground hover:underline">← 返回寫作大綱</Link>
           </div>
           <h1 className="text-2xl font-semibold text-foreground">
-            AI 預覽：{brief.title_draft ?? PAGE_TYPE_LABELS[brief.target_page_type] ?? brief.target_page_type}
+            AI 預覽：{brief.title_draft ?? pageTypeLabel(brief.target_page_type)}
           </h1>
           <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-            <span>頁型：<strong>{PAGE_TYPE_LABELS[brief.target_page_type] ?? brief.target_page_type}</strong></span>
+            <span>頁型：<strong>{pageTypeLabel(brief.target_page_type)}</strong></span>
             <StatusBadge
               status={(brief as unknown as Record<string, string>).ai_status ?? "pending"}
               labelMap={{ pending: "待生成", processing: "生成中", done: "完成", error: "錯誤" }}

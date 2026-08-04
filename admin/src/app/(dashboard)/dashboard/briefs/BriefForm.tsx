@@ -11,16 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  BRIEF_PAGE_TYPE_OPTIONS,
+  pageTypeLabel,
+} from "@/lib/content/displayLabels";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
-
-const PAGE_TYPE_LABELS: Record<string, string> = {
-  product: "商品",
-  application: "應用場景",
-  category: "商品分類",
-  comparison: "比較",
-  custom: "自訂",
-};
 
 const BUYER_STAGE_LABELS: Record<string, string> = {
   awareness: "初步了解",
@@ -108,8 +104,8 @@ export default function BriefForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>目標頁面類型 *</Label>
               <select className={SELECT_CLS} {...f("target_page_type")}>
-                {Object.entries(PAGE_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {[...new Set([...BRIEF_PAGE_TYPE_OPTIONS, form.target_page_type])].map((value) => (
+                  <option key={value} value={value}>{pageTypeLabel(value)}</option>
                 ))}
               </select>
             </div>

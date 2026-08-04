@@ -23,6 +23,7 @@ import {
   Star,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { intentStageLabel } from "@/lib/content/displayLabels";
 
 type VisitorProfile = {
   visitor_id: string;
@@ -198,7 +199,7 @@ export default function VisitorDetailPage() {
           </p>
         </div>
         <Badge className={`text-sm px-3 py-1 ${STAGE_COLOR[visitor.intent_stage] ?? ""}`}>
-          {visitor.intent_stage} · {visitor.intent_score} pts
+          {intentStageLabel(visitor.intent_stage)} · {visitor.intent_score} 分
         </Badge>
       </div>
 

@@ -8,6 +8,7 @@ import { Plus, Bot, CheckCircle2, Circle, Clock } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { pageTypeLabel } from "@/lib/content/displayLabels";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 const AI_STATUS_LABELS: Record<string, string> = {
@@ -29,20 +30,12 @@ const BRIEF_STATUS_ICON: Record<string, React.ReactNode> = {
   done: <CheckCircle2 className="inline-block h-3.5 w-3.5 text-blue-500 mr-1" />,
 };
 
-const PAGE_TYPE_LABELS: Record<string, string> = {
-  product: "商品",
-  application: "應用場景",
-  category: "商品分類",
-  comparison: "比較",
-  custom: "自訂",
-};
-
 const COLUMNS = [
   {
     key: "target_page_type",
     label: "目標頁面類型",
     className: "w-40",
-    render: (_v: unknown, row: PageBrief) => PAGE_TYPE_LABELS[row.target_page_type] ?? row.target_page_type,
+    render: (_v: unknown, row: PageBrief) => pageTypeLabel(row.target_page_type),
   },
   { key: "primary_keyword", label: "主要關鍵字" },
   { key: "locale", label: "語言", className: "w-20" },

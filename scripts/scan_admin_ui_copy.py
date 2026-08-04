@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -16,11 +17,15 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 BASE = "http://localhost:3002/backend"
 LOGIN = f"{BASE}/login"
 API_LOGIN = "http://127.0.0.1:8000/api/v1/auth/login"
-EMAIL = "admin@forgebase.com"
-PASSWORD = "ForgeBase_Admin_2026!"
+EMAIL = os.environ.get("FORGEBASE_ADMIN_EMAIL", "admin@forgebase.com")
+PASSWORD = os.environ.get("FORGEBASE_ADMIN_PASSWORD", "")
 
 
 def fetch_token() -> dict:
+    if not PASSWORD:
+        raise RuntimeError(
+            "Set FORGEBASE_ADMIN_PASSWORD (and optionally FORGEBASE_ADMIN_EMAIL) before running the scan."
+        )
     payload = json.dumps({"email": EMAIL, "password": PASSWORD}).encode("utf-8")
     req = urllib.request.Request(
         API_LOGIN,

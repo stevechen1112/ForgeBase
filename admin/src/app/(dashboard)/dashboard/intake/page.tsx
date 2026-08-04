@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { pageTypeLabel } from "@/lib/content/displayLabels";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -117,19 +118,6 @@ const PAGE_TYPE_ICONS: Record<string, React.ElementType> = {
   unknown: Search,
 };
 
-const PAGE_TYPE_LABELS: Record<string, string> = {
-  product: "商品",
-  category: "商品分類",
-  application: "應用場景",
-  faq: "常見問題",
-  certification: "認證",
-  resource: "資源下載",
-  company: "公司資訊",
-  contact: "聯絡我們",
-  blog: "文章",
-  unknown: "未分類",
-};
-
 const FIELD_LABELS: Record<string, string> = {
   product_name: "商品名稱",
   category_name: "分類名稱",
@@ -151,10 +139,6 @@ const FIELD_LABELS: Record<string, string> = {
   issuer: "頒發機構",
   capability_name: "廠能名稱",
 };
-
-function pageTypeLabel(type: string): string {
-  return PAGE_TYPE_LABELS[type] ?? type;
-}
 
 function fieldLabel(key: string): string {
   return FIELD_LABELS[key] ?? key.replace(/_/g, " ");
@@ -641,7 +625,7 @@ export default function IntakePage() {
                             <Icon className="h-5 w-5 text-muted-foreground" />
                             <div className="flex-1">
                               <div className="flex justify-between items-center">
-                                <span className="font-medium capitalize">{type}</span>
+                                <span className="font-medium">{pageTypeLabel(type)}</span>
                                 <span className="text-sm text-muted-foreground">{count} 頁 ({pct}%)</span>
                               </div>
                               <Progress value={pct} className="h-1.5 mt-1" />
@@ -673,7 +657,7 @@ export default function IntakePage() {
                               </div>
                               <div>
                                 <div className="text-2xl font-bold">{count}</div>
-                                <div className="text-sm text-muted-foreground capitalize">{type}</div>
+                                <div className="text-sm text-muted-foreground">{pageTypeLabel(type)}</div>
                               </div>
                             </div>
                           );
@@ -825,7 +809,7 @@ export default function IntakePage() {
                   <TableRow key={u.id}>
                     <TableCell>
                       <Badge variant="outline" className="gap-1">
-                        <Icon className="h-3 w-3" /> {u.page_type}
+                        <Icon className="h-3 w-3" /> {pageTypeLabel(u.page_type)}
                       </Badge>
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate text-xs font-mono">{u.url}</TableCell>
