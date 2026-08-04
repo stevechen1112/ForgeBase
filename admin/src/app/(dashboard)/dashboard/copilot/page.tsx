@@ -92,7 +92,7 @@ const QUICK_PROMPTS = [
   "今天有幾個新 RFQ？",
   "有 RFQ 超期未回覆嗎？",
   "目前有哪些高關注訪客？",
-  "最近成交了哪些客戶？",
+  "幫我把 RFQ 標成處理中",
   "漏斗轉換率是多少？",
 ];
 
@@ -198,7 +198,7 @@ export default function CopilotPage() {
           </div>
           <div className="flex-1">
             <h1 className="text-base font-semibold leading-tight">AI 行銷助理</h1>
-            <p className="text-xs text-muted-foreground">以對話方式查詢詢價、訪客與成交進度</p>
+            <p className="text-xs text-muted-foreground">查詢詢價與漏斗，並可代為更新 RFQ、建立跟進草稿</p>
           </div>
           <div className="flex items-center gap-1.5">
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { loadHistory(); loadStats(); }} disabled={loadingHistory}>
@@ -258,7 +258,9 @@ export default function CopilotPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">詢問任何業務問題</p>
-                <p className="mt-1 text-xs text-muted-foreground">可查詢詢價、訪客關注度與漏斗數據，並提供可執行建議。</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  可查詢詢價、訪客與漏斗；在你明確要求時，可代為更新 RFQ、指派、建立跟進信草稿或寫入聯絡人待辦。
+                </p>
               </div>
             </div>
           ) : (
@@ -362,6 +364,26 @@ export default function CopilotPage() {
               { label: "轉換漏斗", desc: "各階段數量與比率" },
               { label: "聯絡人", desc: "歷史 RFQ、行為紀錄" },
               { label: "產品熱度", desc: "近期詢問最多的產品" },
+            ].map(({ label, desc }) => (
+              <div key={label} className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">{label}</span>
+                <span className="text-[11px] text-muted-foreground">{desc}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">可代為執行</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              { label: "更新 RFQ 狀態", desc: "如標成處理中、已報價" },
+              { label: "記錄首回時間", desc: "已回覆買家時登記" },
+              { label: "指派給我", desc: "將 RFQ 指派給目前登入者" },
+              { label: "跟進信草稿", desc: "送入寄送佇列，需人工核准" },
+              { label: "聯絡人待辦", desc: "寫入聯絡人備註" },
             ].map(({ label, desc }) => (
               <div key={label} className="flex flex-col">
                 <span className="text-xs font-medium text-foreground">{label}</span>

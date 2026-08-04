@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    AI_MODEL_NAME: str = "gemini-3-flash-preview"
+    AI_MODEL_NAME: str = "gpt-5.6-luna"
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""

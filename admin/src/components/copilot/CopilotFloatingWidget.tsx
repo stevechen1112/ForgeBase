@@ -218,7 +218,7 @@ export function CopilotFloatingWidget() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold leading-none">AI 行銷助理</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground truncate">即時 CRM 資料存取</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground truncate">可查資料 · 可代為更新 RFQ</p>
               </div>
               <div className="flex items-center gap-1">
                 <Tooltip>
@@ -298,9 +298,11 @@ export function CopilotFloatingWidget() {
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                         <Bot className="h-6 w-6 text-primary" />
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">我能即時查詢 RFQ、訪客、漏斗資料，提供可行動的業務建議。</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        我能查詢 RFQ、訪客與漏斗，也可在你確認後代為更新 RFQ 狀態、建立跟進信草稿（需人工核准寄出）。
+                      </p>
                       <div className="flex flex-wrap justify-center gap-1.5 mt-1">
-                        {["今天有幾個新 RFQ？", "熱門訪客有哪些？", "有 RFQ 超期未回覆嗎？"].map(s => (
+                        {["今天有幾個新 RFQ？", "有 RFQ 超期未回覆嗎？", "幫我指派 RFQ 給我"].map(s => (
                           <button key={s}
                             className="rounded-full border border-border/60 bg-card px-3 py-1 text-[11px] text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground transition-colors"
                             onClick={() => { setInput(s); textareaRef.current?.focus(); }}>

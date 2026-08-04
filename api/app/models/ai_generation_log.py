@@ -22,7 +22,7 @@ class AIGenerationLog(SQLModel, table=True):
     page_type: str = Field(max_length=40)
     entity_id: Optional[uuid.UUID] = Field(default=None)
 
-    model_name: str = Field(max_length=80)        # e.g. "gpt-5.4"
+    model_name: str = Field(max_length=80)        # e.g. "gpt-5.6-luna"
     input_summary: Optional[str] = Field(default=None)   # JSON summary of inputs
     output_json: Optional[dict] = Field(default=None, sa_column=Column(JSONB, nullable=True))
 

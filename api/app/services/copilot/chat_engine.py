@@ -30,12 +30,14 @@ from app.core.tracing import get_openai_client
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
 from app.models.copilot_run_log import CopilotRunLog
+from app.models.user import User
+from app.services.copilot import action_tools as A
 from app.services.copilot import tools as T
 
 logger = logging.getLogger(__name__)
 
 _openai = get_openai_client()
-_MODEL = settings.AI_MODEL_NAME          # gemini-3-flash-preview / gpt-5.4-mini
+_MODEL = settings.AI_MODEL_NAME          # e.g. gpt-5.6-luna
 _HISTORY_LIMIT = 20                       # messages kept in context window
 _MAX_TOOL_LOOPS = 6                       # prevent infinite tool call loops
 _TELEGRAM_CHUNK = 4000                    # Telegram message char limit (safe margin)
@@ -107,6 +109,21 @@ The platform tracks the full B2B buyer journey:
 - When drafting follow-up emails, make them specific to the actual RFQ data you retrieved
 - Proactively point out issues the user didn't ask about if the data reveals them (e.g., "順帶一提，你有 3 筆 RFQ 超過 48 小時沒有回應")
 - {formatting_instruction}
+
+## Executable Actions (write tools)
+You CAN perform these actions when the user **explicitly asks** you to do so:
+- **update_rfq_status** — change RFQ pipeline status (e.g. mark as in_progress, quoted)
+- **record_rfq_first_response** — log first response timestamp
+- **assign_rfq_to_me** — assign an RFQ to the current user
+- **queue_follow_up_email** — save a follow-up email draft to the nurture outbox (requires manual approval before send; never auto-sends)
+- **add_follow_up_reminder** — append a to-do note on a contact profile
+
+Rules for write actions:
+1. Only call a write tool after the user clearly requests the action (e.g. "幫我更新…", "指派給我", "建立跟進信草稿")
+2. Before calling, briefly confirm what you will do (RFQ number, new status, recipient)
+3. **won** / **lost** status REQUIRES a `reason` — ask the user if missing
+4. Never mark won/lost on your own initiative
+5. After a successful write, tell the user what changed and where to review in admin (e.g. 寄送佇列、聯絡人備註)
 
 ## Current Date
 Today is {today}. Use this for relative time calculations.
@@ -334,7 +351,100 @@ _TOOLS = [
                 "required": ["query"],
             },
         },
-    },]
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_rfq_status",
+            "description": "Update an RFQ's pipeline status. Requires explicit user request. won/lost need reason.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "rfq_number": {"type": "string", "description": "RFQ number, e.g. RFQ-20260414-001"},
+                    "status": {
+                        "type": "string",
+                        "enum": ["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"],
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Required when status is won or lost",
+                    },
+                },
+                "required": ["rfq_number", "status"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "record_rfq_first_response",
+            "description": "Record that sales has responded to an RFQ (sets first_response_at). Use when user says they replied.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "rfq_number": {"type": "string"},
+                },
+                "required": ["rfq_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "assign_rfq_to_me",
+            "description": "Assign an RFQ to the current logged-in user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "rfq_number": {"type": "string"},
+                },
+                "required": ["rfq_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "queue_follow_up_email",
+            "description": "Queue a follow-up email in nurture outbox for manual approval. Does NOT send automatically.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "contact_email": {"type": "string"},
+                    "subject": {"type": "string"},
+                    "body_text": {"type": "string", "description": "Plain-text email body"},
+                    "rfq_number": {"type": "string", "description": "Optional related RFQ for audit trail"},
+                },
+                "required": ["contact_email", "subject", "body_text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_follow_up_reminder",
+            "description": "Add a follow-up to-do on a contact's CRM notes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "description": {"type": "string"},
+                    "contact_email": {"type": "string"},
+                    "rfq_number": {"type": "string"},
+                },
+                "required": ["title", "description"],
+            },
+        },
+    },
+]
+
+_ACTION_TOOL_NAMES = frozenset({
+    "update_rfq_status",
+    "record_rfq_first_response",
+    "assign_rfq_to_me",
+    "queue_follow_up_email",
+    "add_follow_up_reminder",
+})
 
 # Maps tool name → actual async function
 _TOOL_DISPATCH: dict = {
@@ -350,6 +460,11 @@ _TOOL_DISPATCH: dict = {
     "get_funnel_stats": T.get_funnel_stats,
     "get_company_profile": T.get_company_profile,
     "search_products": T.search_products,
+    "update_rfq_status": A.update_rfq_status,
+    "record_rfq_first_response": A.record_rfq_first_response,
+    "assign_rfq_to_me": A.assign_rfq_to_me,
+    "queue_follow_up_email": A.queue_follow_up_email,
+    "add_follow_up_reminder": A.add_follow_up_reminder,
 }
 
 
@@ -449,6 +564,18 @@ class CopilotEngine:
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
+    async def _assert_write_permission(self) -> Optional[dict]:
+        """Mirror REST require_content_editor — sales cannot mutate via Copilot."""
+        if not self.user_id:
+            return {"error": "此操作需要後台登入身分，無法代為執行"}
+        async with get_session_ctx() as s:
+            user = await s.get(User, self.user_id)
+            if not user or user.tenant_id != self.tenant_id:
+                return {"error": "找不到使用者或租戶不符"}
+            if user.role not in A._WRITE_ROLES:
+                return {"error": "您的帳號角色無法執行寫入操作（需管理員或行銷權限）"}
+        return None
+
     async def _execute_tool(self, name: str, arguments_str: str) -> str:
         """Execute a tool and return JSON-serialised result."""
         fn = _TOOL_DISPATCH.get(name)
@@ -461,7 +588,14 @@ class CopilotEngine:
             args = {}
 
         try:
-            result = await fn(tenant_id=self.tenant_id, **args)
+            if name in _ACTION_TOOL_NAMES:
+                denied = await self._assert_write_permission()
+                if denied:
+                    return json.dumps(denied, ensure_ascii=False)
+            kwargs = {"tenant_id": self.tenant_id, **args}
+            if name in _ACTION_TOOL_NAMES:
+                kwargs["user_id"] = self.user_id
+            result = await fn(**kwargs)
         except Exception as exc:
             logger.error("Tool %s failed: %s", name, exc, exc_info=True)
             result = {"error": str(exc)}
