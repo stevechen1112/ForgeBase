@@ -8,7 +8,7 @@ import {
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
   MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Globe, MessageSquare,
-  Lock, ListOrdered, TrendingUp, ListChecks, Languages,
+  Lock, ListOrdered, TrendingUp, ListChecks, Languages, Mail,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
@@ -79,6 +79,11 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
       { label: "Agent 任務佇列", href: "/dashboard/agent-runs", icon: ListOrdered, salesHidden: true },
       { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking", salesHidden: true },
+      { label: "潛客培育信", href: "/dashboard/nurture", icon: Mail, requiredFeature: "nurture_email", salesHidden: true,
+        children: [
+          { label: "待寄佇列", href: "/dashboard/nurture/outbox", icon: Inbox, requiredFeature: "nurture_email", salesHidden: true },
+        ],
+      },
     ],
   },
   {

@@ -75,6 +75,17 @@ async def _sla_scan_job() -> None:
         logger.exception("SLA scan job failed")
 
 
+async def _nurture_process_job() -> None:
+    """Periodic: send due nurture sequence steps."""
+    from app.api.v1.endpoints.nurture import process_all_due_enrollments
+    try:
+        stats = await process_all_due_enrollments()
+        if stats.get("sent") or stats.get("completed"):
+            logger.info("Nurture process: %s", stats)
+    except Exception:
+        logger.exception("Nurture process job failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not _SCHEDULER_ENABLED:
@@ -124,6 +135,15 @@ async def lifespan(app: FastAPI):
         trigger="interval",
         minutes=15,
         id="rfq_sla_scan",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+    # Nurture: process due sequence steps — every hour
+    _scheduler.add_job(
+        _nurture_process_job,
+        trigger="interval",
+        minutes=60,
+        id="nurture_process",
         replace_existing=True,
         misfire_grace_time=300,
     )

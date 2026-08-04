@@ -59,6 +59,9 @@ PLAN_MATRIX: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# Feature flag for the Email Nurture Engine (sequence / step / enrollment).
+NURTURE_FEATURE = "nurture_email"
+
 
 def get_plan(plan_name: str) -> Dict[str, Any]:
     return PLAN_MATRIX.get(plan_name, PLAN_MATRIX["starter"])

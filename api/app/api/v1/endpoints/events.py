@@ -30,6 +30,7 @@ from app.db.session import get_session
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
+from app.models.contact import Contact
 from app.models.user import User
 from app.models.content_strategy import ContentStrategy
 from app.services.intent_scoring import calculate_score_delta, get_intent_stage, should_alert
@@ -223,7 +224,8 @@ async def _upsert_visitor(
         visitor.device_type = event.device_type
 
     new_stage = get_intent_stage(new_score)
-    if new_stage != old_stage:
+    stage_changed = new_stage != old_stage
+    if stage_changed:
         visitor.intent_stage = new_stage
         visitor.stage_alert_sent = False  # Reset so alert can fire
 
@@ -232,6 +234,28 @@ async def _upsert_visitor(
 
     db.add(visitor)
     # Note: explicit flush moved to receive_event after all upserts
+
+    # Nurture trigger: linked contact reaching a triggered intent stage (§2.1.4)
+    if stage_changed and visitor.intent_stage in ("warm", "hot", "sales_ready"):
+        try:
+            from app.services.subscription import get_plan_feature
+            plan_ok = True
+            if tenant_id:
+                from app.models.tenant import Tenant
+                tenant = await db.get(Tenant, tenant_id)
+                plan_ok = bool(tenant and get_plan_feature(tenant.plan, "nurture_email"))
+            if plan_ok:
+                contact = (await db.exec(
+                    select(Contact).where(Contact.visitor_id == visitor.visitor_id)
+                )).first()
+                if contact:
+                    from app.api.v1.endpoints.nurture import trigger_nurture_for_contact
+                    await trigger_nurture_for_contact(
+                        contact.id, "intent_stage", visitor.intent_stage, tenant_id=tenant_id
+                    )
+        except Exception:
+            logger.exception("Nurture auto-enroll failed for visitor %s", visitor.visitor_id)
+
     return new_score, old_stage, new_stage, is_return_visit
 
 

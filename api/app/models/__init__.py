@@ -28,6 +28,7 @@ from app.models.visitor import Visitor
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.segment import Segment
+from app.models.nurture import NurtureSequence, NurtureStep, NurtureEnrollment, NurtureOutbox
 from app.models.chat import ChatSession, ChatMessage
 from app.models.integration_credential import IntegrationCredential
 from app.models.intake import (
@@ -72,6 +73,10 @@ __all__ = [
     "TrackingEvent",
     "TrackingSession",
     "Segment",
+    "NurtureSequence",
+    "NurtureStep",
+    "NurtureEnrollment",
+    "NurtureOutbox",
     "ChatSession",
     "ChatMessage",
     "IntakeProject",

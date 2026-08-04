@@ -14,7 +14,7 @@ from app.api.v1.endpoints import (
     strategy, ai_generate, assets, relations, publish, orphans,
     public_relations, preview, page_meta, growth_ops,
     events, visitors, contacts, rfqs, integrations, segments,
-    seo_optimize, esp, analytics,
+    seo_optimize, esp, analytics, nurture,
     ml_scoring, chat, chat_admin,
     redirects, intake, site_profile,
 )
@@ -64,6 +64,7 @@ tracking_router.include_router(segments.router)            # /tracking/segments
 tracking_router.include_router(esp.router)                 # /tracking/esp/*
 tracking_router.include_router(analytics.router)           # /tracking/analytics/*
 tracking_router.include_router(growth_ops.tracking_router) # /tracking/outcomes, /tracking/funnel
+tracking_router.include_router(nurture.router)             # /tracking/nurture/*
 api_router.include_router(tracking_router)
 api_router.include_router(growth_ops.ops_router)           # /ops/task-queue
 
