@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types/content";
 import { getProductImage } from "@/lib/demoAssets";
 import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";

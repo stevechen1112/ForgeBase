@@ -51,3 +51,8 @@ htmlcov/
 # Alembic
 # (保留 migrations/ 目錄，但不 track __pycache__)
 api/app/db/migrations/__pycache__/
+
+# Local-only / scratch (keep working tree aligned with remote)
+.copilot-extracted/
+api/_check_db_state.py
+**/import_state.json

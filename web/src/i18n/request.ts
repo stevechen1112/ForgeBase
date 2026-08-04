@@ -10,10 +10,14 @@ function replaceStringTokens(input: string, options: {
   contactPhone: string;
   careersEmail: string;
 }): string {
+  // Use a placeholder so "NorthForge Tools" → brand, then bare "NorthForge" → brand
+  // does not rewrite the brand a second time into "NorthForge Tools Tools".
+  const brandToken = "\u0000BRAND\u0000";
   return input
-    .replaceAll("NorthForge Tools", options.brandName)
-    .replaceAll("NorthForge", options.brandName)
-    .replaceAll("ForgeBase", options.brandName)
+    .replaceAll("NorthForge Tools", brandToken)
+    .replaceAll("NorthForge", brandToken)
+    .replaceAll("ForgeBase", brandToken)
+    .replaceAll(brandToken, options.brandName)
     .replaceAll("hello@forgebase.co", options.contactEmail)
     .replaceAll("sales@northforgetools.com", options.contactEmail)
     .replaceAll("careers@northforgetools.com", options.careersEmail)

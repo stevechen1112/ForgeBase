@@ -62,8 +62,8 @@ export default async function RFQPage({ params, searchParams }: Props) {
         <PageViewTracker pageType="rfq" />
         <main className="min-h-screen bg-white">
           <IndustrialPageHero
-            items={[{ label: "Home", href: "/" }, { label: "RFQ" }]}
-            eyebrow="Quotation"
+            items={[{ label: copy.metadata.title.includes("詢價") ? "首頁" : "Home", href: "/" }, { label: "RFQ" }]}
+            eyebrow={copy.metadata.title.includes("詢價") ? "詢價" : "Quotation"}
             title={copy.title}
             description={copy.description}
           />

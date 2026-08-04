@@ -83,13 +83,13 @@
 目前文件與 env 類檔案中出現疑似不應進版控的內容：
 
 - `README.md` 含生產 DB 連線字串樣式內容。
-- `api/.env.kinga` 含資料庫連線、`SECRET_KEY`、管理員密碼樣式值。
+- ~~`api/.env.kinga`~~（已自工作區徹底移除；King-A demo 套件亦已清除）。
 - 部分 demo/env example 使用 placeholder 是合理的，但需要統一命名與清楚標示。
 
 #### 修復步驟
 
 1. 從 `README.md` 移除任何真實或疑似真實的帳密、host、password。
-2. 將 `api/.env.kinga` 改為 `api/.env.kinga.example`，或移出版控並改用安全的 `.env.example`。
+2. ~~將 `api/.env.kinga` 改為 example~~（已刪除，不再保留 King-A 專用 env）。
 3. 確認 `.gitignore` 覆蓋 `.env`、`.env.*`，但允許 `.env.example`。
 4. 若這些值曾經推到遠端，將相關 DB 密碼、JWT secret、admin password 視為已外洩並輪替。
 5. 補 GitHub secret scanning 或 pre-commit secret scanning，例如 gitleaks。

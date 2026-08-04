@@ -15,7 +15,8 @@ function resolveLocale(locale: string) {
 
 function buildDetailHref(locale: string, slug: string) {
   const localeKey = resolveLocale(locale);
-  const prefix = localeKey === "zh-TW" ? "/zh-TW" : "/en";
+  // localePrefix is "as-needed": English has no /en prefix
+  const prefix = localeKey === "zh-TW" ? "/zh-TW" : "";
   return `${prefix}/certifications/${slug}`;
 }
 

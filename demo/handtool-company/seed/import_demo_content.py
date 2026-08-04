@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 API_BASE = "http://localhost:8000/api/v1"
 LOGIN_EMAIL = "admin@forgebase.com"
-LOGIN_PASSWORD = "ForgeBase2026!"
+LOGIN_PASSWORD = "ForgeBase_Admin_2026!"
 LOCALE = "en"
 
 PUBLISHABLE_ENDPOINTS = {

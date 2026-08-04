@@ -88,6 +88,7 @@ async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Pr
     if (STRICT_BUILD_API) {
       throw new Error(`Backend API unavailable during build for ${path}`);
     }
+    console.error(`[api] Backend unavailable — returning empty fallback for ${path}`);
     return fallback;
   }
 
@@ -109,6 +110,7 @@ async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Pr
     if (STRICT_BUILD_API) {
       throw error instanceof Error ? error : new Error(String(error));
     }
+    console.error(`[api] Request failed for ${path}`, error);
     logApiFallback(path, error);
     return fallback;
   }
@@ -135,9 +137,13 @@ export async function getPublishedCategories(locale = "en"): Promise<ProductCate
   return res.data;
 }
 
-export async function getCategoryBySlug(slug: string): Promise<ProductCategory | null> {
-  const res = await apiFetch<ListResponse<ProductCategory>>(
-    `/content/categories?slug=${slug}&page_size=1`,
+export async function getCategoryBySlug(
+  slug: string,
+  locale = "en"
+): Promise<ProductCategory | null> {
+  const res = await apiListFetchWithLocaleFallback<ProductCategory>(
+    `/content/categories?slug=${encodeURIComponent(slug)}&status=published&locale=${locale}&page_size=1`,
+    locale,
     emptyListResponse<ProductCategory>()
   );
   return res.data[0] ?? null;
@@ -374,9 +380,13 @@ export async function getPublishedComparisons(locale = "en"): Promise<Comparison
   return res.data;
 }
 
-export async function getComparisonBySlug(slug: string): Promise<ComparisonTopic | null> {
-  const res = await apiFetch<ListResponse<ComparisonTopic>>(
-    `/content/comparisons?slug=${encodeURIComponent(slug)}&status=published&page_size=1`,
+export async function getComparisonBySlug(
+  slug: string,
+  locale = "en"
+): Promise<ComparisonTopic | null> {
+  const res = await apiListFetchWithLocaleFallback<ComparisonTopic>(
+    `/content/comparisons?slug=${encodeURIComponent(slug)}&status=published&locale=${locale}&page_size=1`,
+    locale,
     emptyListResponse<ComparisonTopic>()
   );
   return res.data[0] ?? null;

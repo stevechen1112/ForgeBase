@@ -62,15 +62,16 @@
 
 - **目的**：清除進版控的憑證，輪替曾外洩密碼。
 - **掃描結果**：
-  - `api/.env.kinga`（被 git 追蹤）：含 DATABASE_URL、SECRET_KEY、OPENAI_API_KEY、ADMIN_PASSWORD 等**真實憑證**。
+  - ~~`api/.env.kinga`~~（已自工作區徹底移除；King-A demo 套件亦已清除）：當時含 DATABASE_URL、SECRET_KEY、OPENAI_API_KEY、ADMIN_PASSWORD 等**真實憑證**。
   - `admin/.env.production`（被追蹤）：僅 API URL，無密碼但不應入庫。
   - 其餘追蹤中的 env 檔皆為 `.example`；全 repo 掃描（sk-proj／xoxb／私鑰／密碼欄位）無其他明文。
 - **已執行（止血）**：
   - `git rm --cached` 移除兩檔追蹤（本地檔案保留）。
   - `.gitignore` 改為 `.env.*` 全擋、僅放行 `!.env.example` 與 `!.env.*.example`。
+  - **後續（2026-08）**：`demo/king-a/`、King-A intake 腳本、本機 `api/.env.kinga` 已徹底清除。
 - **⚠️ 人工待辦（我無法代執行，需當事人操作）**：
-  1. **輪替** `.env.kinga` 中所有憑證：資料庫密碼、SECRET_KEY（會使現有 JWT 全失效，需重登入）、OPENAI_API_KEY、ADMIN_PASSWORD。
-  2. **決定是否改寫 git 歷史**（`git filter-repo` 移除兩檔的歷史版本）——此為破壞性操作，需團隊協調且強制推送，本輪未執行。
+  1. 若曾使用 King-A 專用 DB／金鑰，**輪替**相關憑證（資料庫密碼、SECRET_KEY、OPENAI_API_KEY、ADMIN_PASSWORD）。
+  2. **決定是否改寫 git 歷史**（`git filter-repo` 移除兩檔的歷史版本）——此為破壞性操作，需團隊協調且強制推送；公開 repo 首次 push 前已執行過一輪。
   3. 若該 DB 為生產庫，檢查存取日誌是否有異常連線。
 - **相依**：無，已平行完成。
 
@@ -169,7 +170,7 @@
 
 **本批完成後的人工部署清單**：
 1. 其他環境 DB：`alembic stamp 0044_add_page_brief_agent_fields` → `alembic upgrade head`（T1 注意事項）。
-2. 輪替 `.env.kinga` 外洩憑證（T4 待辦）。
+2. 若曾使用 King-A 專用憑證，輪替相關密鑰（T4；套件與 `api/.env.kinga` 已清除）。
 3. 設定推播通道 token（Telegram／LINE）與 ESP（Resend/SendGrid）才能真發送。
 4. Tenant 層開啟 `ops_config_json.auto_reply_enabled` 才會發自動確認信。
 

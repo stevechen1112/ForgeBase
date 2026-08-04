@@ -76,7 +76,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = product.seo_title ?? `${product.model_number} ${product.product_name}`;
   const description = product.seo_description ?? product.short_description;
-  const ogImage = product.og_image_url ?? product.image_url ?? undefined;
+  const ogImage =
+    product.og_image_url ??
+    getProductImage(product, categorySlug, runtimeSiteConfig) ??
+    undefined;
 
   return {
     title,
@@ -106,7 +109,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const [product, category] = await Promise.all([
     getProductBySlug(productSlug, locale),
-    getCategoryBySlug(categorySlug),
+    getCategoryBySlug(categorySlug, resolvedLocale),
   ]);
 
   if (!product || !category) notFound();
@@ -368,7 +371,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 <IndustrialCtaPanel
                   title={copy.submitRfq}
                   description={copy.beforeRfqDescription}
-                  primaryHref={`/rfq?product=${encodeURIComponent(product.model_number ?? product.product_name)}`}
+                  primaryHref={`/rfq?product_id=${product.id}`}
                   primaryLabel={copy.submitRfq}
                   secondaryHref="/contact"
                   secondaryLabel={copy.askFirst}
@@ -707,7 +710,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </ul>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href={`/rfq?product=${encodeURIComponent(product.model_number ?? product.product_name)}`}
+              href={`/rfq?product_id=${product.id}`}
               className="rounded-lg bg-blue-700 px-7 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
             >
               {copy.submitRfq}

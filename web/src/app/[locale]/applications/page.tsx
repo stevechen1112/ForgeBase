@@ -90,7 +90,7 @@ export default async function ApplicationsPage({ params }: Props) {
                     </div>
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {apps.map((app) => (
-                        <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
+                        <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
                       ))}
                     </div>
                   </div>
@@ -98,7 +98,7 @@ export default async function ApplicationsPage({ params }: Props) {
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {applications.map((app) => (
-                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
+                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
                   ))}
                 </div>
               )}
@@ -149,7 +149,7 @@ export default async function ApplicationsPage({ params }: Props) {
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {apps.map((app) => (
-                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
+                    <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
                   ))}
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default async function ApplicationsPage({ params }: Props) {
             // Single industry or mixed — flat grid
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
               ))}
             </div>
           )}

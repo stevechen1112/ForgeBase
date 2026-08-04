@@ -406,8 +406,6 @@ ForgeBase 已包含正式的 Legacy Site Intake 模組，用來把既有製造�
 - Admin UI：`admin/src/app/(dashboard)/dashboard/intake/page.tsx`
 - Migration：`api/app/db/migrations/versions/0025_legacy_site_intake.py`
 - Tests：`api/tests/test_intake.py`
-- Standalone scripts：`api/scripts/intake_pipeline_king_a.py`、`api/scripts/test_intake_king_a.py`
-- Output artifacts：`intake_output/king_a_crawl_raw.json`、`intake_output/king_a_forgebase_seed.json`、`intake_output/king_a_analysis_report.json`
 
 ### Intake API 範圍
 
@@ -444,10 +442,9 @@ GET  /api/v1/intake/projects/{id}/summary
 ```bash
 cd api
 python -m pytest tests/test_intake.py -q
-
-# Standalone 實測，不需要 DB，輸出會寫到 intake_output/
-python scripts/intake_pipeline_king_a.py
 ```
+
+Intake 實際操作請走 Admin「Legacy Site Intake」或 `/api/v1/intake/*` API；不再附帶特定客戶站的 standalone crawl 腳本。
 
 ---
 
@@ -795,7 +792,7 @@ systemctl restart forgebase-admin
 |------|------|
 | **Migration 鏈修復** | 修正 0042–0044 orphan revisions，鏈恢復可升級 |
 | **多租戶** | `contacts.email` 改為 `(tenant_id, email)` 複合唯一（T2）；tracking/events/visitors/segments/ml_scoring 13 處 tenant 隔離缺口修補（T3）|
-| **Secrets** | 移除已追蹤的 `.env.kinga` / `.env.production`（T4）|
+| **Secrets** | 移除已追蹤的客戶／環境 secrets 檔（T4）|
 | **即時通知** | 新增 LINE channel；品質分數 gate 高品質 RFQ 即時推播（T5）|
 | **自動專業回覆** | 依 RFQ 內容自動寄出確認信，租戶可開關＋品質閘門（T6）|
 | **時區感知 SLA** | 依租戶營業時區計算首回期限，APScheduler 掃描逾期（T7）|

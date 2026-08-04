@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { Application } from "@/types/content";
 import { getApplicationImage } from "@/lib/demoAssets";
 import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";
@@ -6,11 +6,17 @@ import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConf
 type Props = {
   application: Application;
   siteConfig?: SiteConfig;
+  locale?: string;
 };
 
-export function ApplicationCard({ application, siteConfig = defaultSiteConfig }: Props) {
+export function ApplicationCard({
+  application,
+  siteConfig = defaultSiteConfig,
+  locale = "en",
+}: Props) {
   const imageUrl = getApplicationImage(application, siteConfig);
   const isIndustrial = siteConfig.layout === "industrial";
+  const learnMoreLabel = locale === "zh-TW" ? "了解更多 →" : "Learn more →";
 
   return (
     <Link
@@ -55,7 +61,7 @@ export function ApplicationCard({ application, siteConfig = defaultSiteConfig }:
         <span className={isIndustrial
           ? "mt-4 text-xs font-black uppercase tracking-[0.16em] text-primary group-hover:underline"
           : "mt-4 text-sm font-medium text-blue-700 group-hover:underline"}>
-          Learn more →
+          {learnMoreLabel}
         </span>
       </div>
     </Link>

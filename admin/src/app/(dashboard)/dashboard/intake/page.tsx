@@ -384,7 +384,7 @@ export default function IntakePage() {
                 <div className="space-y-2">
                   <Label>專案名稱</Label>
                   <Input
-                    placeholder="例如：欣榮貿易官網導入"
+                    placeholder="例如：某製造商官網導入"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                   />
@@ -392,7 +392,7 @@ export default function IntakePage() {
                 <div className="space-y-2">
                   <Label>網站網址</Label>
                   <Input
-                    placeholder="https://king-a.com.tw"
+                    placeholder="https://example-manufacturer.com"
                     value={newUrl}
                     onChange={e => setNewUrl(e.target.value)}
                   />

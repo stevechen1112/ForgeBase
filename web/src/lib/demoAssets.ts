@@ -3,7 +3,7 @@ import { siteConfig, type SiteAssetManifest, type SiteConfig } from "@/lib/siteC
 
 type AssetConfigLike = Pick<SiteConfig, "assetManifest">;
 
-const V = "?v=3";
+const V = "?v=4";
 
 function withVersion(path?: string | null): string | null {
   if (!path) {
@@ -14,6 +14,25 @@ function withVersion(path?: string | null): string | null {
 
 function getManifest(config: AssetConfigLike = siteConfig): SiteAssetManifest | undefined {
   return config.assetManifest;
+}
+
+/**
+ * Seed CMS still points at legacy `/assets/*.jpg` paths that were never shipped.
+ * Those miss on disk and `demoAssetRoute` returns lookalike SVG placeholders.
+ * Prefer generated manifest assets whenever the CMS URL is empty or still a legacy placeholder.
+ */
+function isLegacyDemoPlaceholder(path?: string | null): boolean {
+  if (!path) {
+    return true;
+  }
+  return /\/demo\/[^/]+\/assets\/(?!generated\/)/.test(path);
+}
+
+function pickAsset(cmsPath?: string | null, manifestPath?: string | null): string | null {
+  if (!isLegacyDemoPlaceholder(cmsPath)) {
+    return cmsPath ?? null;
+  }
+  return manifestPath ?? cmsPath ?? null;
 }
 
 export function getHomeHeroImage(config: AssetConfigLike = siteConfig): string | null {
@@ -42,7 +61,7 @@ export function getCategoryHeroImage(
   config: AssetConfigLike = siteConfig
 ): string | null {
   const manifest = getManifest(config);
-  return withVersion(fallback ?? manifest?.categoryBySlug?.[slug] ?? null);
+  return withVersion(pickAsset(fallback, manifest?.categoryBySlug?.[slug]));
 }
 
 export function getCategoryCardImage(
@@ -57,7 +76,9 @@ export function getApplicationImage(
   config: AssetConfigLike = siteConfig
 ): string | null {
   const manifest = getManifest(config);
-  return withVersion(application.hero_image_url ?? manifest?.applicationBySlug?.[application.slug] ?? null);
+  return withVersion(
+    pickAsset(application.hero_image_url, manifest?.applicationBySlug?.[application.slug]),
+  );
 }
 
 export function getProductImage(
@@ -67,7 +88,7 @@ export function getProductImage(
 ): string | null {
   const manifest = getManifest(config);
   const manifestImage = manifest?.productByKey?.[product.model_number] ?? null;
-  const image = product.image_url ?? manifestImage;
+  const image = pickAsset(product.image_url, manifestImage);
   if (image) {
     return withVersion(image);
   }

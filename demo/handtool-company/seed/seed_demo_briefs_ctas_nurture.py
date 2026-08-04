@@ -19,27 +19,12 @@ import asyncpg
 # 設定
 # ==============================================================
 DB_URL = "postgresql://forgebase:forgebase_dev@localhost:5432/forgebase"
-
-# ---- 由 DB 查到的固定 ID ----
-ADMIN_USER_ID = "715003a5-78dc-41b2-98b3-0ac8d2c699cf"
-
-PRODUCT_TORQUE_WRENCH  = "9c7faa5a-03e6-4bdd-9568-7490e71111c1"
-PRODUCT_DIGITAL_TORQUE = "0872ebc9-99bc-4b45-83da-b092c19ae64c"
-PRODUCT_RATCHET_72T    = "36f6a3bb-57dc-4581-98f4-cf4d32467890"
-PRODUCT_SOCKET_94PC    = "694cf404-4642-498d-8cbf-9168b90cb2ae"
-
-APP_AUTOMOTIVE = "d1410523-e93f-43e6-8d09-7e94c55ece8f"
-APP_INDUSTRIAL = "5da93b63-1376-4519-9ebf-54216661d490"
-APP_ELECTRICAL = "7a560568-fcf1-4110-b440-c45a02d501a6"
+ADMIN_EMAIL = "admin@forgebase.com"
 
 NOW = datetime.utcnow()
 
-
-# ==============================================================
-# Page Briefs（8 筆，涵蓋各種 brief_status）
-# ==============================================================
+# related_entity_key = product.model_number 或 application.slug（執行時動態解析）
 BRIEFS = [
-    # 1. draft — 剛建立，尚未審核
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "product",
@@ -54,13 +39,11 @@ BRIEFS = [
         "main_cta_key": "rfq_primary",
         "notes": "Focus on accuracy specs (±4%) and DIN ISO 6789 certification. Target European automotive service shops.",
         "related_entity_type": "product",
-        "related_entity_id": PRODUCT_TORQUE_WRENCH,
+        "related_entity_key": "NFT-TW500",
         "brief_status": "draft",
         "ai_status": "pending",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 2. approved — 審核通過，可進行 AI 生成（Demo 1-4 使用）
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "product",
@@ -73,15 +56,13 @@ BRIEFS = [
         "tone": "technical",
         "word_count_target": 1000,
         "main_cta_key": "rfq_primary",
-        "notes": "Emphasise Bluetooth connectivity, data logging, and compatibility with 1/4\", 3/8\", 1/2\" drives. Ideal for quality-critical assembly lines.",
+        "notes": "Emphasise Bluetooth connectivity, data logging, and compatibility with 1/4\", 3/8\", 1/2\" drives.",
         "related_entity_type": "product",
-        "related_entity_id": PRODUCT_DIGITAL_TORQUE,
+        "related_entity_key": "NFT-TWA120",
         "brief_status": "approved",
         "ai_status": "pending",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 3. approved — 另一個可 Demo AI 生成的 Brief
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "application",
@@ -94,15 +75,13 @@ BRIEFS = [
         "tone": "authoritative",
         "word_count_target": 900,
         "main_cta_key": "catalog_download",
-        "notes": "Highlight breadth of product range, CE & GS certifications, OEM supply capability. Compare with Snap-on positioning.",
+        "notes": "Highlight breadth of product range, CE & GS certifications, OEM supply capability.",
         "related_entity_type": "application",
-        "related_entity_id": APP_AUTOMOTIVE,
+        "related_entity_key": "automotive-aftermarket-service",
         "brief_status": "approved",
         "ai_status": "pending",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 4. in_progress — AI 正在生成中
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "product",
@@ -115,15 +94,13 @@ BRIEFS = [
         "tone": "technical",
         "word_count_target": 750,
         "main_cta_key": "rfq_primary",
-        "notes": "Key differentiator: 5° arc swing in confined spaces. Compare with standard 12-tooth competitors.",
+        "notes": "Key differentiator: 5° arc swing in confined spaces.",
         "related_entity_type": "product",
-        "related_entity_id": PRODUCT_RATCHET_72T,
+        "related_entity_key": "NFT-RH372",
         "brief_status": "in_progress",
         "ai_status": "processing",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 5. completed — AI 已生成完成，等待人工審核
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "product",
@@ -136,15 +113,13 @@ BRIEFS = [
         "tone": "authoritative",
         "word_count_target": 850,
         "main_cta_key": "rfq_primary",
-        "notes": "Emphasise MOQ flexibility, custom packaging, CE certification. Target European & American distributors.",
+        "notes": "Emphasise MOQ flexibility, custom packaging, CE certification.",
         "related_entity_type": "product",
-        "related_entity_id": PRODUCT_SOCKET_94PC,
+        "related_entity_key": "NFT-SS094",
         "brief_status": "completed",
         "ai_status": "done",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 6. published — 已發布上線
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "application",
@@ -159,13 +134,11 @@ BRIEFS = [
         "main_cta_key": "rfq_primary",
         "notes": "Focus on durability metrics, ISO certifications, availability of replacement parts.",
         "related_entity_type": "application",
-        "related_entity_id": APP_INDUSTRIAL,
+        "related_entity_key": "industrial-maintenance-and-mro",
         "brief_status": "published",
         "ai_status": "done",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 7. revision — 需要修改，退回重新撰寫
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "faq",
@@ -178,15 +151,13 @@ BRIEFS = [
         "tone": "friendly",
         "word_count_target": 600,
         "main_cta_key": "spec_download",
-        "notes": "需補充：各型號的建議校準週期、送廠校準的費用參考。請技術部門確認後再送審。",
+        "notes": "需補充：各型號的建議校準週期、送廠校準的費用參考。",
         "related_entity_type": None,
-        "related_entity_id": None,
+        "related_entity_key": None,
         "brief_status": "revision",
         "ai_status": "done",
         "locale": "en",
-        "created_by": ADMIN_USER_ID,
     },
-    # 8. draft — 德語市場
     {
         "id": str(uuid.uuid4()),
         "target_page_type": "product",
@@ -199,13 +170,12 @@ BRIEFS = [
         "tone": "technical",
         "word_count_target": 800,
         "main_cta_key": "rfq_primary",
-        "notes": "DACH market focus. Emphasise DIN conformity, CE marking, delivery from EU warehouse.",
+        "notes": "DACH market focus. Emphasise DIN conformity, CE marking.",
         "related_entity_type": "product",
-        "related_entity_id": PRODUCT_DIGITAL_TORQUE,
+        "related_entity_key": "NFT-TWA120",
         "brief_status": "draft",
         "ai_status": "pending",
         "locale": "de",
-        "created_by": ADMIN_USER_ID,
     },
 ]
 
@@ -390,16 +360,48 @@ NURTURE_STEPS = [
 # ==============================================================
 # 匯入邏輯
 # ==============================================================
+async def resolve_related_id(conn, entity_type, key):
+    if not entity_type or not key:
+        return None
+    if entity_type == "product":
+        return await conn.fetchval(
+            "SELECT id FROM products WHERE model_number = $1 LIMIT 1", key
+        )
+    if entity_type == "application":
+        return await conn.fetchval(
+            "SELECT id FROM applications WHERE slug = $1 LIMIT 1", key
+        )
+    return None
+
+
 async def seed():
     conn = await asyncpg.connect(DB_URL)
     print("Connected to DB")
+
+    admin_user_id = await conn.fetchval(
+        "SELECT id FROM users WHERE email = $1 LIMIT 1", ADMIN_EMAIL
+    )
+    if not admin_user_id:
+        raise RuntimeError(
+            f"找不到 admin 使用者 {ADMIN_EMAIL}。請先確認 API seed_admin / 登入帳號存在。"
+        )
+    print(f"Admin user: {admin_user_id}")
 
     # --- Page Briefs ---
     existing_briefs = await conn.fetchval("SELECT COUNT(*) FROM page_briefs")
     if existing_briefs > 0:
         print(f"⚠️  page_briefs 已有 {existing_briefs} 筆，跳過（如需重建請先手動清空）")
     else:
+        inserted = 0
         for b in BRIEFS:
+            related_id = await resolve_related_id(
+                conn, b.get("related_entity_type"), b.get("related_entity_key")
+            )
+            if b.get("related_entity_key") and not related_id:
+                print(
+                    f"  ⚠  找不到 related entity {b.get('related_entity_type')}:{b.get('related_entity_key')}，略過 brief {b['target_slug']}"
+                )
+                continue
             await conn.execute(
                 """
                 INSERT INTO page_briefs (
@@ -422,12 +424,12 @@ async def seed():
                 b["buyer_stage"], b["primary_keyword"], b["secondary_keywords"], b["tone"],
                 b["word_count_target"], b["main_cta_key"], b["notes"],
                 b["related_entity_type"],
-                uuid.UUID(b["related_entity_id"]) if b["related_entity_id"] else None,
+                related_id,
                 b["brief_status"], b["ai_status"], b["locale"],
-                uuid.UUID(b["created_by"]), NOW, NOW,
+                admin_user_id, NOW, NOW,
             )
-        print(f"✅ page_briefs: 插入 {len(BRIEFS)} 筆")
-        # 顯示各狀態
+            inserted += 1
+        print(f"✅ page_briefs: 插入 {inserted} 筆")
         rows = await conn.fetch("SELECT brief_status, COUNT(*) as cnt FROM page_briefs GROUP BY brief_status ORDER BY brief_status")
         for r in rows:
             print(f"   {r['brief_status']}: {r['cnt']} 筆")
@@ -462,50 +464,56 @@ async def seed():
         print(f"✅ ctas: 插入 {len(CTAS)} 筆")
 
     # --- Nurture Sequences ---
-    existing_seq = await conn.fetchval("SELECT COUNT(*) FROM nurture_sequences")
-    if existing_seq > 0:
-        print(f"⚠️  nurture_sequences 已有 {existing_seq} 筆，跳過")
+    # 若表不存在則跳過（部分環境可能未啟用 nurture）
+    has_nurture = await conn.fetchval(
+        "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'nurture_sequences')"
+    )
+    if not has_nurture:
+        print("⚠️  nurture_sequences 表不存在，跳過 nurture seed")
     else:
-        for s in NURTURE_SEQUENCES:
-            await conn.execute(
-                """
-                INSERT INTO nurture_sequences (
-                    id, name, description, trigger_type, trigger_value,
-                    is_active, allow_re_enrollment, created_at, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                ON CONFLICT DO NOTHING
-                """,
-                uuid.UUID(s["id"]),
-                s["name"], s["description"], s["trigger_type"], s["trigger_value"],
-                s["is_active"], s["allow_re_enrollment"], NOW, NOW,
-            )
-        print(f"✅ nurture_sequences: 插入 {len(NURTURE_SEQUENCES)} 筆")
+        existing_seq = await conn.fetchval("SELECT COUNT(*) FROM nurture_sequences")
+        if existing_seq > 0:
+            print(f"⚠️  nurture_sequences 已有 {existing_seq} 筆，跳過")
+        else:
+            for s in NURTURE_SEQUENCES:
+                await conn.execute(
+                    """
+                    INSERT INTO nurture_sequences (
+                        id, name, description, trigger_type, trigger_value,
+                        is_active, allow_re_enrollment, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    uuid.UUID(s["id"]),
+                    s["name"], s["description"], s["trigger_type"], s["trigger_value"],
+                    s["is_active"], s["allow_re_enrollment"], NOW, NOW,
+                )
+            print(f"✅ nurture_sequences: 插入 {len(NURTURE_SEQUENCES)} 筆")
 
-        for step in NURTURE_STEPS:
-            await conn.execute(
-                """
-                INSERT INTO nurture_steps (
-                    id, sequence_id, step_order, delay_days,
-                    subject, html_body, text_body,
-                    from_name, from_email, created_at, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                ON CONFLICT DO NOTHING
-                """,
-                uuid.UUID(step["id"]),
-                uuid.UUID(step["sequence_id"]),
-                step["step_order"], step["delay_days"],
-                step["subject"], step["html_body"], step["text_body"],
-                step["from_name"], step["from_email"], NOW, NOW,
-            )
-        print(f"✅ nurture_steps: 插入 {len(NURTURE_STEPS)} 筆")
+            for step in NURTURE_STEPS:
+                await conn.execute(
+                    """
+                    INSERT INTO nurture_steps (
+                        id, sequence_id, step_order, delay_days,
+                        subject, html_body, text_body,
+                        from_name, from_email, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    uuid.UUID(step["id"]),
+                    uuid.UUID(step["sequence_id"]),
+                    step["step_order"], step["delay_days"],
+                    step["subject"], step["html_body"], step["text_body"],
+                    step["from_name"], step["from_email"], NOW, NOW,
+                )
+            print(f"✅ nurture_steps: 插入 {len(NURTURE_STEPS)} 筆")
 
     await conn.close()
     print("\n🎉 Demo 資料補充完成！")
     print("現在可以展示：")
-    print("  1-3  Page Brief 列表（含 draft/approved/in_progress/completed/published/revision 各狀態）")
-    print("  1-4  AI 生成（找 brief_status='approved' 的 Brief 點擊生成初稿）")
-    print("  3-7  Dynamic CTA（spec_download / comparison_view / rfq_primary / engineer_consult）")
-    print("  3-8  Nurture 序列（2 個序列，共 7 個步驟）")
+    print("  Page Brief 列表（含多種 brief_status）")
+    print("  Dynamic CTA（spec_download / comparison_view / rfq_primary / engineer_consult）")
+    print("  Nurture 序列（若表存在）")
 
 
 if __name__ == "__main__":

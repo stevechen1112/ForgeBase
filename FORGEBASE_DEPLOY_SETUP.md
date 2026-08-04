@@ -91,14 +91,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## 3. Secrets 狀態（重要）
 
-`.gitignore` 涵蓋 `.env.*`；以下檔案**從未進入目前的 git 歷史**：
-- `api/.env.kinga`
-- `admin/.env.production`
+`.gitignore` 涵蓋 `.env.*`。**2026-08-03：首次 push 前已用 `git filter-repo` 抹除整段歷史中的敏感檔與 README 內的 production DB 密碼**，再推送至 [stevechen1112/ForgeBase](https://github.com/stevechen1112/ForgeBase)（Public）。因此 GitHub 上的歷史不含任何真實金鑰。
 
-**2026-08-03：首次 push 前已用 `git filter-repo` 抹除整段歷史中的上述檔案與 README 內的 production DB 密碼**，再推送至 [stevechen1112/ForgeBase](https://github.com/stevechen1112/ForgeBase)（Public）。
-因此 GitHub 上的歷史不含任何真實金鑰。
-
-⚠️ **仍建議輪替**：`api/.env.kinga` 內的 DATABASE 密碼、`SECRET_KEY`、`ADMIN_PASSWORD` 曾在本機歷史存在約數月（未外洩），若該 DB 可從外部連線，建議仍換密碼以求保險。往後任何 secret 誤 commit，一律視為已外洩並立即輪替。
+⚠️ 往後任何 secret 誤 commit，一律視為已外洩並立即輪替。King-A 相關本機 env（例如曾存在的 `api/.env.kinga`）已自工作區移除，不應再使用。
 
 ---
 

@@ -156,11 +156,11 @@ class TestIntakeSchemas:
         from app.schemas.intake import IntakeProjectCreate
 
         body = IntakeProjectCreate(
-            project_name="欣榮貿易導入",
-            source_url="https://king-a.com.tw",
+            project_name="示範製造商導入",
+            source_url="https://example-manufacturer.com",
         )
-        assert body.project_name == "欣榮貿易導入"
-        assert body.source_url == "https://king-a.com.tw"
+        assert body.project_name == "示範製造商導入"
+        assert body.source_url == "https://example-manufacturer.com"
 
     def test_url_review(self):
         from app.schemas.intake import IntakeUrlReview
@@ -194,27 +194,27 @@ class TestIntakeSchemas:
         assert summary.urls_by_type["product"] == 20
 
 
-# ── Test king-a specific patterns ──────────────────────────────────────────
+# ── Test common legacy-site URL / content patterns ─────────────────────────
 
-class TestKingAPatterns:
-    """Tests specific to king-a.com.tw URL / content patterns."""
+class TestLegacySitePatterns:
+    """Generic pattern checks for common legacy manufacturer site structures."""
 
     def test_page_url_pattern(self):
-        """king-a uses /page/HEXID and /article/HEXID patterns"""
-        url1 = "https://king-a.com.tw/page/2660FABD752D0BE0AAE2"
-        url2 = "https://king-a.com.tw/article/C7A8C2CE24D6CF12FA02"
+        """Some legacy CMS sites use /page/HEXID and /article/HEXID paths."""
+        url1 = "https://example-manufacturer.com/page/2660FABD752D0BE0AAE2"
+        url2 = "https://example-manufacturer.com/article/C7A8C2CE24D6CF12FA02"
         assert "/page/" in url1
         assert "/article/" in url2
 
     def test_model_number_extraction(self):
-        """Expect to find Panasonic model numbers like TM-5, TS-950"""
+        """Expect to find industrial model numbers like TM-5, TS-950."""
         text = "Panasonic TM-5 焊接機械手臂，適用於 0.5-3.0mm 薄板焊接。TM-20 大範圍型。"
         models = re.findall(r'[A-Z]{1,5}[-_]?\d{2,5}[A-Z]?(?:[-/]\d+)?', text)
         assert "TM-5" in models or "TM" in str(models)
 
     def test_taiwanese_contact_patterns(self):
-        """Traditional contact patterns on TW sites"""
-        text = "TEL: 04-2355-6789  FAX: 04-2355-6780  info@king-a.com.tw"
+        """Traditional contact patterns on TW sites."""
+        text = "TEL: 04-2355-6789  FAX: 04-2355-6780  info@example-manufacturer.com.tw"
         has_phone = bool(re.search(r'\d{2,3}-\d{4}-\d{4}', text))
         has_email = bool(re.search(r'[\w.]+@[\w.-]+\.com\.tw', text))
         assert has_phone

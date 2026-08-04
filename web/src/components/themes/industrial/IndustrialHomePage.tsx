@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { IndustrialHero } from "@/components/themes/industrial/IndustrialHero";
@@ -110,6 +110,7 @@ type IndustrialHomePageProps = {
   certifications: Certification[];
   categorySlugById: Map<string, string>;
   siteConfig: SiteConfig;
+  locale?: string;
 };
 
 export function IndustrialHomePage({
@@ -120,6 +121,7 @@ export function IndustrialHomePage({
   certifications,
   categorySlugById,
   siteConfig,
+  locale = "en",
 }: IndustrialHomePageProps) {
   return (
     <>
@@ -298,7 +300,7 @@ export function IndustrialHomePage({
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} siteConfig={siteConfig} />
+                <ApplicationCard key={app.id} application={app} siteConfig={siteConfig} locale={locale} />
               ))}
             </div>
 

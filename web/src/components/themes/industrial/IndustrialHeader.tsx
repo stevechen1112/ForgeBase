@@ -106,7 +106,7 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
                 {siteName}
               </span>
               <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-gray-500">
-                Manufacturing
+                {locale === "zh-TW" ? "專業製造" : "Manufacturing"}
               </span>
             </div>
           </Link>

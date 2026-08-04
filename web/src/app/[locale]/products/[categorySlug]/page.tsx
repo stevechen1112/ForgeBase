@@ -46,22 +46,26 @@ type ProductCategoryMessages = {
 };
 
 /** 2.3.1 — any ?q= or ?page= param → noindex, canonical strips all params */
-function isFaceted(filters: Record<string, string | string[] | undefined>): boolean {
+function isFaceted(filters: Record<string, string | string[] | undefined> | null | undefined): boolean {
   const SEO_PARAMS = new Set(["q", "page", "sort", "tag", "cert", "app"]);
-  return Object.keys(filters).some((k) => SEO_PARAMS.has(k));
+  return Object.keys(filters ?? {}).some((k) => SEO_PARAMS.has(k));
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
-  const { categorySlug } = await params;
-  const filters = await searchParams;
-  const category = await getCategoryBySlug(categorySlug);
+  const { siteUrl: SITE_URL, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const { locale, categorySlug } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const filters = (await searchParams) ?? {};
+  const category = await getCategoryBySlug(categorySlug, resolvedLocale);
   if (!category) return { title: "Not Found" };
 
   const faceted = isFaceted(filters);
   const title = category.seo_title ?? category.category_name;
   const description = category.seo_description ?? category.description ?? undefined;
-  const ogImage = category.og_image_url ?? category.image_url ?? undefined;
+  const ogImage =
+    category.og_image_url ??
+    getCategoryHeroImage(category.slug, category.image_url, runtimeSiteConfig) ??
+    undefined;
 
   return {
     title,
@@ -90,7 +94,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   ]);
   const filters = await searchParams;
 
-  const category = await getCategoryBySlug(categorySlug);
+  const category = await getCategoryBySlug(categorySlug, resolvedLocale);
   if (!category) notFound();
 
   const q = typeof filters.q === "string" ? filters.q : undefined;

@@ -1,7 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 import { getPublishedCapabilities, getPublishedCertifications, getPublishedPageByType } from "@/lib/api";
-import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
@@ -66,10 +65,7 @@ export default async function AboutPage({ params }: Props) {
   const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
-  const pageOverride = await getPublishedPageByType("about", resolvedLocale);
-  if (pageOverride) {
-    return <FlexiblePageRenderer page={pageOverride} />;
-  }
+  // Seeded CMS about pages are sparse FlexiblePage bodies; use the assembled About page instead.
   const [common, copy] = await Promise.all([
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<AboutMessages>("about"),

@@ -131,7 +131,24 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || copy.submitFailed);
+      if (!res.ok) {
+        const detail = data?.detail;
+        const message = Array.isArray(detail)
+          ? detail
+              .map((item: unknown) => {
+                if (typeof item === "string") return item;
+                if (item && typeof item === "object" && "msg" in item) {
+                  return String((item as { msg: unknown }).msg);
+                }
+                return JSON.stringify(item);
+              })
+              .filter(Boolean)
+              .join("; ")
+          : typeof detail === "string"
+            ? detail
+            : copy.submitFailed;
+        throw new Error(message || copy.submitFailed);
+      }
       trackRFQSubmit();
       setRfqNumber(data.rfq_number); setSubmitted(true);
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }

@@ -61,7 +61,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = application.seo_title ?? application.application_name;
   const description = application.seo_description ?? application.description ?? undefined;
-  const ogImage = application.og_image_url ?? application.hero_image_url ?? undefined;
+  const ogImage =
+    application.og_image_url ??
+    getApplicationImage(application, runtimeSiteConfig) ??
+    undefined;
 
   return {
     title,

@@ -33,8 +33,9 @@ type ComparisonDetailMessages = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const topic = await getComparisonBySlug(slug);
+  const { locale, slug } = await params;
+  const resolvedLocale = resolveLocale(locale);
+  const topic = await getComparisonBySlug(slug, resolvedLocale);
   if (!topic) return {};
   return {
     title: topic.seo_title ?? topic.topic_title,
@@ -55,7 +56,7 @@ export default async function ComparisonDetailPage({ params }: Props) {
     getMessageNamespace<CommonMessages>("common"),
     getMessageNamespace<ComparisonDetailMessages>("comparisonDetail"),
   ]);
-  const topic = await getComparisonBySlug(slug);
+  const topic = await getComparisonBySlug(slug, resolvedLocale);
   if (!topic) notFound();
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [topic]);
 

@@ -156,10 +156,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const resolvedLocale = resolveLocale(locale);
-  const pageOverride = await getPublishedPageByType("home", resolvedLocale);
-  if (pageOverride) {
-    return <FlexiblePageRenderer page={pageOverride} />;
-  }
+  // Seeded CMS `home` pages are sparse FlexiblePage bodies. They must not replace the
+  // assembled marketing homepage (featured products / categories / applications).
   const copy = await getMessageNamespace<HomeMessages>("home");
   const [categories, applicationsRes, certifications, featuredProducts] = await Promise.all([
     getPublishedCategories(resolvedLocale),
@@ -187,6 +185,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           certifications={certifications}
           categorySlugById={categorySlugById}
           siteConfig={runtimeSiteConfig}
+          locale={resolvedLocale}
         />
       </>
     );
@@ -201,49 +200,43 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       />
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-blue-950 text-white">
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        {/* Photo on the right only — generated heroes often bake fake UI into the left half */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${getHomeHeroImage(runtimeSiteConfig)})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/80 to-blue-900/55" />
-        {/* Background grid pattern */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-10"
+          className="absolute inset-y-0 right-0 hidden w-[52%] bg-cover bg-center md:block"
           style={{
-            backgroundImage:
-              "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+            backgroundImage: `url(${getHomeHeroImage(runtimeSiteConfig)})`,
+            backgroundPosition: "68% center",
           }}
         />
+        <div className="absolute inset-y-0 right-0 hidden w-[52%] bg-gradient-to-l from-transparent to-slate-950 md:block" />
         <div className="relative mx-auto max-w-6xl px-6 py-28 sm:py-36">
-          <div className="flex flex-col items-center text-center">
-            {/* Eyebrow */}
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-800/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-200">
+          <div className="flex max-w-xl flex-col text-left">
+            <span className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-blue-400/30 bg-blue-800/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-200">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
               {copy.hero.eyebrow}
             </span>
 
-            <h1 className="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               {copy.hero.titleLine1}
               <br />
               <span className="text-blue-300">{copy.hero.titleLine2}</span>
             </h1>
 
-            <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-blue-100">
+            <p className="mt-5 text-lg leading-relaxed text-blue-100">
               {copy.hero.description}
             </p>
 
-            <div className="mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/rfq"
-                className="rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-blue-900 shadow-lg hover:bg-blue-50 transition-colors"
+                className="rounded-xl bg-white px-8 py-3.5 text-center text-sm font-bold text-blue-900 shadow-lg hover:bg-blue-50 transition-colors"
               >
                 {copy.hero.primaryCta}
               </Link>
               <Link
                 href="/products"
-                className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+                className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-center text-sm font-semibold text-white hover:bg-white/20 transition-colors"
               >
                 {copy.hero.secondaryCta}
               </Link>

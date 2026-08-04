@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
@@ -62,10 +61,7 @@ export default async function ContactPage({ params }: Props) {
   } = await getRuntimeSiteContext();
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
-  const pageOverride = await getPublishedPageByType("contact", resolvedLocale);
-  if (pageOverride) {
-    return <FlexiblePageRenderer page={pageOverride} />;
-  }
+  // Seeded CMS contact pages are sparse FlexiblePage bodies; use the assembled Contact page instead.
   const [copy, common] = await Promise.all([
     getMessageNamespace<ContactPageMessages>("contactPage"),
     getMessageNamespace<CommonMessages>("common"),

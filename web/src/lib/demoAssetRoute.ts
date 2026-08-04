@@ -281,7 +281,7 @@ function buildCertificationBadgeSvg(filename: string, label: string, config: Sit
   ${titleLines[2] ? `<text x="480" y="526" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="58" font-weight="800">${titleLines[2]}</text>` : ""}
   <rect x="218" y="590" width="524" height="78" rx="39" fill="${spec.accent}" fill-opacity="0.1" />
   <text x="480" y="638" text-anchor="middle" fill="${spec.secondary}" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1.2">${kicker}</text>
-  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">${config.brandName} Demo Certification Badge</text>
+  <text x="480" y="724" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">${escapeXml(config.brandName)}</text>
   <text x="480" y="768" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">${fileLabel}</text>
 </svg>`;
 }
@@ -322,8 +322,6 @@ function buildSvg(spec: VisualSpec, label: string, brandName: string): string {
   <circle cx="446" cy="446" r="18" fill="${spec.accent}" />
   <rect x="120" y="672" width="668" height="68" rx="18" fill="#0f172a" fill-opacity="0.06" />
   <text x="152" y="715" fill="#475569" font-family="Arial, sans-serif" font-size="20">${fileLabel}</text>
-  <text x="1010" y="214" fill="white" font-family="Arial, sans-serif" font-size="34" font-weight="700">${brandName} Demo Asset</text>
-  <text x="1010" y="264" fill="white" fill-opacity="0.82" font-family="Arial, sans-serif" font-size="24">Served directly from repo source or generated fallback.</text>
 </svg>`;
 }
 

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, Loader2, Shield, Globe, TrendingUp, Award } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Loader2, Shield, Globe, TrendingUp, Award, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { authApi } from "@/lib/api/auth";
+import { authApi, type TokenResponse } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,9 @@ const FEATURES = [
   "客戶關係管理整合",
 ];
 
+/** Demo-only UI flag. Turn off / remove before public launch. */
+const DEMO_QUICK_LOGIN = process.env.NEXT_PUBLIC_DEMO_QUICK_LOGIN === "1";
+
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
@@ -34,6 +37,7 @@ export default function LoginPage() {
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +52,32 @@ export default function LoginPage() {
       setError(msg.includes("401") || msg.includes("400") ? "帳號或密碼錯誤，請重新輸入" : msg);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDemoQuickPass() {
+    setError("");
+    setDemoLoading(true);
+    try {
+      // basePath=/backend → route is /backend/api/demo-login
+      const res = await fetch("/backend/api/demo-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          typeof body?.detail === "string" ? body.detail : "快速通關失敗，請改用帳密登入"
+        );
+      }
+      login(body as TokenResponse);
+      router.replace("/dashboard");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "快速通關失敗";
+      setError(msg);
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -144,6 +174,40 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="space-y-5">
+              {DEMO_QUICK_LOGIN && (
+                <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-start gap-2">
+                    <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-amber-900">Demo 快速通關</p>
+                      <p className="text-xs text-amber-800/80 leading-relaxed">
+                        僅供內部演示使用，一鍵進入後台，免記帳密。對外上線前請關閉此開關。
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    className="w-full h-11 text-base bg-amber-600 hover:bg-amber-700 text-white"
+                    disabled={demoLoading || loading}
+                    onClick={handleDemoQuickPass}
+                  >
+                    {demoLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        進入中…
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        一鍵進入 Demo 後台
+                      </>
+                    )}
+                  </Button>
+                  <Separator />
+                  <p className="text-center text-xs text-muted-foreground">或使用帳密登入</p>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email */}
                 <div className="space-y-2">
