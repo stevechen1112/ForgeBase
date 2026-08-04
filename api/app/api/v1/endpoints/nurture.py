@@ -20,6 +20,7 @@ from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -48,7 +49,7 @@ class SequenceUpdate(BaseModel):
     trigger_type: Optional[str] = None
     trigger_value: Optional[str] = None
     is_active: Optional[bool] = None
-    is_approved: Optional[bool] = None
+    # is_approved is intentionally NOT patchable — use /approve|/unapprove (admin only)
     allow_re_enrollment: Optional[bool] = None
 
 
@@ -195,6 +196,10 @@ async def update_sequence(
 ):
     seq = await _get_scoped_sequence(sequence_id, db, current_user)
     data = payload.model_dump(exclude_unset=True)
+    # Hard block: approval fields are admin-only via /approve|/unapprove
+    data.pop("is_approved", None)
+    data.pop("approved_at", None)
+    data.pop("approved_by", None)
     for k, v in data.items():
         setattr(seq, k, v)
     seq.updated_at = utcnow_naive()
@@ -337,6 +342,11 @@ async def enroll_contact(
     seq = await _get_scoped_sequence(payload.sequence_id, db, current_user)
     contact = (await db.exec(select(Contact).where(Contact.id == payload.contact_id))).first()
     if not contact:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contact not found")
+    # Tenant isolation: contact must belong to the same tenant as the sequence / user
+    if seq.tenant_id and contact.tenant_id and contact.tenant_id != seq.tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contact not found")
+    if current_user.tenant_id and contact.tenant_id and contact.tenant_id != current_user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contact not found")
 
     existing = (await db.exec(
@@ -534,17 +544,23 @@ async def process_all_due_enrollments() -> dict:
                 stats["skipped_existing"] += 1
                 continue
 
-            db.add(NurtureOutbox(
-                tenant_id=enrollment.tenant_id,
-                enrollment_id=enrollment.id,
-                sequence_id=enrollment.sequence_id,
-                step_id=step.id,
-                contact_id=enrollment.contact_id,
-                status="pending",
-                subject=step.subject,
-                due_at=due_at,
-            ))
-            stats["queued"] += 1
+            try:
+                async with db.begin_nested():
+                    db.add(NurtureOutbox(
+                        tenant_id=enrollment.tenant_id,
+                        enrollment_id=enrollment.id,
+                        sequence_id=enrollment.sequence_id,
+                        step_id=step.id,
+                        contact_id=enrollment.contact_id,
+                        status="pending",
+                        subject=step.subject,
+                        due_at=due_at,
+                    ))
+                    await db.flush()
+                stats["queued"] += 1
+            except IntegrityError:
+                # Concurrent worker already queued this enrollment+step (partial unique index)
+                stats["skipped_existing"] += 1
 
         await db.commit()
 
@@ -626,7 +642,14 @@ async def send_outbox_item(
     """Manually approve and send one queued nurture email."""
     from app.services.email_service import send_nurture_step
 
-    o = await _get_scoped_outbox(outbox_id, db, current_user)
+    # Atomic claim: lock row so concurrent send/skip cannot double-send
+    o = (await db.exec(
+        select(NurtureOutbox).where(NurtureOutbox.id == outbox_id).with_for_update()
+    )).first()
+    if not o:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Outbox item not found")
+    if current_user.tenant_id and o.tenant_id and o.tenant_id != current_user.tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Outbox item not found")
     if o.status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, f"Outbox item already {o.status}")
 
@@ -637,10 +660,36 @@ async def send_outbox_item(
     step = (await db.exec(select(NurtureStep).where(NurtureStep.id == o.step_id))).first()
     contact = (await db.exec(select(Contact).where(Contact.id == o.contact_id))).first()
     enrollment = (await db.exec(
-        select(NurtureEnrollment).where(NurtureEnrollment.id == o.enrollment_id)
+        select(NurtureEnrollment)
+        .where(NurtureEnrollment.id == o.enrollment_id)
+        .with_for_update()
     )).first()
     if not step or not contact or not enrollment:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Outbox references missing data")
+    if enrollment.status != "active":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Enrollment already {enrollment.status}")
+
+    # Guard: only send if this outbox still matches the enrollment's current step
+    steps = (await db.exec(
+        select(NurtureStep)
+        .where(NurtureStep.sequence_id == enrollment.sequence_id)
+        .order_by(col(NurtureStep.step_order))
+    )).all()
+    if (
+        enrollment.current_step >= len(steps)
+        or steps[enrollment.current_step].id != o.step_id
+    ):
+        o.status = "skipped"
+        o.error = "stale step — enrollment already advanced"
+        o.reviewed_by = current_user.id
+        o.reviewed_at = utcnow_naive()
+        db.add(o)
+        await db.commit()
+        await db.refresh(o)
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Outbox step no longer matches enrollment current_step",
+        )
 
     now = utcnow_naive()
     sent = await send_nurture_step(contact, step)
@@ -666,20 +715,38 @@ async def skip_outbox_item(
     current_user: User = Depends(require_admin),
 ):
     """Skip one queued email and advance the enrollment to the next step."""
-    o = await _get_scoped_outbox(outbox_id, db, current_user)
+    o = (await db.exec(
+        select(NurtureOutbox).where(NurtureOutbox.id == outbox_id).with_for_update()
+    )).first()
+    if not o:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Outbox item not found")
+    if current_user.tenant_id and o.tenant_id and o.tenant_id != current_user.tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Outbox item not found")
     if o.status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, f"Outbox item already {o.status}")
 
     enrollment = (await db.exec(
-        select(NurtureEnrollment).where(NurtureEnrollment.id == o.enrollment_id)
+        select(NurtureEnrollment)
+        .where(NurtureEnrollment.id == o.enrollment_id)
+        .with_for_update()
     )).first()
     now = utcnow_naive()
     o.status = "skipped"
     o.reviewed_by = current_user.id
     o.reviewed_at = now
     db.add(o)
-    if enrollment:
-        await _advance_enrollment_after_send(db, enrollment)
+    if enrollment and enrollment.status == "active":
+        steps = (await db.exec(
+            select(NurtureStep)
+            .where(NurtureStep.sequence_id == enrollment.sequence_id)
+            .order_by(col(NurtureStep.step_order))
+        )).all()
+        # Only advance if this outbox is still the current step
+        if (
+            enrollment.current_step < len(steps)
+            and steps[enrollment.current_step].id == o.step_id
+        ):
+            await _advance_enrollment_after_send(db, enrollment)
     await db.commit()
     await db.refresh(o)
     return _outbox_dict(o)

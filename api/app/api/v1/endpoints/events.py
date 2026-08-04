@@ -245,9 +245,10 @@ async def _upsert_visitor(
                 tenant = await db.get(Tenant, tenant_id)
                 plan_ok = bool(tenant and get_plan_feature(tenant.plan, "nurture_email"))
             if plan_ok:
-                contact = (await db.exec(
-                    select(Contact).where(Contact.visitor_id == visitor.visitor_id)
-                )).first()
+                cq = select(Contact).where(Contact.visitor_id == visitor.visitor_id)
+                if tenant_id:
+                    cq = cq.where(Contact.tenant_id == tenant_id)
+                contact = (await db.exec(cq)).first()
                 if contact:
                     from app.api.v1.endpoints.nurture import trigger_nurture_for_contact
                     await trigger_nurture_for_contact(
