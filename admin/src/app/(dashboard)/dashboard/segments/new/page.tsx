@@ -155,7 +155,7 @@ export default function NewSegmentPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <h1 className="text-2xl font-bold">新增受眾分群</h1>
+      <h1 className="text-2xl font-bold">新增買家分群</h1>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
@@ -165,7 +165,7 @@ export default function NewSegmentPage() {
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
               <Label>分群名稱 *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} placeholder="例：高意圖台灣訪客" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} placeholder="例：高關注台灣訪客" />
             </div>
             <div className="space-y-1.5">
               <Label>說明</Label>
@@ -215,10 +215,10 @@ export default function NewSegmentPage() {
                     {cond.field === "intent_stage" ? (
                       <select className={SELECT_CLS} value={cond.value} onChange={(e) => updateCondition(idx, { value: e.target.value })}>
                         <option value="">請選擇</option>
-                        <option value="cold">Cold</option>
-                        <option value="warm">Warm</option>
-                        <option value="hot">Hot</option>
-                        <option value="sales_ready">Sales Ready</option>
+                        <option value="cold">初次瀏覽</option>
+                        <option value="warm">多次互動</option>
+                        <option value="hot">高度關注</option>
+                        <option value="sales_ready">可成交</option>
                       </select>
                     ) : (
                       <Input value={cond.value} onChange={(e) => updateCondition(idx, { value: e.target.value })} placeholder={cond.field === "intent_score" ? "例：50" : "值"} />

@@ -60,7 +60,7 @@ export default function CertificationForm({ initial, id }: Props) {
       if (id) { await certificationsApi.update(token, id, form); }
       else { await certificationsApi.create(token, form); }
       router.push("/dashboard/certifications");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -76,7 +76,7 @@ export default function CertificationForm({ initial, id }: Props) {
             <Input {...f("cert_name")} required maxLength={200} />
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required maxLength={120} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -104,11 +104,11 @@ export default function CertificationForm({ initial, id }: Props) {
             <Textarea {...f("description")} rows={3} />
           </div>
           <div className="space-y-1.5">
-            <Label>徽章圖片 URL</Label>
+            <Label>徽章圖片網址</Label>
             <Input {...f("badge_image_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>文件 URL</Label>
+            <Label>文件網址</Label>
             <Input {...f("document_url")} type="url" />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -126,9 +126,9 @@ export default function CertificationForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
           </div>

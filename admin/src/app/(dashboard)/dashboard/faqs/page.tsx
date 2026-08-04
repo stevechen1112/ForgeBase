@@ -86,8 +86,8 @@ export default function FAQsListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">FAQ 管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">維護常見問題庫，支援商品頁與場景頁內嵌顯示，並產生 SEO 結構化標記</p>
+          <h1 className="text-2xl font-bold tracking-tight">常見問題</h1>
+          <p className="mt-1 text-sm text-muted-foreground">維護常見問答，可顯示在產品頁與應用頁，也有助搜尋引擎理解</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -100,7 +100,7 @@ export default function FAQsListPage() {
               <option key={tag} value={tag}>{tag}</option>
             ))}
           </select>
-          <Button asChild><Link href="/dashboard/faqs/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增 FAQ</Link></Button>
+          <Button asChild><Link href="/dashboard/faqs/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增常見問題</Link></Button>
         </div>
       </div>
       <DataTable columns={COLUMNS} rows={filteredRows} editBasePath="/dashboard/faqs" onDelete={handleDelete} isDeleting={deleting} />

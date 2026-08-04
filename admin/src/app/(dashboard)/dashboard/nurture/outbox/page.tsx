@@ -71,8 +71,8 @@ export default function NurtureOutboxPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">待寄佇列</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">排程把到期的培育信先排進這裡，經你放行才會真正寄出。</p>
+          <h1 className="text-2xl font-bold tracking-tight">待寄郵件</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">到期的跟進郵件會先進入此佇列，確認後始可寄出。</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -84,7 +84,7 @@ export default function NurtureOutboxPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">待放行（{items.length}）</CardTitle>
+          <CardTitle className="text-base">待確認（{items.length}）</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -92,7 +92,7 @@ export default function NurtureOutboxPage() {
           ) : items.length === 0 ? (
             <div className="py-12 text-center">
               <Inbox className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">目前沒有待寄的培育信</p>
+              <p className="text-sm text-muted-foreground">目前沒有待寄的跟進郵件</p>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -117,7 +117,7 @@ export default function NurtureOutboxPage() {
                     <td className="px-4 py-2 text-right">
                       <div className="inline-flex gap-2">
                         <Button size="sm" disabled={acting === o.id} onClick={() => act(o.id, "send")}>
-                          <Send className="mr-1 h-3.5 w-3.5" />放行寄出
+                          <Send className="mr-1 h-3.5 w-3.5" />確認寄出
                         </Button>
                         <Button size="sm" variant="outline" disabled={acting === o.id} onClick={() => act(o.id, "skip")}>
                           <SkipForward className="mr-1 h-3.5 w-3.5" />略過

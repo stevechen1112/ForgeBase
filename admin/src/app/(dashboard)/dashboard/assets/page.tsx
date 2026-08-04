@@ -68,8 +68,8 @@ export default function AssetsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">媒體庫</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理上傳的圖片、PDF 規格書與其他資產</p>
+          <h1 className="text-2xl font-bold tracking-tight">圖片與檔案</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理產品圖、PDF 規格書與其他檔案</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -84,7 +84,7 @@ export default function AssetsPage() {
           <option value="image">圖片</option>
           <option value="doc">文件</option>
         </select>
-        {meta && <span className="self-center text-sm text-muted-foreground">共 {meta.total} 筆資產</span>}
+        {meta && <span className="self-center text-sm text-muted-foreground">共 {meta.total} 筆檔案</span>}
       </div>
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}

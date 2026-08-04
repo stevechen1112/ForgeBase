@@ -206,7 +206,7 @@ async def on_hot_visitor(visitor_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
                 contact_info = f"身份：{name} / {company}（{email}）\n"
 
     msg = (
-        f"{stage_icon} <b>高意圖訪客偵測</b>\n\n"
+        f"{stage_icon} <b>高關注訪客偵測</b>\n\n"
         f"Stage：<b>{stage}</b>（分數 {score}）\n"
         f"{contact_info}"
         f"來源國：{country}\n"

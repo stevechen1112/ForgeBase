@@ -53,11 +53,24 @@ const STATUS_COLOR: Record<string, string> = {
   handoff_completed: "bg-blue-100 text-blue-800",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  active: "進行中",
+  handoff_ready: "待業務接手",
+  handoff_completed: "已轉業務接手",
+};
+
 const STAGE_COLOR: Record<string, string> = {
   sales_ready: "bg-red-100 text-red-700",
   hot: "bg-orange-100 text-orange-700",
   warm: "bg-yellow-100 text-yellow-800",
   cold: "bg-gray-100 text-gray-600",
+};
+
+const STAGE_LABEL: Record<string, string> = {
+  sales_ready: "可成交",
+  hot: "高度關注",
+  warm: "觀望中",
+  cold: "初次瀏覽",
 };
 
 export default function ChatDetailPage() {
@@ -161,7 +174,7 @@ export default function ChatDetailPage() {
           </p>
         </div>
         <Badge className={`text-xs ${STATUS_COLOR[detail.status] ?? "bg-muted"}`}>
-          {detail.status.replace("_", " ")}
+          {STATUS_LABEL[detail.status] ?? detail.status}
         </Badge>
       </div>
 
@@ -254,7 +267,7 @@ export default function ChatDetailPage() {
                   <Badge
                     className={`text-xs ${STAGE_COLOR[detail.visitor_intent_stage] ?? ""}`}
                   >
-                    {detail.visitor_intent_stage}
+                    {STAGE_LABEL[detail.visitor_intent_stage] ?? detail.visitor_intent_stage}
                   </Badge>
                 </div>
               )}

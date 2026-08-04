@@ -6,10 +6,20 @@ import { useAuth } from "@/lib/auth/store";
 import { strategiesApi, type ContentStrategy } from "@/lib/api/content";
 
 const PAGE_TYPES = ["product", "application", "category", "faq", "comparison", "certification", "page", "other"];
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  application: "應用場景",
+  category: "商品分類",
+  faq: "常見問題",
+  comparison: "比較",
+  certification: "認證",
+  page: "頁面",
+  other: "其他",
+};
 const STATUSES: ContentStrategy["status"][] = ["unplanned", "brief_created", "ai_generated", "in_review", "published"];
 const STATUS_LABELS: Record<string, string> = {
   unplanned: "未規劃",
-  brief_created: "摘要已建",
+  brief_created: "大綱已建",
   ai_generated: "AI 已生成",
   in_review: "審核中",
   published: "已發布",
@@ -70,7 +80,7 @@ export default function EditStrategyPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link href="/dashboard/strategies" className="text-xs text-muted-foreground hover:underline">← 返回策略地圖</Link>
+        <Link href="/dashboard/strategies" className="text-xs text-muted-foreground hover:underline">← 返回內容策略</Link>
         <h1 className="text-2xl font-semibold text-foreground mt-2">編輯內容策略</h1>
       </div>
 
@@ -83,7 +93,7 @@ export default function EditStrategyPage() {
               onChange={(e) => setForm({ ...form, page_type: e.target.value })}
               className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {PAGE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {PAGE_TYPES.map((t) => <option key={t} value={t}>{PAGE_TYPE_LABELS[t] ?? t}</option>)}
             </select>
           </div>
           <div>
@@ -100,7 +110,7 @@ export default function EditStrategyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">實體類型</label>
+            <label className="block text-sm font-medium text-foreground mb-1">內容類型</label>
             <input
               type="text"
               value={form.entity_type}
@@ -109,7 +119,7 @@ export default function EditStrategyPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">實體 ID</label>
+            <label className="block text-sm font-medium text-foreground mb-1">內容編號</label>
             <input
               type="text"
               value={form.entity_id}
@@ -121,7 +131,7 @@ export default function EditStrategyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Brief ID</label>
+            <label className="block text-sm font-medium text-foreground mb-1">寫作大綱編號</label>
             <input
               type="text"
               value={form.brief_id}

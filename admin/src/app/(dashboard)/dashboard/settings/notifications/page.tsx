@@ -24,10 +24,10 @@ type NotificationPref = {
 
 const TOGGLE_LABELS: { key: keyof NotificationPref; label: string; desc: string }[] = [
   { key: "notify_new_rfq", label: "新 RFQ 通知", desc: "有新詢價時立即推送，含 AI 摘要" },
-  { key: "notify_hot_visitor", label: "高意圖訪客警報", desc: "訪客進入 hot 或 sales_ready 時通知" },
+  { key: "notify_hot_visitor", label: "高關注訪客警報", desc: "訪客進入「高度關注」或「可成交」時通知" },
   { key: "notify_daily_summary", label: "每日營運摘要", desc: "每日 08:00 推送前一天數據摘要" },
-  { key: "notify_churn_risk", label: "客戶流失預警", desc: "已識別客戶 intent score 下降時通知" },
-  { key: "notify_chat_handoff", label: "Chat 人工接手", desc: "AI 聊天機器人轉交人工時通知" },
+  { key: "notify_churn_risk", label: "客戶流失預警", desc: "已識別客戶的關注分數下降時通知" },
+  { key: "notify_chat_handoff", label: "對話轉業務接手", desc: "官網 AI 對話轉交業務時通知" },
   { key: "notify_content_suggestion", label: "內容優化建議", desc: "AI 偵測到頁面需優化時推薦（低頻）" },
 ];
 
@@ -161,9 +161,9 @@ export default function NotificationSettingsPage() {
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">AI 行銷專員通知設定</h1>
+        <h1 className="text-2xl font-bold tracking-tight">AI 行銷助理通知設定</h1>
         <p className="text-muted-foreground mt-1">
-          設定 AI 行銷專員的通知管道和事件偏好，讓重要事件主動送到你的口袋。
+          設定 Telegram／LINE 等通知管道，以及新詢價、熱門買家等事件偏好。
         </p>
       </div>
 
@@ -194,7 +194,7 @@ export default function NotificationSettingsPage() {
         {telegramPref ? (
           <p className="text-sm text-muted-foreground">
             已成功綁定 Telegram（chat_id: {telegramPref.channel_config?.chat_id}）。
-            AI 行銷專員通知將推送到此帳號。
+            AI 行銷助理通知將推送到此帳號。
           </p>
         ) : bindStep === "done" ? (
           <p className="text-sm text-green-600">✅ 綁定完成！請重新整理頁面查看狀態。</p>

@@ -68,18 +68,18 @@ export default function NurturePage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">潛客培育信</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">依買家階段觸發自動培育郵件（Warm / Hot 進入序列，第 0/3/7 天逐步跟進）。</p>
+          <h1 className="text-2xl font-bold tracking-tight">跟進郵件</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依買家關注程度排程跟進郵件；須經核准後始可寄出（如第 0／3／7 天）。</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
           </Button>
           <Button size="sm" onClick={() => router.push("/dashboard/nurture/new")}>
-            <PlusCircle className="mr-2 h-4 w-4" />新增序列
+            <PlusCircle className="mr-2 h-4 w-4" />新增流程
           </Button>
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/nurture/outbox")}>
-            <ListChecks className="mr-2 h-4 w-4" />待寄佇列
+            <ListChecks className="mr-2 h-4 w-4" />待寄郵件
           </Button>
         </div>
       </div>
@@ -92,11 +92,11 @@ export default function NurturePage() {
 
       <div className="mb-4 grid grid-cols-2 gap-4">
         <Card><CardContent className="pt-4 pb-4">
-          <p className="text-sm text-muted-foreground">序列總數</p>
+          <p className="text-sm text-muted-foreground">流程總數</p>
           <p className="mt-1 text-3xl font-bold">{sequences.length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
-          <p className="text-sm text-muted-foreground">註冊中的人數</p>
+          <p className="text-sm text-muted-foreground">進行中的人數</p>
           <p className="mt-1 text-3xl font-bold">{enrollments.length}</p>
         </CardContent></Card>
       </div>
@@ -105,7 +105,7 @@ export default function NurturePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Mail className="h-4 w-4 text-primary" />培育序列
+              <Mail className="h-4 w-4 text-primary" />跟進流程
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -114,7 +114,7 @@ export default function NurturePage() {
             ) : sequences.length === 0 ? (
               <div className="py-12 text-center">
                 <Mail className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">尚未建立任何培育序列</p>
+                <p className="text-sm text-muted-foreground">尚未建立任何跟進流程</p>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -155,14 +155,14 @@ export default function NurturePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <ListChecks className="h-4 w-4 text-muted-foreground" />最近註冊
+              <ListChecks className="h-4 w-4 text-muted-foreground" />最近加入
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {enrollments.length === 0 ? (
               <div className="py-12 text-center">
                 <ListChecks className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">尚無註冊紀錄</p>
+                <p className="text-sm text-muted-foreground">尚無加入紀錄</p>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -171,7 +171,7 @@ export default function NurturePage() {
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">聯絡人 ID</th>
                     <th className="px-4 py-2 text-center font-medium text-muted-foreground">狀態</th>
                     <th className="px-4 py-2 text-center font-medium text-muted-foreground">目前步驟</th>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">註冊時間</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">加入時間</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">

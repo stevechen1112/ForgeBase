@@ -117,6 +117,49 @@ const PAGE_TYPE_ICONS: Record<string, React.ElementType> = {
   unknown: Search,
 };
 
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  category: "商品分類",
+  application: "應用場景",
+  faq: "常見問題",
+  certification: "認證",
+  resource: "資源下載",
+  company: "公司資訊",
+  contact: "聯絡我們",
+  blog: "文章",
+  unknown: "未分類",
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  product_name: "商品名稱",
+  category_name: "分類名稱",
+  application_name: "應用場景名稱",
+  slug: "網址路徑",
+  description: "描述",
+  short_description: "短描述",
+  full_description: "完整描述",
+  seo_title: "搜尋標題",
+  seo_description: "搜尋說明",
+  hero_image_url: "主圖網址",
+  og_image_url: "分享預覽圖網址",
+  industry: "產業",
+  challenge: "客戶痛點",
+  solution: "解決方案",
+  question: "問題",
+  answer: "答案",
+  certification_name: "認證名稱",
+  issuer: "頒發機構",
+  capability_name: "廠能名稱",
+};
+
+function pageTypeLabel(type: string): string {
+  return PAGE_TYPE_LABELS[type] ?? type;
+}
+
+function fieldLabel(key: string): string {
+  return FIELD_LABELS[key] ?? key.replace(/_/g, " ");
+}
+
 const REVIEW_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "待審", variant: "outline" },
   accepted: { label: "✓ 接受", variant: "default" },
@@ -276,7 +319,7 @@ export default function IntakePage() {
     setError(null);
     try {
       const result = await intakeApi<{ committed?: { entities?: number; redirects?: number; briefs?: number } }>(`/projects/${selectedProject.id}/commit`, token, { method: "POST" });
-      setSuccess(`匯入完成！實體: ${result.committed?.entities ?? 0}, Redirect: ${result.committed?.redirects ?? 0}, Brief: ${result.committed?.briefs ?? 0}`);
+      setSuccess(`匯入完成！內容項目: ${result.committed?.entities ?? 0}, 轉址: ${result.committed?.redirects ?? 0}, 寫作大綱: ${result.committed?.briefs ?? 0}`);
       await loadProjectDetail(selectedProject);
     } catch (err) {
       setError(err instanceof Error ? err.message : "匯入失敗");
@@ -332,7 +375,7 @@ export default function IntakePage() {
         },
       });
       setEditingEntity(null);
-      setSuccess("實體資料已更新");
+      setSuccess("內容項目資料已更新");
       await loadProjectDetail(selectedProject);
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新失敗");
@@ -355,8 +398,8 @@ export default function IntakePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Legacy Site Intake</h1>
-            <p className="text-muted-foreground">將舊型錄網站轉為 ForgeBase 結構化內容</p>
+            <h1 className="text-2xl font-bold">舊站匯入</h1>
+            <p className="text-muted-foreground">將舊型錄網站內容匯入本系統，供後續編輯與上架</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={loadProjects} disabled={loading}>
@@ -437,7 +480,7 @@ export default function IntakePage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right text-sm text-muted-foreground">
-                        <div>{p.total_urls_found} 頁面 · {p.total_entities_extracted} 實體</div>
+                        <div>{p.total_urls_found} 頁面 · {p.total_entities_extracted} 內容項目</div>
                         <div>{relativeTime(p.updated_at)}</div>
                       </div>
                       <Badge variant={st.variant}>{st.label}</Badge>
@@ -487,7 +530,7 @@ export default function IntakePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">導入流程</CardTitle>
-          <CardDescription>依序執行：探索 → 審核 URL → 抽取實體 → 審核實體 → 匯入 ForgeBase</CardDescription>
+          <CardDescription>依序執行：探索 → 審核網址 → 抽取內容 → 審核內容 → 匯入系統</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -518,7 +561,7 @@ export default function IntakePage() {
               size="sm"
             >
               {actionLoading === "commit" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              3. 匯入 ForgeBase
+              3. 匯入系統
             </Button>
           </div>
           {(selectedProject.status === "crawling" || selectedProject.status === "extracting") && (
@@ -542,19 +585,19 @@ export default function IntakePage() {
           <Card>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">{summary.total_entities}</div>
-              <div className="text-sm text-muted-foreground">抽取實體</div>
+              <div className="text-sm text-muted-foreground">抽取內容項目</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">{summary.total_redirects}</div>
-              <div className="text-sm text-muted-foreground">Redirect 候選</div>
+              <div className="text-sm text-muted-foreground">轉址候選</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">{summary.total_briefs}</div>
-              <div className="text-sm text-muted-foreground">PageBrief 草稿</div>
+              <div className="text-sm text-muted-foreground">寫作大綱草稿</div>
             </CardContent>
           </Card>
         </div>
@@ -569,11 +612,11 @@ export default function IntakePage() {
             {pendingUrls > 0 && <Badge variant="secondary" className="ml-2">{pendingUrls}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="entities">
-            實體 ({entities.length})
+            內容項目 ({entities.length})
             {pendingEntities > 0 && <Badge variant="secondary" className="ml-2">{pendingEntities}</Badge>}
           </TabsTrigger>
-          <TabsTrigger value="redirects">Redirect ({redirects.length})</TabsTrigger>
-          <TabsTrigger value="briefs">PageBrief ({briefs.length})</TabsTrigger>
+          <TabsTrigger value="redirects">轉址 ({redirects.length})</TabsTrigger>
+          <TabsTrigger value="briefs">寫作大綱 ({briefs.length})</TabsTrigger>
         </TabsList>
 
         {/* Overview tab */}
@@ -614,7 +657,7 @@ export default function IntakePage() {
               {summary.total_entities > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">實體抽取結果</CardTitle>
+                    <CardTitle className="text-base">內容抽取結果</CardTitle>
                     <CardDescription>從網站內容中萃取的結構化資料</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -649,9 +692,9 @@ export default function IntakePage() {
                   <div className="space-y-4">
                     {[
                       { label: "URL 頁面", total: urls.length, accepted: urls.filter(u => u.review_status === "accepted").length, skipped: urls.filter(u => u.review_status === "skipped").length },
-                      { label: "實體", total: entities.length, accepted: entities.filter(e => e.review_status === "accepted").length, skipped: entities.filter(e => e.review_status === "skipped").length },
-                      { label: "Redirect", total: redirects.length, accepted: redirects.filter(r => r.review_status === "accepted").length, skipped: redirects.filter(r => r.review_status === "skipped").length },
-                      { label: "PageBrief", total: briefs.length, accepted: briefs.filter(b => b.review_status === "accepted").length, skipped: briefs.filter(b => b.review_status === "skipped").length },
+                      { label: "內容項目", total: entities.length, accepted: entities.filter(e => e.review_status === "accepted").length, skipped: entities.filter(e => e.review_status === "skipped").length },
+                      { label: "轉址", total: redirects.length, accepted: redirects.filter(r => r.review_status === "accepted").length, skipped: redirects.filter(r => r.review_status === "skipped").length },
+                      { label: "寫作大綱", total: briefs.length, accepted: briefs.filter(b => b.review_status === "accepted").length, skipped: briefs.filter(b => b.review_status === "skipped").length },
                     ].map(item => {
                       const reviewed = item.accepted + item.skipped;
                       const pct = item.total > 0 ? Math.round((reviewed / item.total) * 100) : 0;
@@ -694,7 +737,7 @@ export default function IntakePage() {
                     <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
                       <Zap className="h-5 w-5 text-primary" />
                       <div className="flex-1">
-                        <div className="font-medium">啟動 AI 實體抽取</div>
+                        <div className="font-medium">啟動 AI 內容抽取</div>
                         <div className="text-sm text-muted-foreground">AI 將從已分類頁面中抽取產品、分類、應用等結構化資料</div>
                       </div>
                       <Button size="sm" onClick={handleExtract} disabled={actionLoading === "extract"}>
@@ -707,14 +750,14 @@ export default function IntakePage() {
                     <div className="flex items-center gap-3 p-3 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/20">
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                       <div className="flex-1">
-                        <div className="font-medium">一鍵匯入 ForgeBase</div>
+                        <div className="font-medium">一鍵匯入系統</div>
                         <div className="text-sm text-muted-foreground">
-                          將 {acceptedEntities} 個已接受的實體、Redirect 與 PageBrief 匯入 ForgeBase
+                          將 {acceptedEntities} 個已接受的內容項目、轉址與寫作大綱匯入系統
                         </div>
                       </div>
                       <Button size="sm" onClick={handleCommit} disabled={actionLoading === "commit"}>
                         {actionLoading === "commit" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                        匯入 ForgeBase
+                        匯入系統
                       </Button>
                     </div>
                   )}
@@ -723,7 +766,7 @@ export default function IntakePage() {
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                       <div className="flex-1">
                         <div className="font-medium">匯入已完成</div>
-                        <div className="text-sm text-muted-foreground">所有資料已匯入 ForgeBase，請前往 PageBrief 頁面啟動 AI 內容生成</div>
+                        <div className="text-sm text-muted-foreground">所有資料已匯入系統，請前往「寫作大綱」啟動 AI 內容產生</div>
                       </div>
                     </div>
                   )}
@@ -757,7 +800,7 @@ export default function IntakePage() {
                 const Icon = PAGE_TYPE_ICONS[type] || Search;
                 return (
                   <Badge key={type} variant="outline" className="gap-1 py-1">
-                    <Icon className="h-3 w-3" /> {type}: {count}
+                    <Icon className="h-3 w-3" /> {pageTypeLabel(type)}: {count}
                   </Badge>
                 );
               })}
@@ -823,7 +866,7 @@ export default function IntakePage() {
                 const Icon = PAGE_TYPE_ICONS[type] || Search;
                 return (
                   <Badge key={type} variant="outline" className="gap-1 py-1">
-                    <Icon className="h-3 w-3" /> {type}: {count}
+                    <Icon className="h-3 w-3" /> {pageTypeLabel(type)}: {count}
                   </Badge>
                 );
               })}
@@ -855,7 +898,7 @@ export default function IntakePage() {
                   <TableRow key={e.id}>
                     <TableCell>
                       <Badge variant="outline" className="gap-1">
-                        <Icon className="h-3 w-3" /> {e.entity_type}
+                        <Icon className="h-3 w-3" /> {pageTypeLabel(e.entity_type)}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{e.display_name || "—"}</TableCell>
@@ -945,7 +988,7 @@ export default function IntakePage() {
               <TableRow>
                 <TableHead>頁面類型</TableHead>
                 <TableHead>標題草稿</TableHead>
-                <TableHead>建議 Slug</TableHead>
+                <TableHead>建議網址路徑</TableHead>
                 <TableHead>主關鍵字</TableHead>
                 <TableHead>狀態</TableHead>
                 <TableHead className="text-right">操作</TableHead>
@@ -956,7 +999,7 @@ export default function IntakePage() {
                 const rv = REVIEW_BADGE[b.review_status] || { label: b.review_status, variant: "outline" as const };
                 return (
                   <TableRow key={b.id}>
-                    <TableCell><Badge variant="outline">{b.target_page_type}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{pageTypeLabel(b.target_page_type)}</Badge></TableCell>
                     <TableCell className="font-medium">{b.title_draft || "—"}</TableCell>
                     <TableCell className="font-mono text-xs">{b.suggested_slug || "—"}</TableCell>
                     <TableCell>{b.primary_keyword || "—"}</TableCell>
@@ -988,8 +1031,8 @@ export default function IntakePage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">編輯實體：{editingEntity.display_name}</CardTitle>
-                  <CardDescription>類型：{editingEntity.entity_type} · 置信度：{confidencePct(editingEntity.confidence)}</CardDescription>
+                  <CardTitle className="text-base">編輯內容：{editingEntity.display_name}</CardTitle>
+                  <CardDescription>類型：{pageTypeLabel(editingEntity.entity_type)} · 置信度：{confidencePct(editingEntity.confidence)}</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setEditingEntity(null)}>
                   <XCircle className="h-5 w-5" />
@@ -1015,8 +1058,8 @@ export default function IntakePage() {
 
                 return (
                   <div key={key} className="space-y-2">
-                    <Label className="font-semibold capitalize">
-                      {key.replace(/_/g, " ")}
+                    <Label className="font-semibold">
+                      {fieldLabel(key)}
                     </Label>
                     {isArray || isObject ? (
                       <textarea
@@ -1044,7 +1087,7 @@ export default function IntakePage() {
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setEditingEntity(null)}>取消</Button>
                 <Button variant="outline" onClick={() => { reviewItem("entities", editingEntity.id, "skipped"); setEditingEntity(null); }}>
-                  <XCircle className="mr-2 h-4 w-4" /> 跳過此實體
+                  <XCircle className="mr-2 h-4 w-4" /> 跳過此項目
                 </Button>
                 <Button
                   onClick={async () => { await saveEntityEdit(); reviewItem("entities", editingEntity.id, "accepted"); }}

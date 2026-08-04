@@ -238,10 +238,10 @@ async def get_funnel(
     ))
 
     layers = [
-        {"layer": "traffic", "label": "流量（sessions）", "count": traffic},
-        {"layer": "high_intent", "label": "高意圖訪客", "count": high_intent},
-        {"layer": "rfq", "label": "RFQ", "count": rfq_total},
-        {"layer": "qualified_rfq", "label": "Qualified RFQ", "count": qualified},
+        {"layer": "traffic", "label": "流量（瀏覽次數）", "count": traffic},
+        {"layer": "high_intent", "label": "高關注訪客", "count": high_intent},
+        {"layer": "rfq", "label": "詢價單", "count": rfq_total},
+        {"layer": "qualified_rfq", "label": "合格詢價", "count": qualified},
         {"layer": "quoted", "label": "報價送出", "count": quoted},
         {"layer": "negotiation", "label": "進入談判", "count": negotiation},
         {"layer": "won", "label": "成交", "count": won},
@@ -342,7 +342,7 @@ async def get_task_queue(
         },
         {
             "type": "hot_visitor_unassigned",
-            "title": "Hot 訪客未跟進（72h 內活躍、未送 RFQ）",
+            "title": "高關注訪客未跟進（72 小時內活躍、尚未送出詢價）",
             "count": len(hot_without_rfq),
             "severity": "medium" if hot_without_rfq else "none",
             "items": [

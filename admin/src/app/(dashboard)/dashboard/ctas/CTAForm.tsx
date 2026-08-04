@@ -49,7 +49,7 @@ export default function CTAForm({ initial, id }: Props) {
       if (id) { await ctasApi.update(token, id, form); }
       else { await ctasApi.create(token, form); }
       router.push("/dashboard/ctas");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -58,20 +58,20 @@ export default function CTAForm({ initial, id }: Props) {
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">CTA 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">行動按鈕設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>CTA Key *</Label>
-              <Input className="font-mono" {...f("cta_key")} required maxLength={80} placeholder="e.g. hero_home" />
+              <Label>按鈕代碼 *</Label>
+              <Input className="font-mono" {...f("cta_key")} required maxLength={80} placeholder="例：home_rfq" />
             </div>
             <div className="space-y-1.5">
-              <Label>CTA 類型</Label>
+              <Label>按鈕類型</Label>
               <select className={SELECT_CLS} {...f("cta_type")}>
-                <option value="banner">Banner</option>
-                <option value="popup">Popup</option>
-                <option value="inline">Inline</option>
-                <option value="sticky">Sticky Bar</option>
+                <option value="banner">橫幅</option>
+                <option value="popup">彈出視窗</option>
+                <option value="inline">內嵌</option>
+                <option value="sticky">固定底欄</option>
               </select>
             </div>
           </div>
@@ -91,23 +91,23 @@ export default function CTAForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>按鈕動作</Label>
               <select className={SELECT_CLS} {...f("button_action")}>
-                <option value="link">Link</option>
-                <option value="modal">Modal</option>
-                <option value="scroll">Scroll</option>
+                <option value="link">開啟連結</option>
+                <option value="modal">開啟視窗</option>
+                <option value="scroll">捲動至區塊</option>
               </select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>按鈕目標 URL</Label>
+            <Label>按鈕連結</Label>
             <Input {...f("button_url")} maxLength={500} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>背景顏色 (hex)</Label>
+              <Label>背景顏色</Label>
               <Input {...f("bg_color")} maxLength={20} placeholder="#1d4ed8" />
             </div>
             <div className="space-y-1.5">
-              <Label>背景圖片 URL</Label>
+              <Label>背景圖片網址</Label>
               <Input {...f("image_url")} type="url" />
             </div>
           </div>
@@ -126,19 +126,19 @@ export default function CTAForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>目標意圖階段</Label>
+              <Label>目標關注程度</Label>
               <select className={SELECT_CLS} {...f("target_intent_stage")}>
-                <option value="any">不限 (Any)</option>
-                <option value="cold">Cold — 初次瀏覽</option>
-                <option value="warm">Warm — 多次互動</option>
-                <option value="hot">Hot — 高意圖</option>
+                <option value="any">不限</option>
+                <option value="cold">初次瀏覽</option>
+                <option value="warm">多次互動</option>
+                <option value="hot">高度關注</option>
               </select>
             </div>
             <div className="space-y-1.5">

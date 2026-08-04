@@ -125,9 +125,9 @@ export default function ReplyTemplatesPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">回覆範本庫</h1>
+          <h1 className="text-2xl font-bold tracking-tight">回覆範本</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            依產品線／國家／語系維護的第一封回覆範本；RFQ 詳情的回覆輔助會依買家條件自動匹配。
+            依產品線、國家、語系準備第一封回覆範本；開詢價單時會自動帶出合適範本。
           </p>
         </div>
       </div>

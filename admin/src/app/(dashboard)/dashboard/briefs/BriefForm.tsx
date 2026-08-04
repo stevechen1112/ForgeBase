@@ -14,6 +14,26 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  application: "應用場景",
+  category: "商品分類",
+  comparison: "比較",
+  custom: "自訂",
+};
+
+const BUYER_STAGE_LABELS: Record<string, string> = {
+  awareness: "初步了解",
+  consideration: "評估比較",
+  decision: "準備採購",
+};
+
+const TONE_LABELS: Record<string, string> = {
+  professional: "專業",
+  technical: "技術",
+  friendly: "友善",
+};
+
 type Props = { initial?: Partial<PageBrief>; id?: string };
 
 export default function BriefForm({ initial, id }: Props) {
@@ -51,7 +71,7 @@ export default function BriefForm({ initial, id }: Props) {
       if (id) { await briefsApi.update(token, id, form); }
       else { await briefsApi.create(token, form); }
       router.push("/dashboard/briefs");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -69,7 +89,7 @@ export default function BriefForm({ initial, id }: Props) {
         throw new Error(data?.detail ?? `HTTP ${res.status}`);
       }
       router.push("/dashboard/briefs");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "AI generation failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "AI 產生失敗"); }
     finally { setGenerating(false); }
   };
 
@@ -88,15 +108,13 @@ export default function BriefForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>目標頁面類型 *</Label>
               <select className={SELECT_CLS} {...f("target_page_type")}>
-                <option value="product">Product</option>
-                <option value="application">Application</option>
-                <option value="category">Category</option>
-                <option value="comparison">Comparison</option>
-                <option value="custom">Custom</option>
+                {Object.entries(PAGE_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label>目標 Slug</Label>
+              <Label>目標網址路徑</Label>
               <Input className="font-mono" {...f("target_slug")} maxLength={150} />
             </div>
           </div>
@@ -110,11 +128,11 @@ export default function BriefForm({ initial, id }: Props) {
               <Input {...f("audience_persona")} maxLength={200} placeholder="e.g. 採購工程師" />
             </div>
             <div className="space-y-1.5">
-              <Label>買家歷程階段</Label>
+              <Label>買家關注程度</Label>
               <select className={SELECT_CLS} {...f("buyer_stage")}>
-                <option value="awareness">Awareness</option>
-                <option value="consideration">Consideration</option>
-                <option value="decision">Decision</option>
+                {Object.entries(BUYER_STAGE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -122,7 +140,7 @@ export default function BriefForm({ initial, id }: Props) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 關鍵字設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋關鍵字設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>主要關鍵字</Label>
@@ -142,9 +160,9 @@ export default function BriefForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>文字風格</Label>
               <select className={SELECT_CLS} {...f("tone")}>
-                <option value="professional">Professional</option>
-                <option value="technical">Technical</option>
-                <option value="friendly">Friendly</option>
+                {Object.entries(TONE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -164,7 +182,7 @@ export default function BriefForm({ initial, id }: Props) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>主要 CTA Key</Label>
+            <Label>主要行動按鈕代碼</Label>
             <Input className="font-mono" {...f("main_cta_key")} maxLength={80} />
           </div>
           <div className="space-y-1.5">
@@ -182,7 +200,7 @@ export default function BriefForm({ initial, id }: Props) {
         {id && (
           <Button type="button" variant="secondary" onClick={handleGenerate} disabled={generating}>
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {generating ? "AI 生成中…" : "觸發 AI 生成"}
+            {generating ? "AI 產生中…" : "AI 產生內容"}
           </Button>
         )}
         <Button type="button" variant="outline" onClick={() => router.back()}>取消</Button>

@@ -116,7 +116,7 @@ export default function SequenceDetailPage() {
         body: JSON.stringify({ name, description, trigger_type: triggerType, trigger_value: triggerValue, is_active: isActive }),
       });
       if (!res.ok) throw new Error("儲存失敗");
-      setMessage("序列設定已儲存");
+      setMessage("流程設定已儲存");
       await load();
     } catch (e: unknown) {
       setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`);
@@ -193,7 +193,7 @@ export default function SequenceDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
-          <CardHeader><CardTitle className="text-base">序列設定</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">流程設定</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">名稱</Label>
@@ -206,8 +206,8 @@ export default function SequenceDetailPage() {
             <div className="space-y-1.5">
               <Label className="text-xs">觸發類型</Label>
               <select className={SELECT_CLS} value={triggerType} onChange={(e) => setTriggerType(e.target.value)}>
-                <option value="intent_stage">意圖階段</option>
-                <option value="segment">受眾 Segment</option>
+                <option value="intent_stage">買家關注程度</option>
+                <option value="segment">買家分群</option>
                 <option value="manual">手動</option>
               </select>
             </div>
@@ -286,7 +286,7 @@ export default function SequenceDetailPage() {
                   rows={3}
                   value={newStepBody}
                   onChange={(e) => setNewStepBody(e.target.value)}
-                  placeholder="<p>您好，這是一封培育郵件</p>"
+                  placeholder="<p>您好，這是一封跟進郵件</p>"
                 />
               </div>
               <Button size="sm" disabled={addingStep || !newStepSubject.trim()} onClick={addStep}>
@@ -300,11 +300,11 @@ export default function SequenceDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">註冊紀錄（{enrollments.length}）</CardTitle>
+          <CardTitle className="text-base">加入紀錄（{enrollments.length}）</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {enrollments.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">此序列尚無註冊</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">此流程尚無買家加入</p>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -312,7 +312,7 @@ export default function SequenceDetailPage() {
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">聯絡人 ID</th>
                   <th className="px-4 py-2 text-center font-medium text-muted-foreground">狀態</th>
                   <th className="px-4 py-2 text-center font-medium text-muted-foreground">目前步驟</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">註冊時間</th>
+                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">加入時間</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">最後寄送</th>
                 </tr>
               </thead>

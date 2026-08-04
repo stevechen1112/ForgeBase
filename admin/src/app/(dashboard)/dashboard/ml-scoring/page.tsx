@@ -66,8 +66,8 @@ export default function MLScoringPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">ML 意圖評分</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">機器學習模型訓練與意圖預測狀態</p>
+          <h1 className="text-2xl font-bold tracking-tight">智慧評分（進階）</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依歷史行為資料預測買家關注程度（進階功能）</p>
         </div>
         <Button variant="outline" size="sm" onClick={loadStatus} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -94,7 +94,11 @@ export default function MLScoringPage() {
             <Brain className={`h-12 w-12 ${status?.trained ? "text-primary" : "text-muted-foreground/40"}`} />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{status?.model_type ?? "Intent Model"}</h2>
+                <h2 className="text-lg font-semibold">
+                  {status?.model_type === "intent_v1" || !status?.model_type
+                    ? "關注度模型"
+                    : status.model_type}
+                </h2>
                 {status?.trained
                   ? <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="mr-1 h-3 w-3" />已訓練</Badge>
                   : <Badge className="bg-gray-100 text-gray-600"><XCircle className="mr-1 h-3 w-3" />未訓練</Badge>}
@@ -157,7 +161,7 @@ export default function MLScoringPage() {
       <Card className="mt-6">
         <CardHeader><CardTitle className="text-base">模型說明</CardTitle></CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>ML 模型使用訪客行為歷史訓練，自動學習哪些行為序列最能預測最終 RFQ 轉換。</p>
+          <p>此模型依訪客行為歷史訓練，用以預測哪些瀏覽模式較可能轉成詢價。</p>
           <ul className="list-inside list-disc space-y-1 pl-2">
             <li>訓練資料：過去所有訪客行為事件與轉換結果</li>
             <li>輸入特徵：page_views、product_views、pdf_downloads、session_count、days_since_first_visit 等</li>

@@ -52,7 +52,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "每日營運",
     items: [
       { label: "每日營運總覽", href: "/dashboard", icon: LayoutDashboard, exact: true },
-      { label: "今日必處理", href: "/dashboard/tasks", icon: ListChecks },
+      { label: "今日待辦", href: "/dashboard/tasks", icon: ListChecks },
       { label: "成果總覽", href: "/dashboard/outcomes", icon: TrendingUp },
       { label: "我的 RFQ", href: "/dashboard/rfqs/my", icon: Inbox, exact: true },
       // 全部 RFQ = 全局看板；Sales 與行銷經理都需要看到
@@ -62,51 +62,51 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "成長分析",
+    title: "找買家與跟進",
     items: [
       {
-        label: "意圖分析", href: "/dashboard/intent", icon: Brain,
+        label: "買家關注度", href: "/dashboard/intent", icon: Brain,
         requiredFeature: "intent_scoring",
         children: [
-          { label: "ML 意圖評分", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true, requiredFeature: "intent_scoring" },
+          { label: "智慧評分（進階）", href: "/dashboard/ml-scoring", icon: Bot, adminOnly: true, requiredFeature: "intent_scoring" },
           // 評分規則屬內容操作層，Sales 不需要設定
-          { label: "評分規則", href: "/dashboard/intent-rules", icon: Scale, requiredFeature: "intent_scoring", salesHidden: true },
+          { label: "關注度規則", href: "/dashboard/intent-rules", icon: Scale, requiredFeature: "intent_scoring", salesHidden: true },
         ],
       },
-      { label: "頁面成效分析", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking", salesHidden: true },
-      { label: "對話管理", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
+      { label: "內容成效", href: "/dashboard/content-performance", icon: BarChart2, requiredFeature: "full_tracking", salesHidden: true },
+      { label: "官網對話", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff" },
       // Sales 不需要 Copilot 操作介面；他們透過通知接收結果
-      { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
-      { label: "Agent 任務佇列", href: "/dashboard/agent-runs", icon: ListOrdered, salesHidden: true },
-      { label: "自訂受眾", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking", salesHidden: true },
-      { label: "潛客培育信", href: "/dashboard/nurture", icon: Mail, requiredFeature: "nurture_email", salesHidden: true,
+      { label: "AI 行銷助理", href: "/dashboard/copilot", icon: Bot, salesHidden: true },
+      { label: "自動任務進度", href: "/dashboard/agent-runs", icon: ListOrdered, salesHidden: true },
+      { label: "買家分群", href: "/dashboard/segments", icon: Target, requiredFeature: "full_tracking", salesHidden: true },
+      { label: "跟進郵件", href: "/dashboard/nurture", icon: Mail, requiredFeature: "nurture_email", salesHidden: true,
         children: [
-          { label: "待寄佇列", href: "/dashboard/nurture/outbox", icon: Inbox, requiredFeature: "nurture_email", salesHidden: true },
+          { label: "待寄郵件", href: "/dashboard/nurture/outbox", icon: Inbox, requiredFeature: "nurture_email", salesHidden: true },
         ],
       },
     ],
   },
   {
-    title: "內容與網站基建",
+    title: "官網內容",
     items: [
       // Sales 需要查閱商品規格以回覆客戶，但不需要管理分類與內容
       { label: "商品管理", href: "/dashboard/products", icon: Package },
       { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen, salesHidden: true },
-      { label: "AI 內容優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation", salesHidden: true },
-      { label: "多語覆蓋率", href: "/dashboard/multilingual", icon: Languages, requiredFeature: "multilingual", salesHidden: true },
-      { label: "策略地圖", href: "/dashboard/strategies", icon: Map, salesHidden: true },
-      { label: "內容摘要", href: "/dashboard/briefs", icon: PenLine, salesHidden: true },
+      { label: "AI 文案優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation", salesHidden: true },
+      { label: "多語進度", href: "/dashboard/multilingual", icon: Languages, requiredFeature: "multilingual", salesHidden: true },
+      { label: "內容策略", href: "/dashboard/strategies", icon: Map, salesHidden: true },
+      { label: "寫作大綱", href: "/dashboard/briefs", icon: PenLine, salesHidden: true },
       { label: "頁面管理", href: "/dashboard/pages", icon: File, salesHidden: true },
-      { label: "媒體庫", href: "/dashboard/assets", icon: Image, salesHidden: true },
+      { label: "圖片與檔案", href: "/dashboard/assets", icon: Image, salesHidden: true },
       { label: "應用場景", href: "/dashboard/applications", icon: Factory, salesHidden: true },
-      { label: "FAQ", href: "/dashboard/faqs", icon: HelpCircle, salesHidden: true },
+      { label: "常見問題", href: "/dashboard/faqs", icon: HelpCircle, salesHidden: true },
       { label: "認證管理", href: "/dashboard/certifications", icon: Trophy, salesHidden: true },
       { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench, salesHidden: true },
-      { label: "CTA 管理", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta", salesHidden: true },
-      // Redirect 規則 / Entity 關聯 屬系統層操作，僅 admin/owner
-      { label: "Redirect 規則", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects", adminOnly: true },
-      { label: "Entity 關聯", href: "/dashboard/relations", icon: Link2, adminOnly: true },
-      { label: "Legacy Site Intake", href: "/dashboard/intake", icon: ClipboardList, adminOnly: true },
+      { label: "行動按鈕", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta", salesHidden: true },
+      // 轉址 / 內容關聯屬系統層操作，僅 admin/owner
+      { label: "舊網址轉址", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects", adminOnly: true },
+      { label: "內容關聯", href: "/dashboard/relations", icon: Link2, adminOnly: true },
+      { label: "舊站匯入", href: "/dashboard/intake", icon: ClipboardList, adminOnly: true },
     ],
   },
   {
@@ -186,7 +186,7 @@ export function Sidebar() {
         <ScrollArea className="flex-1 px-2 py-3">
           <nav className="space-y-5">
             {NAV_GROUPS.map((group) => {
-              const isAdvanced = group.title === "內容與網站基建";
+              const isAdvanced = group.title === "官網內容";
               const visible = group.items.filter((i) =>
                 (!i.adminOnly || canManageSystem) && (!i.salesHidden || !isSales)
                 && !(i.href === "/dashboard/agent-runs" && agentOsOnline !== true)

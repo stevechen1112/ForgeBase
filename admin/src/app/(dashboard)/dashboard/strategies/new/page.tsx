@@ -6,10 +6,20 @@ import { useAuth } from "@/lib/auth/store";
 import { strategiesApi, type ContentStrategy } from "@/lib/api/content";
 
 const PAGE_TYPES = ["product", "application", "category", "faq", "comparison", "certification", "page", "other"];
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  application: "應用場景",
+  category: "商品分類",
+  faq: "常見問題",
+  comparison: "比較",
+  certification: "認證",
+  page: "頁面",
+  other: "其他",
+};
 const STATUSES: ContentStrategy["status"][] = ["unplanned", "brief_created", "ai_generated", "in_review", "published"];
 const STATUS_LABELS: Record<string, string> = {
   unplanned: "未規劃",
-  brief_created: "摘要已建",
+  brief_created: "大綱已建",
   ai_generated: "AI 已生成",
   in_review: "審核中",
   published: "已發布",
@@ -51,7 +61,7 @@ export default function NewStrategyPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link href="/dashboard/strategies" className="text-xs text-muted-foreground hover:underline">← 返回策略地圖</Link>
+        <Link href="/dashboard/strategies" className="text-xs text-muted-foreground hover:underline">← 返回內容策略</Link>
         <h1 className="text-2xl font-semibold text-foreground mt-2">新增內容策略</h1>
       </div>
 
@@ -64,7 +74,7 @@ export default function NewStrategyPage() {
               onChange={(e) => setForm({ ...form, page_type: e.target.value })}
               className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {PAGE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {PAGE_TYPES.map((t) => <option key={t} value={t}>{PAGE_TYPE_LABELS[t] ?? t}</option>)}
             </select>
           </div>
           <div>
@@ -81,20 +91,20 @@ export default function NewStrategyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">實體類型</label>
+            <label className="block text-sm font-medium text-foreground mb-1">內容類型</label>
             <input
               type="text"
-              placeholder="e.g. Product, Application"
+              placeholder="例如：商品、應用場景"
               value={form.entity_type}
               onChange={(e) => setForm({ ...form, entity_type: e.target.value })}
               className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">實體 ID (UUID)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">內容編號</label>
             <input
               type="text"
-              placeholder="e.g. 550e8400-..."
+              placeholder="系統自動產生的唯一編號"
               value={form.entity_id}
               onChange={(e) => setForm({ ...form, entity_id: e.target.value })}
               className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -104,10 +114,10 @@ export default function NewStrategyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Brief ID (UUID)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">寫作大綱編號</label>
             <input
               type="text"
-              placeholder="關聯的摘要 ID"
+              placeholder="關聯的寫作大綱編號"
               value={form.brief_id}
               onChange={(e) => setForm({ ...form, brief_id: e.target.value })}
               className="w-full rounded-md border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

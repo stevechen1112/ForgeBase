@@ -25,17 +25,17 @@ import { Badge } from "@/components/ui/badge";
 
 // ── Feature label map ─────────────────────────────────────────────────────────
 export const FEATURE_LABELS: Record<string, string> = {
-  multilingual: "多語系管理",
-  ai_content_generation: "AI 內容生成",
-  full_tracking: "完整追蹤分析",
-  intent_scoring: "意圖評分",
-  dynamic_cta: "動態 CTA",
-  ai_advisor: "AI 顧問",
-  chat_handoff: "對話管理",
-  notifications: "通知系統",
+  multilingual: "多語進度",
+  ai_content_generation: "AI 文案優化",
+  full_tracking: "訪客與成效追蹤",
+  intent_scoring: "買家關注度",
+  dynamic_cta: "行動按鈕",
+  ai_advisor: "AI 產品顧問",
+  chat_handoff: "官網對話",
+  notifications: "即時通知",
   follow_up_reminders: "跟進提醒",
-  nurture_email: "潛客培育信",
-  seo_redirects: "SEO 轉址規則",
+  nurture_email: "跟進郵件",
+  seo_redirects: "舊網址轉址",
 };
 
 export function featureLabel(key: string): string {

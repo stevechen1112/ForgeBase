@@ -14,7 +14,7 @@ export default function EditBriefPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯摘要：{data.title_draft ?? data.target_page_type}</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯寫作大綱：{data.title_draft ?? data.target_page_type}</h1>
       <BriefForm initial={data} id={id} />
     </div>
   );

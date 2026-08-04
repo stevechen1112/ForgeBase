@@ -41,10 +41,10 @@ type ContactListResponse = {
 
 // API returns lowercase stage names; map to display labels
 const STAGE_DISPLAY: Record<string, string> = {
-  sales_ready: "Sales-Ready",
-  hot: "Hot",
-  warm: "Warm",
-  cold: "Cold",
+  sales_ready: "可成交",
+  hot: "高度關注",
+  warm: "多次互動",
+  cold: "初次瀏覽",
 };
 
 const STAGE_COLOR: Record<string, string> = {
@@ -104,8 +104,8 @@ export default function IntentPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">意圖分析</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">追蹤高意圖個別訪客，找出最值得跟進的潛在買家</p>
+          <h1 className="text-2xl font-bold tracking-tight">買家關注度</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依瀏覽行為辨識高關注買家，協助安排優先跟進</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -122,21 +122,21 @@ export default function IntentPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">最高意圖分數</p>
+            <p className="text-sm text-muted-foreground">最高關注分數</p>
             <p className="mt-2 text-3xl font-bold">{topScore}</p>
-            <p className="text-xs text-muted-foreground">Top 1 訪客</p>
+            <p className="text-xs text-muted-foreground">最高分訪客</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Top 10 平均分數</p>
+            <p className="text-sm text-muted-foreground">前 10 名平均分數</p>
             <p className="mt-2 text-3xl font-bold">{avgScore}</p>
-            <p className="text-xs text-muted-foreground">高意圖訪客均值</p>
+            <p className="text-xs text-muted-foreground">高關注訪客均值</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Sales-Ready（Top 10）</p>
+            <p className="text-sm text-muted-foreground">可成交（前 10 名）</p>
             <p className="mt-2 text-3xl font-bold">{salesReadyCount}</p>
             <p className="text-xs text-muted-foreground">可立即跟進</p>
           </CardContent>
@@ -155,7 +155,7 @@ export default function IntentPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Flame className="h-4 w-4 text-orange-500" />高意圖訪客工作台
+              <Flame className="h-4 w-4 text-orange-500" />高關注訪客
             </CardTitle>
             {/* Intent Score 2.0 facet 篩選（§4.5：依 facet 篩「信任驗證高但尚未 RFQ」名單） */}
             <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -194,9 +194,9 @@ export default function IntentPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客</th>
-                    <th className="px-3 py-2 text-center font-medium text-muted-foreground">Stage</th>
+                    <th className="px-3 py-2 text-center font-medium text-muted-foreground">關注程度</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">分數</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">為何 Hot（facets）</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">關注原因</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">瀏覽頁數</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">最後活動</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">動作</th>
@@ -293,7 +293,7 @@ export default function IntentPage() {
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />顯示 Top {topVisitors.length} 高意圖訪客</span>
+        <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />顯示前 {topVisitors.length} 位高關注訪客</span>
         <span className="flex items-center gap-1"><Thermometer className="h-4 w-4" />已識別聯絡人：{identifiedCount}</span>
       </div>
     </div>

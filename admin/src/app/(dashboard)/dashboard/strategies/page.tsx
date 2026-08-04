@@ -13,7 +13,7 @@ import { apiClient } from "@/lib/api/client";
 
 const STATUS_LABELS: Record<string, string> = {
   unplanned: "未規劃",
-  brief_created: "摘要已建",
+  brief_created: "大綱已建",
   ai_generated: "AI 已生成",
   in_review: "審核中",
   published: "已發布",
@@ -35,6 +35,16 @@ const TIER_STYLES: Record<string, { badge: string; border: string; label: string
 };
 
 const PAGE_TYPES = ["product", "application", "category", "faq", "comparison", "certification", "page", "other"];
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  application: "應用場景",
+  category: "商品分類",
+  faq: "常見問題",
+  comparison: "比較",
+  certification: "認證",
+  page: "頁面",
+  other: "其他",
+};
 
 type StrategyMetric = {
   strategy_id: string;
@@ -104,8 +114,8 @@ export default function StrategiesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">內容策略地圖</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">追蹤每個頁面的內容生命週期狀態</p>
+          <h1 className="text-2xl font-bold tracking-tight">內容策略</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">追蹤各頁內容的規劃與上線狀態</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -174,7 +184,7 @@ export default function StrategiesPage() {
               filter === pt ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            {pt === "all" ? "全部" : pt} ({pt === "all" ? all.length : all.filter((s) => s.page_type === pt).length})
+            {pt === "all" ? "全部" : PAGE_TYPE_LABELS[pt] ?? pt} ({pt === "all" ? all.length : all.filter((s) => s.page_type === pt).length})
           </button>
         ))}
       </div>
@@ -211,7 +221,7 @@ export default function StrategiesPage() {
                     <CardContent className="p-3 space-y-1">
                       <div className="flex items-start justify-between gap-1">
                         <div>
-                          <Badge variant="secondary" className="mb-1">{s.page_type}</Badge>
+                          <Badge variant="secondary" className="mb-1">{PAGE_TYPE_LABELS[s.page_type] ?? s.page_type}</Badge>
                           {tier && (
                             <span className={`inline-block rounded ml-1 px-1 py-0.5 mb-1 ${tierStyle?.badge}`}>
                               {TIER_STYLES[tier].label}
@@ -222,7 +232,7 @@ export default function StrategiesPage() {
                         </div>
                         {s.brief_id && (
                           <span
-                            title="已連結 Brief，可透過 AgentOS AI Workflow 生成"
+                            title="已連結寫作大綱，可透過自動任務產生內容"
                             className="shrink-0 flex items-center gap-0.5 rounded bg-indigo-100 text-indigo-600 px-1 py-0.5"
                           >
                             <Bot className="h-3 w-3" />

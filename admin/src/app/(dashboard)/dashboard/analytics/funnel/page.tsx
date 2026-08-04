@@ -20,10 +20,10 @@ type FunnelData = {
 };
 
 const STAGE_LABELS: Record<string, string> = {
-  cold: "Cold — 初次瀏覽",
-  warm: "Warm — 多次互動",
-  hot: "Hot — 高意圖",
-  sales_ready: "Sales Ready",
+  cold: "初次瀏覽",
+  warm: "多次互動",
+  hot: "高度關注",
+  sales_ready: "可成交",
 };
 
 const STAGE_COLORS: Record<string, string> = {

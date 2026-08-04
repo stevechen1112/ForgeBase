@@ -111,14 +111,14 @@ export default function ProductForm({ initial, id }: Props) {
         }
       } else { await productsApi.create(token, payload); }
       router.push("/dashboard/products");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-      {redirectCreated && <Alert><AlertDescription>✓ Slug 已更新，已自動建立 301 Redirect 規則</AlertDescription></Alert>}
+      {redirectCreated && <Alert><AlertDescription>✓ 網址已更新，已自動建立永久轉址</AlertDescription></Alert>}
 
       <Card>
         <CardHeader><CardTitle className="text-base">產品資訊</CardTitle></CardHeader>
@@ -134,7 +134,7 @@ export default function ProductForm({ initial, id }: Props) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" maxLength={100} />
           </div>
           <div className="space-y-1.5">
@@ -146,21 +146,21 @@ export default function ProductForm({ initial, id }: Props) {
             <Textarea {...f("full_description")} rows={5} />
           </div>
           <div className="space-y-1.5">
-            <Label>規格 (JSON / Markdown)</Label>
+            <Label>規格說明</Label>
             <Textarea {...f("specifications")} rows={4} className="font-mono text-xs" />
           </div>
           <div className="space-y-1.5">
-            <Label>分類 ID</Label>
-            <Input className="font-mono text-xs" {...f("category_id")} placeholder="UUID" />
+            <Label>商品分類</Label>
+            <Input className="font-mono text-xs" {...f("category_id")} placeholder="選擇或填入分類編號" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">草稿 (Draft)</option>
-                <option value="scheduled">⏰ 預約上架 (Scheduled)</option>
-                <option value="published">已上架 (Published)</option>
-                <option value="archived">已封存 (Archived)</option>
+                <option value="draft">草稿</option>
+                <option value="scheduled">預約上架</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -223,25 +223,25 @@ export default function ProductForm({ initial, id }: Props) {
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>SEO Title</Label>
+            <Label>搜尋標題</Label>
             <Input {...f("seo_title")} maxLength={70} />
           </div>
           <div className="space-y-1.5">
-            <Label>SEO Description</Label>
+            <Label>搜尋說明</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
           </div>
           <div className="space-y-1.5">
-            <Label>OG Image URL</Label>
+            <Label>分享預覽圖網址</Label>
             <Input {...f("og_image_url")} type="url" placeholder="https://.../product-og.jpg" />
-            <p className="text-xs text-muted-foreground">建議使用 1200 x 630 的分享圖，供 Open Graph / Twitter Card 使用。</p>
+            <p className="text-xs text-muted-foreground">建議使用 1200 × 630 的分享圖，供社群分享預覽使用。</p>
           </div>
           <div className="space-y-1.5">
-            <Label>主圖 Alt 文字</Label>
+            <Label>主圖替代文字</Label>
             <Input {...f("image_alt")} maxLength={200} placeholder="例：VDE insulated screwdriver set for industrial maintenance" />
-            <p className="text-xs text-muted-foreground">這段文字會用於圖片 SEO、無障礙與結構化資料 ImageObject 描述。</p>
+            <p className="text-xs text-muted-foreground">這段文字會用於圖片說明、無障礙標示與搜尋引擎理解。</p>
           </div>
         </CardContent>
       </Card>

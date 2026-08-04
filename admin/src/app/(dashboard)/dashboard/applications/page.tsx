@@ -81,7 +81,7 @@ export default function ApplicationsListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">應用場景</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理各產業應用場景內容，並與相關商品、FAQ 建立連結，驅動前台場景專頁</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理產業應用場景文案，並連結相關產品與常見問題</p>
         </div>
         <div className="flex items-center gap-3">
           <select

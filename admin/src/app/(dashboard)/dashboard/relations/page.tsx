@@ -45,8 +45,8 @@ export default function RelationsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Entity 關聯管理</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理商品、應用場景、認證、FAQ 之間的多對多關聯，並修復孤立 entity</p>
+          <h1 className="text-2xl font-bold tracking-tight">內容關聯</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理產品、應用、認證與常見問題之間的關聯，並檢視未連結內容</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -61,7 +61,7 @@ export default function RelationsPage() {
           {[
             { label: "孤立商品", count: orphans.orphan_products, icon: Package, color: "text-orange-500", bg: "bg-orange-50 border-orange-200", href: "/dashboard/products" },
             { label: "孤立應用場景", count: orphans.orphan_applications, icon: Globe, color: "text-blue-500", bg: "bg-blue-50 border-blue-200", href: "/dashboard/applications" },
-            { label: "孤立 FAQ", count: orphans.orphan_faqs, icon: HelpCircle, color: "text-purple-500", bg: "bg-purple-50 border-purple-200", href: "/dashboard/faqs" },
+            { label: "孤立常見問題", count: orphans.orphan_faqs, icon: HelpCircle, color: "text-purple-500", bg: "bg-purple-50 border-purple-200", href: "/dashboard/faqs" },
           ].map(({ label, count, icon: Icon, color, bg, href }) => (
             <div key={label} className={`rounded-lg border p-4 ${count > 0 ? bg : "bg-muted/30 border-border"}`}>
               <div className="flex items-center justify-between">
@@ -79,7 +79,7 @@ export default function RelationsPage() {
               </div>
               {count > 0 && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {count} 個 {label}未與任何其他 entity 建立關聯，建議前往{" "}
+                  {count} 個{label}尚未與其他內容建立關聯，建議前往{" "}
                   <Link href={href} className="text-primary hover:underline">編輯介面</Link>設定關聯
                 </p>
               )}
@@ -99,7 +99,7 @@ export default function RelationsPage() {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">商品名稱</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Slug</th>
+                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">網址路徑</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">狀態</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">操作</th>
                 </tr>
@@ -125,7 +125,7 @@ export default function RelationsPage() {
       {orphanFaqs.length > 0 && (
         <div className="mb-6">
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
-            <AlertTriangle className="h-4 w-4 text-purple-500" />孤立 FAQ（{orphanFaqs.length}）
+            <AlertTriangle className="h-4 w-4 text-purple-500" />孤立常見問題（{orphanFaqs.length}）
           </h2>
           <div className="rounded-lg border">
             <table className="w-full text-sm">
@@ -155,8 +155,8 @@ export default function RelationsPage() {
       {orphans && orphans.orphan_products === 0 && orphans.orphan_applications === 0 && orphans.orphan_faqs === 0 && (
         <div className="rounded-lg border-2 border-dashed border-muted p-12 text-center">
           <Link2 className="mx-auto mb-3 h-10 w-10 text-green-500 opacity-70" />
-          <p className="font-semibold text-green-700">所有 Entity 均已建立關聯</p>
-          <p className="mt-1 text-sm text-muted-foreground">系統未偵測到孤立的商品、應用場景或 FAQ</p>
+          <p className="font-semibold text-green-700">所有內容均已建立關聯</p>
+          <p className="mt-1 text-sm text-muted-foreground">系統未偵測到未連結的商品、應用場景或常見問題</p>
         </div>
       )}
     </div>

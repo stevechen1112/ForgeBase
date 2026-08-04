@@ -620,8 +620,8 @@ export default function RFQDetailPage() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">指派負責人</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">使用者 UUID</Label>
-                <Input value={assignTo} onChange={(e) => setAssignTo(e.target.value)} placeholder="使用者 UUID" className="font-mono text-xs" />
+                <Label className="text-xs">成員編號</Label>
+                <Input value={assignTo} onChange={(e) => setAssignTo(e.target.value)} placeholder="負責成員的系統編號" className="font-mono text-xs" />
               </div>
               <Button variant="secondary" className="w-full" onClick={saveAssign} disabled={saving || !assignTo}>
                 指派
@@ -693,17 +693,17 @@ export default function RFQDetailPage() {
             </CardContent>
           </Card>
 
-          {/* AgentOS run lookup */}
+          {/* 自動任務查詢 */}
           <Card className="border-indigo-200">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-1.5">
                 <Bot className="h-4 w-4 text-indigo-500" />
-                AgentOS 任務
+                自動任務查詢
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">輸入 Run ID 查詢狀態</Label>
+                <Label className="text-xs">輸入任務編號查詢狀態</Label>
                 <div className="flex gap-1.5">
                   <Input
                     value={agentRunId}
@@ -740,13 +740,19 @@ export default function RFQDetailPage() {
                   completed: "text-green-700 bg-green-50",
                   failed: "text-red-700 bg-red-50",
                 };
+                const statusLabel: Record<string, string> = {
+                  waiting_approval: "待審批",
+                  running: "執行中",
+                  completed: "已完成",
+                  failed: "失敗",
+                };
                 const pendingApprovals = agentRunView.approvals.filter((a) => a.decision === "pending");
                 return (
                   <div className="space-y-2 rounded-lg border bg-indigo-50/40 px-3 py-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">狀態</span>
                       <span className={`rounded px-1.5 py-0.5 font-medium ${statusCls[run.status] ?? "bg-muted text-muted-foreground"}`}>
-                        {run.status}
+                        {statusLabel[run.status] ?? run.status}
                       </span>
                     </div>
                     <div className="text-muted-foreground">{agentRunView.run_state.summary}</div>
@@ -770,7 +776,7 @@ export default function RFQDetailPage() {
               })()}
               <Link href="/dashboard/agent-runs" className="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
                 <Bot className="h-3 w-3" />
-                查看全部 Agent 任務佇列
+                查看全部自動任務
               </Link>
             </CardContent>
           </Card>

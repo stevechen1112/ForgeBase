@@ -27,10 +27,10 @@ type IntentStageRow = { stage: string; visitors: number };
 type VisitorFunnel = { funnel_stages: IntentStageRow[]; totals: { visitors: number } };
 
 const STAGE_LABEL: Record<string, string> = {
-  cold: "Cold — 初次瀏覽",
-  warm: "Warm — 多次互動",
-  hot: "Hot — 高意圖",
-  sales_ready: "Sales Ready — 可成交",
+  cold: "初次瀏覽",
+  warm: "多次互動",
+  hot: "高度關注",
+  sales_ready: "可成交",
 };
 const STAGE_COLOR: Record<string, string> = {
   cold: "bg-blue-500",
@@ -109,7 +109,7 @@ export default function OutcomesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">成果總覽</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">本月合格詢價、回覆速度、漏斗與內容來源 — 從流量到成交的完整帳</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">本月合格詢價、回覆速度，以及內容帶來的詢價與成交來源</p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -126,7 +126,7 @@ export default function OutcomesPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">本月 Qualified RFQ</p>
+            <p className="text-sm text-muted-foreground">本月合格詢價</p>
             <p className="mt-2 text-3xl font-bold">{outcomes?.qualified_rfq.this_month ?? "—"}</p>
             <p className={`text-xs ${qualifiedDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
               {qualifiedDelta >= 0 ? "▲" : "▼"} {Math.abs(qualifiedDelta)} vs 上月（{outcomes?.qualified_rfq.prev_month ?? "—"}）
@@ -144,7 +144,7 @@ export default function OutcomesPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">SLA 達成率</p>
+            <p className="text-sm text-muted-foreground">回覆時效達成率</p>
             <p className="mt-2 text-3xl font-bold">
               {outcomes?.first_response.sla_rate_pct != null ? `${outcomes.first_response.sla_rate_pct}%` : "—"}
             </p>
@@ -265,7 +265,7 @@ export default function OutcomesPage() {
             </ul>
             <div className="mt-4">
               <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/tasks">前往今日必處理 →</Link>
+                <Link href="/dashboard/tasks">前往今日待辦 →</Link>
               </Button>
             </div>
           </CardContent>
@@ -278,7 +278,7 @@ export default function OutcomesPage() {
               <Filter className="h-4 w-4 text-primary" />訪客意圖分佈（目前快照）
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              各意圖階段的訪客人數，反映累積行為得分（非線性漏斗）；想看個別訪客請前往「意圖分析」
+              各關注階段的訪客人數，反映累積行為得分；想看個別訪客請前往「買家關注度」
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -314,7 +314,7 @@ export default function OutcomesPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4 text-primary" />成交迴路觀察（Intent Facet Lift）
+              <TrendingUp className="h-4 w-4 text-primary" />成交迴路觀察
             </CardTitle>
           </CardHeader>
           <CardContent>

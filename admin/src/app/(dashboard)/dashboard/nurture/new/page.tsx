@@ -50,17 +50,17 @@ export default function NewSequencePage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <h1 className="text-2xl font-bold">新增培育序列</h1>
+      <h1 className="text-2xl font-bold">新增跟進郵件流程</h1>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
       <form onSubmit={handleSubmit}>
         <Card>
-          <CardHeader><CardTitle className="text-base">序列設定</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">流程設定</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>序列名稱 *</Label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required maxLength={200} placeholder="例如：Warm 買家培育" />
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required maxLength={200} placeholder="例如：有興趣買家跟進" />
             </div>
             <div className="space-y-1.5">
               <Label>說明</Label>
@@ -70,8 +70,8 @@ export default function NewSequencePage() {
               <div className="space-y-1.5">
                 <Label>觸發類型</Label>
                 <select className={SELECT_CLS} value={form.trigger_type} onChange={(e) => setForm((f) => ({ ...f, trigger_type: e.target.value }))}>
-                  <option value="intent_stage">意圖階段</option>
-                  <option value="segment">受眾 Segment</option>
+                  <option value="intent_stage">買家關注程度</option>
+                  <option value="segment">買家分群</option>
                   <option value="manual">手動</option>
                 </select>
               </div>
@@ -87,7 +87,7 @@ export default function NewSequencePage() {
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.allow_re_enrollment} onChange={(e) => setForm((f) => ({ ...f, allow_re_enrollment: e.target.checked }))} />
-                允許重複註冊
+                允許重複加入
               </label>
             </div>
           </CardContent>

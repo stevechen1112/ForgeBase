@@ -109,9 +109,9 @@ export default function ContentOptimizerPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">AI 內容優化</h1>
+        <h1 className="text-2xl font-bold tracking-tight">AI 文案優化</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          選擇實體，AI 分析近期流量與轉換數據，給出可執行的優化建議
+          依近期瀏覽與詢價數據，產出可執行的文案優化建議
         </p>
       </div>
 
@@ -120,7 +120,7 @@ export default function ContentOptimizerPage() {
           <CardTitle className="flex items-center gap-2 text-base">
             <Wand2 className="h-4 w-4 text-primary" />選擇分析目標
           </CardTitle>
-          <CardDescription>選擇要優化的實體類型與具體品項</CardDescription>
+          <CardDescription>選擇要優化的內容類型與具體品項</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3 items-end">
@@ -157,7 +157,7 @@ export default function ContentOptimizerPage() {
                   type="text"
                   value={entityId}
                   onChange={e => setEntityId(e.target.value)}
-                  placeholder="輸入 Entity ID"
+                  placeholder="輸入內容編號"
                   className="rounded border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               )}

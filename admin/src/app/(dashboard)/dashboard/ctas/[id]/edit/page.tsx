@@ -14,7 +14,7 @@ export default function EditCTAPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯 CTA：{data.cta_key}</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯行動按鈕：{data.cta_key}</h1>
       <CTAForm initial={data} id={id} />
     </div>
   );

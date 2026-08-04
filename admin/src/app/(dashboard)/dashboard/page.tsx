@@ -344,7 +344,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-1.5">
                   <Bot className="h-4 w-4 text-muted-foreground" />
-                  Agent 任務狀態
+                  自動任務進度
                 </CardTitle>
                 <Link href="/dashboard/agent-runs" className="text-xs text-primary hover:underline flex items-center gap-0.5">
                   查看全部 <ArrowUpRight className="h-3 w-3" />
@@ -353,7 +353,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {agentRuns.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2 text-center">無 Agent 任務紀錄</p>
+                <p className="text-xs text-muted-foreground py-2 text-center">尚無自動任務紀錄</p>
               ) : (
                 <>
                   {(["waiting_approval", "running", "failed", "completed"] as const).map((status) => {
@@ -395,8 +395,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-1.5">
               {[
-                { label: "意圖分析", href: "/dashboard/intent", icon: Eye },
-                { label: "AI 行銷專員", href: "/dashboard/copilot", icon: Sparkles },
+                { label: "買家關注度", href: "/dashboard/intent", icon: Eye },
+                { label: "AI 行銷助理", href: "/dashboard/copilot", icon: Sparkles },
                 { label: "通知中心", href: "/dashboard/notifications", icon: Globe },
                 { label: "整合設定", href: "/dashboard/integrations", icon: MousePointerClick },
               ].map(({ label, href, icon: Icon }) => (

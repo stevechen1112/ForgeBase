@@ -125,8 +125,8 @@ export default function ContentPerformancePage() {
       {/* ── 標題列 ─────────────────────────────────────────────────────────── */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">頁面成效分析</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">各內容類型的流量、訪客與轉換行為統計</p>
+          <h1 className="text-2xl font-bold tracking-tight">內容成效</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">各頁面、商品與應用場景的瀏覽量，以及帶來多少詢價</p>
         </div>
         <div className="flex items-center gap-2">
           {/* 日期選擇 */}

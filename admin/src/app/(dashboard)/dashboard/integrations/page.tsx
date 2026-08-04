@@ -321,7 +321,7 @@ const EMAIL_PROVIDERS = [
     key: "resend",
     service: "resend",
     label: "Resend",
-    desc: "Transactional 郵件（支援作為 active provider）",
+    desc: "交易通知信（可作為主要寄信管道）",
     configuredKey: "resend_configured" as const,
     fields: RESEND_FIELDS,
     statsEndpoint: null,
@@ -331,7 +331,7 @@ const EMAIL_PROVIDERS = [
     key: "sendgrid",
     service: "sendgrid",
     label: "SendGrid",
-    desc: "Transactional + 行銷清單同步",
+    desc: "交易通知與行銷清單同步",
     configuredKey: "sendgrid_configured" as const,
     fields: SENDGRID_FIELDS,
     statsEndpoint: "/esp/sendgrid/stats",
@@ -406,7 +406,7 @@ function EmailSection({ token }: { token: string }) {
           <Mail className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">Email 服務商</CardTitle>
         </div>
-        <CardDescription>Transactional 與行銷郵件服務商憑證管理</CardDescription>
+        <CardDescription>郵件服務商憑證管理</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Active provider status */}
@@ -491,7 +491,7 @@ export default function IntegrationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">整合設定</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          管理所有第三方平台 API 金鑰。憑證經 AES-256 加密後儲存於資料庫，支援多租戶隔離。
+          管理第三方服務金鑰（如 Telegram、郵件服務）。金鑰會加密保存。
         </p>
       </div>
 

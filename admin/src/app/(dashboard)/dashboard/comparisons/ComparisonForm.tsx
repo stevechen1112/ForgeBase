@@ -52,7 +52,7 @@ export default function ComparisonForm({ initial, id }: Props) {
       if (id) { await comparisonsApi.update(token, id, form); }
       else { await comparisonsApi.create(token, form); }
       router.push("/dashboard/comparisons");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -68,7 +68,7 @@ export default function ComparisonForm({ initial, id }: Props) {
             <Input value={form.topic_title} onChange={(e) => handleTitleChange(e.target.value)} required maxLength={200} />
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required maxLength={200} />
           </div>
           <div className="space-y-1.5">
@@ -76,7 +76,7 @@ export default function ComparisonForm({ initial, id }: Props) {
             <Textarea {...f("summary")} rows={3} maxLength={500} />
           </div>
           <div className="space-y-1.5">
-            <Label>比較維度 (JSON 陣列)</Label>
+            <Label>比較維度（JSON 陣列）</Label>
             <Textarea {...f("dimensions")} rows={5} placeholder='[{"label":"重量","options":[{"name":"A","value":"10kg"},{"name":"B","value":"12kg"}]}]' className="font-mono text-xs" />
           </div>
           <div className="space-y-1.5">
@@ -91,9 +91,9 @@ export default function ComparisonForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -112,14 +112,14 @@ export default function ComparisonForm({ initial, id }: Props) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>SEO Title</Label>
+            <Label>搜尋標題</Label>
             <Input {...f("seo_title")} maxLength={70} />
           </div>
           <div className="space-y-1.5">
-            <Label>SEO Description</Label>
+            <Label>搜尋說明</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
           </div>
         </CardContent>

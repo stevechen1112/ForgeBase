@@ -63,7 +63,7 @@ function SyncToEspDialog({ token, segmentId, segmentName }: { token: string; seg
             </Alert>
           )}
           <div className="space-y-1">
-            <label className="text-sm font-medium">ESP 供應商</label>
+            <label className="text-sm font-medium">郵件服務商</label>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={provider}
@@ -73,7 +73,7 @@ function SyncToEspDialog({ token, segmentId, segmentName }: { token: string; seg
               <option value="mailchimp">Mailchimp</option>
             </select>
             <p className="text-xs text-muted-foreground">
-              將此受眾匹配的聯絡人同步到所選 ESP 行銷清單
+              將此分群的聯絡人同步到所選郵件行銷清單
             </p>
           </div>
           <div className="flex justify-end gap-2">
@@ -111,8 +111,8 @@ export default function SegmentsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">自訂受眾</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">依行為條件定義目標族群，用於再行銷受眾與廣告投放</p>
+          <h1 className="text-2xl font-bold tracking-tight">買家分群</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依瀏覽行為定義買家分群，供後續跟進或廣告投放使用</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>

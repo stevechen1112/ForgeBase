@@ -14,7 +14,7 @@ export default function EditFAQPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯 FAQ</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-foreground">編輯常見問題</h1>
       <FAQForm initial={data} id={id} />
     </div>
   );

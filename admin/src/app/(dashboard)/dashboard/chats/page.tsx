@@ -38,6 +38,12 @@ const STATUS_COLOR: Record<string, string> = {
   handoff_completed: "bg-blue-100 text-blue-800",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  active: "進行中",
+  handoff_ready: "待業務接手",
+  handoff_completed: "已轉業務接手",
+};
+
 const STAGE_COLOR: Record<string, string> = {
   sales_ready: "bg-red-100 text-red-700",
   hot: "bg-orange-100 text-orange-700",
@@ -47,7 +53,7 @@ const STAGE_COLOR: Record<string, string> = {
 
 const STAGE_LABEL: Record<string, string> = {
   sales_ready: "可成交",
-  hot: "高意圖",
+  hot: "高度關注",
   warm: "觀望中",
   cold: "初次瀏覽",
 };
@@ -117,9 +123,9 @@ export default function ChatSessionsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">對話管理</h1>
+          <h1 className="text-2xl font-bold tracking-tight">官網對話</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            檢視 AI 客服對話紀錄、評估回答品質、追蹤 handoff 成效
+            查看官網 AI 對話紀錄、回答品質，以及何時轉給業務接手
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -144,7 +150,7 @@ export default function ChatSessionsPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground">Handoff 完成</p>
+            <p className="text-sm text-muted-foreground">已轉業務接手</p>
             <p className="mt-2 text-3xl font-bold">
               {items.filter((s) => s.status === "handoff_completed").length}
             </p>
@@ -182,8 +188,8 @@ export default function ChatSessionsPage() {
         >
           <option value="">所有狀態</option>
           <option value="active">Active</option>
-          <option value="handoff_ready">Handoff Ready</option>
-          <option value="handoff_completed">Handoff Completed</option>
+          <option value="handoff_ready">待業務接手</option>
+          <option value="handoff_completed">已轉業務接手</option>
         </select>
         <select
           className={SELECT_CLS}
@@ -275,7 +281,7 @@ export default function ChatSessionsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={`text-xs ${STATUS_COLOR[s.status] ?? "bg-muted text-muted-foreground"}`}>
-                      {s.status.replace("_", " ")}
+                      {STATUS_LABEL[s.status] ?? s.status}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-center font-medium">{s.message_count}</td>

@@ -59,7 +59,7 @@ export default function RedirectsPage() {
       const data = await redirectsApi.list(token, false);
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "無法載入 Redirect 規則");
+      setError(err instanceof Error ? err.message : "無法載入 舊網址轉址");
     } finally {
       setLoading(false);
     }
@@ -112,10 +112,10 @@ export default function RedirectsPage() {
       }
       if (editingId) {
         await redirectsApi.update(token, editingId, payload);
-        setSuccess("Redirect 規則已更新");
+        setSuccess("轉址規則已更新");
       } else {
         await redirectsApi.create(token, payload);
-        setSuccess("Redirect 規則已建立");
+        setSuccess("轉址規則已建立");
       }
       resetForm();
       await load();
@@ -133,7 +133,7 @@ export default function RedirectsPage() {
     try {
       await redirectsApi.delete(token, id);
       if (editingId === id) resetForm();
-      setSuccess("Redirect 規則已停用");
+      setSuccess("轉址規則已停用");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "停用失敗");
@@ -146,9 +146,9 @@ export default function RedirectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Redirect 規則</h1>
+          <h1 className="text-2xl font-bold tracking-tight">舊網址轉址</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            管理 slug 變更後的 301 / 302 導向，保留既有外部連結與搜尋排名訊號。
+            產品或頁面網址改名後，把舊連結導到新頁，避免客戶點進去找不到。
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -170,9 +170,9 @@ export default function RedirectsPage() {
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle className="text-base">{editingId ? "編輯 Redirect" : "新增 Redirect"}</CardTitle>
+            <CardTitle className="text-base">{editingId ? "編輯轉址" : "新增轉址"}</CardTitle>
             <CardDescription>
-              沿用現有後台設定頁模式，讓 SEO 人員可直接建立永久或暫時導向，不必再請工程師手動處理。
+              產品或頁面網址變更後，可在此建立舊網址至新網址的轉址規則。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -197,14 +197,14 @@ export default function RedirectsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>狀態碼</Label>
+                  <Label>轉址類型</Label>
                   <select
                     className={SELECT_CLS}
                     value={String(form.status_code)}
                     onChange={(e: ChangeEvent<HTMLSelectElement>) => setForm((prev) => ({ ...prev, status_code: Number(e.target.value) as 301 | 302 }))}
                   >
-                    <option value="301">301 Permanent</option>
-                    <option value="302">302 Temporary</option>
+                    <option value="301">永久轉址</option>
+                    <option value="302">暫時轉址</option>
                   </select>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
@@ -229,7 +229,7 @@ export default function RedirectsPage() {
                 />
               </div>
               <div className="rounded-md border border-dashed bg-muted/20 p-3 text-xs text-muted-foreground">
-                建議原則：slug 改版用 301；短期活動頁或 A/B 測試流量轉送才使用 302。
+                建議：網址永久改名選「永久轉址」；短期活動頁才用「暫時轉址」。
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving}>
@@ -254,7 +254,7 @@ export default function RedirectsPage() {
             </div>
             <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="搜尋 Redirect…" className="pl-9" />
+              <Input value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="搜尋轉址規則…" className="pl-9" />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -276,8 +276,8 @@ export default function RedirectsPage() {
                       <div className="flex flex-col items-center gap-3">
                         <Route className="h-10 w-10 opacity-40" />
                         <div>
-                          <p className="font-medium">尚無 Redirect 規則</p>
-                          <p className="text-sm">當頁面 slug 調整或內容合併時，請在這裡補上導向規則。</p>
+                          <p className="font-medium">尚無轉址規則</p>
+                          <p className="text-sm">產品或頁面網址改名時，請在這裡把舊連結導到新頁。</p>
                         </div>
                       </div>
                     </TableCell>

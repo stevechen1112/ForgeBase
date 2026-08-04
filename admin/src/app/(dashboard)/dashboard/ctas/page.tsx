@@ -10,7 +10,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const COLUMNS = [
-  { key: "cta_key", label: "Key", className: "font-mono text-xs w-40" },
+  { key: "cta_key", label: "按鈕代碼", className: "font-mono text-xs w-40" },
   { key: "headline", label: "標題" },
   { key: "cta_type", label: "類型", className: "w-28" },
   { key: "locale", label: "語言", className: "w-20" },
@@ -44,10 +44,10 @@ export default function CTAsListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">CTA 管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理全站行動呼籲模組，依受眾意圖與頁面類型動態顯示最合適的轉換入口</p>
+          <h1 className="text-2xl font-bold tracking-tight">行動按鈕</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理「詢價」「下載」等按鈕，依買家關注程度顯示合適入口</p>
         </div>
-        <Button asChild><Link href="/dashboard/ctas/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增 CTA</Link></Button>
+        <Button asChild><Link href="/dashboard/ctas/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增行動按鈕</Link></Button>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/ctas" onDelete={handleDelete} isDeleting={deleting} />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

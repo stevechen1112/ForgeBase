@@ -72,14 +72,14 @@ export default function PageContentForm({ initial, id }: Props) {
         }
       } else { await pagesApi.create(token, form); }
       router.push("/dashboard/pages");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-      {redirectCreated && <Alert><AlertDescription>✓ Slug 已更新，已自動建立 301 Redirect 規則</AlertDescription></Alert>}
+      {redirectCreated && <Alert><AlertDescription>✓ 網址已更新，已自動建立永久轉址</AlertDescription></Alert>}
 
       <Card>
         <CardHeader><CardTitle className="text-base">頁面設定</CardTitle></CardHeader>
@@ -88,16 +88,16 @@ export default function PageContentForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>頁面類型</Label>
               <select className={SELECT_CLS} {...f("page_type")}>
-                <option value="home">Home</option>
-                <option value="about">About</option>
-                <option value="contact">Contact</option>
-                <option value="landing">Landing</option>
-                <option value="campaign">Campaign</option>
-                <option value="custom">Custom</option>
+                <option value="home">首頁</option>
+                <option value="about">關於我們</option>
+                <option value="contact">聯絡我們</option>
+                <option value="landing">活動頁</option>
+                <option value="campaign">行銷活動</option>
+                <option value="custom">自訂</option>
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label>Slug *</Label>
+              <Label>網址路徑 *</Label>
               <Input className="font-mono" {...f("slug")} required maxLength={200} />
             </div>
           </div>
@@ -110,43 +110,43 @@ export default function PageContentForm({ initial, id }: Props) {
             <Input {...f("subtitle")} maxLength={300} />
           </div>
           <div className="space-y-1.5">
-            <Label>Hero 圖片 URL</Label>
+            <Label>主圖網址</Label>
             <Input {...f("hero_image_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>頁面內容 (HTML / Blocks JSON)</Label>
+            <Label>頁面內容</Label>
             <Textarea
               {...f("body")}
               rows={14}
               className="font-mono text-xs"
               placeholder={'[{"type":"hero","eyebrow":"Industrial Components","title":"Precision Parts for Mission-Critical Programs","description":"Support different manufacturing verticals without rewriting the frontend.","primaryCta":{"label":"Start RFQ","href":"/rfq"}},{"type":"feature-grid","title":"Why Buyers Work With Us","items":[{"title":"Engineering Review","description":"Quote and specification alignment for custom builds."},{"title":"Production Control","description":"Repeat-order consistency across revisions."}]},{"type":"contact-form","title":"Talk to Sales","description":"Use the built-in ForgeBase contact flow."}]'}
             />
-            <p className="text-xs text-muted-foreground">建議優先使用 blocks JSON，讓首頁、About、Contact 與 custom landing pages 可依 tenant 自由組裝。若填入純 HTML，前台也會照一般內容頁渲染。</p>
+            <p className="text-xs text-muted-foreground">建議以區塊內容編輯首頁、關於我們、聯絡我們與落地頁。若填入純 HTML，前台也會正常顯示。</p>
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>SEO Title</Label>
+            <Label>搜尋標題</Label>
             <Input {...f("seo_title")} maxLength={70} />
           </div>
           <div className="space-y-1.5">
-            <Label>SEO Description</Label>
+            <Label>搜尋說明</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
           </div>
           <div className="space-y-1.5">
-            <Label>OG Image URL</Label>
+            <Label>分享預覽圖網址</Label>
             <Input {...f("og_image_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>Canonical URL</Label>
+            <Label>標準網址</Label>
             <Input {...f("canonical_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>Structured Data (JSON-LD)</Label>
+            <Label>結構化資料</Label>
             <Textarea
               value={form.structured_data}
               onChange={(e) => setForm((prev) => ({ ...prev, structured_data: e.target.value }))}
@@ -154,11 +154,11 @@ export default function PageContentForm({ initial, id }: Props) {
               className="font-mono text-xs"
               placeholder='{"@context":"https://schema.org","@type":"WebPage"}'
             />
-            <p className="text-xs text-muted-foreground">直接貼入 JSON-LD。適用於 landing page、FAQ、Article 或客製頁面。</p>
+            <p className="text-xs text-muted-foreground">貼上結構化資料（JSON 格式），供搜尋引擎理解頁面內容。適用於活動頁、常見問題、文章或自訂頁面。</p>
           </div>
           <div className="flex items-start justify-between rounded-lg border bg-muted/20 px-4 py-3">
             <div className="space-y-1 pr-4">
-              <Label htmlFor="page-noindex">Noindex</Label>
+              <Label htmlFor="page-noindex">不索引</Label>
               <p className="text-xs text-muted-foreground">開啟後，頁面會要求搜尋引擎不要索引。適合活動過期頁、測試頁與暫存內容。</p>
             </div>
             <Switch
@@ -182,9 +182,9 @@ export default function PageContentForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
           </div>

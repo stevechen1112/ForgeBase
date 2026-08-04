@@ -39,7 +39,7 @@ export default function ComparisonsListPage() {
 
   const COLUMNS = [
     { key: "topic_title", label: "競品比較主題" },
-    { key: "slug", label: "Slug", className: "w-44 font-mono text-xs" },
+    { key: "slug", label: "網址路徑", className: "w-44 font-mono text-xs" },
     { key: "locale", label: "語言", className: "w-20" },
     {
       key: "status", label: "狀態", className: "w-36",

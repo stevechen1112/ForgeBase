@@ -73,7 +73,7 @@ export default function ApplicationForm({ initial, id }: Props) {
       if (id) { await applicationsApi.update(token, id, form); }
       else { await applicationsApi.create(token, form); }
       router.push("/dashboard/applications");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -95,7 +95,7 @@ export default function ApplicationForm({ initial, id }: Props) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" maxLength={100} />
           </div>
           <div className="space-y-1.5">
@@ -103,15 +103,15 @@ export default function ApplicationForm({ initial, id }: Props) {
             <Textarea {...f("description")} rows={3} />
           </div>
           <div className="space-y-1.5">
-            <Label>挑戰 (Challenge)</Label>
+            <Label>客戶痛點</Label>
             <Textarea {...f("challenge")} rows={3} />
           </div>
           <div className="space-y-1.5">
-            <Label>解決方案 (Solution)</Label>
+            <Label>解決方案</Label>
             <Textarea {...f("solution")} rows={3} />
           </div>
           <div className="space-y-1.5">
-            <Label>Hero Image URL</Label>
+            <Label>主圖網址</Label>
             <Input {...f("hero_image_url")} type="url" />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -122,9 +122,9 @@ export default function ApplicationForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -172,20 +172,20 @@ export default function ApplicationForm({ initial, id }: Props) {
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>SEO Title</Label>
+            <Label>搜尋標題</Label>
             <Input {...f("seo_title")} maxLength={70} />
           </div>
           <div className="space-y-1.5">
-            <Label>SEO Description</Label>
+            <Label>搜尋說明</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
           </div>
           <div className="space-y-1.5">
-            <Label>OG Image URL</Label>
+            <Label>分享預覽圖網址</Label>
             <Input {...f("og_image_url")} type="url" placeholder="https://.../application-og.jpg" />
-            <p className="text-xs text-muted-foreground">若未填寫，前台會回退使用 Hero Image URL。</p>
+            <p className="text-xs text-muted-foreground">若未填寫，前台會改用主圖網址。</p>
           </div>
         </CardContent>
       </Card>

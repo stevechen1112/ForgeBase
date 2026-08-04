@@ -97,11 +97,11 @@ function isValidJson(value: string): boolean {
 
 const JSON_FIELD_LABELS: Record<string, string> = {
   header_nav_json: "Header 導覽",
-  header_actions_json: "Header CTA",
+  header_actions_json: "頁首行動按鈕",
   footer_sections_json: "Footer 區塊",
   footer_badges_json: "Footer 標章",
   social_links_json: "社群連結",
-  asset_manifest_json: "Asset Manifest",
+  asset_manifest_json: "圖片資產設定",
 };
 
 /** 即時格式提示：非空且格式錯誤時顯示紅字，正確時顯示綠勾 */
@@ -197,9 +197,9 @@ export default function SiteProfileSettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">網站外觀與資產設定</h1>
+          <h1 className="text-2xl font-bold tracking-tight">網站外觀設定</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            管理 tenant 的品牌、Header / Footer 結構，以及產品與應用頁面的資產 manifest。
+            管理品牌名稱、頁首／頁尾選單，以及產品與應用頁的圖示設定。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -274,11 +274,11 @@ export default function SiteProfileSettingsPage() {
               value={form.theme_key}
               onChange={(e) => updateField("theme_key", e.target.value)}
             >
-              <option value="cobalt">cobalt</option>
-              <option value="forest">forest</option>
-              <option value="slate">slate</option>
-              <option value="warm">warm</option>
-              <option value="industrial">industrial</option>
+              <option value="cobalt">鈷藍</option>
+              <option value="forest">森林綠</option>
+              <option value="slate">灰藍</option>
+              <option value="warm">暖色</option>
+              <option value="industrial">工業風</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -315,7 +315,7 @@ export default function SiteProfileSettingsPage() {
             <JsonHint value={form.header_nav_json} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="header_actions_json">Header CTA JSON</Label>
+            <Label htmlFor="header_actions_json">頁首行動按鈕（JSON）</Label>
             <Textarea id="header_actions_json" rows={5} value={form.header_actions_json} onChange={(e) => updateField("header_actions_json", e.target.value)} placeholder='[{"href":"/rfq","label":{"en":"Request Quote","zh-TW":"立即詢價"}}]' />
             <JsonHint value={form.header_actions_json} />
           </div>
@@ -341,30 +341,30 @@ export default function SiteProfileSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Footer CTA 與 Asset Manifest</CardTitle>
-          <CardDescription>Asset manifest 會覆蓋首頁 hero、產品分類、應用頁與產品圖片等 demo 預設資產。</CardDescription>
+          <CardTitle>頁尾行動按鈕與圖片資產</CardTitle>
+          <CardDescription>圖片資產設定會覆蓋首頁主圖、產品分類、應用頁與產品圖片等預設素材。</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="footer_cta_title">Footer CTA 標題</Label>
+              <Label htmlFor="footer_cta_title">頁尾行動區標題</Label>
               <Input id="footer_cta_title" value={form.footer_cta_title} onChange={(e) => updateField("footer_cta_title", e.target.value)} placeholder='{"en":"Ready to start?","zh-TW":"準備開始了嗎？"}' />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="footer_cta_label">Footer CTA 按鈕文案</Label>
+              <Label htmlFor="footer_cta_label">頁尾按鈕文案</Label>
               <Input id="footer_cta_label" value={form.footer_cta_label} onChange={(e) => updateField("footer_cta_label", e.target.value)} placeholder='{"en":"Talk to Sales","zh-TW":"聯絡業務"}' />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="footer_cta_description">Footer CTA 描述</Label>
+              <Label htmlFor="footer_cta_description">頁尾行動區說明</Label>
               <Input id="footer_cta_description" value={form.footer_cta_description} onChange={(e) => updateField("footer_cta_description", e.target.value)} placeholder='{"en":"Get a tailored response within 1 business day.","zh-TW":"1 個工作天內取得回覆。"}' />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="footer_cta_href">Footer CTA 連結</Label>
+              <Label htmlFor="footer_cta_href">頁尾按鈕連結</Label>
               <Input id="footer_cta_href" value={form.footer_cta_href} onChange={(e) => updateField("footer_cta_href", e.target.value)} placeholder="/contact" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="asset_manifest_json">Asset Manifest JSON</Label>
+            <Label htmlFor="asset_manifest_json">圖片資產設定（JSON）</Label>
             <Textarea id="asset_manifest_json" rows={12} value={form.asset_manifest_json} onChange={(e) => updateField("asset_manifest_json", e.target.value)} placeholder='{"homeHero":"/uploads/tenant-a/home-hero.jpg","categoryBySlug":{"precision-casting":"/uploads/tenant-a/categories/casting.jpg"},"applicationBySlug":{"medical-components":"/uploads/tenant-a/apps/medical.jpg"},"productByKey":{"MC-1001":"/uploads/tenant-a/products/mc-1001.jpg"}}' />
             <JsonHint value={form.asset_manifest_json} />
           </div>

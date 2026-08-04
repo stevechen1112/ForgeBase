@@ -14,7 +14,7 @@ async function agentFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${AGENTOS_BASE}${path}`, options);
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`AgentOS ${path} → HTTP ${res.status}: ${body}`);
+    throw new Error(`自動任務服務 ${path} 連線失敗（HTTP ${res.status}）`);
   }
   return res.json() as Promise<T>;
 }

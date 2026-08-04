@@ -56,8 +56,8 @@ export default function StrategyPerformancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">策略地圖成效</h1>
-          <p className="text-sm text-gray-500 mt-1">Content strategy entries overlaid with real traffic data</p>
+          <h1 className="text-2xl font-bold text-gray-800">內容策略成效</h1>
+          <p className="text-sm text-gray-500 mt-1">對照內容策略與實際流量，評估主題帶來的買家成效</p>
         </div>
         <div className="flex gap-3">
           <select
@@ -65,36 +65,36 @@ export default function StrategyPerformancePage() {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All statuses</option>
-            <option value="unplanned">Unplanned</option>
-            <option value="brief_created">Brief Created</option>
-            <option value="ai_generated">AI Generated</option>
-            <option value="in_review">In Review</option>
-            <option value="published">Published</option>
+            <option value="">全部狀態</option>
+            <option value="unplanned">未規劃</option>
+            <option value="brief_created">已有大綱</option>
+            <option value="ai_generated">AI 已產生</option>
+            <option value="in_review">審核中</option>
+            <option value="published">已上架</option>
           </select>
           <select
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
+            <option value={7}>近 7 天</option>
+            <option value={30}>近 30 天</option>
+            <option value={90}>近 90 天</option>
           </select>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-center py-10 text-gray-400">Loading…</p>
+        <p className="text-center py-10 text-gray-400">載入中…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-center py-10 text-gray-400">No strategy entries found</p>
+        <p className="text-center py-10 text-gray-400">尚無內容策略資料</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="py-3 px-4 text-left font-medium">Page Type</th>
-                <th className="py-3 px-4 text-left font-medium">Entity</th>
+                <th className="py-3 px-4 text-left font-medium">內容類型</th>
                 <th className="py-3 px-4 text-left font-medium">Status</th>
                 <th className="py-3 px-4 text-left font-medium">Locale</th>
                 <th className="py-3 px-4 text-right font-medium">Views</th>

@@ -33,7 +33,7 @@ const PROVIDERS = [
     key: "resend",
     label: "Resend",
     fieldKey: "resend_configured" as const,
-    desc: "Transactional 郵件（目前支援作為 active provider）",
+    desc: "交易通知信（目前可作為主要寄信管道）",
     canSyncContacts: false,
     statsEndpoint: null,
   },
@@ -41,7 +41,7 @@ const PROVIDERS = [
     key: "sendgrid",
     label: "SendGrid",
     fieldKey: "sendgrid_configured" as const,
-    desc: "Transactional + 行銷郵件，支援聯絡人清單同步",
+    desc: "交易通知與行銷信，可同步聯絡人清單",
     canSyncContacts: true,
     syncEndpoint: "/esp/sendgrid/sync-contacts",
     statsEndpoint: "/esp/sendgrid/stats",
@@ -203,8 +203,8 @@ export default function EspPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">ESP 設定</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">電子郵件服務商配置與發送狀態監控</p>
+          <h1 className="text-2xl font-bold tracking-tight">郵件發送設定</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">設定郵件服務商（如 Resend），確認跟進郵件與通知可正常寄出</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>

@@ -60,7 +60,7 @@ export default function CapabilityForm({ initial, id }: Props) {
       if (id) { await capabilitiesApi.update(token, id, form); }
       else { await capabilitiesApi.create(token, form); }
       router.push("/dashboard/capabilities");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -76,7 +76,7 @@ export default function CapabilityForm({ initial, id }: Props) {
             <Input {...f("capability_name")} required maxLength={150} />
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required maxLength={100} />
           </div>
           <div className="space-y-1.5">
@@ -88,7 +88,7 @@ export default function CapabilityForm({ initial, id }: Props) {
             <Textarea {...f("detail")} rows={6} />
           </div>
           <div className="space-y-1.5">
-            <Label>指標數據 (e.g. 精度 ±0.01mm)</Label>
+            <Label>指標數據（例如：精度 ±0.01mm）</Label>
             <Input {...f("metrics")} maxLength={500} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -116,18 +116,18 @@ export default function CapabilityForm({ initial, id }: Props) {
             <div className="space-y-1.5 col-span-2">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>圖示 URL</Label>
+            <Label>圖示網址</Label>
             <Input {...f("icon_url")} type="url" />
           </div>
           <div className="space-y-1.5">
-            <Label>圖片 URL</Label>
+            <Label>圖片網址</Label>
             <Input {...f("image_url")} type="url" />
           </div>
         </CardContent>

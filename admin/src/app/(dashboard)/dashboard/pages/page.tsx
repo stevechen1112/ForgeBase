@@ -10,10 +10,24 @@ import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  home: "首頁",
+  about: "關於我們",
+  contact: "聯絡我們",
+  landing: "活動頁",
+  campaign: "行銷活動",
+  custom: "自訂",
+};
+
 const COLUMNS = [
   { key: "title", label: "頁面標題" },
-  { key: "page_type", label: "類型", className: "w-32" },
-  { key: "slug", label: "Slug", className: "w-44 font-mono text-xs" },
+  {
+    key: "page_type",
+    label: "類型",
+    className: "w-32",
+    render: (_v: unknown, row: Page) => PAGE_TYPE_LABELS[row.page_type] ?? row.page_type,
+  },
+  { key: "slug", label: "網址路徑", className: "w-44 font-mono text-xs" },
   { key: "locale", label: "語言", className: "w-20" },
   {
     key: "noindex",
@@ -21,12 +35,12 @@ const COLUMNS = [
     className: "w-24",
     render: (_v: unknown, row: Page) =>
       row.noindex
-        ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">Noindex</Badge>
-        : <Badge variant="outline" className="border-green-500 text-green-700 text-xs">索引中</Badge>,
+        ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">不索引</Badge>
+        : <Badge variant="outline" className="border-green-500 text-green-700 text-xs">可索引</Badge>,
   },
   {
     key: "structured_data",
-    label: "JSON-LD",
+    label: "結構化資料",
     className: "w-20",
     render: (_v: unknown, row: Page) =>
       row.structured_data
@@ -64,7 +78,7 @@ export default function PagesListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">頁面管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理靜態落地頁與內容頁，支援多語版本與 SEO metadata 個別設定</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理官網靜態頁與內容頁，可設多語與搜尋用標題／說明</p>
         </div>
         <Button asChild><Link href="/dashboard/pages/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增頁面</Link></Button>
       </div>

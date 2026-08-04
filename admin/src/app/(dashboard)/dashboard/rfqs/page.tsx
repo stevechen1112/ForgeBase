@@ -118,7 +118,7 @@ export default function RFQsListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">全部 RFQ</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理所有入站詢價單，依狀態、負責業務篩選並追蹤跟進進度</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理所有進來的詢價單，依狀態與負責業務篩選、追蹤進度</p>
         </div>
       </div>
 
@@ -185,7 +185,7 @@ export default function RFQsListPage() {
         <select className={SELECT_CLS} value={slaFilter} onChange={(e) => { setSlaFilter(e.target.value); setPage(1); }}>
           <option value="">全部 SLA</option>
           <option value="due_soon">SLA 即將逾期</option>
-          <option value="breached">SLA 已逾期</option>
+          <option value="breached">回覆已逾期</option>
         </select>
         <select className={SELECT_CLS} value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>
           <option value="quality">品質 × SLA（預設）</option>

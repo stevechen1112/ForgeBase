@@ -43,7 +43,7 @@ export default function FAQForm({ initial, id }: Props) {
       if (id) { await faqsApi.update(token, id, form); }
       else { await faqsApi.create(token, form); }
       router.push("/dashboard/faqs");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -54,7 +54,7 @@ export default function FAQForm({ initial, id }: Props) {
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">FAQ 內容</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">問題內容</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>問題 *</Label>
@@ -76,9 +76,9 @@ export default function FAQForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
+                <option value="archived">已封存</option>
               </select>
             </div>
             <div className="space-y-1.5">

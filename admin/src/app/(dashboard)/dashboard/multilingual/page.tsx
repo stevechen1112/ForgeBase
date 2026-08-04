@@ -19,13 +19,13 @@ const LOCALES = [
 // 需要追蹤翻譯覆蓋率的內容類型
 const CONTENT_TYPES = [
   { key: "products",       label: "商品",       endpoint: "/content/products" },
-  { key: "faqs",           label: "FAQs",       endpoint: "/content/faqs" },
+  { key: "faqs",           label: "常見問題",   endpoint: "/content/faqs" },
   { key: "applications",   label: "應用場景",   endpoint: "/content/applications" },
   { key: "capabilities",   label: "廠能",       endpoint: "/content/capabilities" },
   { key: "certifications", label: "認證",       endpoint: "/content/certifications" },
   { key: "categories",     label: "商品分類",   endpoint: "/content/categories" },
   { key: "pages",          label: "落地頁",     endpoint: "/content/pages" },
-  { key: "ctas",           label: "CTAs",       endpoint: "/content/ctas" },
+  { key: "ctas",           label: "行動按鈕",   endpoint: "/content/ctas" },
 ];
 
 type Coverage = Record<string, Record<string, number>>;
@@ -96,9 +96,9 @@ export default function MultilingualPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">多語管理</h1>
+          <h1 className="text-2xl font-bold tracking-tight">多語進度</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            以英文（en）為基準，追蹤各語言版本的內容翻譯覆蓋率
+            以英文為準，追蹤各語系翻譯完成度
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>

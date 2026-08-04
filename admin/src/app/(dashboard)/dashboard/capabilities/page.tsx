@@ -88,8 +88,8 @@ export default function CapabilitiesListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">廠能介紹管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理工廠技術能力與製造服務，展示於官網廠能介紹頁，強化買家信任度</p>
+          <h1 className="text-2xl font-bold tracking-tight">廠能介紹</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理工廠能力與服務說明，展示於官網以建立買家信任</p>
         </div>
         <div className="flex items-center gap-3">
           <select className={SELECT_CLS} value={localeFilter} onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}>

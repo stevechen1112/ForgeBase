@@ -130,7 +130,7 @@ export function OpsConfigCard() {
               onChange={(e) => setSlaHours(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              新 RFQ 會依買家時區的營業時間計算回應期限，逾期自動標記 breached 並進入「今日必處理」。
+              新詢價會依買家時區的營業時間計算回覆期限，逾期自動標示並進入「今日待辦」。
             </p>
           </div>
           <div className="space-y-2">

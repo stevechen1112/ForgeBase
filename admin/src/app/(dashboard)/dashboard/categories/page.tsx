@@ -86,7 +86,7 @@ export default function CategoriesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">商品分類</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理商品分類樹狀結構，分類直接影響前台導覽選單與商品 URL 路徑</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">管理產品分類；會影響官網選單與產品頁路徑</p>
         </div>
         <div className="flex items-center gap-3">
           <select

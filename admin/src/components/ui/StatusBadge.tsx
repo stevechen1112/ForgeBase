@@ -19,9 +19,24 @@ const COLOR_MAP: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 };
 
+const DEFAULT_LABELS: Record<string, string> = {
+  draft: "草稿",
+  scheduled: "排程中",
+  published: "已上架",
+  archived: "已封存",
+  active: "啟用",
+  pending: "待處理",
+  processing: "處理中",
+  generating: "產生中",
+  done: "完成",
+  ready: "就緒",
+  error: "錯誤",
+  rejected: "已拒絕",
+};
+
 export function StatusBadge({ status, labelMap }: Props) {
   const cls = COLOR_MAP[status] ?? "bg-gray-100 text-gray-600";
-  const label = labelMap?.[status] ?? status;
+  const label = labelMap?.[status] ?? DEFAULT_LABELS[status] ?? status;
   return (
     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
       {label}

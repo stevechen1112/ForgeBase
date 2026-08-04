@@ -217,7 +217,7 @@ export function CopilotFloatingWidget() {
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-none">AI 行銷專員</p>
+                <p className="text-sm font-semibold leading-none">AI 行銷助理</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground truncate">即時 CRM 資料存取</p>
               </div>
               <div className="flex items-center gap-1">
@@ -380,7 +380,7 @@ export function CopilotFloatingWidget() {
                 "bg-primary text-primary-foreground hover:scale-105 hover:shadow-xl hover:shadow-primary/30 active:scale-95",
                 open && "rotate-12"
               )}
-              aria-label="AI 行銷專員"
+              aria-label="AI 行銷助理"
             >
               {open
                 ? <X className="h-6 w-6 transition-transform duration-200" />
@@ -393,7 +393,7 @@ export function CopilotFloatingWidget() {
               )}
             </button>
           </TooltipTrigger>
-          <TooltipContent side="left">{open ? "關閉 AI 助理" : "AI 行銷專員"}</TooltipContent>
+          <TooltipContent side="left">{open ? "關閉 AI 助理" : "AI 行銷助理"}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

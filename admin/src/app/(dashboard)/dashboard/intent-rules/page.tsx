@@ -21,7 +21,7 @@ const EVENT_META: Record<string, { label: string; icon: React.ElementType; color
   comparison_view:       { label: "比較表查看",        icon: Scale,             color: "text-purple-500",  note: "查看競品比較頁" },
   spec_download:         { label: "規格書下載",        icon: Download,          color: "text-green-600",   note: "下載 PDF 規格書" },
   certification_view:    { label: "認證頁瀏覽",        icon: ShieldCheck,       color: "text-teal-500",    note: "瀏覽認證說明頁" },
-  cta_click:             { label: "CTA 點擊（次要）",  icon: MousePointerClick, color: "text-orange-400",  note: "點擊次要 CTA 按鈕" },
+  cta_click:             { label: "行動按鈕點擊（次要）",  icon: MousePointerClick, color: "text-orange-400",  note: "點擊次要行動按鈕" },
   form_start:            { label: "表單開始填寫",      icon: FileText,          color: "text-yellow-600",  note: "開始填寫非 RFQ 表單" },
   form_submit:           { label: "表單提交",          icon: FileText,          color: "text-yellow-700",  note: "提交非 RFQ 表單" },
   rfq_start:             { label: "RFQ 開始填寫",      icon: ClipboardList,     color: "text-red-400",     note: "開始填寫詢價表單" },
@@ -32,11 +32,18 @@ const EVENT_META: Record<string, { label: string; icon: React.ElementType; color
   chat_rfq_handoff:      { label: "AI 對話轉 RFQ",    icon: Award,             color: "text-violet-700",  note: "AI 聊天中觸發詢價轉接" },
 };
 
+const STAGE_NAME: Record<string, string> = {
+  cold: "初次瀏覽",
+  warm: "多次互動",
+  hot: "高度關注",
+  sales_ready: "可成交",
+};
+
 const STAGE_META: Record<string, { color: string; desc: string; action: string }> = {
-  cold:        { color: "bg-gray-100 text-gray-700",     desc: "未顯示明確購買意圖",   action: "持續曝光，不主動跟進" },
-  warm:        { color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度意圖", action: "加入再行銷受眾，可發送後續跟進信" },
-  hot:         { color: "bg-orange-100 text-orange-800", desc: "高頻瀏覽，強烈購買意圖", action: "發出 Sales Alert，業務主動聯繫" },
-  sales_ready: { color: "bg-red-100 text-red-800",       desc: "已提交 RFQ 或極高分", action: "高優先 Alert + 立即業務跟進" },
+  cold:        { color: "bg-gray-100 text-gray-700",     desc: "尚未顯示明確購買意向",   action: "持續曝光，不主動跟進" },
+  warm:        { color: "bg-yellow-100 text-yellow-800", desc: "有瀏覽行為，輕度關注", action: "可加入跟進名單或發送跟進郵件" },
+  hot:         { color: "bg-orange-100 text-orange-800", desc: "高頻瀏覽，高度關注", action: "發出業務提醒，建議主動聯繫" },
+  sales_ready: { color: "bg-red-100 text-red-800",       desc: "已提交詢價或分數極高", action: "高優先提醒，立即業務跟進" },
 };
 
 type StageThreshold = { min_score: number; stage: string };
@@ -108,9 +115,9 @@ export default function IntentRulesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">評分規則設定</h1>
+          <h1 className="text-2xl font-bold tracking-tight">關注度規則</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            調整意圖評分的行為權重與 Stage 門檻，變更在 2 分鐘內生效
+            設定行為權重與買家熱度門檻；儲存後約 2 分鐘生效
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -197,10 +204,10 @@ export default function IntentRulesPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="h-4 w-4 text-primary" />Intent Stage 門檻
+                <Target className="h-4 w-4 text-primary" />買家熱度門檻
               </CardTitle>
               <CardDescription>
-                累積分數超過門檻時，訪客晉升至對應 Stage。數字需由高到低排列。
+                累積分數超過門檻時，訪客會升級為對應熱度。數字請由高到低排列。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -209,7 +216,7 @@ export default function IntentRulesPage() {
                 return (
                   <div key={st.stage} className={`rounded-lg p-3 ${meta?.color ?? "bg-muted text-foreground"}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold capitalize">{st.stage}</span>
+                      <span className="font-semibold">{STAGE_NAME[st.stage] ?? st.stage}</span>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-medium opacity-70">門檻</span>
                         {config && config.stage_thresholds[i]?.min_score !== st.min_score && (

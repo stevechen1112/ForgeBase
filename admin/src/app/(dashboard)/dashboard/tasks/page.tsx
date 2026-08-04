@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, AlarmClock, Flame, Filter, FileCheck, ShieldQuestion } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 
-// 顧問 Growth Ops 工作台（實效計畫 §7.1）：一個入口清「今日必處理」
+// 顧問 Growth Ops 工作台（實效計畫 §7.1）：一個入口清「今日待辦」
 type TaskItem = Record<string, unknown> & { id?: string; rfq_number?: string; visitor_id?: string };
 type Task = {
   type: string;
@@ -29,6 +29,13 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   low_quality_rfq: Filter,
   content_pending_approval: FileCheck,
   verification_anomaly: ShieldQuestion,
+};
+
+const STAGE_LABEL: Record<string, string> = {
+  cold: "初次瀏覽",
+  warm: "多次互動",
+  hot: "高度關注",
+  sales_ready: "可成交",
 };
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -63,9 +70,9 @@ export default function TasksPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">今日必處理</h1>
+          <h1 className="text-2xl font-bold tracking-tight">今日待辦</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            顧問工作佇列 — 共 {queue?.total_open ?? 0} 項待辦
+            待處理的跟進事項 — 共 {queue?.total_open ?? 0} 項
             {queue && <span className="ml-2 text-xs">（{new Date(queue.generated_at).toLocaleTimeString("zh-TW")} 產生）</span>}
           </p>
         </div>
@@ -124,7 +131,7 @@ export default function TasksPage() {
                               {String(item.visitor_id).slice(0, 8)}…
                             </Link>
                             <span className="text-xs text-muted-foreground">
-                              {String(item.intent_stage)}・{String(item.intent_score)} 分
+                              {STAGE_LABEL[String(item.intent_stage)] ?? String(item.intent_stage)}・{String(item.intent_score)} 分
                               {item.intent_explanation ? `・${String(item.intent_explanation)}` : ""}
                             </span>
                           </>

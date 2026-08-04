@@ -45,7 +45,7 @@ export default function CategoryForm({ initial, id }: Props) {
       if (id) { await categoriesApi.update(token, id, form); }
       else { await categoriesApi.create(token, form); }
       router.push("/dashboard/categories");
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Save failed"); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
   };
 
@@ -61,7 +61,7 @@ export default function CategoryForm({ initial, id }: Props) {
             <Input value={form.category_name} onChange={(e) => handleNameChange(e.target.value)} required maxLength={60} />
           </div>
           <div className="space-y-1.5">
-            <Label>Slug *</Label>
+            <Label>網址路徑 *</Label>
             <Input className="font-mono" value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" required maxLength={60} />
           </div>
           <div className="space-y-1.5">
@@ -76,8 +76,8 @@ export default function CategoryForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
+                <option value="draft">草稿</option>
+                <option value="published">已上架</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -96,18 +96,18 @@ export default function CategoryForm({ initial, id }: Props) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">SEO 設定</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>SEO Title (max 70)</Label>
+            <Label>搜尋標題（最多 70 字）</Label>
             <Input value={form.seo_title} onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))} maxLength={70} />
           </div>
           <div className="space-y-1.5">
-            <Label>SEO Description (max 160)</Label>
+            <Label>搜尋說明（最多 160 字）</Label>
             <Textarea value={form.seo_description} onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))} rows={2} maxLength={160} />
           </div>
           <div className="space-y-1.5">
-            <Label>OG Image URL</Label>
+            <Label>分享預覽圖網址</Label>
             <Input value={form.og_image_url} onChange={(e) => setForm((f) => ({ ...f, og_image_url: e.target.value }))} type="url" placeholder="https://.../category-og.jpg" />
             <p className="text-xs text-muted-foreground">分類頁社群分享圖，建議與封面圖分開配置。</p>
           </div>

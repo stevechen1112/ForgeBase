@@ -124,6 +124,12 @@ const RFQ_STATUS_COLOR: Record<string, string> = {
   lost: "bg-muted text-muted-foreground",
 };
 
+const CHAT_STATUS_LABEL: Record<string, string> = {
+  active: "進行中",
+  handoff_ready: "待業務接手",
+  handoff_completed: "已轉業務接手",
+};
+
 export default function VisitorDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { state } = useAuth();
@@ -165,7 +171,7 @@ export default function VisitorDetailPage() {
         <Button asChild variant="outline">
           <Link href="/dashboard/intent">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回意圖分析
+            返回買家關注度
           </Link>
         </Button>
       </div>
@@ -242,7 +248,7 @@ export default function VisitorDetailPage() {
           <CardContent className="pt-4 pb-4 space-y-3">
             {visitor.intent_explanation && (
               <p className="text-sm">
-                <span className="font-semibold">為何 Hot：</span>
+                <span className="font-semibold">關注原因：</span>
                 {visitor.intent_explanation}
               </p>
             )}
@@ -379,7 +385,7 @@ export default function VisitorDetailPage() {
                                     : "bg-green-100 text-green-700"
                               }`}
                             >
-                              {entry.status?.replace("_", " ")}
+                              {CHAT_STATUS_LABEL[entry.status ?? ""] ?? entry.status}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
                               {entry.message_count} 則訊息

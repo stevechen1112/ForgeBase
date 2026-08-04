@@ -97,7 +97,7 @@ export default function ProductsListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">商品管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理所有商品資料，包含多語 SEO 標題、規格說明、圖片與分類綁定</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理產品型錄：規格、圖片、分類，以及多語標題說明</p>
         </div>
         <div className="flex items-center gap-3">
           <select

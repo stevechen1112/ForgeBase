@@ -29,13 +29,26 @@ const BRIEF_STATUS_ICON: Record<string, React.ReactNode> = {
   done: <CheckCircle2 className="inline-block h-3.5 w-3.5 text-blue-500 mr-1" />,
 };
 
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  product: "商品",
+  application: "應用場景",
+  category: "商品分類",
+  comparison: "比較",
+  custom: "自訂",
+};
+
 const COLUMNS = [
-  { key: "target_page_type", label: "目標頁面類型", className: "w-40" },
+  {
+    key: "target_page_type",
+    label: "目標頁面類型",
+    className: "w-40",
+    render: (_v: unknown, row: PageBrief) => PAGE_TYPE_LABELS[row.target_page_type] ?? row.target_page_type,
+  },
   { key: "primary_keyword", label: "主要關鍵字" },
   { key: "locale", label: "語言", className: "w-20" },
   {
     key: "brief_status",
-    label: "Workflow 狀態",
+    label: "流程狀態",
     className: "w-36",
     render: (_v: unknown, row: PageBrief) => (
       <span className="inline-flex items-center text-sm">
@@ -73,7 +86,7 @@ export default function BriefsListPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("確定刪除此摘要？")) return;
+    if (!confirm("確定刪除此寫作大綱？")) return;
     setDeleting(id);
     await briefsApi.delete(token, id);
     load(); setDeleting(null);
@@ -97,7 +110,7 @@ export default function BriefsListPage() {
         body: JSON.stringify({ brief_id: brief.id, target_locale: brief.locale }),
       });
       if (!genRes.ok) throw new Error(`Generate failed: HTTP ${genRes.status}`);
-      setMessage(`Brief「${brief.primary_keyword ?? brief.id}」AI Workflow 已觸發 ✓`);
+      setMessage(`寫作大綱「${brief.primary_keyword ?? brief.id}」AI 產生流程已啟動 ✓`);
       load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "觸發失敗");
@@ -110,10 +123,10 @@ export default function BriefsListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">內容摘要 (Briefs)</h1>
-          <p className="mt-1 text-sm text-muted-foreground">為 AI 寫作提供前置規劃，定義目標關鍵字、受眾與內容策略方向</p>
+          <h1 className="text-2xl font-bold tracking-tight">寫作大綱</h1>
+          <p className="mt-1 text-sm text-muted-foreground">撰寫前先定義關鍵字、目標對象與內容方向</p>
         </div>
-        <Button asChild><Link href="/dashboard/briefs/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增摘要</Link></Button>
+        <Button asChild><Link href="/dashboard/briefs/new"><Plus className="mr-1.5 h-4 w-4" />新增大綱</Link></Button>
       </div>
 
       {message && (
@@ -138,7 +151,7 @@ export default function BriefsListPage() {
               onClick={() => handleTriggerWorkflow(row)}
             >
               <Bot className="h-3.5 w-3.5" />
-              {triggering === row.id ? "觸發中…" : "觸發 AI Workflow"}
+              {triggering === row.id ? "觸發中…" : "啟動 AI 產生"}
             </Button>
           ) : null
         }

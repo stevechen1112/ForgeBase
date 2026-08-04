@@ -91,7 +91,7 @@ function ThinkingDots() {
 const QUICK_PROMPTS = [
   "今天有幾個新 RFQ？",
   "有 RFQ 超期未回覆嗎？",
-  "目前有哪些高意圖訪客？",
+  "目前有哪些高關注訪客？",
   "最近成交了哪些客戶？",
   "漏斗轉換率是多少？",
 ];
@@ -197,8 +197,8 @@ export default function CopilotPage() {
             <Bot className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h1 className="text-base font-semibold leading-tight">AI 行銷專員</h1>
-            <p className="text-xs text-muted-foreground">即時連線 CRM 資料，可查詢 RFQ、訪客、漏斗</p>
+            <h1 className="text-base font-semibold leading-tight">AI 行銷助理</h1>
+            <p className="text-xs text-muted-foreground">以對話方式查詢詢價、訪客與成交進度</p>
           </div>
           <div className="flex items-center gap-1.5">
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { loadHistory(); loadStats(); }} disabled={loadingHistory}>
@@ -258,7 +258,7 @@ export default function CopilotPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">詢問任何業務問題</p>
-                <p className="mt-1 text-xs text-muted-foreground">我可以即時查詢 RFQ、訪客意圖、漏斗數據，給出可行動的建議。</p>
+                <p className="mt-1 text-xs text-muted-foreground">可查詢詢價、訪客關注度與漏斗數據，並提供可執行建議。</p>
               </div>
             </div>
           ) : (
@@ -358,7 +358,7 @@ export default function CopilotPage() {
           <CardContent className="space-y-2">
             {[
               { label: "RFQ 詢價單", desc: "狀態、逾時、優先級" },
-              { label: "訪客意圖", desc: "Hot/Sales-Ready 名單" },
+              { label: "買家關注度", desc: "高度關注／可成交名單" },
               { label: "轉換漏斗", desc: "各階段數量與比率" },
               { label: "聯絡人", desc: "歷史 RFQ、行為紀錄" },
               { label: "產品熱度", desc: "近期詢問最多的產品" },

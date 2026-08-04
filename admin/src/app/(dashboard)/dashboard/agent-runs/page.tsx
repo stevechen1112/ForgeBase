@@ -206,10 +206,10 @@ export default function AgentRunsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Bot className="h-6 w-6 text-muted-foreground" />
-            Agent 任務佇列
+            自動任務進度
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            監控 AgentOS 工作流程執行狀態，審批待確認項目
+            檢視系統自動執行的任務，並審核待確認項目
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
@@ -260,7 +260,7 @@ export default function AgentRunsPage() {
 
       {error && (
         <Alert variant="destructive">
-          <AlertDescription>AgentOS 連線失敗：{error}。請確認 AgentOS 服務是否啟動。</AlertDescription>
+          <AlertDescription>自動任務服務連線失敗：{error}。請確認相關服務是否已啟動。</AlertDescription>
         </Alert>
       )}
 
@@ -271,7 +271,7 @@ export default function AgentRunsPage() {
         <div className="rounded-xl border border-dashed py-16 text-center">
           <Bot className="mx-auto h-8 w-8 text-muted-foreground/40" />
           <p className="mt-3 text-sm text-muted-foreground">
-            {statusFilter === "all" ? "目前沒有任何 Agent 任務紀錄" : `沒有「${STATUS_TABS.find(t => t.value === statusFilter)?.label}」的任務`}
+            {statusFilter === "all" ? "目前沒有任何自動任務紀錄" : `沒有「${STATUS_TABS.find(t => t.value === statusFilter)?.label}」的任務`}
           </p>
         </div>
       ) : (

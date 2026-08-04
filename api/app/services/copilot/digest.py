@@ -112,7 +112,7 @@ def _format_digest(stats: dict, date_str: str) -> str:
     if overdue_rfqs > 0:
         suggestions.append(f"⚠️ {overdue_rfqs} 筆 RFQ 超過 24h 未回覆，建議立即處理")
     if hot_visitors > 0:
-        suggestions.append(f"🔥 {hot_visitors} 位高意圖訪客活躍中，建議主動接觸")
+        suggestions.append(f"🔥 {hot_visitors} 位高關注訪客活躍中，建議主動接觸")
     if new_rfqs == 0 and active_visitors < 5:
         suggestions.append("💡 今日流量偏低，考慮發送 nurture email 喚回潛在客戶")
 
@@ -129,7 +129,7 @@ def _format_digest(stats: dict, date_str: str) -> str:
     return (
         f"📊 <b>每日營運摘要 — {date_str}</b>\n\n"
         f"訪客：{active_visitors} 人\n"
-        f"高意圖訪客：{hot_visitors} 人\n"
+        f"高關注訪客：{hot_visitors} 人\n"
         f"新 RFQ：{rfq_line}\n"
         f"{suggestion_block}"
     )
