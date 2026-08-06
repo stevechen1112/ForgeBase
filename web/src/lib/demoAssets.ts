@@ -82,13 +82,14 @@ export function getApplicationImage(
 }
 
 export function getProductImage(
-  product: Pick<Product, "model_number" | "image_url">,
+  product: Pick<Product, "model_number"> & Partial<Pick<Product, "image_url" | "og_image_url">>,
   categorySlug?: string,
   config: AssetConfigLike = siteConfig
 ): string | null {
   const manifest = getManifest(config);
   const manifestImage = manifest?.productByKey?.[product.model_number] ?? null;
-  const image = pickAsset(product.image_url, manifestImage);
+  const cmsImage = product.image_url || product.og_image_url;
+  const image = pickAsset(cmsImage, manifestImage);
   if (image) {
     return withVersion(image);
   }

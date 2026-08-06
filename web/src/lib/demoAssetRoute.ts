@@ -409,14 +409,52 @@ export async function readDemoAsset(assetSegments: string[], demoCompanyFolder =
   return null;
 }
 
+/**
+ * 佔位圖代表「實體素材當下不存在」，是暫時狀態而非最終內容。
+ * 若讓它進快取，素材補上後瀏覽器與 CDN 仍會沿用舊的佔位圖，
+ * 表現出來就是「圖壞掉且重整也修不好」，因此一律不快取。
+ */
+const PLACEHOLDER_HEADERS = {
+  "Cache-Control": "no-store, must-revalidate",
+  "X-Demo-Asset": "placeholder",
+} as const;
+
+/**
+ * `generated/` 底下的素材一定有對應實體檔（由素材產生流程輸出）。
+ * 其餘路徑（cert-*-badge、legacy CMS 路徑）本來就沒有實體檔，
+ * 靠即時繪製的 SVG 是預期行為，不該當成故障。
+ */
+function expectsPhysicalFile(assetSegments: string[]): boolean {
+  return assetSegments.includes("generated");
+}
+
+const missingAssets = new Set<string>();
+
+/** 供健檢端點讀取：這個行程處理過、但實體檔找不到的素材。 */
+export function getMissingAssets(): string[] {
+  return [...missingAssets];
+}
+
 export async function createDemoAssetResponse(assetSegments: string[]) {
   const runtimeSiteConfig = await getRuntimeSiteConfig();
   const existing = await readDemoAsset(assetSegments, runtimeSiteConfig.demoCompanyFolder);
+  if (!existing && expectsPhysicalFile(assetSegments)) {
+    const assetPath = assetSegments.join("/");
+    if (!missingAssets.has(assetPath)) {
+      missingAssets.add(assetPath);
+      console.error(
+        `[demo-asset] 找不到實體素材，改用佔位圖：${assetPath}` +
+          `（demo/${runtimeSiteConfig.demoCompanyFolder}/assets 是否已掛進容器？）`,
+      );
+    }
+  }
   if (existing) {
+    missingAssets.delete(assetSegments.join("/"));
     return new NextResponse(new Uint8Array(existing.buffer), {
       headers: {
         "Content-Type": existing.contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Demo-Asset": "file",
       },
     });
   }
@@ -427,8 +465,8 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   if (extension === ".pdf") {
     return new NextResponse(new Uint8Array(buildPdfBuffer(filename, runtimeSiteConfig)), {
       headers: {
+        ...PLACEHOLDER_HEADERS,
         "Content-Type": "application/pdf",
-        "Cache-Control": "public, max-age=3600",
         "Content-Disposition": `inline; filename="${filename}"`,
       },
     });
@@ -437,8 +475,8 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   if (filename.startsWith("cert-") && filename.includes("-badge")) {
     return new NextResponse(buildCertificationBadgeSvg(filename, assetSegments.join("/"), runtimeSiteConfig), {
       headers: {
+        ...PLACEHOLDER_HEADERS,
         "Content-Type": "image/svg+xml; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
       },
     });
   }
@@ -446,8 +484,8 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
   const svg = buildSvg(specForFilename(filename, runtimeSiteConfig), assetSegments.join("/"), runtimeSiteConfig.brandName);
   return new NextResponse(svg, {
     headers: {
+      ...PLACEHOLDER_HEADERS,
       "Content-Type": "image/svg+xml; charset=utf-8",
-      "Cache-Control": "public, max-age=3600",
     },
   });
 }

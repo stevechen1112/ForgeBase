@@ -1,0 +1,118 @@
+name: forgebase
+
+# 生產部署：單一網域 + Caddy 自動 HTTPS
+# 路由：/ → web ｜ /backend → admin ｜ /api/v1、/uploads、/health → api ｜ /api/revalidate → web
+# 變數來源：repo 根目錄 .env（參考 deploy/compose.env.example）
+
+# api 與 migrate 共用的環境變數（anchor，避免 migrate 因缺 URL 設定被 production 驗證擋下）
+x-api-env: &api-env
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-forgebase}
+  APP_URL: ${PROTOCOL:-https}://${DOMAIN:?missing DOMAIN in .env}
+  FRONTEND_URL: ${PROTOCOL:-https}://${DOMAIN}
+  ADMIN_URL: ${PROTOCOL:-https}://${DOMAIN}/backend
+  ALLOWED_ORIGINS: ${PROTOCOL:-https}://${DOMAIN}
+  WEB_REVALIDATE_URL: ${PROTOCOL:-https}://${DOMAIN}/api/revalidate
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?missing POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-forgebase}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./deploy/api.env
+    environment: *api-env
+    command: alembic upgrade head
+    restart: "no"
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file: ./deploy/api.env
+    environment: *api-env
+    volumes:
+      - uploads_data:/app/uploads
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  admin:
+    build:
+      context: ./admin
+      args:
+        NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+        # 留空＝不送 X-Tenant-ID，對應 seed 內容的 tenant_id IS NULL；
+        # 只有在內容確實歸屬某租戶時才填該租戶 slug，否則前台會查不到任何內容
+        NEXT_PUBLIC_TENANT_SLUG: ${NEXT_PUBLIC_TENANT_SLUG:-}
+        NEXT_PUBLIC_SITE_URL: ${PROTOCOL:-https}://${DOMAIN}
+        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-NorthForge Tools}
+    environment:
+      # web/src/lib/api.ts 讀的是 API_INTERNAL_URL；少了它 SSR 會繞公開網域打自己
+      API_INTERNAL_URL: http://api:8000
+      INTERNAL_API_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+      # 與 deploy/api.env 的 WEB_REVALIDATE_SECRET 必須一致
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?missing REVALIDATE_SECRET in .env}
+    volumes:
+      # demo 素材（/demo/<company>/assets/...）掛唯讀，web 的 demoAssetRoute 會從 ../demo 找到實體檔案
+      - ./demo:/demo:ro
+    # 素材沒掛到、或租戶設定與內容不符時，這裡會 unhealthy，
+    # 不必等到有人看見破圖才發現（細節見 /api/health/assets 回應）
+    healthcheck:
+      # 用 127.0.0.1 而非 localhost：Next.js standalone 只綁 IPv4，localhost 在 alpine 會先試 ::1
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health/assets"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      APEX_DOMAIN: ${APEX_DOMAIN:?missing APEX_DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - admin
+      - web
+
+volumes:
+  postgres_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:
