@@ -55,6 +55,8 @@ class SiteProfile(SQLModel, table=True):
     intent_scoring_config_json: Optional[str] = Field(default=None)
     # ── Ops Config (per-tenant): sla_response_hours / auto_reply_* ──
     ops_config_json: Optional[str] = Field(default=None)
+    # ── Translation glossary (per-tenant): [{source, target, note?}] ──
+    translation_glossary_json: Optional[str] = Field(default=None)
 
     # ── Timestamps ──
     created_at: datetime = Field(default_factory=utcnow_naive)

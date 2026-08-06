@@ -25,8 +25,7 @@ import { Badge } from "@/components/ui/badge";
 
 // ── Feature label map ─────────────────────────────────────────────────────────
 export const FEATURE_LABELS: Record<string, string> = {
-  multilingual: "多語進度",
-  ai_content_generation: "AI 文案優化",
+  multilingual: "多語官網（英／繁）",
   full_tracking: "訪客與成效追蹤",
   intent_scoring: "買家關注度",
   dynamic_cta: "行動按鈕",

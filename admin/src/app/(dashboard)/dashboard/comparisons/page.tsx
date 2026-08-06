@@ -17,12 +17,15 @@ export default function ComparisonsListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
-    comparisonsApi.list(token, { page, page_size: 20 }).then((res) => {
+    const params: Record<string, string | number> = { page, page_size: 20 };
+    if (localeFilter) params.locale = localeFilter;
+    comparisonsApi.list(token, params).then((res) => {
       setRows(res.data); setTotalPages(res.meta.total_pages);
     });
-  }, [token, page]);
+  }, [token, page, localeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -64,7 +67,18 @@ export default function ComparisonsListPage() {
           <h1 className="text-2xl font-bold tracking-tight">競品比較</h1>
           <p className="mt-1 text-sm text-muted-foreground">維護競品比較主題，讓訪客清楚了解產品相對優勢，提升詢價意願</p>
         </div>
-        <Button asChild><Link href="/dashboard/comparisons/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增競品比較</Link></Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={localeFilter}
+            onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white"
+          >
+            <option value="">全部語言</option>
+            <option value="en">English</option>
+            <option value="zh-tw">繁體中文</option>
+          </select>
+          <Button asChild><Link href="/dashboard/comparisons/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增競品比較</Link></Button>
+        </div>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/comparisons" onDelete={handleDelete} isDeleting={deleting} />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

@@ -241,6 +241,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(api_router)
 
+# Local asset uploads (dev / no R2)
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+_uploads_dir = Path(__file__).resolve().parent.parent / "uploads"
+_uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
+
 
 @app.get("/health", tags=["system"])
 async def health_check():

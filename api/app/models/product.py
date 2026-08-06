@@ -39,6 +39,7 @@ class Product(SQLModel, table=True):
     category_id: uuid.UUID = Field(foreign_key="product_categories.id")
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
+    image_url: Optional[str] = Field(default=None, max_length=500)  # main product image
     og_image_url: Optional[str] = Field(default=None, max_length=500)  # OG-specific image (1200×630)
     image_alt: Optional[str] = Field(default=None, max_length=200)    # alt text for main product image
     status: str = Field(default="draft")   # draft / published / archived

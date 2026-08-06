@@ -57,12 +57,15 @@ export default function PagesListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
-    pagesApi.list(token, { page, page_size: 20 }).then((res) => {
+    const params: Record<string, string | number> = { page, page_size: 20 };
+    if (localeFilter) params.locale = localeFilter;
+    pagesApi.list(token, params).then((res) => {
       setRows(res.data); setTotalPages(res.meta.total_pages);
     });
-  }, [token, page]);
+  }, [token, page, localeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -80,7 +83,18 @@ export default function PagesListPage() {
           <h1 className="text-2xl font-bold tracking-tight">頁面管理</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理官網靜態頁與內容頁，可設多語與搜尋用標題／說明</p>
         </div>
-        <Button asChild><Link href="/dashboard/pages/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增頁面</Link></Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={localeFilter}
+            onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white"
+          >
+            <option value="">全部語言</option>
+            <option value="en">English</option>
+            <option value="zh-tw">繁體中文</option>
+          </select>
+          <Button asChild><Link href="/dashboard/pages/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增頁面</Link></Button>
+        </div>
       </div>
       <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/pages" onDelete={handleDelete} isDeleting={deleting} />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

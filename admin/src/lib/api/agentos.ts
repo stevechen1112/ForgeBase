@@ -1,16 +1,19 @@
 /**
  * Typed API client for AgentOS runtime.
- * Connects to NEXT_PUBLIC_AGENTOS_URL (default: http://localhost:8000).
+ * Connects to NEXT_PUBLIC_AGENTOS_URL when the optional runtime is configured.
  */
 
-function resolveAgentOSBase(): string {
-  const raw = process.env.NEXT_PUBLIC_AGENTOS_URL ?? "http://localhost:8000";
-  return raw.replace(/\/$/, "");
+function resolveAgentOSBase(): string | null {
+  const raw = process.env.NEXT_PUBLIC_AGENTOS_URL?.trim();
+  return raw ? raw.replace(/\/$/, "") : null;
 }
 
 const AGENTOS_BASE = resolveAgentOSBase();
 
 async function agentFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  if (!AGENTOS_BASE) {
+    throw new Error("自動任務服務未設定");
+  }
   const res = await fetch(`${AGENTOS_BASE}${path}`, options);
   if (!res.ok) {
     const body = await res.text().catch(() => "");

@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor, QuotaEnforcer, resolve_tenant_id
+from app.api.v1.deps import get_current_user, require_admin, require_content_editor, QuotaEnforcer, resolve_tenant_id, optional_current_user
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.product import Product
@@ -35,7 +35,12 @@ async def list_products(
     featured: bool | None = Query(None, description="Filter by is_featured"),
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
+    auth_user=Depends(optional_current_user),
 ):
+    # 帶有效憑證時以 caller tenant 為準（與 content_crud 同規則），
+    # 否則 admin 未送 X-Tenant-ID 時會落到 tenant IS NULL 而看不到資料
+    if auth_user is not None and getattr(auth_user, "tenant_id", None):
+        tenant_id = auth_user.tenant_id
     base_q = select(Product)
     if tenant_id:
         base_q = base_q.where(Product.tenant_id == tenant_id)
@@ -111,7 +116,11 @@ async def get_product(
     product_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
+    auth_user=Depends(optional_current_user),
 ):
+    # 帶有效憑證時以 caller tenant 為準（與 list 同規則）
+    if auth_user is not None and getattr(auth_user, "tenant_id", None):
+        tenant_id = auth_user.tenant_id
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")

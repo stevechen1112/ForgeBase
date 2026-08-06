@@ -175,21 +175,34 @@ async def upload_asset(
         filename = filename.rsplit(".", 1)[0] + ".webp"
     r2_key = await _build_r2_key(session, filename, product_id, page_id)
 
-    # ── Upload to R2 ──────────────────────────────────────────────────────────
-    try:
-        _get_s3().put_object(
-            Bucket=settings.R2_BUCKET_NAME,
-            Key=r2_key,
-            Body=content,
-            ContentType=mime_type,
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"R2 upload failed: {exc}",
-        ) from exc
+    # ── Upload: R2 when configured, otherwise local disk for development ─────
+    use_r2 = bool(settings.R2_ACCOUNT_ID and settings.R2_ACCESS_KEY_ID and settings.R2_PUBLIC_URL)
+    if use_r2:
+        try:
+            _get_s3().put_object(
+                Bucket=settings.R2_BUCKET_NAME,
+                Key=r2_key,
+                Body=content,
+                ContentType=mime_type,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"R2 upload failed: {exc}",
+            ) from exc
+        public_url = f"{settings.R2_PUBLIC_URL.rstrip('/')}/{r2_key}"
+    else:
+        from pathlib import Path
 
-    public_url = f"{settings.R2_PUBLIC_URL.rstrip('/')}/{r2_key}"
+        local_root = Path(__file__).resolve().parents[4] / "uploads"
+        local_path = local_root / r2_key
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(content)
+        # Prefer 127.0.0.1 over localhost (Windows IPv6 / localhost hangs)
+        base = (settings.APP_URL or "http://127.0.0.1:8001").rstrip("/")
+        if "://localhost" in base:
+            base = base.replace("://localhost", "://127.0.0.1")
+        public_url = f"{base}/uploads/{r2_key}"
 
     # ── Save metadata ─────────────────────────────────────────────────────────
     asset = ContentAsset(
@@ -258,9 +271,15 @@ async def delete_asset(
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    # Delete from R2
+    # Delete from storage (R2 or local)
     try:
-        _get_s3().delete_object(Bucket=settings.R2_BUCKET_NAME, Key=asset.r2_key)
+        if settings.R2_ACCOUNT_ID and settings.R2_ACCESS_KEY_ID:
+            _get_s3().delete_object(Bucket=settings.R2_BUCKET_NAME, Key=asset.r2_key)
+        else:
+            from pathlib import Path
+            local_path = Path(__file__).resolve().parents[4] / "uploads" / asset.r2_key
+            if local_path.is_file():
+                local_path.unlink()
     except Exception:
         pass  # Log but don't block DB removal
 

@@ -32,6 +32,7 @@ from app.models.certification import Certification
 from app.models.comparison_topic import ComparisonTopic
 from app.models.faq_item import FAQItem
 from app.models.page import Page
+from app.models.capability import Capability
 from app.models.product import Product
 from app.models.product_category import ProductCategory
 from app.models.user import User
@@ -48,6 +49,7 @@ _PUBLISHABLE: dict[str, Any] = {
     "certifications": Certification,
     "comparisons": ComparisonTopic,
     "pages": Page,
+    "capabilities": Capability,
 }
 
 

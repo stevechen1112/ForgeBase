@@ -18,12 +18,15 @@ export default function FAQsListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState("");
+  const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
-    faqsApi.list(token, { page, page_size: 20 }).then((res) => {
+    const params: Record<string, string | number> = { page, page_size: 20 };
+    if (localeFilter) params.locale = localeFilter;
+    faqsApi.list(token, params).then((res) => {
       setRows(res.data); setTotalPages(res.meta.total_pages);
     });
-  }, [token, page]);
+  }, [token, page, localeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -90,6 +93,15 @@ export default function FAQsListPage() {
           <p className="mt-1 text-sm text-muted-foreground">維護常見問答，可顯示在產品頁與應用頁，也有助搜尋引擎理解</p>
         </div>
         <div className="flex items-center gap-3">
+          <select
+            value={localeFilter}
+            onChange={(e) => { setLocaleFilter(e.target.value); setPage(1); }}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white"
+          >
+            <option value="">全部語言</option>
+            <option value="en">English</option>
+            <option value="zh-tw">繁體中文</option>
+          </select>
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}

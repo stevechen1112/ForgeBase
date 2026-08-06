@@ -10,22 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { RelationsPanel } from "@/components/ui/RelationsPanel";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
-const SUPPORTED_LOCALES = [
-  { value: "en", label: "English" },
-  { value: "zh-tw", label: "繁體中文" },
-  { value: "zh-cn", label: "简体中文" },
-  { value: "ja", label: "日本語" },
-  { value: "ko", label: "한국어" },
-  { value: "de", label: "Deutsch" },
-];
+type Props = { initial?: Partial<Application>; id?: string; aiDraft?: boolean };
 
-type Props = { initial?: Partial<Application>; id?: string };
-
-export default function ApplicationForm({ initial, id }: Props) {
+export default function ApplicationForm({ initial, id, aiDraft }: Props) {
   const router = useRouter();
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -48,6 +41,30 @@ export default function ApplicationForm({ initial, id }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localeVariants, setLocaleVariants] = useState<Application[]>([]);
+  const [draftNotice, setDraftNotice] = useState(false);
+
+  // AI 起草：/new?slug=..&locale=..&draft=1 → 從 sessionStorage 取出譯稿預填
+  useEffect(() => {
+    if (id || !aiDraft) return;
+    const slug = initial?.slug ?? "";
+    const locale = initial?.locale ?? "";
+    if (!slug || !locale) return;
+    const draft = takeDraft(draftKey("application", slug, locale));
+    if (draft) {
+      setForm((prev) => ({
+        ...prev,
+        application_name: draft.application_name ?? prev.application_name,
+        industry: draft.industry ?? prev.industry,
+        description: draft.description ?? prev.description,
+        challenge: draft.challenge ?? prev.challenge,
+        solution: draft.solution ?? prev.solution,
+        seo_title: draft.seo_title ?? prev.seo_title,
+        seo_description: draft.seo_description ?? prev.seo_description,
+      }));
+      setDraftNotice(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!id || !form.slug) return;
@@ -141,34 +158,22 @@ export default function ApplicationForm({ initial, id }: Props) {
 
       {/* Locale Variants Panel – edit mode only */}
       {id && (
-        <Card className="border-blue-200 bg-blue-50/30">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm text-blue-800">語言版本管理</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge className="bg-blue-700 text-white hover:bg-blue-800">
-                {SUPPORTED_LOCALES.find((l) => l.value === form.locale)?.label ?? form.locale} ● 目前版本
-              </Badge>
-              {localeVariants.map((v) => (
-                <a key={v.id} href={`/dashboard/applications/${v.id}/edit`}>
-                  <Badge variant="outline" className="border-green-500 text-green-700 hover:bg-green-50 cursor-pointer">
-                    {SUPPORTED_LOCALES.find((l) => l.value === v.locale)?.label ?? v.locale} ✓
-                  </Badge>
-                </a>
-              ))}
-              {SUPPORTED_LOCALES.filter(
-                (l) => l.value !== form.locale && !localeVariants.some((v) => v.locale === l.value)
-              ).map((l) => (
-                <a key={l.value} href={`/dashboard/applications/new?slug=${encodeURIComponent(form.slug)}&locale=${l.value}`}>
-                  <Badge variant="outline" className="border-dashed text-muted-foreground hover:border-blue-400 hover:text-blue-600 cursor-pointer">
-                    + {l.label}
-                  </Badge>
-                </a>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <LocaleSwitcher
+          entityType="application"
+          basePath="/dashboard/applications"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
+          </AlertDescription>
+        </Alert>
       )}
 
       <Card>
@@ -190,6 +195,9 @@ export default function ApplicationForm({ initial, id }: Props) {
         </CardContent>
       </Card>
 
+      {id && (
+        <RelationsPanel entityType="application" entityId={id} linkType="faqs" title="關聯常見問題" />
+      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

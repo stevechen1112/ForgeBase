@@ -57,10 +57,6 @@ SIDEBAR_ROUTES = [
     "/dashboard/nurture/outbox",
     "/dashboard/products",
     "/dashboard/categories",
-    "/dashboard/content-optimizer",
-    "/dashboard/multilingual",
-    "/dashboard/strategies",
-    "/dashboard/briefs",
     "/dashboard/pages",
     "/dashboard/assets",
     "/dashboard/applications",
@@ -69,8 +65,6 @@ SIDEBAR_ROUTES = [
     "/dashboard/capabilities",
     "/dashboard/ctas",
     "/dashboard/redirects",
-    "/dashboard/relations",
-    "/dashboard/intake",
     "/dashboard/settings/notifications",
     "/dashboard/users",
     "/dashboard/settings/site-profile",
@@ -87,8 +81,6 @@ STATIC_SUB_ROUTES = [
     "/dashboard/certifications/new",
     "/dashboard/capabilities/new",
     "/dashboard/ctas/new",
-    "/dashboard/briefs/new",
-    "/dashboard/strategies/new",
     "/dashboard/comparisons/new",
     "/dashboard/segments/new",
     "/dashboard/nurture/new",
@@ -247,8 +239,6 @@ def main() -> int:
         dynamic += collect_dynamic_links(page, "/dashboard/certifications", ["/edit"])
         dynamic += collect_dynamic_links(page, "/dashboard/capabilities", ["/edit"])
         dynamic += collect_dynamic_links(page, "/dashboard/ctas", ["/edit"])
-        dynamic += collect_dynamic_links(page, "/dashboard/briefs", ["/edit", "/preview"])
-        dynamic += collect_dynamic_links(page, "/dashboard/strategies", ["/edit"])
         dynamic += collect_dynamic_links(page, "/dashboard/rfqs", ["/dashboard/rfqs/"])
         dynamic += collect_dynamic_links(page, "/dashboard/chats", ["/dashboard/chats/"])
         dynamic += collect_dynamic_links(page, "/dashboard/segments", ["/dashboard/segments/"])

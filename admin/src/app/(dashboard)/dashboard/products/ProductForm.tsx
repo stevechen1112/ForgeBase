@@ -1,31 +1,25 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { categoriesApi, productsApi, redirectsApi, type Product } from "@/lib/api/content";
+import { assetsApi, categoriesApi, productsApi, redirectsApi, type Product } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { RelationsPanel } from "@/components/ui/RelationsPanel";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { SpecRowsEditor } from "@/components/ui/SpecRowsEditor";
+import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
-const SUPPORTED_LOCALES = [
-  { value: "en", label: "English" },
-  { value: "zh-tw", label: "繁體中文" },
-  { value: "zh-cn", label: "简体中文" },
-  { value: "ja", label: "日本語" },
-  { value: "ko", label: "한국어" },
-  { value: "de", label: "Deutsch" },
-];
+type Props = { initial?: Partial<Product>; id?: string; aiDraft?: boolean };
 
-type Props = { initial?: Partial<Product>; id?: string };
-
-export default function ProductForm({ initial, id }: Props) {
+export default function ProductForm({ initial, id, aiDraft }: Props) {
   const router = useRouter();
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
@@ -40,6 +34,7 @@ export default function ProductForm({ initial, id }: Props) {
     category_id: initial?.category_id ?? "",
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
+    image_url: (initial as Product | undefined)?.image_url ?? "",
     og_image_url: initial?.og_image_url ?? "",
     image_alt: initial?.image_alt ?? "",
     status: initial?.status ?? "draft",
@@ -50,10 +45,35 @@ export default function ProductForm({ initial, id }: Props) {
   });
   const initialSlug = useRef(initial?.slug ?? "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redirectCreated, setRedirectCreated] = useState(false);
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [localeVariants, setLocaleVariants] = useState<Product[]>([]);
+  const [draftNotice, setDraftNotice] = useState(false);
+
+  // AI 起草：/new?slug=..&locale=..&draft=1 → 從 sessionStorage 取出譯稿預填
+  useEffect(() => {
+    if (id || !aiDraft) return;
+    const slug = initial?.slug ?? "";
+    const locale = initial?.locale ?? "";
+    if (!slug || !locale) return;
+    const draft = takeDraft(draftKey("product", slug, locale));
+    if (draft) {
+      setForm((prev) => ({
+        ...prev,
+        product_name: draft.product_name ?? prev.product_name,
+        short_description: draft.short_description ?? prev.short_description,
+        full_description: draft.full_description ?? prev.full_description,
+        specifications: draft.specifications ?? prev.specifications,
+        seo_title: draft.seo_title ?? prev.seo_title,
+        seo_description: draft.seo_description ?? prev.seo_description,
+        image_alt: draft.image_alt ?? prev.image_alt,
+      }));
+      setDraftNotice(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!id || !form.slug) return;
@@ -82,6 +102,36 @@ export default function ProductForm({ initial, id }: Props) {
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value })),
   });
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true); setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      if (id) fd.append("product_id", id);
+      if (form.image_alt) fd.append("alt_text", form.image_alt);
+      const asset = await assetsApi.upload(token, fd);
+      const nextImage = asset.public_url;
+      const nextOg = form.og_image_url || nextImage;
+      setForm((prev) => ({
+        ...prev,
+        image_url: nextImage,
+        og_image_url: prev.og_image_url || nextImage,
+      }));
+      // 編輯模式：上傳後立刻寫入商品，避免只改表單卻未按儲存
+      if (id) {
+        await productsApi.update(token, id, {
+          image_url: nextImage,
+          og_image_url: nextOg,
+          image_alt: form.image_alt || undefined,
+        });
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "圖片上傳失敗");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +197,10 @@ export default function ProductForm({ initial, id }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label>規格說明</Label>
-            <Textarea {...f("specifications")} rows={4} className="font-mono text-xs" />
+            <SpecRowsEditor
+              value={form.specifications}
+              onChange={(json) => setForm((prev) => ({ ...prev, specifications: json }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>商品分類</Label>
@@ -175,7 +228,7 @@ export default function ProductForm({ initial, id }: Props) {
 
           {form.status === "scheduled" && (
             <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50/60 p-3">
-              <Label className="text-amber-800">⏰ 預約上架時間 *</Label>
+              <Label className="text-amber-800">預約上架時間 *</Label>
               <Input
                 type="datetime-local"
                 value={form.publish_at}
@@ -184,42 +237,72 @@ export default function ProductForm({ initial, id }: Props) {
                 required
                 className="bg-white"
               />
-              <p className="text-xs text-amber-700">到達指定時間後，請手動將狀態切換為「已上架」或聯繫技術團隊啟用自動排程。</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Locale Variants Panel – edit mode only */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">商品主圖</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {form.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.image_url} alt={form.image_alt || form.product_name} className="h-40 w-auto rounded-md border object-contain bg-muted/30" />
+          )}
+          <div className="space-y-1.5">
+            <Label>主圖網址</Label>
+            <Input {...f("image_url")} type="url" placeholder="上傳後自動填入，也可手動貼上" />
+          </div>
+          <div className="flex items-center gap-3">
+            <label
+              className={`inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm shadow-sm hover:bg-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {uploading ? "上傳中…" : "上傳圖片"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {id ? "上傳後會自動寫入此商品主圖" : "新增商品請先儲存後再開啟編輯上傳，或先貼網址再儲存"}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>主圖替代文字</Label>
+            <Input {...f("image_alt")} maxLength={200} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>分享預覽圖網址（可選）</Label>
+            <Input {...f("og_image_url")} type="url" placeholder="空白則沿用主圖" />
+          </div>
+        </CardContent>
+      </Card>
+
       {id && (
-        <Card className="border-blue-200 bg-blue-50/30">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm text-blue-800">語言版本管理</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge className="bg-blue-700 text-white hover:bg-blue-800">
-                {SUPPORTED_LOCALES.find((l) => l.value === form.locale)?.label ?? form.locale} ● 目前版本
-              </Badge>
-              {localeVariants.map((v) => (
-                <a key={v.id} href={`/dashboard/products/${v.id}/edit`}>
-                  <Badge variant="outline" className="border-green-500 text-green-700 hover:bg-green-50 cursor-pointer">
-                    {SUPPORTED_LOCALES.find((l) => l.value === v.locale)?.label ?? v.locale} ✓
-                  </Badge>
-                </a>
-              ))}
-              {SUPPORTED_LOCALES.filter(
-                (l) => l.value !== form.locale && !localeVariants.some((v) => v.locale === l.value)
-              ).map((l) => (
-                <a key={l.value} href={`/dashboard/products/new?slug=${encodeURIComponent(form.slug)}&locale=${l.value}`}>
-                  <Badge variant="outline" className="border-dashed text-muted-foreground hover:border-blue-400 hover:text-blue-600 cursor-pointer">
-                    + {l.label}
-                  </Badge>
-                </a>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <LocaleSwitcher
+          entityType="product"
+          basePath="/dashboard/products"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此表單已由 AI 從英文版起草，請逐欄確認用詞與規格後再儲存。
+          </AlertDescription>
+        </Alert>
       )}
 
       <Card>
@@ -233,19 +316,16 @@ export default function ProductForm({ initial, id }: Props) {
             <Label>搜尋說明</Label>
             <Textarea {...f("seo_description")} rows={2} maxLength={160} />
           </div>
-          <div className="space-y-1.5">
-            <Label>分享預覽圖網址</Label>
-            <Input {...f("og_image_url")} type="url" placeholder="https://.../product-og.jpg" />
-            <p className="text-xs text-muted-foreground">建議使用 1200 × 630 的分享圖，供社群分享預覽使用。</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>主圖替代文字</Label>
-            <Input {...f("image_alt")} maxLength={200} placeholder="例：VDE insulated screwdriver set for industrial maintenance" />
-            <p className="text-xs text-muted-foreground">這段文字會用於圖片說明、無障礙標示與搜尋引擎理解。</p>
-          </div>
         </CardContent>
       </Card>
 
+      {id && (
+        <div className="space-y-4">
+          <RelationsPanel entityType="product" entityId={id} linkType="applications" title="關聯應用場景" />
+          <RelationsPanel entityType="product" entityId={id} linkType="certifications" title="關聯認證" />
+          <RelationsPanel entityType="product" entityId={id} linkType="faqs" title="關聯常見問題" />
+        </div>
+      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

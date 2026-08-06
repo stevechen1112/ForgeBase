@@ -14,6 +14,7 @@ class ProductCreate(BaseModel):
     category_id: uuid.UUID
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
+    image_url: Optional[str] = Field(default=None, max_length=500)
     og_image_url: Optional[str] = Field(default=None, max_length=500)
     image_alt: Optional[str] = Field(default=None, max_length=200)
     status: str = Field(default="draft")
@@ -32,6 +33,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[uuid.UUID] = None
     seo_title: Optional[str] = Field(default=None, max_length=70)
     seo_description: Optional[str] = Field(default=None, max_length=160)
+    image_url: Optional[str] = Field(default=None, max_length=500)
     og_image_url: Optional[str] = Field(default=None, max_length=500)
     image_alt: Optional[str] = Field(default=None, max_length=200)
     status: Optional[str] = None
@@ -52,6 +54,7 @@ class ProductRead(BaseModel):
     category_id: uuid.UUID
     seo_title: Optional[str]
     seo_description: Optional[str]
+    image_url: Optional[str]
     og_image_url: Optional[str]
     image_alt: Optional[str]
     status: str
