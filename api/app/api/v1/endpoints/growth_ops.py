@@ -44,7 +44,7 @@ _FACET_ACTIONS = {
     "procurement_readiness": {
         "title": "成交訪客採購準備度高",
         "action": "在商品頁強化 MOQ / 交期 / Incoterms 說明",
-        "link": "/dashboard/content-optimizer",
+        "link": "/dashboard/products",
     },
     "urgency": {
         "title": "成交訪客急迫性訊號強",

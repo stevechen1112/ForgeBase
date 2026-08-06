@@ -7,7 +7,6 @@ Remaining content CRUD endpoints:
   /api/v1/content/capabilities
   /api/v1/content/ctas
   /api/v1/content/pages
-  /api/v1/content/briefs
 """
 import asyncio
 import json
@@ -39,7 +38,6 @@ from app.models.capability import Capability
 from app.models.cta import CTA
 from app.models.idempotency_key import IdempotencyKey
 from app.models.page import Page
-from app.models.page_brief import PageBrief
 from app.schemas.base import APIResponse, PaginationMeta
 from app.services.html_sanitize import sanitize_html
 from app.services.revalidate import revalidate_page
@@ -51,7 +49,6 @@ from app.schemas.content import (
     CapabilityCreate, CapabilityRead, CapabilityUpdate,
     CTACreate, CTARead, CTAUpdate,
     PageCreate, PageRead, PageUpdate,
-    PageBriefCreate, PageBriefRead, PageBriefUpdate,
 )
 
 
@@ -389,11 +386,4 @@ pages_router = make_crud_router(
     CreateSchema=PageCreate, UpdateSchema=PageUpdate,
     sanitize_fields=("body",),
     revalidate_on_change=True,
-)
-
-briefs_router = make_crud_router(
-    prefix="/briefs", tag="briefs",
-    Model=PageBrief, ReadSchema=PageBriefRead,
-    CreateSchema=PageBriefCreate, UpdateSchema=PageBriefUpdate,
-    slug_field=None,
 )

@@ -3,7 +3,6 @@ Phase 3 AI Intelligence Endpoints
 
 3.1.1  POST /tracking/rfqs/{rfq_id}/analyze           — AI RFQ analysis
 3.1.2  POST /tracking/rfqs/{rfq_id}/draft-reply       — AI draft reply email
-3.1.3  POST /content/intelligence/optimize            — AI content optimizer
 3.1.4  GET  /tracking/visitors/{visitor_id}/recommend-cta — CTA recommendation
 3.3.1  GET  /content/dynamic-cta                      — Dynamic CTA for visitor
 3.3.2  GET  /content/products/{product_id}/recommend-relations
@@ -11,7 +10,6 @@ Phase 3 AI Intelligence Endpoints
 """
 import uuid
 import json
-from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,13 +23,11 @@ from app.models.application import Application
 from app.models.associations import ProductApplicationLink
 from app.models.cta import CTA
 from app.models.product import Product
-from app.models.product_category import ProductCategory
 from app.models.rfq_request import RFQProductLink, RFQRequest
 from app.models.tracking_event import TrackingEvent
 from app.models.user import User
 from app.models.visitor import Visitor
 from app.services.ai_rfq import analyze_rfq, generate_rfq_reply_draft
-from app.services.content_optimizer import optimize_content
 from app.services.ai_recommend import recommend_cta_for_visitor
 from app.services.dynamic_cta import select_dynamic_cta
 from app.services.relation_recommender import recommend_relations
@@ -178,95 +174,6 @@ async def draft_rfq_reply_endpoint(
         sender_name=sender_name,
     )
     return draft
-
-
-# ── 3.1.3  AI Content Optimizer ───────────────────────────────────────────────
-
-class OptimizeRequest(BaseModel):
-    entity_type: str        # "product" | "application" | "category"
-    entity_id: str          # UUID
-    period_days: int = 30
-
-
-@content_ai_router.post("/content/intelligence/optimize")
-async def optimize_page_content_endpoint(
-    payload: OptimizeRequest,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_content_editor),
-):
-    """Analyze page performance and generate AI-powered content improvement suggestions."""
-    etype = payload.entity_type
-    eid = payload.entity_id
-    days = payload.period_days
-
-    if etype not in {"product", "application", "category"}:
-        raise HTTPException(status_code=400, detail=f"Unsupported entity_type: {etype}")
-
-    entity_name = ""
-    description = None
-    full_description = None
-    if etype == "product":
-        entity = await session.get(Product, uuid.UUID(eid))
-        if not entity or entity.tenant_id != current_user.tenant_id:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        entity_name = entity.product_name
-        description = entity.seo_description or entity.short_description
-        full_description = entity.full_description
-    elif etype == "application":
-        entity = await session.get(Application, uuid.UUID(eid))
-        if not entity or entity.tenant_id != current_user.tenant_id:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        entity_name = entity.application_name
-        description = entity.seo_description or entity.description
-        full_description = "\n\n".join(part for part in [entity.description, entity.challenge, entity.solution] if part)
-    else:
-        entity = await session.get(ProductCategory, uuid.UUID(eid))
-        if not entity or entity.tenant_id != current_user.tenant_id:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        entity_name = entity.category_name
-        description = entity.seo_description or entity.description
-
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-    events = (
-        await session.exec(
-            select(TrackingEvent).where(
-                TrackingEvent.tenant_id == current_user.tenant_id,
-                TrackingEvent.page_id == uuid.UUID(eid),
-                TrackingEvent.timestamp >= cutoff,
-            )
-        )
-    ).all()
-    visitor_ids = {event.visitor_id for event in events if event.visitor_id}
-    visitors = []
-    if visitor_ids:
-        visitors = (
-            await session.exec(
-                select(Visitor).where(
-                    Visitor.visitor_id.in_(visitor_ids),
-                    Visitor.tenant_id == current_user.tenant_id,
-                )
-            )
-        ).all()
-    analytics = {
-        "page_views": sum(1 for event in events if event.event_name == "page_view"),
-        "unique_visitors": len(visitor_ids),
-        "spec_downloads": sum(1 for event in events if event.event_name == "spec_download"),
-        "rfq_count": sum(1 for event in events if event.event_name == "rfq_submit"),
-        "avg_intent_score": round(sum(visitor.intent_score for visitor in visitors) / len(visitors), 2) if visitors else 0,
-        "period_days": days,
-    }
-
-    page_info = {
-        "page_type": etype,
-        "entity_name": entity_name,
-        "title": entity_name,
-        "seo_title": getattr(entity, "seo_title", None),
-        "description": description,
-        "full_description": full_description,
-    }
-
-    suggestions = await optimize_content(page_info, analytics)
-    return {"entity_id": eid, "entity_type": etype, "analytics": analytics, **suggestions}
 
 
 # ── 3.1.4  CTA Recommendation for Visitor ────────────────────────────────────

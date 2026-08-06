@@ -32,10 +32,9 @@ const PLANS = [
     ],
     excluded: [
       "意圖評分引擎",
-      "AI 內容生成",
       "AI Product Advisor",
       "Dynamic CTA",
-      "多語言支援",
+      "多語言官網（EN + zh-TW）",
     ],
     cta: "免費試用 Starter",
     plan: "starter",
@@ -49,14 +48,13 @@ const PLANS = [
     subtitle: "含 Starter 全部功能，加上完整 Capture → Intent → Conversion 鏈路。",
     features: [
       "含 Starter 所有功能",
-      "多語言官網（EN + zh-TW）",
-      "AI 內容生成（PageBrief 工作流）",
+      "多語言官網（EN + zh-TW，人工維護）",
+      "產品／分類／FAQ／應用／認證 CMS",
       "完整行為追蹤（15 種事件）+ 意圖評分",
       "Dynamic CTA — 依意圖自動切換",
       "AI Product Advisor + Chat → RFQ Handoff",
       "GeoIP 訪客國家辨識",
       "即時通知 + 逾時催辦 + RFQ 事件審計",
-      "Legacy Site Intake（舊站內容搬遷）",
       "無限產品 & 無限管理員",
       "優先技術支援",
     ],
@@ -78,7 +76,7 @@ const FAQ = [
   },
   {
     q: "舊網站的資料怎麼搬過來？",
-    a: "Professional 方案內建 Legacy Site Intake 功能，系統自動爬取你現有網站的產品、規格、FAQ 資料，進入後台審核後一鍵匯入。",
+    a: "目前以後台 CMS 手動建立為主：產品、分類、FAQ、應用與認證皆可直接在後台維護；也可上傳圖片／PDF 規格書後掛到商品。若有大量資料需求，可洽詢協助匯入。",
   },
   {
     q: "支援哪些付款方式？",

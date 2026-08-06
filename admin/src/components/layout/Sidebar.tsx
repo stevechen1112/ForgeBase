@@ -4,11 +4,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Brain, FileText, BarChart2, Target,
-  Sparkles, Bot,
+  Bot,
   Scale, FolderOpen, Package, Factory, HelpCircle, Trophy, Wrench,
-  MousePointerClick, PenLine, Image, Link2, Map, File, ClipboardList,
+  MousePointerClick, Image, Link2, File,
   Inbox, Users, Plug, LogOut, ChevronUp, ChevronRight, Bell, Settings, Globe, MessageSquare,
-  Lock, ListOrdered, TrendingUp, ListChecks, Languages, Mail,
+  Lock, ListOrdered, TrendingUp, ListChecks, Mail, ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { usePlan } from "@/lib/hooks/usePlan";
@@ -92,21 +92,16 @@ const NAV_GROUPS: NavGroup[] = [
       // Sales 需要查閱商品規格以回覆客戶，但不需要管理分類與內容
       { label: "商品管理", href: "/dashboard/products", icon: Package },
       { label: "商品分類", href: "/dashboard/categories", icon: FolderOpen, salesHidden: true },
-      { label: "AI 文案優化", href: "/dashboard/content-optimizer", icon: Sparkles, requiredFeature: "ai_content_generation", salesHidden: true },
-      { label: "多語進度", href: "/dashboard/multilingual", icon: Languages, requiredFeature: "multilingual", salesHidden: true },
-      { label: "內容策略", href: "/dashboard/strategies", icon: Map, salesHidden: true },
-      { label: "寫作大綱", href: "/dashboard/briefs", icon: PenLine, salesHidden: true },
       { label: "頁面管理", href: "/dashboard/pages", icon: File, salesHidden: true },
       { label: "圖片與檔案", href: "/dashboard/assets", icon: Image, salesHidden: true },
       { label: "應用場景", href: "/dashboard/applications", icon: Factory, salesHidden: true },
       { label: "常見問題", href: "/dashboard/faqs", icon: HelpCircle, salesHidden: true },
       { label: "認證管理", href: "/dashboard/certifications", icon: Trophy, salesHidden: true },
       { label: "廠能介紹", href: "/dashboard/capabilities", icon: Wrench, salesHidden: true },
+      { label: "競品比較", href: "/dashboard/comparisons", icon: Scale, salesHidden: true },
       { label: "行動按鈕", href: "/dashboard/ctas", icon: MousePointerClick, requiredFeature: "dynamic_cta", salesHidden: true },
-      // 轉址 / 內容關聯屬系統層操作，僅 admin/owner
+      // 改網址時的斷鏈防護；進階設定，非主打功能
       { label: "舊網址轉址", href: "/dashboard/redirects", icon: Link2, requiredFeature: "seo_redirects", adminOnly: true },
-      { label: "內容關聯", href: "/dashboard/relations", icon: Link2, adminOnly: true },
-      { label: "舊站匯入", href: "/dashboard/intake", icon: ClipboardList, adminOnly: true },
     ],
   },
   {

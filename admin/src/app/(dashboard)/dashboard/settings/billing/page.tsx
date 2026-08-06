@@ -189,7 +189,7 @@ export default function BillingPage() {
                   {
                     name: "Professional",
                     price: "$699/月",
-                    features: ["無限商品", "無限管理員帳號", "進階分析 + 意圖評分", "多語系官網", "整合串接 (GA4、GTM、HubSpot)", "AI 內容生成", "優先技術支援"],
+                    features: ["無限商品", "無限管理員帳號", "進階分析 + 意圖評分", "多語系官網（英／繁）", "整合串接 (GA4、GTM、HubSpot)", "優先技術支援"],
                     current: planInfo.plan === "professional",
                   },
                 ].map((plan) => (

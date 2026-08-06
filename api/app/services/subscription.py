@@ -25,8 +25,7 @@ PLAN_MATRIX: Dict[str, Dict[str, Any]] = {
         "max_products": 50,
         "max_admins": 2,
         "features": {
-            "multilingual": False,
-            "ai_content_generation": False,
+            "multilingual": False,  # EN + zh-TW content rows; AI translate-draft requires Growth
             "full_tracking": False,
             "intent_scoring": False,
             "dynamic_cta": False,
@@ -45,7 +44,6 @@ PLAN_MATRIX: Dict[str, Dict[str, Any]] = {
         "max_admins": None,     # unlimited
         "features": {
             "multilingual": True,
-            "ai_content_generation": True,
             "full_tracking": True,
             "intent_scoring": True,
             "dynamic_cta": True,

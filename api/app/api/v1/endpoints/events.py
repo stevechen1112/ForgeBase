@@ -32,7 +32,6 @@ from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
 from app.models.contact import Contact
 from app.models.user import User
-from app.models.content_strategy import ContentStrategy
 from app.services.intent_scoring import calculate_score_delta, get_intent_stage, should_alert
 from app.services.intent_facets import apply_event_to_visitor, build_intent_explanation
 from app.services.notifications import notify_visitor_hot
@@ -694,67 +693,3 @@ async def events_by_entity(
         entities[key][r[3]] = r[4]
 
     return sorted(entities.values(), key=lambda x: x["page_view"], reverse=True)
-
-
-# ── 2.5.3 Strategy map performance view ──────────────────────────────────────
-
-@router.get("/events/strategy-performance")
-async def strategy_performance(
-    days: int = 30,
-    _feature: User = Depends(RequireFeature("full_tracking")),
-    db: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
-):
-    """
-    Joins ContentStrategy entries with aggregated TrackingEvent data
-    to show performance metrics per strategy map entry.
-    """
-    since = utcnow_naive() - timedelta(days=days)
-
-    # Aggregate events by page_id
-    event_q = (
-        select(
-            TrackingEvent.page_id,
-            TrackingEvent.event_name,
-            func.count(TrackingEvent.event_id).label("count"),
-        )
-        .where(
-            TrackingEvent.timestamp >= since,
-            TrackingEvent.page_id.is_not(None),
-        )
-        .group_by(TrackingEvent.page_id, TrackingEvent.event_name)
-    )
-    if _.tenant_id:
-        event_q = event_q.where(TrackingEvent.tenant_id == _.tenant_id)
-    event_rows = (await db.exec(event_q)).all()
-
-    # Build lookup: {page_id → {event_name → count}}
-    perf: dict[str, dict[str, int]] = {}
-    for row in event_rows:
-        key = str(row[0])
-        perf.setdefault(key, {"page_view": 0, "rfq_start": 0, "rfq_submit": 0, "spec_download": 0})
-        if row[1] in perf[key]:
-            perf[key][row[1]] = row[2]
-
-    # Load all strategy entries
-    strategy_q = select(ContentStrategy)
-    if _.tenant_id:
-        strategy_q = strategy_q.where(ContentStrategy.tenant_id == _.tenant_id)
-    strategies = (await db.exec(strategy_q)).all()
-
-    return [
-        {
-            "id": str(s.id),
-            "page_type": s.page_type,
-            "entity_type": s.entity_type,
-            "entity_id": str(s.entity_id) if s.entity_id else None,
-            "status": s.status,
-            "locale": s.locale,
-            "notes": s.notes,
-            # Performance overlay
-            **perf.get(str(s.entity_id) if s.entity_id else "", {
-                "page_view": 0, "rfq_start": 0, "rfq_submit": 0, "spec_download": 0
-            }),
-        }
-        for s in strategies
-    ]

@@ -8,15 +8,14 @@ from app.api.v1.endpoints.content_crud import (
     capabilities_router,
     ctas_router,
     pages_router,
-    briefs_router,
 )
 from app.api.v1.endpoints import (
-    strategy, ai_generate, assets, relations, publish, orphans,
+    assets, relations, publish, orphans,
     public_relations, preview, page_meta, growth_ops,
     events, visitors, contacts, rfqs, integrations, segments,
-    seo_optimize, esp, analytics, nurture,
+    esp, analytics, nurture,
     ml_scoring, chat, chat_admin,
-    redirects, intake, site_profile,
+    redirects, site_profile, translate,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router,
@@ -41,17 +40,14 @@ content_router.include_router(capabilities_router)
 content_router.include_router(ctas_router)
 content_router.include_router(pages_router)
 content_router.include_router(page_meta.router)
-content_router.include_router(briefs_router)
-content_router.include_router(strategy.router)
-content_router.include_router(ai_generate.router)
 content_router.include_router(assets.router)
 content_router.include_router(relations.router)
 content_router.include_router(publish.router)
 content_router.include_router(orphans.router)
 content_router.include_router(public_relations.router)
 content_router.include_router(preview.router)
-content_router.include_router(seo_optimize.router)  # /content/seo-optimize
 content_router.include_router(redirects.router)     # /content/redirects/* SEO redirect mgmt
+content_router.include_router(translate.router)     # /content/translate-draft LLM locale drafting
 api_router.include_router(content_router)
 
 # Phase 1b: Tracking — /api/v1/tracking/
@@ -68,10 +64,10 @@ tracking_router.include_router(nurture.router)             # /tracking/nurture/*
 api_router.include_router(tracking_router)
 api_router.include_router(growth_ops.ops_router)           # /ops/task-queue
 
-# Phase 3: AI Intelligence — full paths defined in each router
+# Phase 3: AI Intelligence — RFQ / visitor / dynamic CTA (content factory removed)
 api_router.include_router(rfq_ai_router)       # /tracking/rfqs/{id}/analyze, /draft-reply
 api_router.include_router(visitor_ai_router)   # /tracking/visitors/{id}/recommend-cta
-api_router.include_router(content_ai_router)   # /content/intelligence/optimize, /dynamic-cta, /recommend-relations
+api_router.include_router(content_ai_router)   # /content/dynamic-cta, /recommend-relations
 api_router.include_router(ml_scoring.router)   # /tracking/ml/*
 
 # Phase 1b: Public Forms — /api/v1/forms/
@@ -83,9 +79,6 @@ api_router.include_router(forms_router)
 # Chat MVP — /api/v1/chat/*
 api_router.include_router(chat.router)
 api_router.include_router(chat_admin.router)
-
-# Legacy Site Intake — /api/v1/intake/*
-api_router.include_router(intake.router)
 
 # Site Profile — /api/v1/site-profile
 api_router.include_router(site_profile.router)

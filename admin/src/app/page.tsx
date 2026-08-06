@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight, BarChart3, Brain, Check, Globe, Users, Zap, FileText,
-  MessageSquare, Upload, Bell, MousePointerClick,
+  MessageSquare, Bell, MousePointerClick, Package,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { Button } from "@/components/ui/button";
@@ -19,43 +19,43 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 const FEATURES = [
   {
     icon: Brain,
-    title: "AI 意圖評分",
+    title: "買家意圖評分",
     desc: "自動識別 Hot / Warm / Cold 買家，讓業務優先跟進最有潛力的詢價",
   },
   {
-    icon: FileText,
-    title: "AI 內容生成",
-    desc: "基於 PageBrief 工作流，一鍵產出 SEO 優化的產品頁、應用情境、FAQ",
+    icon: Package,
+    title: "商品與內容後台",
+    desc: "商品、分類、FAQ、應用、認證可自行維護，官網即時反映",
   },
   {
     icon: BarChart3,
     title: "行銷漏斗分析",
-    desc: "完整追蹤 15 種訪客事件，從曝光到詢價的每一步全可視化",
+    desc: "完整追蹤訪客事件，從曝光到詢價的每一步全可視化",
   },
   {
     icon: Globe,
     title: "多語言官網",
-    desc: "英文 + 繁體中文同步管理，hreflang 自動產生，打入全球買家市場",
+    desc: "英文 + 繁體中文人工維護，hreflang 自動產生，打入全球買家市場",
   },
   {
     icon: Zap,
-    title: "Dynamic CTA",
+    title: "動態行動按鈕",
     desc: "依訪客意圖階段動態切換行動呼籲，大幅提升詢價轉換率",
   },
   {
     icon: Users,
-    title: "RFQ 追蹤管理",
+    title: "詢價追蹤管理",
     desc: "結構化詢價收件箱、狀態管理、首次回覆計時，一筆詢價都不漏接",
   },
   {
     icon: MessageSquare,
-    title: "AI Product Advisor",
-    desc: "在產品頁嵌入 AI 對話，買家問規格、認證、交期，聊到有興趣就導入 RFQ",
+    title: "官網 AI 導購",
+    desc: "在產品頁嵌入 AI 對話，買家問規格、認證、交期，聊到有興趣就導入詢價",
   },
   {
-    icon: Upload,
-    title: "Legacy Site Intake",
-    desc: "不用從零開始——自動爬取舊網站內容，審核後一鍵匯入 ForgeBase",
+    icon: FileText,
+    title: "搜尋引擎基礎",
+    desc: "網站地圖、正規網址、結構化資料齊備，讓 Google 找得到你的產品",
   },
 ];
 
@@ -85,12 +85,11 @@ const PLANS = [
     desc: "意圖識別 + AI 導購 + 全閉環跟進",
     features: [
       "含 Starter 所有功能",
-      "多語言（EN + zh-TW）",
-      "AI 內容生成（PageBrief）",
+      "多語言（英文 + 繁中，人工維護）",
       "意圖評分引擎 + 儀表板",
-      "Dynamic CTA",
-      "AI Product Advisor（Chat）",
-      "Chat → RFQ Handoff",
+      "動態行動按鈕",
+      "官網 AI 導購對話",
+      "對話轉詢價",
       "無限商品 & 管理員",
       "優先技術支援",
     ],
@@ -103,8 +102,8 @@ const PLANS = [
 const STEPS = [
   {
     num: 1,
-    title: "搬資料",
-    desc: "系統自動讀取你現有網站上的所有產品資料、規格、常見問題，整理成清單讓你確認",
+    title: "整理內容",
+    desc: "在後台建立商品、分類、FAQ、應用與認證，必要時用外部 AI 協助寫稿後貼上即可",
   },
   {
     num: 2,
@@ -130,7 +129,7 @@ const COMPARE = [
   ["報告給你看流量數字", "告訴你哪個買家最可能下單"],
   ["幫你管理網站內容", "幫你把訪客變成詢價單"],
   ["做完交件就結束了", "持續幫你優化，效果越來越好"],
-  ["舊網站要整個打掉重做", "舊網站的資料可以直接搬過來，分批上線"],
+  ["只有好看的網站", "有意圖評分與詢價追蹤，能真正接單"],
   ["業務要自己看報表找客戶", "有認真買家或新詢價，系統主動通知業務"],
 ];
 
@@ -196,7 +195,7 @@ export default function LandingPage() {
           <div className="hidden lg:block">
             <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 overflow-hidden shadow-xl relative">
               <img
-                src="/sales-page/sales-hero-dashboard-mockup.jpg"
+                src="/backend/sales-page/sales-hero-dashboard-mockup.jpg"
                 alt="ForgeBase Dashboard — Visitor Intent Scoring"
                 className="w-full h-full object-cover relative z-10"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -329,7 +328,7 @@ export default function LandingPage() {
             </div>
             <div className="aspect-video rounded-2xl bg-gradient-to-br from-slate-800 to-slate-700 border border-white/10 overflow-hidden shadow-2xl relative">
               <img
-                src="/sales-page/sales-ai-advisor-chat.jpg"
+                src="/backend/sales-page/sales-ai-advisor-chat.jpg"
                 alt="AI Product Advisor 對話截圖"
                 className="w-full h-full object-cover relative z-10"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
