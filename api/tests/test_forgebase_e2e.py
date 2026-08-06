@@ -85,6 +85,10 @@ async def test_forgebase_e2e(http_client: AsyncClient):
       在已有 event loop 的 async 測試中必須透過 asyncio.to_thread() 執行，
       讓 service 在 thread pool 裡建立獨立的 event loop，避免衝突。
     """
+    pytest.importorskip(
+        "agent_platform",
+        reason="AgentOS runtime package（外部獨立產品）未安裝於此環境；此測試僅在 AgentOS repo 環境執行",
+    )
     from sqlalchemy import create_engine
     from sqlalchemy.pool import StaticPool
     from agent_platform.persistence.tables import (

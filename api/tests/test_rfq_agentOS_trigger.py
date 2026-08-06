@@ -31,11 +31,16 @@ Run with DB:
     DATABASE_URL=postgresql+asyncpg://... pytest tests/test_rfq_agentOS_trigger.py -v
 """
 
-import json
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+import uuid
+from contextlib import asynccontextmanager
 
-from tests.conftest import requires_db
+import httpx
+import pytest
+from unittest.mock import MagicMock, patch
+
+from app.core.config import settings
+from app.models.rfq_request import RFQRequest
+from tests.conftest import requires_db, _make_engine
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -60,9 +65,11 @@ _RFQ_FORM_PAYLOAD = {
     "email": "buyer@acme.com",
     "full_name": "Alice Buyer",
     "company_name": "ACME Corp",
+    "country": "US",
     "product_interests": ["product-test-001"],
     "timeline": "1-3 months",
     "how_did_you_find_us": "google",
+    "consent": True,
 }
 
 # ---------------------------------------------------------------------------
@@ -70,19 +77,40 @@ _RFQ_FORM_PAYLOAD = {
 # ---------------------------------------------------------------------------
 
 
+@asynccontextmanager
+async def _service_test_session_ctx():
+    """Isolated NullPool session for app.services.agentOS to avoid cross-loop issues."""
+    eng, factory = _make_engine()
+    try:
+        async with factory() as db:
+            yield db
+    finally:
+        await eng.dispose()
+
+
 def _make_fake_agentOS_post(received: dict):
-    """Return an AsyncMock that captures the AgentOS POST /tasks call."""
+    """Selective httpx mock: intercept only AgentOS POST /tasks, pass everything else through.
 
-    async def _post(url, *, json=None, **kwargs):
-        received["url"] = str(url)
-        received["payload"] = json
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = _AGENTOSS_TASK_RESPONSE
-        mock_resp.raise_for_status = MagicMock()
-        return mock_resp
+    注意：patch 的目標是 httpx.AsyncClient.post，測試自己的 http_client 也走同一個
+    方法；若不選擇性攔截，第一個被捕捉的會是測試送出的 /api/v1/forms/rfq 請求本身，
+    導致請求根本到不了 app（這正是先前三個測試失敗的根因）。
+    """
+    original_post = httpx.AsyncClient.post
+    agentOS_task_url = f"{settings.AGENTOSS_URL}/tasks"
 
-    return AsyncMock(side_effect=_post)
+    async def _post(self, url, *args, **kwargs):
+        url_str = str(url)
+        if url_str == agentOS_task_url:
+            received["url"] = url_str
+            received["payload"] = kwargs.get("json")
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = _AGENTOSS_TASK_RESPONSE
+            mock_resp.raise_for_status = MagicMock()
+            return mock_resp
+        return await original_post(self, url, *args, **kwargs)
+
+    return _post
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +130,10 @@ async def test_rfq_creation_calls_agentOS_with_correct_payload(http_client):
     """
     received: dict = {}
 
-    with patch("httpx.AsyncClient.post", new=_make_fake_agentOS_post(received)):
+    with (
+        patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx),
+        patch.object(httpx.AsyncClient, "post", new=_make_fake_agentOS_post(received)),
+    ):
         rfq_response = await http_client.post(
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
@@ -126,9 +157,8 @@ async def test_rfq_creation_calls_agentOS_with_correct_payload(http_client):
         "Expected 'forgebase_rfq'."
     )
 
-    rfq_identifier = (
-        rfq_response.json().get("rfq_number") or rfq_response.json().get("id")
-    )
+    # workflow_input.rfq_id 綁定的是 RFQRequest.id（UUID），不是 rfq_number
+    rfq_identifier = rfq_response.json()["rfq_id"]
     assert str(rfq_identifier) in str(payload["workflow_input"].get("rfq_id", "")), (
         f"AgentOS workflow_input.rfq_id does not match the created RFQ. "
         f"Sent rfq_id={payload['workflow_input'].get('rfq_id')!r}, "
@@ -144,28 +174,33 @@ async def test_rfq_creation_stores_agent_run_id_on_rfq_record(http_client):
     into rfq.agent_run_id so the Admin UI can display task status without
     requiring a manual run_id input.
 
-    Will fail until:
-    - RFQRequest.agent_run_id field exists.
-    - Creation handler persists run_id returned from AgentOS.
+    驗證方式說明：公開表單回應刻意不含 agent_run_id（內部 run id 不應暴露給
+    訪客），因此直接查 DB 驗證持久化；Admin 端的序列化由
+    test_rfq_detail_endpoint_exposes_agent_run_id 覆蓋。
     """
     received: dict = {}
 
-    with patch("httpx.AsyncClient.post", new=_make_fake_agentOS_post(received)):
+    with (
+        patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx),
+        patch.object(httpx.AsyncClient, "post", new=_make_fake_agentOS_post(received)),
+    ):
         rfq_response = await http_client.post(
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
         )
 
     assert rfq_response.status_code in (200, 201), rfq_response.text
-    rfq_data = rfq_response.json()
+    rfq_id = uuid.UUID(rfq_response.json()["rfq_id"])
 
-    assert "agent_run_id" in rfq_data, (
-        "RFQ creation response does not include agent_run_id. "
-        "Add agent_run_id to the RFQRequest model and return it in the response schema."
-    )
-    assert rfq_data["agent_run_id"] == FAKE_AGENTOSS_RUN_ID, (
+    eng, factory = _make_engine()
+    async with factory() as db:
+        rfq = await db.get(RFQRequest, rfq_id)
+    await eng.dispose()
+
+    assert rfq is not None, f"RFQ {rfq_id} 在資料庫中找不到"
+    assert rfq.agent_run_id == FAKE_AGENTOSS_RUN_ID, (
         f"agent_run_id mismatch. "
-        f"Expected {FAKE_AGENTOSS_RUN_ID!r}, got {rfq_data.get('agent_run_id')!r}. "
+        f"Expected {FAKE_AGENTOSS_RUN_ID!r}, got {rfq.agent_run_id!r}. "
         "ForgeBase must store the run_id returned by AgentOS into the RFQ record."
     )
 
@@ -178,32 +213,62 @@ async def test_rfq_detail_endpoint_exposes_agent_run_id(http_client):
     RFQ detail page can display AgentOS task status automatically — without
     requiring the user to manually input a run_id.
 
-    Will fail until:
-    - RFQ detail schema includes agent_run_id.
-    - agent_run_id is populated from the DB record.
+    此端點需要登入（get_current_user）；測試建立 tenantless admin
+    （tenant_id=None 可跨租戶讀取，與 production seed admin 相同）。
     """
+    from app.core.security import create_access_token, get_password_hash
+    from app.models.user import User
+
     received: dict = {}
 
-    with patch("httpx.AsyncClient.post", new=_make_fake_agentOS_post(received)):
+    with (
+        patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx),
+        patch.object(httpx.AsyncClient, "post", new=_make_fake_agentOS_post(received)),
+    ):
         create_response = await http_client.post(
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
         )
 
     assert create_response.status_code in (200, 201), create_response.text
-    created = create_response.json()
-    rfq_id = created.get("id") or created.get("rfq_number")
+    rfq_id = create_response.json()["rfq_id"]
 
-    get_response = await http_client.get(f"/api/v1/tracking/rfqs/{rfq_id}")
-    assert get_response.status_code == 200, get_response.text
-    fetched = get_response.json()
+    eng, factory = _make_engine()
+    async with factory() as session:
+        admin = User(
+            email=f"agentos-admin-{uuid.uuid4().hex[:8]}@test.invalid",
+            hashed_password=get_password_hash("testpass"),
+            full_name="AgentOS Test Admin",
+            role="admin",
+            tenant_id=None,
+        )
+        session.add(admin)
+        await session.commit()
+        await session.refresh(admin)
+        admin_id = admin.id
+        token = create_access_token(str(admin_id))
 
-    assert "agent_run_id" in fetched, (
-        f"GET /tracking/rfqs/{rfq_id} does not return agent_run_id. "
-        "Ensure the RFQ detail schema serializes agent_run_id."
-    )
-    assert fetched["agent_run_id"] == FAKE_AGENTOSS_RUN_ID, (
-        f"Fetched agent_run_id={fetched.get('agent_run_id')!r} does not match "
-        f"the run_id returned by AgentOS ({FAKE_AGENTOSS_RUN_ID!r}). "
-        "Check that the value is persisted and not discarded."
-    )
+    try:
+        get_response = await http_client.get(
+            f"/api/v1/tracking/rfqs/{rfq_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert get_response.status_code == 200, get_response.text
+        fetched = get_response.json()
+
+        assert "agent_run_id" in fetched, (
+            f"GET /tracking/rfqs/{rfq_id} does not return agent_run_id. "
+            "Ensure the RFQ detail schema serializes agent_run_id."
+        )
+        assert fetched["agent_run_id"] == FAKE_AGENTOSS_RUN_ID, (
+            f"Fetched agent_run_id={fetched.get('agent_run_id')!r} does not match "
+            f"the run_id returned by AgentOS ({FAKE_AGENTOSS_RUN_ID!r}). "
+            "Check that the value is persisted and not discarded."
+        )
+    finally:
+        async with factory() as session:
+            row = await session.get(User, admin_id)
+            if row:
+                await session.delete(row)
+                await session.commit()
+        await eng.dispose()

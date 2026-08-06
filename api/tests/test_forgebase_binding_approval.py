@@ -231,6 +231,10 @@ def test_forgebase_approval_gate():
     注意：使用獨立的 SQLite engine，只建立 agent_platform tables，
     避免 ForgeBase JSONB 欄位與 SQLite 的相容性問題。
     """
+    pytest.importorskip(
+        "agent_platform",
+        reason="AgentOS runtime package（外部獨立產品）未安裝於此環境；此測試僅在 AgentOS repo 環境執行",
+    )
     from sqlalchemy import create_engine
     from sqlalchemy.pool import StaticPool
     from agent_platform.persistence.tables import (
