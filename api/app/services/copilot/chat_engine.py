@@ -26,7 +26,7 @@ from sqlmodel import col, select
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
-from app.core.tracing import get_openai_client
+from app.core.tracing import get_openai_client, chat_completion_kwargs
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
 from app.models.copilot_run_log import CopilotRunLog
@@ -533,14 +533,9 @@ class CopilotEngine:
         rows = list(reversed(rows))
         messages = []
         for row in rows:
-            msg: dict = {"role": row.role, "content": row.content}
-            # Re-attach tool_calls for assistant messages if present
-            if row.role == "assistant" and row.tool_calls:
-                try:
-                    msg["tool_calls"] = json.loads(row.tool_calls)
-                except Exception:
-                    pass
-            messages.append(msg)
+            # Persisted history stores only final user/assistant text turns.
+            # Never replay tool_calls from DB — incomplete tool sequences break the API.
+            messages.append({"role": row.role, "content": row.content})
         return messages
 
     async def _save_message(
@@ -638,7 +633,6 @@ class CopilotEngine:
         ]
 
         final_reply = ""
-        tool_calls_for_history: Optional[str] = None
         tool_names: list[str] = []
         llm_calls = 0
 
@@ -649,8 +643,11 @@ class CopilotEngine:
                 messages=messages,
                 tools=_TOOLS,
                 tool_choice="auto",
-                temperature=0.3,        # deterministic for business queries
-                max_tokens=2048,
+                **chat_completion_kwargs(
+                    temperature=0.3,
+                    max_output_tokens=2048,
+                    with_tools=True,
+                ),
             )
 
             choice = response.choices[0]
@@ -678,22 +675,6 @@ class CopilotEngine:
                     "content": result_str,
                 })
 
-            # Serialize tool_calls for history
-            if loop == 0:
-                tool_calls_for_history = json.dumps(
-                    [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments,
-                            },
-                        }
-                        for tc in msg.tool_calls
-                    ]
-                )
-
             # Append assistant + tool results to message list and continue
             messages.append(msg.model_dump(exclude_none=True))
             messages.extend(tool_results)
@@ -715,7 +696,7 @@ class CopilotEngine:
 
         # Persist to history
         await self._save_message("user", user_message)
-        await self._save_message("assistant", final_reply, tool_calls_for_history)
+        await self._save_message("assistant", final_reply)
 
         duration_ms = int((time.perf_counter() - started_at) * 1000)
         logger.info(

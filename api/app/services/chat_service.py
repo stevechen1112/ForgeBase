@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
-from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
+from app.core.tracing import get_openai_client, chat_completion_kwargs, WorkflowType, observe_workflow, attach_trace_metadata
 from app.models.application import Application
 from app.models.certification import Certification
 from app.models.chat import ChatMessage, ChatSession
@@ -820,7 +820,7 @@ class ChatService:
                     },
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.2,
+                **chat_completion_kwargs(temperature=0.2),
             )
             content = response.choices[0].message.content or "{}"
             return json.loads(content)

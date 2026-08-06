@@ -196,62 +196,58 @@ class WorkflowType:
     CONTENT_OPTIMIZE   = "content_optimize"
     RELATION_RECOMMEND = "relation_recommend"
     SEO_OPTIMIZE       = "seo_optimize"
+    TRANSLATE          = "translate"
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 def get_openai_client(api_key: str | None = None, base_url: str | None = None):
     """
-    Return an AsyncOpenAI-compatible client for the configured provider.
+    Return an AsyncOpenAI client for OpenAI.
 
-    The current implementation supports OpenAI and Gemini's OpenAI-compatible
-    endpoint. When Langfuse is running, returns a `langfuse.openai.AsyncOpenAI`
+    When Langfuse is running, returns a `langfuse.openai.AsyncOpenAI`
     instance which automatically captures every `.chat.completions.create()`
     call as a Langfuse observation span — no changes needed at call sites.
 
     When Langfuse is not configured (or the package is missing), returns a
     plain `openai.AsyncOpenAI` with identical interface.
-
-    Migration guide — change each AI service module from:
-
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
-    to:
-
-        from app.core.tracing import get_openai_client
-        client = get_openai_client()
-
-    Priority order for Phase 1:
-        1. chat_service.py
-        2. ai_rfq.py
-        3. ai_recommend.py
-        4. intake_engine.py
-        5. ai_engine.py, content_optimizer.py, relation_recommender.py
-        6. seo_optimize.py (endpoint-level)
     """
-    provider = (settings.AI_PROVIDER or "openai").strip().lower()
-
-    if provider == "gemini":
-        key = api_key or settings.GEMINI_API_KEY
-        resolved_base_url = base_url or settings.GEMINI_BASE_URL
-        if not key:
-            raise RuntimeError("GEMINI_API_KEY is required when AI_PROVIDER=gemini")
-        client_kwargs = {"api_key": key, "base_url": resolved_base_url}
-    elif provider == "openai":
-        key = api_key or settings.OPENAI_API_KEY
-        if not key:
-            raise RuntimeError("OPENAI_API_KEY is required when AI_PROVIDER=openai")
-        client_kwargs = {"api_key": key}
-        if base_url:
-            client_kwargs["base_url"] = base_url
-    else:
-        raise RuntimeError(f"Unsupported AI_PROVIDER: {settings.AI_PROVIDER}")
+    key = api_key or settings.OPENAI_API_KEY
+    if not key:
+        raise RuntimeError("OPENAI_API_KEY is required")
+    client_kwargs: dict = {"api_key": key}
+    if base_url:
+        client_kwargs["base_url"] = base_url
 
     if _langfuse_enabled and _TracedAsyncOpenAI is not None:
         return _TracedAsyncOpenAI(**client_kwargs)
     from openai import AsyncOpenAI
     return AsyncOpenAI(**client_kwargs)
+
+
+def chat_completion_kwargs(
+    *,
+    max_output_tokens: int | None = None,
+    temperature: float | None = None,
+    model: str | None = None,
+    with_tools: bool = False,
+) -> dict:
+    """Return create() kwargs that work with both legacy and GPT-5 models."""
+    model_name = (model or settings.AI_MODEL_NAME or "").lower()
+    is_reasoning_family = model_name.startswith(("gpt-5", "o1", "o3", "o4"))
+    kwargs: dict = {}
+    # GPT-5/o-series only accept the default temperature (1); sending any
+    # other value returns 400 "unsupported_value".
+    if temperature is not None and not is_reasoning_family:
+        kwargs["temperature"] = temperature
+    if max_output_tokens is not None:
+        if is_reasoning_family:
+            kwargs["max_completion_tokens"] = max_output_tokens
+        else:
+            kwargs["max_tokens"] = max_output_tokens
+    if with_tools and is_reasoning_family:
+        kwargs["reasoning_effort"] = "none"
+    return kwargs
 
 
 def attach_trace_metadata(

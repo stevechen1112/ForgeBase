@@ -19,10 +19,8 @@
 
 | 變數 | 說明 |
 |---|---|
-| `AI_PROVIDER` | `openai` 或 `gemini` |
-| `OPENAI_API_KEY` / `GEMINI_API_KEY` | 對應供應商的 API key |
-| `GEMINI_BASE_URL` | Gemini OpenAI 相容端點 |
-| `AI_MODEL_NAME` | 模型名（預設 `gemini-3-flash-preview`） |
+| `OPENAI_API_KEY` | OpenAI API key（本系統僅使用 OpenAI LLM） |
+| `AI_MODEL_NAME` | 模型名（預設 `gpt-5.6-luna`） |
 
 ### 1.3 通知（T5 即時通知）
 

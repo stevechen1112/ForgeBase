@@ -125,16 +125,7 @@ async def test_copilot_engine_runs_tool_loop_and_persists_history(monkeypatch):
     assert saved_messages[0] == ("user", "今天有幾個新 RFQ？", None)
     assert saved_messages[1][0] == "assistant"
     assert saved_messages[1][1] == "整理完成的業務摘要"
-    assert json.loads(saved_messages[1][2]) == [
-        {
-            "id": "tool-1",
-            "type": "function",
-            "function": {
-                "name": "get_dashboard_stats",
-                "arguments": '{"hours": 24}',
-            },
-        }
-    ]
+    assert saved_messages[1][2] is None
 
 
 @requires_db

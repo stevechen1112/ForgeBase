@@ -9,7 +9,7 @@ import logging
 from typing import Any
 
 from app.core.config import settings
-from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
+from app.core.tracing import get_openai_client, chat_completion_kwargs, WorkflowType, observe_workflow, attach_trace_metadata
 
 logger = logging.getLogger(__name__)
 client = get_openai_client()
@@ -100,8 +100,7 @@ Return JSON:
                 {"role": "user", "content": prompt},
             ],
             response_format={"type": "json_object"},
-            temperature=0.3,
-            max_tokens=600,
+            **chat_completion_kwargs(temperature=0.3, max_output_tokens=600),
         )
         return json.loads(resp.choices[0].message.content)
     except Exception as e:

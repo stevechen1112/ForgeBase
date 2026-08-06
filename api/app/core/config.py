@@ -16,11 +16,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    # LLM provider
-    AI_PROVIDER: str = "openai"
+    # LLM provider — OpenAI only
     OPENAI_API_KEY: str = ""
-    GEMINI_API_KEY: str = ""
-    GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     AI_MODEL_NAME: str = "gpt-5.6-luna"
 
     # Cloudflare R2

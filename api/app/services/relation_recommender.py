@@ -18,7 +18,7 @@ from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
-from app.core.tracing import get_openai_client, WorkflowType, observe_workflow, attach_trace_metadata
+from app.core.tracing import get_openai_client, chat_completion_kwargs, WorkflowType, observe_workflow, attach_trace_metadata
 
 logger = logging.getLogger(__name__)
 client = get_openai_client()
@@ -195,8 +195,7 @@ Only include candidates with confidence_score >= 60 or co_visitor_count >= 3."""
                 {"role": "user", "content": prompt},
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,
-            max_tokens=800,
+            **chat_completion_kwargs(temperature=0.2, max_output_tokens=800),
         )
         ai_result = json.loads(resp.choices[0].message.content)
         return {
