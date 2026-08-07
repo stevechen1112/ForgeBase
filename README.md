@@ -27,14 +27,23 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 | 模組 | 說明 |
 |------|------|
 | **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 |
-| **多語言支援** | 英文 + 繁體中文，hreflang 自動產生 |
+| **多語言支援** | 僅 **英文（`en`）+ 繁體中文（`zh-tw`）**；前台 hreflang；locale 全鏈路正規化（`zh-TW`→`zh-tw`）|
+| **英文母語自動同步（v1）** | 存英文內容後，LLM 自動 upsert 繁中並跟來源狀態上線（Professional `multilingual`）；人工改過的繁中欄位寫入 `content_field_locks`，下次同步跳過 |
 | **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
-| **LLM 多語草稿** | `POST /content/translate-draft`：以 LLM 產生其他語言版本的內容草稿，進入既有審核流 |
+| **LLM 多語草稿（選用）** | `POST /content/translate-draft`：手動 AI 起草繁中（補建／覆核用）；**主路徑是存英文自動同步**，無待審／核准 UI |
 | **產品比較頁（Comparisons）** | 產品間規格比較內容型別，前後台完整 CRUD |
 | **製造能力頁（Capabilities）** | 產線、設備、製程能力內容型別，建立 B2B 信任 |
 | **內容關聯推薦** | AI 建議 Product ↔ Application 雙向關聯（`/content/*/recommend-relations`），加上行為共現推薦引擎 |
 | **Legacy Site Intake** | 匯入既有企業官網或型錄站，抽取內容候選資料後進入 admin 審核與提交流程 |
 | **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2；素材缺失可被自診斷健康檢查主動發現 |
+
+**多語 v1 行為摘要（已上線）：**
+
+- **母語：** 英文；**目標語：** 僅繁中（日文等未開）
+- **觸發：** 商品／分類／頁面／應用／FAQ／認證／廠能／競品比較／CTA 的 EN create／update（commit 後背景任務）
+- **後台：** 列表語系篩選只留 en／zh-tw；多數內容表單有 `LocaleSwitcher` 同頁切語系；FAQ 以 `variant_key` 配對
+- **刻意不做：** 導覽／頁尾 JSON 自動同步、待審中心、術語庫必填  
+  詳見 [`MULTILINGUAL_PRODUCT_VISION.md`](MULTILINGUAL_PRODUCT_VISION.md)
 
 ### Intent — 辨識誰在評估、誰有採購意圖
 
@@ -238,7 +247,7 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ### Professional 專業（$699/月）— 意圖識別 + AI 導購 + 業務跟進全閉環
 
-含 Starter 全部，加上：多語言（EN + zh-TW）、AI 內容生成、完整行為追蹤、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI 業務顧問、Chat → RFQ handoff、即時通知、逾時催辦；產品與管理員帳號無上限。
+含 Starter 全部，加上：多語言（EN 母語 → 繁中自動同步上線）、AI 內容生成、完整行為追蹤、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI 業務顧問、Chat → RFQ handoff、即時通知、逾時催辦；產品與管理員帳號無上限。
 
 方案由 feature flag 真正驅動前後台行為：Admin 側欄依方案裁切、`PlanGate` 路由層阻擋、inline upgrade UX、後端 `RequireFeature` 同步檢查。代表性 flags：`full_tracking`、`intent_scoring`、`chat_handoff`、`ai_content_generation`、`seo_redirects`、`multilingual`、`dynamic_cta`。
 
@@ -259,10 +268,10 @@ ForgeBase/
 │   ├── Dockerfile            # 生產映像（uvicorn）
 │   ├── app/
 │   │   ├── api/v1/           # REST endpoints（chat、intake、copilot、knowledge…）
-│   │   ├── db/migrations/    # Alembic migrations（head = 0058）
+│   │   ├── db/migrations/    # Alembic migrations（head = 0060）
 │   │   ├── models/           # SQLModel 資料模型（多租戶 tenant_id）
 │   │   ├── schemas/          # Pydantic 輸入/輸出 schema
-│   │   └── services/         # 業務服務（chat_service、copilot/、rfq_quality、sla…）
+│   │   └── services/         # 業務服務（locale_sync、chat_service、copilot/、rfq_quality、sla…）
 │   ├── scripts/              # 維運腳本（seed、backfill）
 │   └── tests/                # pytest（含 chat、copilot、e2e growth loop）
 ├── web/                      # 前台網站 (Next.js 15，standalone 輸出)
@@ -397,7 +406,7 @@ cp .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 0001 → 0058
+alembic upgrade head           # 0001 → 0060
 uvicorn app.main:app --reload --port 8000
 
 # 2. 前台網站
@@ -458,6 +467,7 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 | [FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md](FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md) | Phase 3 票級紀錄（Intent Score 2.0 facets）|
 | [FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md](FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md) | Phase 4 票級紀錄（成果與閉環）|
 | [FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md](FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md) | Phase 5 票級紀錄（歸因＋E2E）|
+| [MULTILINGUAL_PRODUCT_VISION.md](MULTILINGUAL_PRODUCT_VISION.md) | 多語產品構想與 v1（英文母語自動同步）範圍／決策 |
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
 | [ForgeBase_部署與維運注意事項.md](ForgeBase_部署與維運注意事項.md) | production 部署、standalone 資產檢查與維運紅線 |
 | [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
@@ -465,6 +475,18 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 ---
 
 ## 版本更新紀錄
+
+### v1.2 — 英文母語多語自動同步（2026-08-07）
+
+| 類別 | 變更 |
+|------|------|
+| **同步** | 新增 `locale_sync`：存 EN 後自動翻譯／更新 `zh-tw`，狀態跟來源直接上線；需 Professional `multilingual` |
+| **防呆** | `content_field_locks`：繁中手改欄位下次自動同步跳過；無待審／核准 UI |
+| **資料** | migrations `0059`（locks／FAQ `variant_key`／`model_number` 含 locale）+ `0060`（拿掉全域 slug UNIQUE，改 per-locale）|
+| **FK** | 產品分類／分類父子／Page `entity_id` 跨語系重映射到目標語對應列 |
+| **Admin** | 列表假語系選項移除；`LocaleSwitcher` 說明文案＋同頁切語系；FAQ 起草帶 `variant_key` |
+| **Locale** | API／web／admin 統一正規化；前台路由 `zh-TW` ↔ DB `zh-tw` |
+| **驗證** | Linode 端到端：EN 分類／產品／FAQ 存檔 → 自動產生 published 繁中列 |
 
 ### v1.1 — Docker 化全棧部署 + 素材自診斷 + AI 客服線上驗證（2026-08-06）
 
