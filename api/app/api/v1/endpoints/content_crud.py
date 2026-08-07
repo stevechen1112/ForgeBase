@@ -88,6 +88,7 @@ def make_crud_router(
     locale_filter: bool = True,
     sanitize_fields: tuple[str, ...] = (),
     revalidate_on_change: bool = False,
+    sync_entity_type: str | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
 
@@ -106,6 +107,14 @@ def make_crud_router(
         locale = getattr(item, "locale", "en") or "en"
         task = asyncio.create_task(revalidate_page(slug, locale, include_sitemap=True))
         task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
+
+    def _maybe_schedule_locale_sync(item: Any) -> None:
+        if not sync_entity_type:
+            return
+        from app.core.locale import is_source_locale
+        from app.services.locale_sync import schedule_locale_sync
+        if is_source_locale(getattr(item, "locale", None)):
+            schedule_locale_sync(sync_entity_type, item.id)
 
     def _apply_public_tenant_scope(
         query,
@@ -168,7 +177,8 @@ def make_crud_router(
             base_q, tenant_id, include_legacy_null=include_legacy_null
         )
         if locale_filter and hasattr(Model, "locale") and locale:
-            base_q = base_q.where(Model.locale == locale)
+            from app.core.locale import to_content_locale
+            base_q = base_q.where(Model.locale == to_content_locale(locale))
         if item_status and hasattr(Model, "status"):
             base_q = base_q.where(Model.status == item_status)
         if slug and hasattr(Model, "slug"):
@@ -222,9 +232,15 @@ def make_crud_router(
             if slug_val:
                 # if model has locale, uniqueness is per (slug, locale)
                 locale_val = getattr(payload, "locale", None)
-                conflict_q = select(Model).where(getattr(Model, slug_field) == slug_val)
                 if locale_val and hasattr(Model, "locale"):
-                    conflict_q = conflict_q.where(Model.locale == locale_val)
+                    from app.core.locale import to_content_locale
+                    locale_val = to_content_locale(str(locale_val))
+                    conflict_q_locale = locale_val
+                else:
+                    conflict_q_locale = None
+                conflict_q = select(Model).where(getattr(Model, slug_field) == slug_val)
+                if conflict_q_locale and hasattr(Model, "locale"):
+                    conflict_q = conflict_q.where(Model.locale == conflict_q_locale)
                 if hasattr(Model, "tenant_id"):
                     conflict_q = conflict_q.where(Model.tenant_id == tenant_id)
                 existing = await session.exec(conflict_q)
@@ -239,6 +255,13 @@ def make_crud_router(
             dump["created_by"] = _user.id
         if hasattr(Model, "tenant_id") and _user and _user.tenant_id:
             dump.setdefault("tenant_id", _user.tenant_id)
+        if "locale" in dump and dump["locale"] is not None:
+            from app.core.locale import to_content_locale
+            dump["locale"] = to_content_locale(str(dump["locale"]))
+        # FAQ: ensure variant_key for cross-locale pairing
+        if sync_entity_type == "faq" and not dump.get("variant_key"):
+            import uuid as _uuid
+            dump["variant_key"] = f"faq-{_uuid.uuid4().hex[:16]}"
         dump = _sanitize_dump(dump)
 
         # 頁面建立與 Idempotency-Key 寫入同一交易：
@@ -278,7 +301,8 @@ def make_crud_router(
                 locale_val = getattr(payload, "locale", None)
                 conflict_q = select(Model).where(getattr(Model, slug_field) == generated_slug)
                 if locale_val and hasattr(Model, "locale"):
-                    conflict_q = conflict_q.where(Model.locale == locale_val)
+                    from app.core.locale import to_content_locale
+                    conflict_q = conflict_q.where(Model.locale == to_content_locale(str(locale_val)))
                 if hasattr(Model, "tenant_id"):
                     conflict_q = conflict_q.where(Model.tenant_id == tenant_id)
                 existing = (await session.exec(conflict_q)).first()
@@ -286,6 +310,7 @@ def make_crud_router(
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
             raise HTTPException(status.HTTP_409_CONFLICT, detail="Conflict creating resource")
         await session.refresh(item)
+        _maybe_schedule_locale_sync(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.get("/{item_id}", response_model=APIResponse)
@@ -314,6 +339,17 @@ def make_crud_router(
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
         updates = payload.model_dump(exclude_unset=True)
+        if "locale" in updates and updates["locale"] is not None:
+            from app.core.locale import to_content_locale
+            updates["locale"] = to_content_locale(str(updates["locale"]))
+
+        from app.core.locale import is_source_locale
+        from app.services.locale_sync import detect_changed_translatable_fields, lock_changed_fields
+
+        changed_for_lock: list[str] = []
+        if sync_entity_type and not is_source_locale(getattr(item, "locale", None)):
+            changed_for_lock = detect_changed_translatable_fields(sync_entity_type, item, updates)
+
         if slug_field and slug_field in updates:
             new_slug = updates[slug_field]
             if new_slug != getattr(item, slug_field):
@@ -339,11 +375,21 @@ def make_crud_router(
         for f, v in _sanitize_dump(_sanitize_dump_item).items():
             setattr(item, f, v)
 
+        if sync_entity_type and changed_for_lock:
+            await lock_changed_fields(
+                session,
+                entity_type=sync_entity_type,
+                entity_id=item.id,
+                tenant_id=getattr(item, "tenant_id", None) or getattr(_user, "tenant_id", None),
+                changed_fields=changed_for_lock,
+            )
+
         session.add(item)
         await session.commit()
         await session.refresh(item)
         if getattr(item, "status", None) == "published":
             _schedule_revalidate(item)
+        _maybe_schedule_locale_sync(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -368,6 +414,7 @@ applications_router = make_crud_router(
     prefix="/applications", tag="applications",
     Model=Application, ReadSchema=ApplicationRead,
     CreateSchema=ApplicationCreate, UpdateSchema=ApplicationUpdate,
+    sync_entity_type="application",
 )
 
 faqs_router = make_crud_router(
@@ -375,12 +422,14 @@ faqs_router = make_crud_router(
     Model=FAQItem, ReadSchema=FAQItemRead,
     CreateSchema=FAQItemCreate, UpdateSchema=FAQItemUpdate,
     slug_field=None,
+    sync_entity_type="faq",
 )
 
 comparisons_router = make_crud_router(
     prefix="/comparisons", tag="comparisons",
     Model=ComparisonTopic, ReadSchema=ComparisonTopicRead,
     CreateSchema=ComparisonTopicCreate, UpdateSchema=ComparisonTopicUpdate,
+    sync_entity_type="comparison",
 )
 
 certifications_router = make_crud_router(
@@ -388,12 +437,14 @@ certifications_router = make_crud_router(
     Model=Certification, ReadSchema=CertificationRead,
     CreateSchema=CertificationCreate, UpdateSchema=CertificationUpdate,
     slug_field="slug",
+    sync_entity_type="certification",
 )
 
 capabilities_router = make_crud_router(
     prefix="/capabilities", tag="capabilities",
     Model=Capability, ReadSchema=CapabilityRead,
     CreateSchema=CapabilityCreate, UpdateSchema=CapabilityUpdate,
+    sync_entity_type="capability",
 )
 
 ctas_router = make_crud_router(
@@ -401,6 +452,7 @@ ctas_router = make_crud_router(
     Model=CTA, ReadSchema=CTARead,
     CreateSchema=CTACreate, UpdateSchema=CTAUpdate,
     slug_field="cta_key",
+    sync_entity_type="cta",
 )
 
 pages_router = make_crud_router(
@@ -409,4 +461,5 @@ pages_router = make_crud_router(
     CreateSchema=PageCreate, UpdateSchema=PageUpdate,
     sanitize_fields=("body",),
     revalidate_on_change=True,
+    sync_entity_type="page",
 )

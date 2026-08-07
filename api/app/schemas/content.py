@@ -67,6 +67,7 @@ class FAQItemCreate(BaseModel):
     locale: str = Field(default="en", max_length=5)
     sort_order: int = Field(default=0, ge=0)
     status: str = Field(default="draft")
+    variant_key: Optional[str] = Field(default=None, max_length=80)
 
 
 class FAQItemUpdate(BaseModel):
@@ -76,10 +77,12 @@ class FAQItemUpdate(BaseModel):
     locale: Optional[str] = Field(default=None, max_length=5)
     sort_order: Optional[int] = Field(default=None, ge=0)
     status: Optional[str] = None
+    variant_key: Optional[str] = Field(default=None, max_length=80)
 
 
 class FAQItemRead(BaseModel):
     id: uuid.UUID
+    variant_key: str
     question: str
     answer: str
     category_tag: Optional[str]

@@ -45,6 +45,7 @@ TRANSLATABLE_FIELDS: dict[str, list[str]] = {
     "capability": ["capability_name", "short_description", "detail"],
     "comparison": ["topic_title", "summary", "conclusion"],
     "page": ["title", "subtitle", "body", "seo_title", "seo_description"],
+    "cta": ["headline", "subheadline", "button_label"],
 }
 
 # Product specifications is a JSON string [{name, value, unit}]. Names/units

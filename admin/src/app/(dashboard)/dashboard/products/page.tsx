@@ -108,10 +108,6 @@ export default function ProductsListPage() {
             <option value="">全部語言</option>
             <option value="en">English</option>
             <option value="zh-tw">繁體中文</option>
-            <option value="zh-cn">简体中文</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
-            <option value="de">Deutsch</option>
           </select>
           <Button asChild><Link href="/dashboard/products/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增商品</Link></Button>
         </div>

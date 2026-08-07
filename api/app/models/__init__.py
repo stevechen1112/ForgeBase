@@ -21,6 +21,7 @@ from app.models.cta import CTA
 from app.models.page import Page
 from app.models.page_brief import PageBrief
 from app.models.content_asset import ContentAsset
+from app.models.content_field_lock import ContentFieldLock
 from app.models.content_strategy import ContentStrategy
 from app.models.ai_generation_log import AIGenerationLog
 from app.models.audience_tag import AudienceTag, VisitorTagLink
@@ -65,6 +66,7 @@ __all__ = [
     "Page",
     "PageBrief",
     "ContentAsset",
+    "ContentFieldLock",
     "ContentStrategy",
     "AIGenerationLog",
     "AudienceTag",

@@ -29,6 +29,8 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
     locale: initial?.locale ?? "en",
     sort_order: initial?.sort_order ?? 0,
     status: initial?.status ?? "draft",
+    // 跨語系配對鍵：AI 起草繁中時沿用英文列的 key，避免產生重複繁中列
+    variant_key: initial?.variant_key ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,18 +121,22 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
             </div>
           </div>
           {id && form.locale === "en" && (
-            <div className="border-t pt-3">
+            <div className="border-t pt-3 space-y-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                以英文為準：儲存後會自動同步繁中（Professional）。下方 AI 起草僅供手動補建；你手動改過的繁中欄位不會被覆蓋。
+              </p>
               <AiDraftButton
                 entityType="faq"
                 id={id}
                 draftGroup={form.category_tag || id}
                 targetLocale="zh-tw"
                 newHref="/dashboard/faqs/new"
-                extraQuery={{ category_tag: form.category_tag, draft_group: form.category_tag || id }}
+                extraQuery={{
+                  category_tag: form.category_tag,
+                  draft_group: form.category_tag || id,
+                  ...(form.variant_key ? { variant_key: form.variant_key } : {}),
+                }}
               />
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                AI 會將此問答翻譯成繁體中文草稿並開啟新增表單，確認後才會儲存。
-              </p>
             </div>
           )}
         </CardContent>

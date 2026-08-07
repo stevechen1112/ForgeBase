@@ -11,6 +11,7 @@ export default async function NewFAQPage({ searchParams }: Props) {
   if (typeof params.locale === "string") prefill.locale = params.locale;
   if (typeof params.category_tag === "string") prefill.category_tag = params.category_tag;
   if (typeof params.draft_group === "string") prefill.draft_group = params.draft_group;
+  if (typeof params.variant_key === "string") prefill.variant_key = params.variant_key;
   const aiDraft = params.draft === "1";
 
   return (

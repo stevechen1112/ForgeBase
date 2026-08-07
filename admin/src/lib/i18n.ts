@@ -2,6 +2,8 @@
  * Shared locale constants + draft handoff helpers for content forms.
  */
 
+export const SOURCE_LOCALE = "en";
+
 export const SUPPORTED_LOCALES = [
   { value: "en", label: "English" },
   { value: "zh-tw", label: "繁體中文" },
@@ -9,8 +11,20 @@ export const SUPPORTED_LOCALES = [
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]["value"];
 
+/** Normalize UI / route tags to CMS canonical locale (zh-TW → zh-tw). */
+export function toContentLocale(raw: string | null | undefined, fallback: SupportedLocale = "en"): string {
+  if (!raw) return fallback;
+  const key = raw.trim();
+  if (key === "en") return "en";
+  const lowered = key.toLowerCase().replace(/_/g, "-");
+  if (lowered === "zh-tw") return "zh-tw";
+  if (lowered === "en") return "en";
+  return fallback;
+}
+
 export function localeLabel(value: string): string {
-  return SUPPORTED_LOCALES.find((l) => l.value === value)?.label ?? value;
+  const canonical = toContentLocale(value, value as SupportedLocale);
+  return SUPPORTED_LOCALES.find((l) => l.value === canonical)?.label ?? value;
 }
 
 /** sessionStorage key for passing an AI translation draft to a /new form. */

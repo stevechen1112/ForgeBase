@@ -15,6 +15,7 @@ import type {
   Page,
 } from "@/types/content";
 import { withTenantHeaders } from "@/lib/tenant";
+import { toContentLocale } from "@/lib/contentLocale";
 
 const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEFAULT_CONTENT_LOCALE = "en";
@@ -36,7 +37,7 @@ function logApiFallback(path: string, error: unknown) {
 function withLocale(path: string, locale: string): string {
   const [pathname, query = ""] = path.split("?");
   const params = new URLSearchParams(query);
-  params.set("locale", locale);
+  params.set("locale", toContentLocale(locale, DEFAULT_CONTENT_LOCALE));
   const nextQuery = params.toString();
   return nextQuery ? `${pathname}?${nextQuery}` : pathname;
 }

@@ -25,7 +25,10 @@ class Product(SQLModel, table=True):
     __tablename__ = "products"
     __table_args__ = (
         UniqueConstraint("slug", "locale", "tenant_id", name="uq_products_slug_locale_tenant"),
-        UniqueConstraint("model_number", "tenant_id", name="uq_products_model_number_tenant"),
+        UniqueConstraint(
+            "model_number", "locale", "tenant_id",
+            name="uq_products_model_number_locale_tenant",
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

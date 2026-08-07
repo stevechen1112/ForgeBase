@@ -53,7 +53,8 @@ async def list_products(
     else:
         base_q = base_q.where(Product.tenant_id.is_(None))
     if locale:
-        base_q = base_q.where(Product.locale == locale)
+        from app.core.locale import to_content_locale
+        base_q = base_q.where(Product.locale == to_content_locale(locale))
     if status:
         base_q = base_q.where(Product.status == status)
     if category_id:
@@ -90,11 +91,15 @@ async def create_product(
     _user=Depends(require_content_editor),
     _quota=Depends(QuotaEnforcer("product")),
 ):
-    # slug uniqueness is per tenant+locale; model_number is per tenant
+    from app.core.locale import to_content_locale, is_source_locale
+    from app.services.locale_sync import schedule_locale_sync
+
+    locale = to_content_locale(payload.locale)
+    # slug uniqueness is per tenant+locale; model_number is per tenant+locale
     slug_conflict = await session.exec(
         select(Product).where(
             Product.slug == payload.slug,
-            Product.locale == payload.locale,
+            Product.locale == locale,
             Product.tenant_id == _user.tenant_id,
         )
     )
@@ -103,17 +108,22 @@ async def create_product(
     mn_conflict = await session.exec(
         select(Product).where(
             Product.model_number == payload.model_number,
+            Product.locale == locale,
             Product.tenant_id == _user.tenant_id,
         )
     )
     if mn_conflict.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="model_number already exists")
 
-    product = Product(**payload.model_dump())
+    data = payload.model_dump()
+    data["locale"] = locale
+    product = Product(**data)
     product.tenant_id = _user.tenant_id
     session.add(product)
     await session.commit()
     await session.refresh(product)
+    if is_source_locale(product.locale):
+        schedule_locale_sync("product", product.id)
     return APIResponse(data=ProductRead.model_validate(product))
 
 
@@ -144,6 +154,13 @@ async def update_product(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
+    from app.core.locale import to_content_locale, is_source_locale
+    from app.services.locale_sync import (
+        detect_changed_translatable_fields,
+        lock_changed_fields,
+        schedule_locale_sync,
+    )
+
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -151,6 +168,13 @@ async def update_product(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     updates = payload.model_dump(exclude_unset=True)
+    if "locale" in updates and updates["locale"] is not None:
+        updates["locale"] = to_content_locale(str(updates["locale"]))
+
+    changed_for_lock: list[str] = []
+    if not is_source_locale(product.locale):
+        changed_for_lock = detect_changed_translatable_fields("product", product, updates)
+
     if "slug" in updates and updates["slug"] != product.slug:
         locale_to_check = updates.get("locale", product.locale)
         slug_conflict = await session.exec(
@@ -164,10 +188,13 @@ async def update_product(
         if slug_conflict.first():
             raise HTTPException(status.HTTP_409_CONFLICT, detail="slug already exists for this locale")
     if "model_number" in updates and updates["model_number"] != product.model_number:
+        locale_to_check = updates.get("locale", product.locale)
         mn_conflict = await session.exec(
             select(Product).where(
                 Product.model_number == updates["model_number"],
+                Product.locale == locale_to_check,
                 Product.tenant_id == _user.tenant_id,
+                Product.id != product_id,
             )
         )
         if mn_conflict.first():
@@ -177,9 +204,20 @@ async def update_product(
         setattr(product, field, value)
     product.updated_at = utcnow_naive()
 
+    if changed_for_lock:
+        await lock_changed_fields(
+            session,
+            entity_type="product",
+            entity_id=product.id,
+            tenant_id=product.tenant_id or _user.tenant_id,
+            changed_fields=changed_for_lock,
+        )
+
     session.add(product)
     await session.commit()
     await session.refresh(product)
+    if is_source_locale(product.locale):
+        schedule_locale_sync("product", product.id)
     return APIResponse(data=ProductRead.model_validate(product))
 
 

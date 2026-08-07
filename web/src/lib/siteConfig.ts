@@ -87,7 +87,17 @@ export function resolveLocalizedText(value: LocalizedText | undefined, locale: s
   if (typeof value === "string") {
     return value;
   }
-  return value[locale] ?? value.en ?? value["zh-TW"] ?? fallback;
+  // Accept both route tag (zh-TW) and CMS tag (zh-tw)
+  const lowered = locale.toLowerCase().replace(/_/g, "-");
+  return (
+    value[locale] ??
+    value[lowered] ??
+    (lowered === "zh-tw" ? value["zh-TW"] : undefined) ??
+    value.en ??
+    value["zh-TW"] ??
+    value["zh-tw"] ??
+    fallback
+  );
 }
 
 export function normalizeThemeKey(raw?: string | null): ThemeKey {

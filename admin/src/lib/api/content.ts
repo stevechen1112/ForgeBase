@@ -103,6 +103,7 @@ export type Application = {
 
 export type FAQItem = {
   id: string;
+  variant_key?: string;
   question: string;
   answer: string;
   category_tag: string | null;

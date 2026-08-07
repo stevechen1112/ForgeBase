@@ -63,7 +63,8 @@ async def list_categories(
     # locale="all" 不過濾（admin 查詢語言變體用）；預設 "en" 維持公開站行為
     base_q = select(ProductCategory)
     if locale != "all":
-        base_q = base_q.where(ProductCategory.locale == locale)
+        from app.core.locale import to_content_locale
+        base_q = base_q.where(ProductCategory.locale == to_content_locale(locale))
     if tenant_id:
         if auth_user is not None and getattr(auth_user, "tenant_id", None):
             base_q = base_q.where(
@@ -103,9 +104,11 @@ async def get_category_tree(
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
+    from app.core.locale import to_content_locale
+    content_locale = to_content_locale(locale)
     q = (
         select(ProductCategory)
-        .where(ProductCategory.locale == locale, ProductCategory.status == "published")
+        .where(ProductCategory.locale == content_locale, ProductCategory.status == "published")
         .order_by(ProductCategory.sort_order)
     )
     if tenant_id:
@@ -122,22 +125,29 @@ async def create_category(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
-    # slug uniqueness
+    from app.core.locale import to_content_locale, is_source_locale
+    from app.services.locale_sync import schedule_locale_sync
+
+    locale = to_content_locale(payload.locale)
     existing = await session.exec(
         select(ProductCategory).where(
             ProductCategory.slug == payload.slug,
-            ProductCategory.locale == payload.locale,
+            ProductCategory.locale == locale,
             ProductCategory.tenant_id == _user.tenant_id,
         )
     )
     if existing.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Slug already exists")
 
-    cat = ProductCategory(**payload.model_dump())
+    data = payload.model_dump()
+    data["locale"] = locale
+    cat = ProductCategory(**data)
     cat.tenant_id = _user.tenant_id
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
+    if is_source_locale(cat.locale):
+        schedule_locale_sync("category", cat.id)
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 
@@ -168,6 +178,13 @@ async def update_category(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
+    from app.core.locale import to_content_locale, is_source_locale
+    from app.services.locale_sync import (
+        detect_changed_translatable_fields,
+        lock_changed_fields,
+        schedule_locale_sync,
+    )
+
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
@@ -175,6 +192,12 @@ async def update_category(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     updates = payload.model_dump(exclude_unset=True)
+    if "locale" in updates and updates["locale"] is not None:
+        updates["locale"] = to_content_locale(str(updates["locale"]))
+
+    changed_for_lock: list[str] = []
+    if not is_source_locale(cat.locale):
+        changed_for_lock = detect_changed_translatable_fields("category", cat, updates)
 
     # Check slug uniqueness if slug is being changed
     if "slug" in updates and updates["slug"] != cat.slug:
@@ -193,9 +216,20 @@ async def update_category(
         setattr(cat, field, value)
     cat.updated_at = utcnow_naive()
 
+    if changed_for_lock:
+        await lock_changed_fields(
+            session,
+            entity_type="category",
+            entity_id=cat.id,
+            tenant_id=cat.tenant_id or _user.tenant_id,
+            changed_fields=changed_for_lock,
+        )
+
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
+    if is_source_locale(cat.locale):
+        schedule_locale_sync("category", cat.id)
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 

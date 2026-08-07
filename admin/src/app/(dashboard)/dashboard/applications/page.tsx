@@ -92,10 +92,6 @@ export default function ApplicationsListPage() {
             <option value="">全部語言</option>
             <option value="en">English</option>
             <option value="zh-tw">繁體中文</option>
-            <option value="zh-cn">简体中文</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
-            <option value="de">Deutsch</option>
           </select>
           <Button asChild><Link href="/dashboard/applications/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增應用場景</Link></Button>
         </div>
