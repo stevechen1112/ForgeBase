@@ -29,7 +29,8 @@ export default function CategoriesPage() {
     setError(null);
     try {
       const params: Record<string, string | number> = { page: p, page_size: 20 };
-      if (localeFilter) params.locale = localeFilter;
+      // API defaults locale=en when omitted — 「全部語言」必須顯式傳 all
+      params.locale = localeFilter || "all";
       const res = await categoriesApi.list(token, params);
       setRows(res.data);
       setTotalPages(res.meta.total_pages);
