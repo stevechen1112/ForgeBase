@@ -107,12 +107,20 @@ def make_crud_router(
         task = asyncio.create_task(revalidate_page(slug, locale, include_sitemap=True))
         task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
 
-    def _apply_public_tenant_scope(query, tenant_id: uuid.UUID | None):
+    def _apply_public_tenant_scope(
+        query,
+        tenant_id: uuid.UUID | None,
+        *,
+        include_legacy_null: bool = False,
+    ):
         tenant_col = getattr(Model, "tenant_id", None)
         if tenant_col is None:
             return query
         if tenant_id is None:
             return query.where(tenant_col.is_(None))
+        # Authenticated tenant editors still need to see pre-tenant (NULL) CMS rows.
+        if include_legacy_null:
+            return query.where((tenant_col == tenant_id) | (tenant_col.is_(None)))
         return query.where(tenant_col == tenant_id)
 
     def _ensure_item_access(item: Any, tenant_id: uuid.UUID | None) -> None:
@@ -123,8 +131,19 @@ def make_crud_router(
             if item_tenant_id is not None:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
             return
+        # Allow legacy NULL-tenant rows for the active tenant.
+        if item_tenant_id is None:
+            return
         if item_tenant_id != tenant_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    def _editor_can_mutate(item: Any, user: Any) -> bool:
+        if not hasattr(item, "tenant_id"):
+            return True
+        item_tenant_id = getattr(item, "tenant_id", None)
+        if item_tenant_id is None:
+            return True
+        return item_tenant_id == getattr(user, "tenant_id", None)
 
     @router.get("", response_model=APIResponse)
     async def list_items(
@@ -140,10 +159,14 @@ def make_crud_router(
     ):
         # 帶有效憑證（如 CF service account）時以 caller tenant 為準，
         # 覆寫 host/header 解析（契約 §5.1 slug 查詢流程依賴此行為）
+        include_legacy_null = False
         if auth_user is not None and getattr(auth_user, "tenant_id", None):
             tenant_id = auth_user.tenant_id
+            include_legacy_null = True
         base_q = select(Model)
-        base_q = _apply_public_tenant_scope(base_q, tenant_id)
+        base_q = _apply_public_tenant_scope(
+            base_q, tenant_id, include_legacy_null=include_legacy_null
+        )
         if locale_filter and hasattr(Model, "locale") and locale:
             base_q = base_q.where(Model.locale == locale)
         if item_status and hasattr(Model, "status"):
@@ -287,7 +310,7 @@ def make_crud_router(
         item = await session.get(Model, item_id)
         if not item:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
-        if hasattr(item, "tenant_id") and getattr(item, "tenant_id", None) != _user.tenant_id:
+        if not _editor_can_mutate(item, _user):
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
         updates = payload.model_dump(exclude_unset=True)
@@ -332,7 +355,7 @@ def make_crud_router(
         item = await session.get(Model, item_id)
         if not item:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
-        if hasattr(item, "tenant_id") and getattr(item, "tenant_id", None) != _user.tenant_id:
+        if not _editor_can_mutate(item, _user):
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
         await session.delete(item)
         await session.commit()

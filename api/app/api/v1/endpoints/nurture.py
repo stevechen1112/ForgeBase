@@ -373,7 +373,7 @@ async def enroll_contact(
     enrollment = NurtureEnrollment(
         sequence_id=payload.sequence_id,
         contact_id=payload.contact_id,
-        tenant_id=seq.tenant_id,
+        tenant_id=seq.tenant_id or current_user.tenant_id,
         status="active",
         current_step=0,
         trigger_type=payload.trigger_type,

@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Trash2, PlusCircle, GripVertical } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
 
 type Step = {
@@ -78,15 +77,18 @@ export default function SequenceDetailPage() {
   const [newStepDelay, setNewStepDelay] = useState(1);
   const [newStepBody, setNewStepBody] = useState("");
   const [addingStep, setAddingStep] = useState(false);
+  const [enrollContactId, setEnrollContactId] = useState("");
+  const [enrolling, setEnrolling] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = buildApiHeaders(token, { "Content-Type": "application/json" });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [sRes, eRes] = await Promise.all([
-        fetch(`${API_BASE}/nurture/sequences/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/nurture/enrollments?sequence_id=${id}&limit=20`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/nurture/sequences/${id}`, { headers: buildApiHeaders(token) }),
+        fetch(`${API_BASE}/nurture/enrollments?sequence_id=${id}&limit=20`, { headers: buildApiHeaders(token) }),
       ]);
       if (!sRes.ok) throw new Error("序列不存在");
       const sData: Sequence = await sRes.json();
@@ -149,7 +151,7 @@ export default function SequenceDetailPage() {
   const deleteStep = async (stepId: string) => {
     try {
       const res = await fetch(`${API_BASE}/nurture/steps/${stepId}`, {
-        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
+        method: "DELETE", headers: buildApiHeaders(token),
       });
       if (!res.ok) throw new Error("刪除失敗");
       await load();
@@ -163,7 +165,7 @@ export default function SequenceDetailPage() {
     try {
       const action = isApproved ? "unapprove" : "approve";
       const res = await fetch(`${API_BASE}/nurture/sequences/${id}/${action}`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
+        method: "POST", headers: buildApiHeaders(token),
       });
       if (!res.ok) throw new Error(isApproved ? "取消核准失敗" : "核准失敗");
       setMessage(isApproved ? "已取消核准，後續不會再寄信" : "已核准，排程將開始寄送");
@@ -171,6 +173,44 @@ export default function SequenceDetailPage() {
     } catch (e: unknown) {
       setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`);
     } finally { setApproving(false); }
+  };
+
+  const enroll = async () => {
+    if (!enrollContactId.trim()) return;
+    setEnrolling(true); setMessage("");
+    try {
+      const res = await fetch(`${API_BASE}/nurture/enroll`, {
+        method: "POST",
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          contact_id: enrollContactId.trim(),
+          sequence_id: id,
+          trigger_type: "manual",
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setEnrollContactId("");
+      setMessage("已加入跟進流程");
+      await load();
+    } catch (e: unknown) {
+      setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally { setEnrolling(false); }
+  };
+
+  const processDue = async () => {
+    setProcessing(true); setMessage("");
+    try {
+      const res = await fetch(`${API_BASE}/nurture/process`, {
+        method: "POST",
+        headers: buildApiHeaders(token),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json().catch(() => ({}));
+      setMessage(`已處理到期步驟${data?.processed != null ? `（${data.processed}）` : ""}`);
+      await load();
+    } catch (e: unknown) {
+      setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally { setProcessing(false); }
   };
 
   if (loading) return <p className="py-10 text-center text-muted-foreground">載入中…</p>;
@@ -300,7 +340,23 @@ export default function SequenceDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">加入紀錄（{enrollments.length}）</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">加入紀錄（{enrollments.length}）</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                className="h-8 w-64 font-mono text-xs"
+                placeholder="聯絡人 UUID"
+                value={enrollContactId}
+                onChange={(e) => setEnrollContactId(e.target.value)}
+              />
+              <Button size="sm" variant="outline" disabled={enrolling || !enrollContactId.trim()} onClick={enroll}>
+                {enrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}手動加入
+              </Button>
+              <Button size="sm" variant="secondary" disabled={processing} onClick={processDue}>
+                {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}處理到期步驟
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {enrollments.length === 0 ? (

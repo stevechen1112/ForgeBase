@@ -79,7 +79,7 @@ export default function IntentPage() {
       if (hasRfqFilter) params.set("has_rfq", hasRfqFilter);
       const [visitorsData, contactsData] = await Promise.all([
         apiClient.get<Visitor[]>(`/tracking/visitors?${params.toString()}`, token),
-        apiClient.get<ContactListResponse | Contact[]>("/tracking/contacts?page_size=50", token),
+        apiClient.get<ContactListResponse | Contact[]>("/tracking/contacts?limit=50", token),
       ]);
       setTopVisitors(Array.isArray(visitorsData) ? visitorsData : []);
       setContacts(Array.isArray(contactsData) ? contactsData : contactsData.items ?? []);

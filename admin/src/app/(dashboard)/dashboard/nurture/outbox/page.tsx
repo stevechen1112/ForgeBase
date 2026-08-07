@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Send, SkipForward, Inbox } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type OutboxItem = {
   id: string;
@@ -40,7 +39,7 @@ export default function NurtureOutboxPage() {
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${API_BASE}/nurture/outbox?outbox_status=pending&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       const data = await res.json();
       setItems(Array.isArray(data) ? data : data.items ?? []);
@@ -56,7 +55,7 @@ export default function NurtureOutboxPage() {
     try {
       const res = await fetch(`${API_BASE}/nurture/outbox/${id}/${action}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "操作失敗");

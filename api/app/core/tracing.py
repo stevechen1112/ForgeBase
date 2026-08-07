@@ -246,7 +246,23 @@ def chat_completion_kwargs(
         else:
             kwargs["max_tokens"] = max_output_tokens
     if with_tools and is_reasoning_family:
-        kwargs["reasoning_effort"] = "none"
+        # gpt-5 / o-series need reasoning_effort=none when using tools.
+        # openai<~1.50 rejects the top-level kwarg; pass via extra_body instead.
+        try:
+            import inspect
+
+            from openai.resources.chat.completions import AsyncCompletions
+
+            if "reasoning_effort" in inspect.signature(AsyncCompletions.create).parameters:
+                kwargs["reasoning_effort"] = "none"
+            else:
+                extra = dict(kwargs.get("extra_body") or {})
+                extra["reasoning_effort"] = "none"
+                kwargs["extra_body"] = extra
+        except Exception:
+            extra = dict(kwargs.get("extra_body") or {})
+            extra["reasoning_effort"] = "none"
+            kwargs["extra_body"] = extra
     return kwargs
 
 

@@ -121,7 +121,19 @@ async def send_email(
     sender_name = from_name or settings.EMAIL_FROM_NAME
     sender_addr = from_email or settings.EMAIL_FROM
 
-    if settings.ESP_PROVIDER == "sendgrid":
+    provider = (settings.ESP_PROVIDER or "resend").lower()
+    has_key = bool(settings.SENDGRID_API_KEY) if provider == "sendgrid" else bool(settings.RESEND_API_KEY)
+    if settings.EMAIL_DRY_RUN or not has_key:
+        logger.info(
+            "EMAIL_DRY_RUN send to=%s subject=%s provider=%s has_key=%s",
+            to,
+            subject,
+            provider,
+            has_key,
+        )
+        return True
+
+    if provider == "sendgrid":
         return await _send_via_sendgrid(to, subject, html_body, text_body, sender_addr, sender_name)
 
     # Default: Resend

@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
 
 export default function NewSequencePage() {
@@ -35,7 +34,7 @@ export default function NewSequencePage() {
     try {
       const res = await fetch(`${API_BASE}/nurture/sequences`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error(await res.text());

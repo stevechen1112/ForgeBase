@@ -97,17 +97,28 @@ export default function RFQsListPage() {
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
       headers: buildApiHeaders(token),
     })
-      .then((r) => r.json())
-      .then((data) => setRows(Array.isArray(data) ? data : []))
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(
+            (data && (data.detail || data.error)) || `HTTP ${r.status}`
+          );
+        }
+        setRows(Array.isArray(data) ? data : []);
+      })
       .catch((e) => { setError(e instanceof Error ? e.message : "Load failed"); setRows([]); })
       .finally(() => setLoading(false));
   }, [token, page, statusFilter, priorityFilter, slaFilter, sort]);
 
   // T8：首回時間與 SLA 達成率摘要
   useEffect(() => {
+    if (!token) return;
     fetch(`${API_BASE}/tracking/rfqs/stats?days=30`, { headers: buildApiHeaders(token) })
-      .then((r) => r.json())
-      .then((data) => setStats(data && typeof data === "object" ? data : null))
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        setStats(data && typeof data === "object" ? data : null);
+      })
       .catch(() => setStats(null));
   }, [token]);
 

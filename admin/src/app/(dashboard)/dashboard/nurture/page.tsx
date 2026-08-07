@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Mail, PlusCircle, ListChecks } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Sequence = {
   id: string;
@@ -48,7 +47,7 @@ export default function NurturePage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = buildApiHeaders(token);
       const [sRes, eRes] = await Promise.all([
         fetch(`${API_BASE}/nurture/sequences`, { headers }),
         fetch(`${API_BASE}/nurture/enrollments`, { headers }),

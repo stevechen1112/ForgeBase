@@ -67,6 +67,7 @@ class SegmentRead(BaseModel):
     created_by: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
+    member_count: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -80,6 +81,98 @@ class SegmentUpdate(BaseModel):
 
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
+def _segment_filters(
+    conditions: list[dict],
+    combinator: str,
+    tenant_id: Optional[uuid.UUID],
+):
+    """Build SQLAlchemy filter for visitor segment conditions."""
+    filters = []
+    for cond in conditions:
+        ctype = cond.get("type")
+        op = cond.get("op", "eq")
+        value = cond.get("value")
+
+        if ctype == "intent_stage" and value:
+            if op == "eq":
+                filters.append(Visitor.intent_stage == value)
+
+        elif ctype == "intent_score" and value is not None:
+            if op == "gte":
+                filters.append(Visitor.intent_score >= int(value))
+            elif op == "lte":
+                filters.append(Visitor.intent_score <= int(value))
+            elif op == "eq":
+                filters.append(Visitor.intent_score == int(value))
+
+        elif ctype == "country" and value:
+            if op == "eq":
+                filters.append(Visitor.country == value)
+
+        elif ctype == "tag":
+            tag_id = cond.get("tag_id")
+            if tag_id:
+                tag_subq = select(VisitorTagLink.visitor_id).where(
+                    VisitorTagLink.tag_id == uuid.UUID(tag_id)
+                )
+                filters.append(Visitor.visitor_id.in_(tag_subq))
+
+        elif ctype == "event_count":
+            event_name = cond.get("event_name")
+            within_days = cond.get("within_days", 30)
+            if event_name and value is not None:
+                since = utcnow_naive() - timedelta(days=int(within_days))
+                event_subq = (
+                    select(TrackingEvent.visitor_id)
+                    .where(
+                        TrackingEvent.event_name == event_name,
+                        TrackingEvent.timestamp >= since,
+                        TrackingEvent.visitor_id.is_not(None),
+                    )
+                    .group_by(TrackingEvent.visitor_id)
+                    .having(func.count(TrackingEvent.event_id) >= int(value))
+                )
+                if tenant_id:
+                    event_subq = event_subq.where(TrackingEvent.tenant_id == tenant_id)
+                if op == "gte":
+                    filters.append(Visitor.visitor_id.in_(event_subq))
+
+    if not filters:
+        return None
+    from sqlalchemy import and_, or_
+    return and_(*filters) if combinator == "AND" else or_(*filters)
+
+
+async def _count_segment_matches(
+    db: AsyncSession,
+    conditions: list[dict],
+    combinator: str,
+    tenant_id: Optional[uuid.UUID],
+) -> int:
+    q = select(Visitor.visitor_id)
+    if tenant_id:
+        q = q.where(Visitor.tenant_id == tenant_id)
+    combined = _segment_filters(conditions, combinator, tenant_id)
+    if combined is not None:
+        q = q.where(combined)
+    count_q = select(func.count()).select_from(q.subquery())
+    return (await db.exec(count_q)).one()
+
+
+def _to_segment_read(s: Segment, member_count: Optional[int] = None) -> SegmentRead:
+    return SegmentRead(
+        id=s.id,
+        name=s.name,
+        description=s.description,
+        conditions=json.loads(s.conditions),
+        combinator=s.combinator,
+        created_by=s.created_by,
+        created_at=s.created_at,
+        updated_at=s.updated_at,
+        member_count=member_count,
+    )
+
+
 @router.get("/segments", response_model=list[SegmentRead])
 async def list_segments(
     _feature: User = Depends(RequireFeature("full_tracking")),
@@ -87,19 +180,14 @@ async def list_segments(
     _: User = Depends(get_current_user),
 ):
     rows = (await db.exec(select(Segment).order_by(Segment.created_at.desc()))).all()
-    return [
-        SegmentRead(
-            id=s.id,
-            name=s.name,
-            description=s.description,
-            conditions=json.loads(s.conditions),
-            combinator=s.combinator,
-            created_by=s.created_by,
-            created_at=s.created_at,
-            updated_at=s.updated_at,
+    result: list[SegmentRead] = []
+    for s in rows:
+        conditions = json.loads(s.conditions)
+        member_count = await _count_segment_matches(
+            db, conditions, s.combinator, _.tenant_id
         )
-        for s in rows
-    ]
+        result.append(_to_segment_read(s, member_count=member_count))
+    return result
 
 
 @router.post("/segments", response_model=SegmentRead, status_code=status.HTTP_201_CREATED)
@@ -121,16 +209,7 @@ async def create_segment(
     db.add(seg)
     await db.commit()
     await db.refresh(seg)
-    return SegmentRead(
-        id=seg.id,
-        name=seg.name,
-        description=seg.description,
-        conditions=json.loads(seg.conditions),
-        combinator=seg.combinator,
-        created_by=seg.created_by,
-        created_at=seg.created_at,
-        updated_at=seg.updated_at,
-    )
+    return _to_segment_read(seg)
 
 
 @router.get("/segments/{segment_id}", response_model=SegmentRead)
@@ -143,16 +222,10 @@ async def get_segment(
     seg = await db.get(Segment, segment_id)
     if not seg:
         raise HTTPException(status_code=404, detail="Segment not found")
-    return SegmentRead(
-        id=seg.id,
-        name=seg.name,
-        description=seg.description,
-        conditions=json.loads(seg.conditions),
-        combinator=seg.combinator,
-        created_by=seg.created_by,
-        created_at=seg.created_at,
-        updated_at=seg.updated_at,
+    member_count = await _count_segment_matches(
+        db, json.loads(seg.conditions), seg.combinator, _.tenant_id
     )
+    return _to_segment_read(seg, member_count=member_count)
 
 
 @router.patch("/segments/{segment_id}", response_model=SegmentRead)
@@ -180,16 +253,10 @@ async def update_segment(
     db.add(seg)
     await db.commit()
     await db.refresh(seg)
-    return SegmentRead(
-        id=seg.id,
-        name=seg.name,
-        description=seg.description,
-        conditions=json.loads(seg.conditions),
-        combinator=seg.combinator,
-        created_by=seg.created_by,
-        created_at=seg.created_at,
-        updated_at=seg.updated_at,
+    member_count = await _count_segment_matches(
+        db, json.loads(seg.conditions), seg.combinator, _.tenant_id
     )
+    return _to_segment_read(seg, member_count=member_count)
 
 
 @router.delete("/segments/{segment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -226,69 +293,13 @@ async def evaluate_segment(
     conditions: list[dict] = json.loads(seg.conditions)
     combinator = seg.combinator  # "AND" | "OR"
 
-    # Start with all visitors (scoped to the caller's tenant)
     q = select(Visitor.visitor_id)
     if _.tenant_id:
         q = q.where(Visitor.tenant_id == _.tenant_id)
-    filters = []
-
-    for cond in conditions:
-        ctype = cond.get("type")
-        op = cond.get("op", "eq")
-        value = cond.get("value")
-
-        if ctype == "intent_stage" and value:
-            if op == "eq":
-                filters.append(Visitor.intent_stage == value)
-
-        elif ctype == "intent_score" and value is not None:
-            if op == "gte":
-                filters.append(Visitor.intent_score >= int(value))
-            elif op == "lte":
-                filters.append(Visitor.intent_score <= int(value))
-            elif op == "eq":
-                filters.append(Visitor.intent_score == int(value))
-
-        elif ctype == "country" and value:
-            if op == "eq":
-                filters.append(Visitor.country == value)
-
-        elif ctype == "tag":
-            tag_id = cond.get("tag_id")
-            if tag_id:
-                tag_subq = select(VisitorTagLink.visitor_id).where(
-                    VisitorTagLink.tag_id == uuid.UUID(tag_id)
-                )
-                filters.append(Visitor.visitor_id.in_(tag_subq))
-
-        elif ctype == "event_count":
-            event_name = cond.get("event_name")
-            within_days = cond.get("within_days", 30)
-            if event_name and value is not None:
-                since = utcnow_naive() - timedelta(days=int(within_days))
-                # Subquery: visitors with event_count >= value
-                event_subq = (
-                    select(TrackingEvent.visitor_id)
-                    .where(
-                        TrackingEvent.event_name == event_name,
-                        TrackingEvent.timestamp >= since,
-                        TrackingEvent.visitor_id.is_not(None),
-                    )
-                    .group_by(TrackingEvent.visitor_id)
-                    .having(func.count(TrackingEvent.event_id) >= int(value))
-                )
-                if _.tenant_id:
-                    event_subq = event_subq.where(TrackingEvent.tenant_id == _.tenant_id)
-                if op == "gte":
-                    filters.append(Visitor.visitor_id.in_(event_subq))
-
-    # Apply combinator
-    if filters:
-        from sqlalchemy import and_, or_
-        combined = and_(*filters) if combinator == "AND" else or_(*filters)
+    combined = _segment_filters(conditions, combinator, _.tenant_id)
+    if combined is not None:
         q = q.where(combined)
 
-    # Count + sample
     count_q = select(func.count()).select_from(q.subquery())
     total = (await db.exec(count_q)).one()
     sample_rows = (await db.exec(q.limit(20))).all()

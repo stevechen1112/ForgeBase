@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "noreply@example.com"
     EMAIL_FROM_NAME: str = "ForgeBase"
+    # When true (or when no ESP key is configured), log and treat send as success.
+    # Use for demo closed-loop without a real ESP key; do not rely on in production mail delivery.
+    EMAIL_DRY_RUN: bool = False
 
     # Google Search Console
     GSC_SERVICE_ACCOUNT_KEY_JSON: str = ""   # JSON string of service account credentials

@@ -43,7 +43,13 @@ async def list_products(
         tenant_id = auth_user.tenant_id
     base_q = select(Product)
     if tenant_id:
-        base_q = base_q.where(Product.tenant_id == tenant_id)
+        # Authenticated tenant editors also see legacy NULL-tenant rows.
+        if auth_user is not None and getattr(auth_user, "tenant_id", None):
+            base_q = base_q.where(
+                (Product.tenant_id == tenant_id) | (Product.tenant_id.is_(None))
+            )
+        else:
+            base_q = base_q.where(Product.tenant_id == tenant_id)
     else:
         base_q = base_q.where(Product.tenant_id.is_(None))
     if locale:
@@ -126,7 +132,7 @@ async def get_product(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     if tenant_id is None and product.tenant_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if tenant_id is not None and product.tenant_id != tenant_id:
+    if tenant_id is not None and product.tenant_id is not None and product.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     return APIResponse(data=ProductRead.model_validate(product))
 
@@ -141,7 +147,7 @@ async def update_product(
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if _user.tenant_id and product.tenant_id != _user.tenant_id:
+    if _user.tenant_id and product.tenant_id is not None and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -186,7 +192,7 @@ async def delete_product(
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if _user.tenant_id and product.tenant_id != _user.tenant_id:
+    if _user.tenant_id and product.tenant_id is not None and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
     await session.delete(product)
     await session.commit()

@@ -63,22 +63,36 @@ export default function DashboardPage() {
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [agentRuns, setAgentRuns] = useState<RunView[]>([]);
 
   const loadData = useCallback(async () => {
     if (!token) return;
     setLoading(true);
+    setError(null);
     try {
-      const [funnelJson, rfqJson] = await Promise.all([
+      // Funnel requires full_tracking; do not let a 403 wipe the RFQ list.
+      const [funnelResult, rfqResult] = await Promise.allSettled([
         apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
         apiClient.get<RFQRow[]>("/tracking/rfqs?limit=8", token),
       ]);
-      setFunnel(funnelJson);
-      setRfqs(Array.isArray(rfqJson) ? rfqJson : []);
-      // Load AgentOS run summary (non-critical — swallow errors)
+      if (funnelResult.status === "fulfilled") {
+        setFunnel(funnelResult.value);
+      } else {
+        setFunnel(null);
+      }
+      if (rfqResult.status === "fulfilled") {
+        setRfqs(Array.isArray(rfqResult.value) ? rfqResult.value : []);
+      } else {
+        setRfqs([]);
+        setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入 RFQ");
+      }
       agentosApi.listRuns().then((runs) => setAgentRuns(runs)).catch(() => setAgentRuns([]));
-    } catch { /* 靜默失敗 */ }
-    finally { setLoading(false); }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "載入失敗");
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -96,6 +110,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* ─── AI 晨報 Hero ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">

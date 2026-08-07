@@ -10,7 +10,7 @@ PUT  /tracking/rfqs/{id}/assign   — assign to sales user (admin)
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -797,6 +797,10 @@ async def update_rfq_follow_up(
         raise HTTPException(status_code=404, detail="RFQ not found")
     updates = body.model_dump(exclude_unset=True)
     for field, value in updates.items():
+        # Columns are TIMESTAMP WITHOUT TIME ZONE; strip tzinfo from aware inputs.
+        if isinstance(value, datetime) and value.tzinfo is not None:
+            value = value.astimezone(timezone.utc).replace(tzinfo=None)
+            updates[field] = value
         setattr(r, field, value)
     r.updated_at = utcnow_naive()
     db.add(r)

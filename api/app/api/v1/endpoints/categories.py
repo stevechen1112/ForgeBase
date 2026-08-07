@@ -65,7 +65,13 @@ async def list_categories(
     if locale != "all":
         base_q = base_q.where(ProductCategory.locale == locale)
     if tenant_id:
-        base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
+        if auth_user is not None and getattr(auth_user, "tenant_id", None):
+            base_q = base_q.where(
+                (ProductCategory.tenant_id == tenant_id)
+                | (ProductCategory.tenant_id.is_(None))
+            )
+        else:
+            base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
     else:
         base_q = base_q.where(ProductCategory.tenant_id.is_(None))
     if status:
@@ -150,7 +156,7 @@ async def get_category(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     if tenant_id is None and cat.tenant_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if tenant_id is not None and cat.tenant_id != tenant_id:
+    if tenant_id is not None and cat.tenant_id is not None and cat.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
@@ -165,7 +171,7 @@ async def update_category(
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if _user.tenant_id and cat.tenant_id != _user.tenant_id:
+    if _user.tenant_id and cat.tenant_id is not None and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -202,7 +208,7 @@ async def delete_category(
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if _user.tenant_id and cat.tenant_id != _user.tenant_id:
+    if _user.tenant_id and cat.tenant_id is not None and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     await session.delete(cat)
     await session.commit()

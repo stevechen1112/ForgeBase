@@ -11,21 +11,47 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Users } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
+type SegmentCondition = {
+  type?: string;
+  field?: string;
+  op?: string;
+  operator?: string;
+  value?: unknown;
+  event_name?: string;
+  within_days?: number;
+  tag_id?: string;
+};
+
 type Segment = {
   id: string;
   name: string;
   description: string;
-  conditions: string;
+  conditions: string | SegmentCondition[];
   combinator: string;
   created_at: string;
   updated_at: string;
 };
 
 type EvalResult = {
+  total_matches?: number;
   matched_count?: number;
   count?: number;
+  sample_visitor_ids?: string[];
   sample_visitors?: { visitor_id: string; intent_stage: string; intent_score: number }[];
 };
+
+function parseConditions(raw: Segment["conditions"]): SegmentCondition[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 function fmt(d?: string) {
   return d ? new Date(d).toLocaleDateString("zh-TW") : "—";
@@ -36,6 +62,7 @@ const FIELD_LABELS: Record<string, string> = {
   intent_score: "意圖分數",
   country: "國家",
   event_count: "事件次數",
+  tag: "標籤",
 };
 
 export default function SegmentDetailPage() {
@@ -108,8 +135,11 @@ export default function SegmentDetailPage() {
   if (error) return <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
   if (!seg) return null;
 
-  let conditions: Array<{ field?: unknown; operator?: unknown; value?: unknown; event_name?: string; within_days?: number }> = [];
-  try { conditions = JSON.parse(seg.conditions); } catch { /* ignore */ }
+  const conditions = parseConditions(seg.conditions);
+  const matchCount =
+    evalResult?.total_matches ?? evalResult?.matched_count ?? evalResult?.count ?? 0;
+  const sampleIds = evalResult?.sample_visitor_ids ?? [];
+  const sampleVisitors = evalResult?.sample_visitors ?? [];
 
   return (
     <div className="space-y-6">
@@ -152,15 +182,20 @@ export default function SegmentDetailPage() {
             {conditions.length === 0 ? (
               <p className="text-sm text-muted-foreground">無條件</p>
             ) : (
-              conditions.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 rounded border p-2 text-sm">
-                  {i > 0 && <Badge variant="outline" className="text-xs">{seg.combinator}</Badge>}
-                  <Badge>{FIELD_LABELS[String(c.field)] || String(c.field)}</Badge>
-                  <span className="text-muted-foreground">{String(c.operator)}</span>
-                  <span className="font-medium">{String(c.value)}</span>
-                  {c.event_name && <span className="text-xs text-muted-foreground">(事件: {String(c.event_name)}, {String(c.within_days || 30)} 天內)</span>}
-                </div>
-              ))
+              conditions.map((c, i) => {
+                const fieldKey = String(c.type ?? c.field ?? "");
+                const op = String(c.op ?? c.operator ?? "");
+                return (
+                  <div key={i} className="flex items-center gap-2 rounded border p-2 text-sm">
+                    {i > 0 && <Badge variant="outline" className="text-xs">{seg.combinator}</Badge>}
+                    <Badge>{FIELD_LABELS[fieldKey] || fieldKey || "條件"}</Badge>
+                    {op && <span className="text-muted-foreground">{op}</span>}
+                    {c.value != null && <span className="font-medium">{String(c.value)}</span>}
+                    {c.tag_id && <span className="font-mono text-xs">{c.tag_id.slice(0, 8)}…</span>}
+                    {c.event_name && <span className="text-xs text-muted-foreground">(事件: {String(c.event_name)}, {String(c.within_days || 30)} 天內)</span>}
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -181,13 +216,13 @@ export default function SegmentDetailPage() {
           {evalResult ? (
             <div className="space-y-3">
               <p className="text-lg font-bold">
-                符合 <span className="text-primary">{evalResult.matched_count ?? evalResult.count ?? 0}</span> 位訪客
+                符合 <span className="text-primary">{matchCount}</span> 位訪客
               </p>
-              {evalResult.sample_visitors && evalResult.sample_visitors.length > 0 && (
+              {sampleVisitors.length > 0 ? (
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">樣本訪客：</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {evalResult.sample_visitors.map((v) => (
+                    {sampleVisitors.map((v) => (
                       <div key={v.visitor_id} className="rounded border p-2 text-xs">
                         <p className="font-mono truncate">{v.visitor_id.slice(0, 12)}…</p>
                         <p className="text-muted-foreground">{v.intent_stage} / {v.intent_score}</p>
@@ -195,7 +230,18 @@ export default function SegmentDetailPage() {
                     ))}
                   </div>
                 </div>
-              )}
+              ) : sampleIds.length > 0 ? (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">樣本訪客 ID：</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {sampleIds.map((id) => (
+                      <div key={id} className="rounded border p-2 text-xs font-mono truncate">
+                        {id.slice(0, 12)}…
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">點擊「重新評估」以查看符合此分群的訪客數量</p>

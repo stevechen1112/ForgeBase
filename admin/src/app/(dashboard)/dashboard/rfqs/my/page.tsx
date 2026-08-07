@@ -65,12 +65,14 @@ export default function MyRFQsPage() {
   const [rows, setRows] = useState<RFQ[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
 
   const load = useCallback(() => {
     if (!userId) return;
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({
       limit: String(PAGE_SIZE),
       offset: String((page - 1) * PAGE_SIZE),
@@ -81,9 +83,19 @@ export default function MyRFQsPage() {
     fetch(`${API_BASE}/tracking/rfqs?${params}`, {
       headers: buildApiHeaders(token),
     })
-      .then((r) => r.json())
-      .then((data) => setRows(Array.isArray(data) ? data : []))
-      .catch((e) => console.error("load my rfqs error", e))
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(
+            (data && (data.detail || data.error)) || `HTTP ${r.status}`
+          );
+        }
+        setRows(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "載入失敗");
+        setRows([]);
+      })
       .finally(() => setLoading(false));
   }, [token, userId, statusFilter, page]);
 
@@ -100,6 +112,12 @@ export default function MyRFQsPage() {
           <Link href="/dashboard/rfqs">查看全部 RFQ</Link>
         </Button>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
