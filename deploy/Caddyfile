@@ -32,7 +32,7 @@
 :80 {
 	@local_health {
 		host 127.0.0.1 localhost
-		path /health
+		path /health /health/*
 	}
 	handle @local_health {
 		reverse_proxy api:8000

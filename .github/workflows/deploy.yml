@@ -134,7 +134,12 @@ jobs:
             set -euo pipefail
             cd /opt/forgebase
             docker compose -f docker-compose.prod.yml config --quiet
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            # This host has 2 GB RAM; build the two Next.js images sequentially
+            # to avoid swap thrashing and OOM failures.
+            docker compose -f docker-compose.prod.yml build api
+            docker compose -f docker-compose.prod.yml build admin
+            docker compose -f docker-compose.prod.yml build web
+            docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans
             docker compose -f docker-compose.prod.yml ps
           '
 
@@ -143,7 +148,12 @@ jobs:
           sleep 10
           for i in 1 2 3; do
             STATUS=$(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" \
-              "curl -sf --max-time 10 http://127.0.0.1/health/ready" \
+              "set -e; cd /opt/forgebase; \
+               curl -sf --max-time 10 http://127.0.0.1/health/ready; \
+               docker compose -f docker-compose.prod.yml exec -T web \
+                 wget -q -O /dev/null http://127.0.0.1:3000/api/health/assets; \
+               docker compose -f docker-compose.prod.yml exec -T admin \
+                 wget -q -O /dev/null http://127.0.0.1:3000/backend/login" \
               | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))" 2>/dev/null || echo "unreachable")
             echo "Attempt $i: $STATUS"
             if [ "$STATUS" = "ready" ]; then
