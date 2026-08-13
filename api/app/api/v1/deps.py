@@ -282,7 +282,7 @@ async def resolve_tenant_id(
     ]
     candidate_hosts = [host for host in candidate_hosts if host]
     if not candidate_hosts:
-        return await _resolve_identifier(settings.PUBLIC_TENANT_SLUG) if settings.PUBLIC_TENANT_SLUG else None
+        return None
 
     # Check process-level TTL cache first
     import time as _time
@@ -329,8 +329,6 @@ async def resolve_tenant_id(
         # Cache miss — record negative result to avoid re-querying
         _TENANT_HOST_CACHE[host] = (None, now)
 
-    if settings.PUBLIC_TENANT_SLUG:
-        return await _resolve_identifier(settings.PUBLIC_TENANT_SLUG)
     return None
 
 

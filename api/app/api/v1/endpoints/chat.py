@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 
 from app.api.v1.deps import resolve_tenant_id
 from app.db.session import get_session
@@ -49,12 +50,35 @@ async def _ensure_chat_available(db: AsyncSession, tenant_id: Optional[uuid.UUID
         raise HTTPException(status_code=403, detail="AI advisor is not included in this plan")
 
 
+async def _resolve_chat_tenant_id(
+    db: AsyncSession,
+    tenant_id: Optional[uuid.UUID],
+) -> Optional[uuid.UUID]:
+    """Apply the configured public tenant only to the AI advisor.
+
+    The rest of the public content API must preserve its existing global
+    (tenant_id IS NULL) catalog behavior.
+    """
+    if tenant_id is not None or not settings.PUBLIC_TENANT_SLUG:
+        return tenant_id
+    tenant = (
+        await db.exec(
+            select(Tenant).where(
+                Tenant.slug == settings.PUBLIC_TENANT_SLUG,
+                Tenant.is_active.is_(True),
+            )
+        )
+    ).first()
+    return tenant.id if tenant else None
+
+
 @router.post("/sessions", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat_session(
     body: ChatSessionCreate,
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
+    tenant_id = await _resolve_chat_tenant_id(db, tenant_id)
     await _ensure_chat_available(db, tenant_id)
     service = ChatService(db)
     chat_session, greeting, suggestions = await service.create_session(
@@ -82,6 +106,7 @@ async def create_chat_message(
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
+    tenant_id = await _resolve_chat_tenant_id(db, tenant_id)
     chat_session = await _get_chat_session_or_404(db, chat_session_id, tenant_id)
     await _ensure_chat_available(db, tenant_id)
     if chat_session.visitor_id != body.visitor_id:
@@ -103,6 +128,7 @@ async def create_chat_handoff(
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
+    tenant_id = await _resolve_chat_tenant_id(db, tenant_id)
     chat_session = await _get_chat_session_or_404(db, chat_session_id, tenant_id)
     await _ensure_chat_available(db, tenant_id)
     if chat_session.visitor_id != body.visitor_id:
