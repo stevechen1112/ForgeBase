@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { MessageSquareText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +26,8 @@ interface ChatPanelProps {
   suggestions: string[];
   isBusy: boolean;
   error: string | null;
-  handoffUrl: string | null;
+  handoffReady: boolean;
+  onPrepareRfq: () => Promise<void>;
   onSuggestionClick: (value: string) => Promise<void>;
   onSubmit: (value: string) => Promise<void>;
 }
@@ -39,7 +39,8 @@ export function ChatPanel({
   suggestions,
   isBusy,
   error,
-  handoffUrl,
+  handoffReady,
+  onPrepareRfq,
   onSuggestionClick,
   onSubmit,
 }: ChatPanelProps) {
@@ -88,14 +89,14 @@ export function ChatPanel({
             </div>
           )}
 
-          {handoffUrl && (
+          {handoffReady && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <Badge variant="success" className="mb-2">{copy.rfqReady}</Badge>
               <p className="text-sm text-emerald-800">
                 {copy.rfqReadyDescription}
               </p>
-              <Button asChild className="mt-3">
-                <Link href={handoffUrl}>{copy.prepareRfq}</Link>
+              <Button className="mt-3" onClick={() => void onPrepareRfq()} disabled={isBusy}>
+                {copy.prepareRfq}
               </Button>
             </div>
           )}

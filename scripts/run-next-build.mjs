@@ -11,7 +11,10 @@ const child = spawn(process.execPath, [nextCli, "build"], {
   stdio: "inherit",
   env: {
     ...process.env,
-    FORGEBASE_STRICT_BUILD_API: process.env.FORGEBASE_STRICT_BUILD_API ?? "1",
+    // Static generation must not depend on the previous production API being
+    // reachable. CI validates the API contract separately and ISR refreshes
+    // content once the new stack is healthy.
+    FORGEBASE_STRICT_BUILD_API: process.env.FORGEBASE_STRICT_BUILD_API ?? "0",
   },
 });
 

@@ -16,6 +16,7 @@ class ContentAsset(SQLModel, table=True):
     __tablename__ = "content_assets"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
     original_filename: str = Field(max_length=255)
     r2_key: str = Field(max_length=500, unique=True)   # path in R2 bucket
     public_url: str = Field(max_length=500)

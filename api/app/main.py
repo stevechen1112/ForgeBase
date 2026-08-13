@@ -3,12 +3,14 @@ import os
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
@@ -253,3 +255,56 @@ app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 @app.get("/health", tags=["system"])
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/health/ready", tags=["system"])
+async def readiness_check():
+    """Deep readiness probe used by production deployment.
+
+    Verifies the database connection, migration revision, writable upload
+    storage, and the single in-process scheduler.
+    """
+    checks: dict[str, str] = {}
+
+    try:
+        from app.db.session import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            revision = (
+                await session.execute(text("SELECT version_num FROM alembic_version"))
+            ).scalar_one_or_none()
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+
+        alembic_config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+        expected_revision = ScriptDirectory.from_config(alembic_config).get_current_head()
+        checks["database"] = "ok"
+        checks["migration"] = "ok" if revision == expected_revision else "error"
+    except Exception:
+        logger.exception("Readiness database check failed")
+        checks["database"] = "error"
+        checks["migration"] = "error"
+
+    try:
+        upload_dir = Path(__file__).resolve().parent.parent / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        probe = upload_dir / ".readiness-probe"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        checks["storage"] = "ok"
+    except Exception:
+        logger.exception("Readiness storage check failed")
+        checks["storage"] = "error"
+
+    checks["scheduler"] = (
+        "ok" if _SCHEDULER_ENABLED and _scheduler.running else "error"
+    )
+    ready = all(
+        checks.get(name) not in {None, "error", "missing"}
+        for name in ("database", "migration", "storage", "scheduler")
+    )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "ready" if ready else "degraded", "checks": checks},
+    )

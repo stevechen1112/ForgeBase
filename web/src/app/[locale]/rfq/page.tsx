@@ -33,7 +33,15 @@ type RFQPageMessages = {
 
 interface Props {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ product_id?: string; application_id?: string }>;
+  searchParams: Promise<{
+    product_id?: string;
+    product_ids?: string;
+    application_id?: string;
+    quantity?: string;
+    specifications?: string;
+    message?: string;
+    requirement_summary?: string;
+  }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -53,7 +61,11 @@ export default async function RFQPage({ params, searchParams }: Props) {
   resolveLocale(locale);
   const copy = await getMessageNamespace<RFQPageMessages>("rfqPage");
   const sp = await searchParams;
-  const productIds = sp.product_id ? [sp.product_id] : [];
+  const productIds = (sp.product_ids || sp.product_id || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .slice(0, 10);
   const applicationId = sp.application_id;
 
   if (isIndustrial) {

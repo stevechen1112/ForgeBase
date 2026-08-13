@@ -7,6 +7,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.v1.deps import resolve_tenant_id
 from app.db.session import get_session
 from app.models.chat import ChatSession
+from app.models.tenant import Tenant
+from app.core.config import settings
 from app.schemas.base import APIResponse
 from app.schemas.chat import (
     ChatHandoffCreate,
@@ -17,15 +19,34 @@ from app.schemas.chat import (
     ChatSessionCreateData,
 )
 from app.services.chat_service import ChatService
+from app.services.subscription import get_plan_feature
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
 
-async def _get_chat_session_or_404(db: AsyncSession, chat_session_id: uuid.UUID) -> ChatSession:
+async def _get_chat_session_or_404(
+    db: AsyncSession,
+    chat_session_id: uuid.UUID,
+    tenant_id: Optional[uuid.UUID],
+) -> ChatSession:
     chat_session = await db.get(ChatSession, chat_session_id)
-    if not chat_session:
+    if not chat_session or chat_session.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Chat session not found")
     return chat_session
+
+
+async def _ensure_chat_available(db: AsyncSession, tenant_id: Optional[uuid.UUID]) -> None:
+    if not settings.CHAT_ENABLED:
+        raise HTTPException(status_code=503, detail="AI advisor is temporarily unavailable")
+    if tenant_id is None:
+        if settings.is_production:
+            raise HTTPException(status_code=503, detail="AI advisor tenant is not configured")
+        return
+    tenant = await db.get(Tenant, tenant_id)
+    if not tenant or not tenant.is_active:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    if not get_plan_feature(tenant.plan, "ai_advisor"):
+        raise HTTPException(status_code=403, detail="AI advisor is not included in this plan")
 
 
 @router.post("/sessions", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
@@ -34,6 +55,7 @@ async def create_chat_session(
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
+    await _ensure_chat_available(db, tenant_id)
     service = ChatService(db)
     chat_session, greeting, suggestions = await service.create_session(
         visitor_id=body.visitor_id,
@@ -42,6 +64,7 @@ async def create_chat_session(
         context_entity_type=body.context_entity_type,
         context_entity_id=body.context_entity_id,
         tenant_id=tenant_id,
+        locale=body.locale,
     )
     return APIResponse(
         data=ChatSessionCreateData(
@@ -57,13 +80,19 @@ async def create_chat_message(
     chat_session_id: uuid.UUID,
     body: ChatMessageCreate,
     db: AsyncSession = Depends(get_session),
+    tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
-    chat_session = await _get_chat_session_or_404(db, chat_session_id)
+    chat_session = await _get_chat_session_or_404(db, chat_session_id, tenant_id)
+    await _ensure_chat_available(db, tenant_id)
     if chat_session.visitor_id != body.visitor_id:
         raise HTTPException(status_code=403, detail="visitor_id does not match session owner")
 
     service = ChatService(db)
-    result = await service.answer_message(chat_session=chat_session, content=body.content)
+    result = await service.answer_message(
+        chat_session=chat_session,
+        content=body.content,
+        locale=body.locale,
+    )
     return APIResponse(data=ChatMessageReplyData(**result))
 
 
@@ -74,12 +103,16 @@ async def create_chat_handoff(
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
 ):
-    chat_session = await _get_chat_session_or_404(db, chat_session_id)
+    chat_session = await _get_chat_session_or_404(db, chat_session_id, tenant_id)
+    await _ensure_chat_available(db, tenant_id)
     if chat_session.visitor_id != body.visitor_id:
         raise HTTPException(status_code=403, detail="visitor_id does not match session owner")
 
     service = ChatService(db)
-    result = await service.create_handoff(chat_session=chat_session, prefill=body.prefill)
+    result = await service.create_handoff(
+        chat_session=chat_session,
+        prefill=body.prefill.model_dump(mode="json", exclude_none=True),
+    )
 
     # Copilot: notify human handoff
     if tenant_id:

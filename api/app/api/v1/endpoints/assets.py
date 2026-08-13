@@ -18,7 +18,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from PIL import Image
 from slugify import slugify
 
-from app.api.v1.deps import get_current_user, require_content_editor
+from app.api.v1.deps import get_current_user, require_content_editor, require_user_tenant_id
 from app.core.config import settings
 from app.db.session import get_session
 from app.models.content_asset import ContentAsset
@@ -49,7 +49,7 @@ def _get_s3():
 
 ALLOWED_MIME_TYPES = {
     # images
-    "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+    "image/jpeg", "image/png", "image/webp", "image/gif",
     # documents
     "application/pdf",
     # CAD / data
@@ -68,18 +68,25 @@ def _default_alt_text(filename: str) -> str:
 
 
 def _compress_image_if_possible(content: bytes, mime_type: str) -> tuple[bytes, str]:
-    if not mime_type.startswith("image/") or mime_type in {"image/svg+xml", "image/gif"}:
+    if not mime_type.startswith("image/"):
         return content, mime_type
 
     try:
+        image = Image.open(BytesIO(content))
+        image.verify()
+        if mime_type == "image/gif":
+            return content, mime_type
         image = Image.open(BytesIO(content))
         if image.mode not in ("RGB", "L"):
             image = image.convert("RGB")
         output = BytesIO()
         image.save(output, format="WEBP", quality=82, optimize=True)
         return output.getvalue(), "image/webp"
-    except Exception:
-        return content, mime_type
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="The uploaded image payload is invalid.",
+        ) from exc
 
 
 async def _build_r2_key(
@@ -87,22 +94,25 @@ async def _build_r2_key(
     original_filename: str,
     product_id: str | None,
     page_id: str | None,
+    tenant_id: uuid.UUID,
 ) -> str:
     ext = (original_filename or "file").rsplit(".", 1)[-1].lower()
     prefix = "asset"
 
     if product_id:
         product = await session.get(Product, uuid.UUID(product_id))
-        if product:
-            prefix = product.slug
+        if not product or product.tenant_id not in (None, tenant_id):
+            raise HTTPException(status_code=404, detail="Product not found")
+        prefix = product.slug
     elif page_id:
         page = await session.get(Page, uuid.UUID(page_id))
-        if page:
-            prefix = slugify(page.slug) or "page"
+        if not page or page.tenant_id not in (None, tenant_id):
+            raise HTTPException(status_code=404, detail="Page not found")
+        prefix = slugify(page.slug) or "page"
 
     if ext == "jpeg":
         ext = "jpg"
-    return f"assets/{prefix}-{uuid.uuid4().hex[:10]}.{ext}"
+    return f"assets/{tenant_id}/{prefix}-{uuid.uuid4().hex[:10]}.{ext}"
 
 
 def _classify_asset_type(mime_type: str) -> str:
@@ -119,6 +129,7 @@ def _classify_asset_type(mime_type: str) -> str:
 
 class ContentAssetRead(BaseModel):
     id: uuid.UUID
+    tenant_id: uuid.UUID
     original_filename: str
     r2_key: str
     public_url: str
@@ -151,6 +162,7 @@ async def upload_asset(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
+    tenant_id = require_user_tenant_id(current_user)
     # ── Validate MIME type ────────────────────────────────────────────────────
     mime_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
     if mime_type not in ALLOWED_MIME_TYPES:
@@ -160,7 +172,7 @@ async def upload_asset(
         )
 
     # ── Read & size-check ─────────────────────────────────────────────────────
-    content = await file.read()
+    content = await file.read(MAX_FILE_SIZE + 1)
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -173,7 +185,7 @@ async def upload_asset(
     filename = file.filename or "file"
     if mime_type == "image/webp":
         filename = filename.rsplit(".", 1)[0] + ".webp"
-    r2_key = await _build_r2_key(session, filename, product_id, page_id)
+    r2_key = await _build_r2_key(session, filename, product_id, page_id, tenant_id)
 
     # ── Upload: R2 when configured, otherwise local disk for development ─────
     use_r2 = bool(settings.R2_ACCOUNT_ID and settings.R2_ACCESS_KEY_ID and settings.R2_PUBLIC_URL)
@@ -206,6 +218,7 @@ async def upload_asset(
 
     # ── Save metadata ─────────────────────────────────────────────────────────
     asset = ContentAsset(
+        tenant_id=tenant_id,
         original_filename=filename,
         r2_key=r2_key,
         public_url=public_url,
@@ -235,9 +248,10 @@ async def list_assets(
     asset_type: str | None = Query(None),
     product_id: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    q = select(ContentAsset)
+    tenant_id = require_user_tenant_id(current_user)
+    q = select(ContentAsset).where(ContentAsset.tenant_id == tenant_id)
     if asset_type:
         q = q.where(ContentAsset.asset_type == asset_type)
     if product_id:
@@ -267,7 +281,15 @@ async def delete_asset(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
-    asset = await session.get(ContentAsset, asset_id)
+    tenant_id = require_user_tenant_id(current_user)
+    asset = (
+        await session.exec(
+            select(ContentAsset).where(
+                ContentAsset.id == asset_id,
+                ContentAsset.tenant_id == tenant_id,
+            )
+        )
+    ).first()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
@@ -301,9 +323,17 @@ async def update_asset(
     asset_id: uuid.UUID,
     payload: AssetUpdate,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
-    asset = await session.get(ContentAsset, asset_id)
+    tenant_id = require_user_tenant_id(current_user)
+    asset = (
+        await session.exec(
+            select(ContentAsset).where(
+                ContentAsset.id == asset_id,
+                ContentAsset.tenant_id == tenant_id,
+            )
+        )
+    ).first()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     if payload.alt_text is not None:
