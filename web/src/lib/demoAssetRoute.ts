@@ -286,7 +286,7 @@ function buildCertificationBadgeSvg(filename: string, label: string, config: Sit
 </svg>`;
 }
 
-function buildSvg(spec: VisualSpec, label: string, brandName: string): string {
+function buildSvg(spec: VisualSpec, label: string): string {
   const eyebrow = escapeXml(spec.eyebrow);
   const title = escapeXml(spec.title);
   const subtitle = escapeXml(spec.subtitle);
@@ -481,7 +481,7 @@ export async function createDemoAssetResponse(assetSegments: string[]) {
     });
   }
 
-  const svg = buildSvg(specForFilename(filename, runtimeSiteConfig), assetSegments.join("/"), runtimeSiteConfig.brandName);
+  const svg = buildSvg(specForFilename(filename, runtimeSiteConfig), assetSegments.join("/"));
   return new NextResponse(svg, {
     headers: {
       ...PLACEHOLDER_HEADERS,

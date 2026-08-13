@@ -151,6 +151,8 @@ async def two_tenants():
                 "contacts",
                 "ai_generation_logs",
                 "page_briefs",
+                "content_assets",
+                "integration_credentials",
                 "chat_sessions",
                 "tracking_sessions",
                 "visitors",

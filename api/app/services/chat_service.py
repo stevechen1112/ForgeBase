@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -6,7 +7,8 @@ from typing import Any, Optional
 from urllib.parse import urlencode
 
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import func, or_, select
+from fastapi import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -21,6 +23,7 @@ from app.models.product_category import ProductCategory
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
+from app.schemas.chat import GeneratedChatPayload
 from app.services.chat_orchestrator import finalize_generated_chat_response
 from app.services.chat_policy import infer_clarifying_question as _infer_clarifying_question
 from app.services.chat_policy import summarize_quotable_needs
@@ -34,14 +37,17 @@ from app.services.intent_scoring import calculate_score_delta, get_intent_stage
 
 logger = logging.getLogger(__name__)
 
-client = get_openai_client()
-
-
 def _tenant_matches(entity: Any, tenant_id: uuid.UUID | None) -> bool:
     entity_tenant_id = getattr(entity, "tenant_id", None)
     if tenant_id is None:
         return entity_tenant_id is None
-    return entity_tenant_id == tenant_id
+    return entity_tenant_id in (None, tenant_id)
+
+
+def _tenant_filter(column: Any, tenant_id: uuid.UUID | None) -> Any:
+    if tenant_id is None:
+        return column.is_(None)
+    return or_(column.is_(None), column == tenant_id)
 
 
 def _product_greeting(product_name: Optional[str]) -> str:
@@ -276,6 +282,8 @@ class ChatService:
         if visitor is None:
             self.db.add(Visitor(visitor_id=visitor_id, tenant_id=tenant_id))
             await self.db.flush()
+        elif visitor.tenant_id != tenant_id:
+            raise HTTPException(status_code=409, detail="visitor_id belongs to another tenant")
 
     async def _ensure_tracking_session_exists(
         self,
@@ -300,6 +308,8 @@ class ChatService:
                 )
             )
             await self.db.flush()
+        elif tracking_session.visitor_id != visitor_id or tracking_session.tenant_id != tenant_id:
+            raise HTTPException(status_code=409, detail="session_id belongs to another visitor or tenant")
 
     async def create_session(
         self,
@@ -310,25 +320,26 @@ class ChatService:
         context_entity_type: str,
         context_entity_id: Optional[uuid.UUID],
         tenant_id=None,
+        locale: str = "en",
     ) -> tuple[ChatSession, str, list[str]]:
         product_name: Optional[str] = None
         category_name: Optional[str] = None
         application_name: Optional[str] = None
         if context_entity_type == "product" and context_entity_id:
             product = await self.db.get(Product, context_entity_id)
-            if product and _tenant_matches(product, tenant_id):
+            if product and product.status == "published" and _tenant_matches(product, tenant_id):
                 product_name = product.product_name
             else:
                 context_entity_id = None
         elif context_entity_type == "category" and context_entity_id:
             category = await self.db.get(ProductCategory, context_entity_id)
-            if category and _tenant_matches(category, tenant_id):
+            if category and category.status == "published" and _tenant_matches(category, tenant_id):
                 category_name = category.category_name
             else:
                 context_entity_id = None
         elif context_entity_type == "application" and context_entity_id:
             application = await self.db.get(Application, context_entity_id)
-            if application and _tenant_matches(application, tenant_id):
+            if application and application.status == "published" and _tenant_matches(application, tenant_id):
                 application_name = application.application_name
             else:
                 context_entity_id = None
@@ -348,6 +359,7 @@ class ChatService:
             context_entity_type=context_entity_type,
             context_entity_id=context_entity_id,
             tenant_id=tenant_id,
+            locale=locale[:10],
         )
         await self._record_tracking_event(
             visitor_id=visitor_id,
@@ -382,7 +394,26 @@ class ChatService:
         *,
         chat_session: ChatSession,
         content: str,
+        locale: str = "en",
     ) -> dict[str, Any]:
+        if chat_session.message_count // 2 >= settings.CHAT_SESSION_MESSAGE_LIMIT:
+            raise HTTPException(status_code=429, detail="Chat session message limit reached")
+        if chat_session.tenant_id is not None:
+            start_of_day = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
+            daily_count = (
+                await self.db.exec(
+                    select(func.count(ChatMessage.id))
+                    .join(ChatSession, ChatMessage.chat_session_id == ChatSession.id)
+                    .where(
+                        ChatSession.tenant_id == chat_session.tenant_id,
+                        ChatMessage.role == "user",
+                        ChatMessage.created_at >= start_of_day,
+                    )
+                )
+            ).one()
+            if daily_count >= settings.CHAT_DAILY_TENANT_MESSAGE_LIMIT:
+                raise HTTPException(status_code=429, detail="Daily AI advisor message limit reached")
+        chat_session.locale = locale[:10]
         user_message = ChatMessage(
             chat_session_id=chat_session.id,
             role="user",
@@ -407,6 +438,7 @@ class ChatService:
             cert_summary=cert_summary,
             recent_messages=recent_messages,
             user_question=content,
+            locale=chat_session.locale,
         )
 
         payload = finalize_generated_chat_response(
@@ -454,6 +486,7 @@ class ChatService:
             "clarifying_question": clarifying_question,
             "handoff_ready": handoff_ready or suggested_action == "rfq",
             "handoff_prefill": handoff_prefill,
+            "ai_available": bool(payload.get("ai_available", True)),
         }
 
     async def create_handoff(
@@ -462,6 +495,40 @@ class ChatService:
         chat_session: ChatSession,
         prefill: dict[str, Any],
     ) -> dict[str, Any]:
+        sanitized_prefill: dict[str, Any] = {
+            key: value
+            for key, value in prefill.items()
+            if key in {"quantity", "specifications", "message", "requirement_summary"}
+        }
+        requested_product_ids = [uuid.UUID(str(value)) for value in prefill.get("product_ids", [])]
+        if requested_product_ids:
+            allowed_products = list(
+                (
+                    await self.db.exec(
+                        select(Product.id).where(
+                            Product.id.in_(requested_product_ids),
+                            Product.status == "published",
+                            _tenant_filter(Product.tenant_id, chat_session.tenant_id),
+                        )
+                    )
+                ).all()
+            )
+            if allowed_products:
+                sanitized_prefill["product_ids"] = [str(value) for value in allowed_products]
+        application_id = prefill.get("application_id")
+        if application_id:
+            application = (
+                await self.db.exec(
+                    select(Application).where(
+                        Application.id == uuid.UUID(str(application_id)),
+                        Application.status == "published",
+                        _tenant_filter(Application.tenant_id, chat_session.tenant_id),
+                    )
+                )
+            ).first()
+            if application:
+                sanitized_prefill["application_id"] = str(application.id)
+        prefill = sanitized_prefill
         chat_session.status = "handoff_completed"
         chat_session.updated_at = utcnow_naive()
         self.db.add(chat_session)
@@ -548,7 +615,8 @@ class ChatService:
                 select(Product)
                 .where(
                     Product.id == chat_session.context_entity_id,
-                    Product.tenant_id == chat_session.tenant_id,
+                    Product.status == "published",
+                    _tenant_filter(Product.tenant_id, chat_session.tenant_id),
                 )
                 .options(
                     selectinload(Product.category),
@@ -573,7 +641,7 @@ class ChatService:
                 }
             )
 
-            for faq in product.faqs[:3]:
+            for faq in [item for item in product.faqs if item.status == "published"][:3]:
                 faq_summary_parts.append(_format_faq_snapshot(faq))
                 sources.append(
                     {
@@ -584,7 +652,7 @@ class ChatService:
                     }
                 )
 
-            for cert in product.certifications[:3]:
+            for cert in [item for item in product.certifications if item.status == "active"][:3]:
                 cert_summary_parts.append(_format_cert_snapshot(cert))
                 sources.append(
                     {
@@ -612,7 +680,8 @@ class ChatService:
                 select(ProductCategory)
                 .where(
                     ProductCategory.id == chat_session.context_entity_id,
-                    ProductCategory.tenant_id == chat_session.tenant_id,
+                    ProductCategory.status == "published",
+                    _tenant_filter(ProductCategory.tenant_id, chat_session.tenant_id),
                 )
                 .options(
                     selectinload(ProductCategory.products).selectinload(Product.certifications),
@@ -621,7 +690,7 @@ class ChatService:
             )
             category = (await self.db.exec(statement)).first()
             if category:
-                related_products = category.products[:6]
+                related_products = [item for item in category.products if item.status == "published"][:6]
                 product_summaries = []
                 faq_summary_parts: list[str] = []
                 cert_summary_parts: list[str] = []
@@ -637,7 +706,7 @@ class ChatService:
                             "url": f"/products/{category.slug}/{product.slug}",
                         }
                     )
-                    for faq in product.faqs[:2]:
+                    for faq in [item for item in product.faqs if item.status == "published"][:2]:
                         if faq.id in seen_faq_ids:
                             continue
                         seen_faq_ids.add(faq.id)
@@ -650,7 +719,7 @@ class ChatService:
                                 "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
                             }
                         )
-                    for cert in product.certifications[:2]:
+                    for cert in [item for item in product.certifications if item.status == "active"][:2]:
                         if cert.id in seen_cert_ids:
                             continue
                         seen_cert_ids.add(cert.id)
@@ -679,7 +748,8 @@ class ChatService:
                 select(Application)
                 .where(
                     Application.id == chat_session.context_entity_id,
-                    Application.tenant_id == chat_session.tenant_id,
+                    Application.status == "published",
+                    _tenant_filter(Application.tenant_id, chat_session.tenant_id),
                 )
                 .options(
                     selectinload(Application.products).selectinload(Product.category),
@@ -695,7 +765,7 @@ class ChatService:
                 cert_summary_parts: list[str] = []
                 seen_faq_ids: set[uuid.UUID] = set()
                 seen_cert_ids: set[uuid.UUID] = set()
-                for product in application.products[:5]:
+                for product in [item for item in application.products if item.status == "published"][:5]:
                     category_name = product.category.category_name if product.category else "Uncategorized"
                     product_summaries.append(f"[{category_name}] {_format_product_snapshot(product)}")
                     sources.append(
@@ -706,7 +776,7 @@ class ChatService:
                             "url": f"/products/{product.category.slug}/{product.slug}" if product.category else "/products",
                         }
                     )
-                    for faq in product.faqs[:1]:
+                    for faq in [item for item in product.faqs if item.status == "published"][:1]:
                         if faq.id in seen_faq_ids:
                             continue
                         seen_faq_ids.add(faq.id)
@@ -719,7 +789,7 @@ class ChatService:
                                 "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
                             }
                         )
-                    for cert in product.certifications[:2]:
+                    for cert in [item for item in product.certifications if item.status == "active"][:2]:
                         if cert.id in seen_cert_ids:
                             continue
                         seen_cert_ids.add(cert.id)
@@ -733,7 +803,7 @@ class ChatService:
                             }
                         )
 
-                for faq in application.faqs[:3]:
+                for faq in [item for item in application.faqs if item.status == "published"][:3]:
                     if faq.id not in seen_faq_ids:
                         seen_faq_ids.add(faq.id)
                         faq_summary_parts.append(_format_faq_snapshot(faq))
@@ -764,7 +834,8 @@ class ChatService:
             select(FAQItem)
             .where(
                 FAQItem.status == "published",
-                FAQItem.tenant_id == chat_session.tenant_id,
+                _tenant_filter(FAQItem.tenant_id, chat_session.tenant_id),
+                or_(FAQItem.locale == chat_session.locale, FAQItem.locale == "en"),
             )
             .order_by(FAQItem.sort_order)
         )
@@ -800,12 +871,14 @@ class ChatService:
         cert_summary: str,
         recent_messages: list[ChatMessage],
         user_question: str,
+        locale: str,
     ) -> dict[str, Any]:
         try:
-            response = await client.chat.completions.create(
+            client = get_openai_client()
+            response = await asyncio.wait_for(client.chat.completions.create(
                 model=settings.AI_MODEL_NAME,
                 messages=[
-                    {"role": "system", "content": _build_system_prompt()},
+                    {"role": "system", "content": _build_system_prompt() + f"\n9. Reply in locale: {locale}."},
                     {
                         "role": "user",
                         "content": _build_user_prompt(
@@ -821,9 +894,9 @@ class ChatService:
                 ],
                 response_format={"type": "json_object"},
                 **chat_completion_kwargs(temperature=0.2),
-            )
+            ), timeout=settings.CHAT_LLM_TIMEOUT_SECONDS)
             content = response.choices[0].message.content or "{}"
-            return json.loads(content)
+            return GeneratedChatPayload.model_validate_json(content).model_dump()
         except Exception as exc:
             logger.exception("chat reply generation failed: %s", exc)
             return {
@@ -833,4 +906,5 @@ class ChatService:
                 "suggested_action": "contact",
                 "handoff_reason": None,
                 "prefill": {},
+                "ai_available": False,
             }

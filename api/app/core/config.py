@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # LLM provider — OpenAI only
     OPENAI_API_KEY: str = ""
     AI_MODEL_NAME: str = "gpt-5.6-luna"
+    CHAT_ENABLED: bool = True
+    CHAT_SESSION_MESSAGE_LIMIT: int = 20
+    CHAT_DAILY_TENANT_MESSAGE_LIMIT: int = 500
+    CHAT_LLM_TIMEOUT_SECONDS: float = 20.0
+    PUBLIC_TENANT_SLUG: str = ""
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""
@@ -151,6 +156,11 @@ def _validate_production_settings() -> None:
             "TELEGRAM_WEBHOOK_SECRET must be set in production when TELEGRAM_BOT_TOKEN is configured. "
             "This prevents unauthenticated webhook injection."
         )
+
+    if settings.CHAT_ENABLED and not settings.OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY must be set in production when CHAT_ENABLED is true.")
+    if settings.CHAT_ENABLED and not settings.PUBLIC_TENANT_SLUG:
+        raise RuntimeError("PUBLIC_TENANT_SLUG must be set in production when CHAT_ENABLED is true.")
 
 
 _validate_production_settings()

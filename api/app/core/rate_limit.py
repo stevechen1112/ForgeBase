@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 import time
 from collections import defaultdict
@@ -30,7 +31,14 @@ RULES: Dict[Tuple[str, str], Tuple[int, int]] = {
     ("POST", "/api/v1/forms/rfq"):             (20, 60),   # 20 / min
     ("POST", "/api/v1/tracking/events"):       (60, 60),   # 60 / min
     ("POST", "/api/v1/tracking/events/batch"): (20, 60),   # 20 / min
+    ("POST", "/api/v1/chat/sessions"):                     (10, 60),
+    ("POST", "/api/v1/chat/sessions/{id}/messages"):       (20, 60),
+    ("POST", "/api/v1/chat/sessions/{id}/handoff"):         (5, 60),
 }
+
+_CHAT_PATH = re.compile(
+    r"^/api/v1/chat/sessions/[0-9a-fA-F-]+/(?P<action>messages|handoff)$"
+)
 
 
 class _SlidingWindowStore:
@@ -69,11 +77,13 @@ def check(method: str, path: str, client_ip: str) -> bool:
     Returns True if the request is allowed, False if it should be rejected (429).
     Matched by exact (method, path) — no path parameters.
     """
-    rule = RULES.get((method, path))
+    match = _CHAT_PATH.fullmatch(path)
+    normalized_path = f"/api/v1/chat/sessions/{{id}}/{match.group('action')}" if match else path
+    rule = RULES.get((method, normalized_path))
     if rule is None:
         return True
     limit, window = rule
-    key = f"{client_ip}|{method}:{path}"
+    key = f"{client_ip}|{method}:{normalized_path}"
     return _store.is_allowed(key, limit, window)
 
 

@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_admin, require_content_editor
+from app.api.v1.deps import require_admin, require_content_editor, require_user_tenant_id
 from app.core.encryption import decrypt, encrypt
 from app.db.session import get_session
 from app.models.integration_credential import IntegrationCredential
@@ -114,7 +114,6 @@ def _masked(value: str, keep: int = 6) -> str:
 
 class CredentialUpsert(BaseModel):
     value: str
-    tenant_id: Optional[str] = None  # None = global / single-tenant
 
 
 # ── Credential CRUD ───────────────────────────────────────────────────────────
@@ -122,14 +121,14 @@ class CredentialUpsert(BaseModel):
 @router.get("/integrations/{service}")
 async def list_service_credentials(
     service: str,
-    tenant_id: Optional[str] = None,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_content_editor),
 ):
     """
     Return which credential keys are configured for a service.
     Values are masked — never returned in plaintext.
     """
+    tenant_id = str(require_user_tenant_id(current_user))
     stmt = select(IntegrationCredential).where(
         IntegrationCredential.service == service,
         IntegrationCredential.tenant_id == tenant_id,
@@ -152,14 +151,15 @@ async def upsert_credential(
     key: str,
     body: CredentialUpsert,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ):
     """Create or update an encrypted credential."""
     if not body.value.strip():
         raise HTTPException(status_code=422, detail="value must not be empty")
 
+    tenant_id = str(require_user_tenant_id(current_user))
     encrypted = encrypt(body.value.strip())
-    row = await _get_credential(db, service, key, body.tenant_id)
+    row = await _get_credential(db, service, key, tenant_id)
 
     from app.core.datetime import utcnow_naive
     if row:
@@ -170,7 +170,7 @@ async def upsert_credential(
             service=service,
             credential_key=key,
             encrypted_value=encrypted,
-            tenant_id=body.tenant_id,
+            tenant_id=tenant_id,
         )
 
     db.add(row)
@@ -182,11 +182,11 @@ async def upsert_credential(
 async def delete_credential(
     service: str,
     key: str,
-    tenant_id: Optional[str] = None,
     db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ):
     """Remove a credential from the DB. The env-var fallback still applies."""
+    tenant_id = str(require_user_tenant_id(current_user))
     row = await _get_credential(db, service, key, tenant_id)
     if not row:
         raise HTTPException(status_code=404, detail="Credential not found")

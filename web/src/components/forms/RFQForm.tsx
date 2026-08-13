@@ -101,6 +101,11 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
       full_name: params.get("name") || prev.full_name,
       email: params.get("email") || prev.email,
       company_name: params.get("company") || prev.company_name,
+      quantity: params.get("quantity") || prev.quantity,
+      specifications: params.get("specifications") || prev.specifications,
+      message: [params.get("message"), params.get("requirement_summary")]
+        .filter(Boolean)
+        .join("\n\n") || prev.message,
     }));
   }, []);
 

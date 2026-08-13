@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 VALID_CONTEXT_TYPES = {"product", "faq", "home", "category", "application", "unknown"}
@@ -60,15 +60,35 @@ class ChatMessageReplyData(BaseModel):
     needs_clarification: bool = False
     clarifying_question: Optional[str] = None
     handoff_ready: bool = False
-    handoff_prefill: dict[str, Any] = {}
+    handoff_prefill: dict[str, Any] = Field(default_factory=dict)
+    ai_available: bool = True
+
+
+class ChatHandoffPrefill(BaseModel):
+    product_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
+    application_id: Optional[uuid.UUID] = None
+    quantity: Optional[str] = Field(default=None, max_length=100)
+    specifications: Optional[str] = Field(default=None, max_length=2000)
+    message: Optional[str] = Field(default=None, max_length=2000)
+    requirement_summary: Optional[str] = Field(default=None, max_length=2000)
 
 
 class ChatHandoffCreate(BaseModel):
     visitor_id: uuid.UUID
-    intent_reason: str
-    prefill: dict[str, Any] = {}
+    intent_reason: str = Field(max_length=100)
+    prefill: ChatHandoffPrefill = Field(default_factory=ChatHandoffPrefill)
 
 
 class ChatHandoffData(BaseModel):
     rfq_prefill_url: str
     prefill: dict[str, Any]
+
+
+class GeneratedChatPayload(BaseModel):
+    reply: str = Field(min_length=1, max_length=3000)
+    needs_clarification: bool = False
+    clarifying_question: Optional[str] = Field(default=None, max_length=500)
+    suggested_action: Literal["none", "rfq", "contact"] = "none"
+    handoff_reason: Optional[str] = Field(default=None, max_length=500)
+    prefill: dict[str, Any] = Field(default_factory=dict)
+    ai_available: bool = True

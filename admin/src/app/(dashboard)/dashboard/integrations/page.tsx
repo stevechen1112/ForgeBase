@@ -70,7 +70,6 @@ function useCredentials(service: string, fields: FieldDef[], token: string) {
   const [status, setStatus] = useState<Record<string, boolean>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const keyStr = fields.map(f => f.key).join(",");
 
   const reload = useCallback(async () => {

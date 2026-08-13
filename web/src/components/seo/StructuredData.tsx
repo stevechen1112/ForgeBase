@@ -10,7 +10,6 @@ export function StructuredData({ data }: Props) {
       type="application/ld+json"
       // Using dangerouslySetInnerHTML is intentional and safe here because
       // `data` comes from our own trusted API (not user input).
-      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />
   );

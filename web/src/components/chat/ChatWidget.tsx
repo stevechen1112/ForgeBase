@@ -77,7 +77,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
-  const [handoffUrl, setHandoffUrl] = useState<string | null>(null);
+  const [handoffPrefill, setHandoffPrefill] = useState<Record<string, unknown> | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [isDesktop, setIsDesktop] = useState(true);
@@ -175,20 +175,35 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
       ]);
 
       if (payload.data.handoff_ready || payload.data.suggested_action === "rfq") {
-        const handoffResponse = await fetch(`${apiBase}/api/v1/chat/sessions/${sessionId}/handoff`, {
+        setHandoffPrefill(payload.data.handoff_prefill);
+      }
+    } catch {
+      setError(copy.requestFailed);
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handlePrepareRfq() {
+    if (!chatSessionId || !handoffPrefill) return;
+    setIsBusy(true);
+    setError(null);
+    try {
+        const handoffResponse = await fetch(`${apiBase}/api/v1/chat/sessions/${chatSessionId}/handoff`, {
           method: "POST",
           headers: withTenantHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             visitor_id: getVisitorId(),
             intent_reason: "chat_handoff_ready",
-            prefill: payload.data.handoff_prefill,
+            prefill: handoffPrefill,
           }),
         });
         if (handoffResponse.ok) {
           const handoffPayload = (await handoffResponse.json()) as HandoffResponse;
-          setHandoffUrl(handoffPayload.data.rfq_prefill_url);
+          window.location.assign(handoffPayload.data.rfq_prefill_url);
+        } else {
+          throw new Error(`HTTP ${handoffResponse.status}`);
         }
-      }
     } catch {
       setError(copy.requestFailed);
     } finally {
@@ -212,7 +227,8 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
                 suggestions={suggestions}
                 isBusy={isBusy}
                 error={error}
-                handoffUrl={handoffUrl}
+                handoffReady={handoffPrefill !== null}
+                onPrepareRfq={handlePrepareRfq}
                 onSuggestionClick={handleSubmit}
                 onSubmit={handleSubmit}
               />
@@ -244,7 +260,8 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
                 suggestions={suggestions}
                 isBusy={isBusy}
                 error={error}
-                handoffUrl={handoffUrl}
+                handoffReady={handoffPrefill !== null}
+                onPrepareRfq={handlePrepareRfq}
                 onSuggestionClick={handleSubmit}
                 onSubmit={handleSubmit}
               />

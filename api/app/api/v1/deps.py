@@ -137,6 +137,21 @@ async def require_content_editor(current_user: User = Depends(get_current_user))
     return current_user
 
 
+def require_user_tenant_id(current_user: User) -> UUID:
+    """Return the authenticated tenant boundary or reject tenantless access.
+
+    Platform superusers must assume a tenant through a tenant-owned user before
+    using tenant data APIs. This prevents a missing tenant from silently
+    becoming a global, cross-tenant scope.
+    """
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant context required",
+        )
+    return current_user.tenant_id
+
+
 class RequireFeature:
     """FastAPI dependency that blocks access when tenant plan lacks a feature."""
 
@@ -267,7 +282,7 @@ async def resolve_tenant_id(
     ]
     candidate_hosts = [host for host in candidate_hosts if host]
     if not candidate_hosts:
-        return None
+        return await _resolve_identifier(settings.PUBLIC_TENANT_SLUG) if settings.PUBLIC_TENANT_SLUG else None
 
     # Check process-level TTL cache first
     import time as _time
@@ -314,6 +329,8 @@ async def resolve_tenant_id(
         # Cache miss — record negative result to avoid re-querying
         _TENANT_HOST_CACHE[host] = (None, now)
 
+    if settings.PUBLIC_TENANT_SLUG:
+        return await _resolve_identifier(settings.PUBLIC_TENANT_SLUG)
     return None
 
 

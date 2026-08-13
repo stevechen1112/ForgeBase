@@ -238,6 +238,26 @@ async def test_chat_session_scoped_to_tenant(
     assert create_resp.status_code == 201, create_resp.text
     session_id = create_resp.json()["data"]["chat_session_id"]
 
+    # Public mutation routes must enforce the same tenant boundary, even when
+    # an attacker knows both the visitor and chat-session identifiers.
+    message_resp = await http_client.post(
+        f"/api/v1/chat/sessions/{session_id}/messages",
+        json={"visitor_id": visitor_id, "content": "Send me a quote"},
+        headers=_tenant_header(tenant_b.id),
+    )
+    assert message_resp.status_code == 404
+
+    handoff_resp = await http_client.post(
+        f"/api/v1/chat/sessions/{session_id}/handoff",
+        json={
+            "visitor_id": visitor_id,
+            "intent_reason": "test",
+            "prefill": {"message": "Send me a quote"},
+        },
+        headers=_tenant_header(tenant_b.id),
+    )
+    assert handoff_resp.status_code == 404
+
     # Tenant B admin should get 404 when fetching that session
     get_resp = await http_client.get(
         f"/api/v1/chat-admin/sessions/{session_id}",

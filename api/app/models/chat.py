@@ -17,6 +17,7 @@ class ChatSession(SQLModel, table=True):
     context_page: Optional[str] = Field(default=None, max_length=500)
     context_entity_type: Optional[str] = Field(default=None, max_length=30)
     context_entity_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    locale: str = Field(default="en", max_length=10)
     started_at: datetime = Field(default_factory=utcnow_naive)
     ended_at: Optional[datetime] = Field(default=None)
     status: str = Field(default="active", max_length=20)

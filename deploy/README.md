@@ -69,6 +69,7 @@ nano .env
 |---|---|
 | `SECRET_KEY` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `OPENAI_API_KEY` | OpenAI API key |
+| `PUBLIC_TENANT_SLUG` | 公開網站使用的租戶 slug（啟用 AI 客服時必填，例如 `default-tenant`） |
 | `ENCRYPTION_MASTER_KEY` | 同上方式產生（production 必填，沒設 API 會拒絕啟動） |
 | `WEB_REVALIDATE_SECRET` | **必須與 .env 的 `REVALIDATE_SECRET` 完全相同** |
 

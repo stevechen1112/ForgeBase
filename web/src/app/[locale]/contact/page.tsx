@@ -60,7 +60,7 @@ export default async function ContactPage({ params }: Props) {
     isIndustrial,
   } = await getRuntimeSiteContext();
   const { locale } = await params;
-  const resolvedLocale = resolveLocale(locale);
+  resolveLocale(locale);
   // Seeded CMS contact pages are sparse FlexiblePage bodies; use the assembled Contact page instead.
   const [copy, common] = await Promise.all([
     getMessageNamespace<ContactPageMessages>("contactPage"),
@@ -317,5 +317,3 @@ export default async function ContactPage({ params }: Props) {
     </>
   );
 }
-
-

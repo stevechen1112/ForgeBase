@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, BarChart3, Brain, Check, Globe, Users, Zap, FileText,
   MessageSquare, Bell, MousePointerClick, Package,
@@ -194,11 +195,13 @@ export default function LandingPage() {
           {/* Dashboard preview */}
           <div className="hidden lg:block">
             <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 overflow-hidden shadow-xl relative">
-              <img
+              <Image
                 src="/backend/sales-page/sales-hero-dashboard-mockup.jpg"
                 alt="ForgeBase Dashboard — Visitor Intent Scoring"
-                className="w-full h-full object-cover relative z-10"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover relative z-10"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <BarChart3 className="w-16 h-16 text-slate-200" />
@@ -327,11 +330,13 @@ export default function LandingPage() {
               </ul>
             </div>
             <div className="aspect-video rounded-2xl bg-gradient-to-br from-slate-800 to-slate-700 border border-white/10 overflow-hidden shadow-2xl relative">
-              <img
+              <Image
                 src="/backend/sales-page/sales-ai-advisor-chat.jpg"
                 alt="AI Product Advisor 對話截圖"
-                className="w-full h-full object-cover relative z-10"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover relative z-10"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <MessageSquare className="w-16 h-16 text-white/10" />
