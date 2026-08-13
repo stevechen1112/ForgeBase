@@ -147,7 +147,9 @@ jobs:
         run: |
           set -o pipefail
           sleep 10
-          for i in 1 2 3; do
+          # The web API client intentionally retries a failed backend probe
+          # after 60 seconds, so the deployment gate must cover that window.
+          for i in $(seq 1 8); do
             STATUS=$(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" \
               "set -e; cd /opt/forgebase; \
                docker compose -f docker-compose.prod.yml exec -T web \
@@ -161,9 +163,9 @@ jobs:
               echo "Health check passed"
               exit 0
             fi
-            sleep 5
+            sleep 10
           done
-          echo "Health check failed after 3 attempts"
+          echo "Health check failed after 8 attempts"
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
             cd /opt/forgebase
             docker compose -f docker-compose.prod.yml ps
