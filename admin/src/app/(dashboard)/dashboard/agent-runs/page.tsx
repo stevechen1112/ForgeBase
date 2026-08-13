@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth/store";
 import { agentosApi, type RunView, type Approval } from "@/lib/api/agentos";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCcw, Bot, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
@@ -29,11 +29,9 @@ function relativeTime(iso: string): string {
 
 function ApprovalRow({
   approval,
-  actorId,
   onDecide,
 }: {
   approval: Approval;
-  actorId: string;
   onDecide: (approvalId: string, decision: "approved" | "rejected") => Promise<void>;
 }) {
   const [deciding, setDeciding] = useState<"approved" | "rejected" | null>(null);
@@ -94,11 +92,9 @@ function ApprovalRow({
 
 function RunCard({
   view,
-  actorId,
   onDecide,
 }: {
   view: RunView;
-  actorId: string;
   onDecide: (approvalId: string, decision: "approved" | "rejected") => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(view.run.status === "waiting_approval");
@@ -147,7 +143,7 @@ function RunCard({
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">審批項目</p>
               {view.approvals.map((a) => (
-                <ApprovalRow key={a.id} approval={a} actorId={actorId} onDecide={onDecide} />
+                <ApprovalRow key={a.id} approval={a} onDecide={onDecide} />
               ))}
             </div>
           )}
@@ -277,7 +273,7 @@ export default function AgentRunsPage() {
       ) : (
         <div className="space-y-3">
           {runs.map((view) => (
-            <RunCard key={view.run.id} view={view} actorId={actorId} onDecide={handleDecide} />
+            <RunCard key={view.run.id} view={view} onDecide={handleDecide} />
           ))}
         </div>
       )}

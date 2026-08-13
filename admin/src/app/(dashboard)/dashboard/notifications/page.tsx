@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth/store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Bell, BellOff, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, Bell, CheckCircle2, XCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 import Link from "next/link";
 

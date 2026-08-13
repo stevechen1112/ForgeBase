@@ -102,7 +102,9 @@ export default function DashboardPage() {
   const rfqCount = funnel?.totals.rfqs ?? 0;
   const convRate = funnel?.conversion_rates.visitor_to_rfq ?? 0;
   const newRfqs = funnel?.rfq_by_status["new"] ?? 0;
-  const overdueRfqs = rfqs.filter(r => {
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const recentRfqs = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= thirtyDaysAgo);
+  const overdueRfqs = recentRfqs.filter(r => {
     const hrs = (Date.now() - new Date(r.created_at).getTime()) / 3600000;
     return (r.status === "new" || r.status === "assigned") && hrs > 24;
   });
@@ -301,11 +303,11 @@ export default function DashboardPage() {
           <CardContent className="p-0">
             {loading ? (
               <p className="py-8 text-center text-sm text-muted-foreground">載入中…</p>
-            ) : rfqs.length === 0 ? (
+            ) : recentRfqs.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">尚無詢價資料</p>
             ) : (
               <div className="divide-y">
-                {rfqs.map((rfq) => {
+                {recentRfqs.map((rfq) => {
                   const cfg = STATUS_CONFIG[rfq.status] ?? { label: rfq.status, variant: "secondary" as const };
                   return (
                     <Link

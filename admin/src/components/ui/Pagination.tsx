@@ -14,22 +14,24 @@ export function Pagination({ page, totalPages, onPageChange }: Props) {
   return (
     <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
       <span>
-        Page {page} of {totalPages}
+        第 {page} 頁，共 {totalPages} 頁
       </span>
       <div className="flex gap-2">
         <button
+          type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className="rounded border border-gray-200 px-3 py-1 text-xs disabled:opacity-40 hover:bg-gray-50 transition-colors"
         >
-          Previous
+          上一頁
         </button>
         <button
+          type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className="rounded border border-gray-200 px-3 py-1 text-xs disabled:opacity-40 hover:bg-gray-50 transition-colors"
         >
-          Next
+          下一頁
         </button>
       </div>
     </div>

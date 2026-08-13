@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
       { source: "/dashboard/multilingual", destination: "/dashboard", permanent: false },
       { source: "/dashboard/multilingual/:path*", destination: "/dashboard", permanent: false },
       { source: "/dashboard/relations", destination: "/dashboard/products", permanent: false },
+      { source: "/dashboard/settings/integrations", destination: "/dashboard/integrations", permanent: false },
     ];
   },
 

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, Bot, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, XCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
-import { agentosApi, type RunView } from "@/lib/api/agentos";
+import { authApi, type TeamMember } from "@/lib/api/auth";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -101,6 +101,7 @@ export default function RFQDetailPage() {
   const [loading, setLoading] = useState(true);
   const [newStatus, setNewStatus] = useState("");
   const [assignTo, setAssignTo] = useState("");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -116,32 +117,26 @@ export default function RFQDetailPage() {
   const [followUpSaving, setFollowUpSaving] = useState(false);
   const [lostReason, setLostReason] = useState("");
 
-  // AgentOS run lookup
-  const [agentRunId, setAgentRunId] = useState("");
-  const [agentRunView, setAgentRunView] = useState<RunView | null>(null);
-  const [agentRunLoading, setAgentRunLoading] = useState(false);
-  const [agentRunError, setAgentRunError] = useState("");
-
   // Timeline events
   const [events, setEvents] = useState<RFQEvent[]>([]);
 
-  async function fetchEvents() {
+  const fetchEvents = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/events`, {
         headers: buildApiHeaders(token),
       });
       if (res.ok) setEvents(await res.json());
     } catch { /* non-critical */ }
-  }
+  }, [id, token]);
 
-  async function fetchAssist() {
+  const fetchAssist = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/reply-assist`, {
         headers: buildApiHeaders(token),
       });
       if (res.ok) setAssist(await res.json());
     } catch { /* non-critical */ }
-  }
+  }, [id, token]);
 
   async function saveFollowUp(field: "first_response_at" | "quote_sent_at") {
     setFollowUpSaving(true);
@@ -211,7 +206,12 @@ export default function RFQDetailPage() {
       .finally(() => setLoading(false));
     fetchEvents();
     fetchAssist();
-  }, [id, token]);
+    if (token) {
+      authApi.listTeam(token)
+        .then((members) => setTeamMembers(members.filter((member) => member.is_active)))
+        .catch(() => setTeamMembers([]));
+    }
+  }, [fetchAssist, fetchEvents, id, token]);
 
   async function saveStatus() {
     if (!rfq || newStatus === rfq.status) return;
@@ -265,6 +265,7 @@ export default function RFQDetailPage() {
   if (!rfq) return <div className="py-12 text-center text-destructive">找不到 RFQ</div>;
 
   const formData = rfq.form_data ?? {};
+  const assignedMember = teamMembers.find((member) => member.id === rfq.assigned_to);
 
   return (
     <div className="max-w-4xl">
@@ -621,13 +622,31 @@ export default function RFQDetailPage() {
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">成員編號</Label>
-                <Input value={assignTo} onChange={(e) => setAssignTo(e.target.value)} placeholder="負責成員的系統編號" className="font-mono text-xs" />
+                <select
+                  id="rfq-assignee"
+                  value={assignTo}
+                  onChange={(e) => setAssignTo(e.target.value)}
+                  className={SELECT_CLS}
+                  aria-label="選擇負責成員"
+                >
+                  <option value="">請選擇負責成員</option>
+                  {rfq.assigned_to && !assignedMember && (
+                    <option value={rfq.assigned_to}>目前負責人（帳號已停用或不存在）</option>
+                  )}
+                  {teamMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name || member.email}（{member.role}）
+                    </option>
+                  ))}
+                </select>
               </div>
               <Button variant="secondary" className="w-full" onClick={saveAssign} disabled={saving || !assignTo}>
                 指派
               </Button>
               {rfq.assigned_to && (
-                <p className="text-xs text-muted-foreground truncate">目前：{rfq.assigned_to}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  目前：{assignedMember?.full_name || assignedMember?.email || "帳號已停用或不存在"}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -693,93 +712,6 @@ export default function RFQDetailPage() {
             </CardContent>
           </Card>
 
-          {/* 自動任務查詢 */}
-          <Card className="border-indigo-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-1.5">
-                <Bot className="h-4 w-4 text-indigo-500" />
-                自動任務查詢
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">輸入任務編號查詢狀態</Label>
-                <div className="flex gap-1.5">
-                  <Input
-                    value={agentRunId}
-                    onChange={(e) => setAgentRunId(e.target.value)}
-                    placeholder="run_id…"
-                    className="font-mono text-xs h-8"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 shrink-0"
-                    disabled={!agentRunId.trim() || agentRunLoading}
-                    onClick={async () => {
-                      setAgentRunLoading(true); setAgentRunError("");
-                      try {
-                        const view = await agentosApi.getRun(agentRunId.trim());
-                        setAgentRunView(view);
-                      } catch (e) {
-                        setAgentRunError(e instanceof Error ? e.message : "查詢失敗");
-                        setAgentRunView(null);
-                      } finally { setAgentRunLoading(false); }
-                    }}
-                  >
-                    {agentRunLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "查詢"}
-                  </Button>
-                </div>
-              </div>
-              {agentRunError && <p className="text-xs text-red-600">{agentRunError}</p>}
-              {agentRunView && (() => {
-                const run = agentRunView.run;
-                const statusCls: Record<string, string> = {
-                  waiting_approval: "text-amber-700 bg-amber-50",
-                  running: "text-blue-700 bg-blue-50",
-                  completed: "text-green-700 bg-green-50",
-                  failed: "text-red-700 bg-red-50",
-                };
-                const statusLabel: Record<string, string> = {
-                  waiting_approval: "待審批",
-                  running: "執行中",
-                  completed: "已完成",
-                  failed: "失敗",
-                };
-                const pendingApprovals = agentRunView.approvals.filter((a) => a.decision === "pending");
-                return (
-                  <div className="space-y-2 rounded-lg border bg-indigo-50/40 px-3 py-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">狀態</span>
-                      <span className={`rounded px-1.5 py-0.5 font-medium ${statusCls[run.status] ?? "bg-muted text-muted-foreground"}`}>
-                        {statusLabel[run.status] ?? run.status}
-                      </span>
-                    </div>
-                    <div className="text-muted-foreground">{agentRunView.run_state.summary}</div>
-                    {pendingApprovals.length > 0 && (
-                      <div className="rounded bg-amber-100 px-2 py-1.5 text-amber-800">
-                        <Clock className="inline h-3 w-3 mr-1" />
-                        {pendingApprovals.length} 項待審批 —{" "}
-                        <Link href="/dashboard/agent-runs" className="underline">前往審批</Link>
-                      </div>
-                    )}
-                    {agentRunView.approvals.filter((a) => a.decision !== "pending").map((a) => (
-                      <div key={a.id} className="flex items-center gap-1">
-                        {a.decision === "approved"
-                          ? <CheckCircle2 className="h-3 w-3 text-green-600" />
-                          : <XCircle className="h-3 w-3 text-red-600" />}
-                        <span className="text-muted-foreground">{a.checkpoint}: {a.decision}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              <Link href="/dashboard/agent-runs" className="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
-                <Bot className="h-3 w-3" />
-                查看全部自動任務
-              </Link>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
