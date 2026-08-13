@@ -224,12 +224,29 @@ async def test_chat_session_scoped_to_tenant(
     token_b = await admin_token_for_tenant(tenant_b.id)
 
     visitor_id = str(uuid.uuid4())
+    tracking_session_id = str(uuid.uuid4())
+
+    # The public page tracker may run before chat tenant resolution and create
+    # global visitor/session rows. Chat should safely claim those NULL-tenant
+    # rows instead of returning 409, while preserving cross-tenant isolation.
+    tracking_resp = await http_client.post(
+        "/api/v1/tracking/events",
+        json={
+            "event_name": "page_view",
+            "visitor_id": visitor_id,
+            "session_id": tracking_session_id,
+            "page_url": "https://test.invalid/",
+            "page_type": "home",
+        },
+    )
+    assert tracking_resp.status_code in (200, 201, 202), tracking_resp.text
 
     # Create chat session under tenant A (public API, no auth required)
     create_resp = await http_client.post(
         "/api/v1/chat/sessions",
         json={
             "visitor_id": visitor_id,
+            "session_id": tracking_session_id,
             "context_entity_type": "home",
             "context_entity_id": None,
         },
@@ -271,6 +288,46 @@ async def test_chat_session_scoped_to_tenant(
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. SiteProfile isolation
 # ─────────────────────────────────────────────────────────────────────────────
+
+@requires_db
+@pytest.mark.asyncio
+async def test_expired_certification_hidden_from_public_but_visible_to_admin(
+    http_client: AsyncClient,
+    two_tenants,
+    admin_token_for_tenant,
+):
+    """Expired certifications remain editable but are not public trust signals."""
+    tenant_a, _ = two_tenants
+    token_a = await admin_token_for_tenant(tenant_a.id)
+    slug = f"expired-cert-{uuid.uuid4().hex[:6]}"
+
+    create_resp = await http_client.post(
+        "/api/v1/content/certifications",
+        json={
+            "cert_name": "Expired QA Certificate",
+            "slug": slug,
+            "expires_at": "2020-01-01T00:00:00Z",
+            "locale": "en",
+            "status": "published",
+        },
+        headers={**_auth(token_a), **_tenant_header(tenant_a.id)},
+    )
+    assert create_resp.status_code == 201, create_resp.text
+
+    public_resp = await http_client.get(
+        "/api/v1/content/certifications",
+        headers=_tenant_header(tenant_a.id),
+    )
+    assert public_resp.status_code == 200, public_resp.text
+    assert slug not in {item["slug"] for item in public_resp.json()["data"]}
+
+    admin_resp = await http_client.get(
+        "/api/v1/content/certifications",
+        headers={**_auth(token_a), **_tenant_header(tenant_a.id)},
+    )
+    assert admin_resp.status_code == 200, admin_resp.text
+    assert slug in {item["slug"] for item in admin_resp.json()["data"]}
+
 
 @requires_db
 @pytest.mark.asyncio
