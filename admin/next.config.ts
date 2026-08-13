@@ -1,13 +1,9 @@
 import type { NextConfig } from "next";
-import { resolve } from "node:path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   basePath: "/backend",
   assetPrefix: "/backend",
-  turbopack: {
-    root: resolve(process.cwd(), ".."),
-  },
 
   async redirects() {
     return [
