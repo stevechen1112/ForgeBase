@@ -20,6 +20,8 @@ import { getMessageNamespace } from "@/lib/messages";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialHomePage } from "@/components/themes";
+import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
+import { localizedPath } from "@/lib/localizedPath";
 
 function isSupportedLocale(locale: string): boolean {
   return locale === "en" || locale === "zh-TW";
@@ -167,6 +169,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   ]);
   const applications = applicationsRes.data.slice(0, 6);
   const categorySlugById = new Map(categories.map((category) => [category.id, category.slug]));
+  const showLocaleFallback = hasLocaleFallback(
+    resolvedLocale,
+    [...categories, ...applications, ...certifications, ...featuredProducts]
+  );
 
   // ── Industrial layout: completely different page assembly ──
   if (isIndustrial) {
@@ -177,6 +183,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <StructuredData
           data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })}
         />
+        {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mx-auto my-6 max-w-7xl px-6" />}
         <IndustrialHomePage
           copy={copy}
           featuredProducts={featuredProducts}
@@ -198,6 +205,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <StructuredData
         data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })}
       />
+      {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mx-auto my-6 max-w-6xl px-6" />}
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
@@ -229,13 +237,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <Link
-                href="/rfq"
+                href={localizedPath(resolvedLocale, "/rfq")}
                 className="rounded-xl bg-white px-8 py-3.5 text-center text-sm font-bold text-blue-900 shadow-lg hover:bg-blue-50 transition-colors"
               >
                 {copy.hero.primaryCta}
               </Link>
               <Link
-                href="/products"
+                href={localizedPath(resolvedLocale, "/products")}
                 className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-center text-sm font-semibold text-white hover:bg-white/20 transition-colors"
               >
                 {copy.hero.secondaryCta}
@@ -277,7 +285,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {featuredProducts.map((product) => (
                 <Link
                   key={product.id}
-                  href={categorySlugById.get(product.category_id) ? `/products/${categorySlugById.get(product.category_id)}/${product.slug}` : "/products"}
+                  href={localizedPath(resolvedLocale, categorySlugById.get(product.category_id) ? `/products/${categorySlugById.get(product.category_id)}/${product.slug}` : "/products")}
                   className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
                   <div className="mb-3 h-32 w-full overflow-hidden rounded-lg bg-blue-50">
@@ -310,7 +318,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-10 text-center">
               <Link
-                href="/products"
+                href={localizedPath(resolvedLocale, "/products")}
                 className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-6 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
               >
                 {copy.featured.sectionCta}
@@ -341,7 +349,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/products/${cat.slug}`}
+                  href={localizedPath(resolvedLocale, `/products/${cat.slug}`)}
                   className="group flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
                 >
                   {getCategoryCardImage(cat, runtimeSiteConfig) ? (
@@ -365,7 +373,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-10 text-center">
               <Link
-                href="/products"
+                href={localizedPath(resolvedLocale, "/products")}
                 className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-6 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
               >
                 {copy.catalogue.sectionCta}
@@ -424,13 +432,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
-                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} />
+                <ApplicationCard key={app.id} application={app} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
               ))}
             </div>
 
             <div className="mt-10 text-center">
               <Link
-                href="/applications"
+                href={localizedPath(resolvedLocale, "/applications")}
                 className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline"
               >
                 {copy.applications.sectionCta}
@@ -489,7 +497,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-10 text-center">
               <Link
-                href="/certifications"
+                href={localizedPath(resolvedLocale, "/certifications")}
                 className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline"
               >
                 {copy.certifications.sectionCta}
@@ -508,13 +516,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
-              href="/rfq"
+              href={localizedPath(resolvedLocale, "/rfq")}
               className="rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-blue-900 shadow-lg hover:bg-blue-50 transition-colors"
             >
               {copy.finalCta.primaryCta}
             </Link>
             <Link
-              href="/contact"
+              href={localizedPath(resolvedLocale, "/contact")}
               className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
             >
               {copy.finalCta.secondaryCta}

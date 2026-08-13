@@ -65,6 +65,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agentRuns, setAgentRuns] = useState<RunView[]>([]);
+  const [agentOsOnline, setAgentOsOnline] = useState<boolean | null>(null);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -87,7 +88,15 @@ export default function DashboardPage() {
         setRfqs([]);
         setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入 RFQ");
       }
-      agentosApi.listRuns().then((runs) => setAgentRuns(runs)).catch(() => setAgentRuns([]));
+      agentosApi.listRuns()
+        .then((runs) => {
+          setAgentRuns(runs);
+          setAgentOsOnline(true);
+        })
+        .catch(() => {
+          setAgentRuns([]);
+          setAgentOsOnline(false);
+        });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "載入失敗");
     } finally {
@@ -360,7 +369,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {agentOsOnline === true && <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-1.5">
@@ -406,7 +415,7 @@ export default function DashboardPage() {
                 </>
               )}
             </CardContent>
-          </Card>
+          </Card>}
 
           <Card>
             <CardHeader className="pb-3">

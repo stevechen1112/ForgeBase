@@ -1,4 +1,4 @@
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { IndustrialHero } from "@/components/themes/industrial/IndustrialHero";
@@ -6,6 +6,7 @@ import { getCategoryCardImage, getHomeHeroImage, getProductImage } from "@/lib/d
 import { ArrowRight, ChevronRight } from "lucide-react";
 import type { Product, ProductCategory, Application, Certification } from "@/types/content";
 import type { SiteConfig } from "@/lib/siteConfig";
+import { localizedPath } from "@/lib/localizedPath";
 
 /**
  * Industrial homepage: angular, left-aligned, dark sections, bold typography.
@@ -135,6 +136,7 @@ export function IndustrialHomePage({
         secondaryCta={copy.hero.secondaryCta}
         heroImage={getHomeHeroImage(siteConfig) ?? undefined}
         stats={copy.stats}
+        locale={locale}
       />
 
       {/* ── Featured Products — horizontal cards (cobalt: vertical 4-col grid) ── */}
@@ -150,7 +152,7 @@ export function IndustrialHomePage({
             <div className="space-y-4">
               {featuredProducts.slice(0, 4).map((product) => {
                 const catSlug = categorySlugById.get(product.category_id);
-                const href = catSlug ? `/products/${catSlug}/${product.slug}` : "/products";
+                const href = localizedPath(locale, catSlug ? `/products/${catSlug}/${product.slug}` : "/products");
                 const imgSrc = getProductImage(product, catSlug, siteConfig);
                 return (
                   <Link
@@ -197,7 +199,7 @@ export function IndustrialHomePage({
 
             <div className="mt-8">
               <Link
-                href="/products"
+                href={localizedPath(locale, "/products")}
                 className="inline-flex items-center gap-2 bg-gray-900 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white skew-x-[-3deg] hover:bg-gray-700 transition-colors"
               >
                 <span className="skew-x-[3deg]">{copy.featured.sectionCta}</span>
@@ -222,7 +224,7 @@ export function IndustrialHomePage({
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/products/${cat.slug}`}
+                  href={localizedPath(locale, `/products/${cat.slug}`)}
                   className="group flex items-center gap-4 bg-white p-5 hover:bg-primary/5 transition-colors"
                 >
                   {getCategoryCardImage(cat, siteConfig) ? (
@@ -249,7 +251,7 @@ export function IndustrialHomePage({
 
             <div className="mt-8">
               <Link
-                href="/products"
+                href={localizedPath(locale, "/products")}
                 className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-primary hover:underline"
               >
                 {copy.catalogue.sectionCta}
@@ -306,7 +308,7 @@ export function IndustrialHomePage({
 
             <div className="mt-8">
               <Link
-                href="/applications"
+                href={localizedPath(locale, "/applications")}
                 className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-primary hover:underline"
               >
                 {copy.applications.sectionCta}
@@ -361,7 +363,7 @@ export function IndustrialHomePage({
 
             <div className="mt-8">
               <Link
-                href="/certifications"
+                href={localizedPath(locale, "/certifications")}
                 className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-primary hover:underline"
               >
                 {copy.certifications.sectionCta}
@@ -394,14 +396,14 @@ export function IndustrialHomePage({
 
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/rfq"
+                href={localizedPath(locale, "/rfq")}
                 className="flex items-center gap-2 bg-primary px-7 py-3 text-sm font-black uppercase tracking-wider text-primary-foreground skew-x-[-3deg] hover:brightness-110 transition-all"
               >
                 <span className="skew-x-[3deg]">{copy.finalCta.primaryCta}</span>
                 <ArrowRight className="h-4 w-4 skew-x-[3deg]" />
               </Link>
               <Link
-                href="/contact"
+                href={localizedPath(locale, "/contact")}
                 className="flex items-center gap-2 border-2 border-gray-600 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white skew-x-[-3deg] hover:border-gray-400 transition-colors"
               >
                 <span className="skew-x-[3deg]">{copy.finalCta.secondaryCta}</span>

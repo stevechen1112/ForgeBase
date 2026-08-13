@@ -1,6 +1,7 @@
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import type { Application } from "@/types/content";
 import { getApplicationImage } from "@/lib/demoAssets";
+import { localizedPath } from "@/lib/localizedPath";
 import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";
 
 type Props = {
@@ -20,7 +21,7 @@ export function ApplicationCard({
 
   return (
     <Link
-      href={`/applications/${application.slug}`}
+      href={localizedPath(locale, `/applications/${application.slug}`)}
       className={isIndustrial
         ? "group flex flex-col overflow-hidden border border-gray-300 bg-white transition-colors hover:border-primary/50 hover:bg-primary/5"
         : "group flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-md"}

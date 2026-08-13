@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SUPPORTED_LOCALES } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -115,12 +116,9 @@ export default function CTAForm({ initial, id }: Props) {
             <div className="space-y-1.5">
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
-                <option value="en">English</option>
-                <option value="zh-tw">繁體中文</option>
-                <option value="zh-cn">简体中文</option>
-                <option value="ja">日本語</option>
-                <option value="ko">한국어</option>
-                <option value="de">Deutsch</option>
+                {SUPPORTED_LOCALES.map((locale) => (
+                  <option key={locale.value} value={locale.value}>{locale.label}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
