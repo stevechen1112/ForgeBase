@@ -491,7 +491,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="mt-12 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {certifications.map((cert) => (
-                <CertificationBadge key={cert.id} certification={cert} />
+                <CertificationBadge key={cert.id} certification={cert} locale={resolvedLocale} />
               ))}
             </div>
 

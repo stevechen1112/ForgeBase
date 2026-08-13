@@ -85,7 +85,7 @@ export default async function CertificationsPage({ params }: Props) {
               ) : (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                   {certifications.map((cert) => (
-                    <CertificationBadge key={cert.id} certification={cert} />
+                    <CertificationBadge key={cert.id} certification={cert} locale={resolvedLocale} />
                   ))}
                 </div>
               )}
@@ -161,7 +161,7 @@ export default async function CertificationsPage({ params }: Props) {
           ) : (
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {certifications.map((cert) => (
-                <CertificationBadge key={cert.id} certification={cert} />
+                <CertificationBadge key={cert.id} certification={cert} locale={resolvedLocale} />
               ))}
             </div>
           )}

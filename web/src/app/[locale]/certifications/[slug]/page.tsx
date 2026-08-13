@@ -57,6 +57,12 @@ export default async function CertificationDetailPage({ params }: Props) {
     ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
     : null;
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [certification]);
+  const isExpired = certification.expires_at
+    ? new Date(certification.expires_at).getTime() < Date.now()
+    : false;
+  const expiryDisplay = certification.expires_at
+    ? `${new Date(certification.expires_at).toLocaleDateString(resolvedLocale)}${isExpired ? (resolvedLocale === "zh-TW" ? "（已過期）" : " (Expired)") : ""}`
+    : "—";
 
   if (isIndustrial) {
     return (
@@ -99,7 +105,7 @@ export default async function CertificationDetailPage({ params }: Props) {
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.certificateNo}</dt><dd className="font-medium text-gray-700">{certification.cert_number || "—"}</dd></div>
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.locale}</dt><dd className="font-medium text-gray-700">{certification.locale}</dd></div>
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString() : "—"}</dd></div>
-                  <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className="font-medium text-gray-700">{certification.expires_at ? new Date(certification.expires_at).toLocaleDateString() : "—"}</dd></div>
+                  <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className={`font-medium ${isExpired ? "text-red-600" : "text-gray-700"}`}>{expiryDisplay}</dd></div>
                 </dl>
                 <div className="mt-6 flex flex-wrap gap-4">
                   {certification.document_url && (
@@ -166,7 +172,7 @@ export default async function CertificationDetailPage({ params }: Props) {
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.certificateNo}</dt><dd className="font-medium text-gray-700">{certification.cert_number || "—"}</dd></div>
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.locale}</dt><dd className="font-medium text-gray-700">{certification.locale}</dd></div>
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString() : "—"}</dd></div>
-              <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className="font-medium text-gray-700">{certification.expires_at ? new Date(certification.expires_at).toLocaleDateString() : "—"}</dd></div>
+              <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className={`font-medium ${isExpired ? "text-red-600" : "text-gray-700"}`}>{expiryDisplay}</dd></div>
             </dl>
             {certification.document_url && (
               <a href={certification.document_url} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
