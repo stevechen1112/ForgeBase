@@ -9,9 +9,9 @@ ForgeBase Demo Seed & System Verify Script
 執行方式：
   python scripts/demo_seed_and_verify.py --mode verify
   python scripts/demo_seed_and_verify.py --mode demo
-  python scripts/demo_seed_and_verify.py --mode demo --base-url https://mitselect.com --email admin@example.com --password yourpassword
+  python scripts/demo_seed_and_verify.py --mode demo --base-url https://172.233.64.5 --email admin@example.com --password yourpassword
 
-預設 base-url = https://mitselect.com
+預設 base-url = https://172.233.64.5
 """
 
 import argparse
@@ -207,7 +207,8 @@ def random_past_timestamp(days_ago_max: int = DEMO_DAYS) -> datetime:
 def build_visitor_events(visitor_id: str, session_id: str,
                           product_ids: list[str], app_ids: list[str],
                           profile: tuple, event_count: int,
-                          base_time: datetime) -> list[dict]:
+                          base_time: datetime,
+                          base_url: str) -> list[dict]:
     """
     根據訪客輪廓生成一個 session 內的事件序列。
     模擬真實的瀏覽行為：先看首頁 → 瀏覽產品 → 可能下載/詢價。
@@ -265,7 +266,7 @@ def build_visitor_events(visitor_id: str, session_id: str,
             "event_name": event_name,
             "visitor_id": visitor_id,
             "session_id": session_id,
-            "page_url": f"https://mitselect.com/{page_type or 'page'}/{uuid.uuid4().hex[:8]}",
+            "page_url": f"{base_url}/{page_type or 'page'}/{uuid.uuid4().hex[:8]}",
             "page_type": page_type if event_name != "page_view" else "page",
             "locale": "en",
             "traffic_source": traffic,
@@ -283,7 +284,7 @@ def build_visitor_events(visitor_id: str, session_id: str,
             "event_name": "session_depth_reached",
             "visitor_id": visitor_id,
             "session_id": session_id,
-            "page_url": "https://mitselect.com/",
+            "page_url": f"{base_url}/",
             "locale": "en",
             "traffic_source": traffic,
             "device_type": device,
@@ -343,7 +344,7 @@ def run_verify(client: APIClient):
         "event_name": "page_view",
         "visitor_id": test_vid,
         "session_id": test_sid,
-        "page_url":   "https://mitselect.com/products",
+        "page_url":   f"{client.base}/products",
         "page_type":  "page",
         "locale":     "en",
         "traffic_source": "direct",
@@ -458,7 +459,7 @@ def run_demo(client: APIClient):
         events = build_visitor_events(
             visitor_id, session_id,
             product_ids, app_ids,
-            profile, event_count, base_time
+            profile, event_count, base_time, client.base
         )
 
         batch_buffer.extend(events)
@@ -503,7 +504,7 @@ def run_demo(client: APIClient):
             "message":       f"We are interested in your products for {random.choice(['automotive','electronics','industrial'])} applications. Please contact us.",
             "how_did_you_find_us": random.choice(HOW_FOUND),
             "visitor_id":    str(random.choice(active_visitors)[0]),
-            "source_page":   "https://mitselect.com/contact",
+            "source_page":   f"{client.base}/contact",
         }
         r = client.check("POST", "/api/v1/forms/contact",
                          label=f"聯絡表單 #{i+1}  ({name})",
@@ -542,7 +543,7 @@ def run_demo(client: APIClient):
             "how_did_you_find_us": random.choice(HOW_FOUND),
             "consent":      True,
             "visitor_id":   str(random.choice(active_visitors)[0]),
-            "source_page":  "https://mitselect.com/request-quote",
+            "source_page":  f"{client.base}/request-quote",
         }
         r = client.check("POST", "/api/v1/forms/rfq",
                          label=f"RFQ #{i+1}  ({name} / {company})",
@@ -607,10 +608,10 @@ def print_report(client: APIClient, mode: str):
     • {RFQ_SUBMISSIONS} 筆 RFQ 詢價單
 
   {YELLOW}可到後台儀表板查看：{RESET}
-    https://mitselect.com/backend/dashboard/page-analytics
-    https://mitselect.com/backend/dashboard/intent
-    https://mitselect.com/backend/dashboard/rfqs
-    https://mitselect.com/backend/dashboard/segments
+    {client.base}/backend/dashboard/page-analytics
+    {client.base}/backend/dashboard/intent
+    {client.base}/backend/dashboard/rfqs
+    {client.base}/backend/dashboard/segments
 """)
 
 
@@ -624,9 +625,9 @@ def main():
     parser.add_argument("--mode",     default="verify",
                         choices=["verify", "demo"],
                         help="verify = 只驗證API | demo = 注入資料+驗證")
-    parser.add_argument("--base-url", default="https://mitselect.com",
-                        help="API 根網址（預設 https://mitselect.com）")
-    parser.add_argument("--email",    default="admin@mitselect.com",
+    parser.add_argument("--base-url", default="https://172.233.64.5",
+                        help="API 根網址（預設 https://172.233.64.5）")
+    parser.add_argument("--email",    default="admin@forgebase.com",
                         help="管理員帳號")
     parser.add_argument("--password", default=None,
                         help="管理員密碼（若不提供則從終端機輸入）")

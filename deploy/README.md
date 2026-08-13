@@ -5,20 +5,20 @@
 | 服務 | 說明 | 對外路徑 |
 |---|---|---|
 | `caddy` | 反向代理＋自動 Let's Encrypt HTTPS | 80 / 443 |
-| `web` | Next.js 前台 | `http://172.233.64.5/` |
-| `admin` | Next.js 後台（basePath=/backend） | `http://172.233.64.5/backend` |
-| `api` | FastAPI（uvicorn ×2 workers） | `http://172.233.64.5/api/v1`、`/uploads`、`/health` |
+| `web` | Next.js 前台 | `https://172.233.64.5/` |
+| `admin` | Next.js 後台（basePath=/backend） | `https://172.233.64.5/backend` |
+| `api` | FastAPI（uvicorn ×2 workers） | `https://172.233.64.5/api/v1`、`/uploads`、`/health` |
 | `db` | PostgreSQL 16（僅容器內網，不對外開 port） | — |
 | `migrate` | 一次性 alembic upgrade head（api 啟動前自動跑） | — |
 
-> 正式環境目前沒有網域，以 `http://172.233.64.5` 提供服務。`deploy/Caddyfile` 預設即為 IP 純 HTTP 模式；若未來取得新網域，再另行啟用 `Caddyfile.domain` 與 HTTPS。
+> 正式環境目前沒有網域，以 `https://172.233.64.5` 提供服務。`deploy/Caddyfile` 會透過 Let's Encrypt shortlived profile 自動申請及更新公開 IP 憑證；公開 HTTP 會永久導向 HTTPS，僅保留主機內部的 HTTP 健康檢查入口。
 
 ---
 
 ## 0. 前置作業
 
 1. **Linode 開機**：Ubuntu 24.04 LTS，建議 **Shared CPU 4 GB（或以上）**——Next.js build 很吃記憶體，2 GB 可能在 `next build` 時 OOM。
-2. **防火牆**：IP 模式只需對外開 22 / 80；443 可保留供未來 HTTPS 使用。
+2. **防火牆**：對外開 22 / 80 / 443；80 用於 ACME 驗證與健康檢查，443 提供正式 HTTPS。
 
 ## 1. 安裝 Docker
 
@@ -51,7 +51,7 @@ nano .env
 
 | 變數 | 填法 |
 |---|---|
-| `PROTOCOL` | `http` |
+| `PROTOCOL` | `https` |
 | `DOMAIN` | 正式伺服器 IP，例如 `172.233.64.5` |
 | `APEX_DOMAIN` | IP 模式填與 `DOMAIN` 相同的值 |
 | `POSTGRES_PASSWORD` | 強密碼 |
@@ -104,9 +104,9 @@ docker compose -f docker-compose.prod.yml run --rm --no-deps \
 
 ## 7. 驗證清單
 
-- [ ] `http://172.233.64.5/health` → `{"status":"ok"}`
-- [ ] `http://172.233.64.5/` 前台首頁正常
-- [ ] `http://172.233.64.5/backend` 後台登入頁正常，能登入
+- [ ] `https://172.233.64.5/health` → `{"status":"ok"}` 且憑證可信任
+- [ ] `https://172.233.64.5/` 前台首頁正常
+- [ ] `https://172.233.64.5/backend` 後台登入頁正常，能登入
 - [ ] 後台商品／分類列表有資料（或為空但無錯誤）
 - [ ] 發布一篇內容 → 60 秒內前台更新（revalidate 生效）
 - [ ] AI 起草可用（OpenAI key 生效）

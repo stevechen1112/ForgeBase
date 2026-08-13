@@ -1,26 +1,52 @@
-# 正式環境目前沒有網域，使用伺服器 IP 提供純 HTTP 服務。
-:80 {
+# 正式環境沒有網域，直接為公開 IP 申請 Let's Encrypt shortlived 憑證。
+# 明確保留 HTTP site，憑證申請或更新期間仍可進行健康檢查。
+{
+	# 多數用戶端連線 IP 時不傳 SNI；指定預設名稱才能選中 IP 憑證。
+	default_sni {$DOMAIN}
+	# 保留下方明確定義的本機 HTTP health route，其餘流量手動導向 HTTPS。
+	auto_https disable_redirects
+}
+
+(forgebase_routes) {
 	encode zstd gzip
 
-	# web 前台自己的 /api 路由（ISR revalidate、素材自檢），必須比 /api/* 先匹配
 	@web_api path /api/revalidate /api/health/*
 	handle @web_api {
 		reverse_proxy web:3000
 	}
 
-	# FastAPI：API 主體、本機上傳素材、健康檢查
 	@api path /api/* /uploads/* /health
 	handle @api {
 		reverse_proxy api:8000
 	}
 
-	# Admin 後台（Next.js basePath=/backend，靜態資產也在 /backend 下）
 	handle /backend* {
 		reverse_proxy admin:3000
 	}
 
-	# 其餘全部給 Web 前台
 	handle {
 		reverse_proxy web:3000
 	}
+}
+
+:80 {
+	@local_health {
+		host 127.0.0.1 localhost
+		path /health
+	}
+	handle @local_health {
+		reverse_proxy api:8000
+	}
+	handle {
+		redir https://{$DOMAIN}{uri} permanent
+	}
+}
+
+https://{$DOMAIN} {
+	tls {
+		issuer acme https://acme-v02.api.letsencrypt.org/directory {
+			profile shortlived
+		}
+	}
+	import forgebase_routes
 }

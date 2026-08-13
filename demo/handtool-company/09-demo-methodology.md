@@ -262,7 +262,7 @@ export function getApplicationImage(slug: string): string | null
 ### 圖片服務架構
 
 目前圖片放在 `web/public/demo/...` 目錄，由 Next.js 靜態服務，  
-生產環境（mitselect.com）需要在部署時將圖片一起同步。  
+生產環境（`https://172.233.64.5`）需要在部署時將圖片一起同步。
 未來改進方向：整合 Cloudflare R2 物件儲存，讓圖片可以獨立更新而不需重新部署。
 
 ---
