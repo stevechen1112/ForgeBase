@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { assetsApi, categoriesApi, productsApi, redirectsApi, type Product } from "@/lib/api/content";
+import { assetsApi, categoriesApi, productsApi, redirectsApi, type Product, type ProductCategory } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,9 +50,11 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
   const [redirectCreated, setRedirectCreated] = useState(false);
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [localeVariants, setLocaleVariants] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [draftNotice, setDraftNotice] = useState(false);
 
-  // AI 起草：/new?slug=..&locale=..&draft=1 → 從 sessionStorage 取出譯稿預填
+  // Legacy manual form-prefill compatibility for an already-opened create form.
   useEffect(() => {
     if (id || !aiDraft) return;
     const slug = initial?.slug ?? "";
@@ -91,6 +93,15 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
       .then((res) => setCategorySlug(res.data.slug))
       .catch(() => setCategorySlug(null));
   }, [form.category_id, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    setCategoriesLoading(true);
+    categoriesApi.list(token, { page_size: 100, locale: form.locale })
+      .then((res) => setCategories(res.data.filter((category) => category.status !== "archived")))
+      .catch(() => setCategories([]))
+      .finally(() => setCategoriesLoading(false));
+  }, [token, form.locale]);
 
   const handleNameChange = (v: string) => {
     const autoSlug = v.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -203,8 +214,28 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>商品分類</Label>
-            <Input className="font-mono text-xs" {...f("category_id")} placeholder="選擇或填入分類編號" />
+            <Label htmlFor="product-category">商品分類 *</Label>
+            <select
+              id="product-category"
+              className={SELECT_CLS}
+              {...f("category_id")}
+              required
+              disabled={categoriesLoading}
+            >
+              <option value="">
+                {categoriesLoading ? "載入分類中…" : "請選擇商品分類"}
+              </option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.category_name}
+                </option>
+              ))}
+            </select>
+            {!categoriesLoading && categories.length === 0 && (
+              <p className="text-xs text-amber-700">
+                尚無可用分類，請先至「商品分類」新增分類。
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OpsConfigCard } from "@/components/settings/ops-config-card";
-import { GlossaryCard } from "@/components/settings/glossary-card";
 
 type SiteProfileForm = {
   brand_name: string;
@@ -373,7 +372,6 @@ export default function SiteProfileSettingsPage() {
       </Card>
 
       <OpsConfigCard />
-      <GlossaryCard />
     </div>
   );
 }

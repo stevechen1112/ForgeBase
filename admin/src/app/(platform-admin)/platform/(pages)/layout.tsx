@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
-import { PlatformSidebar } from "@/components/layout/PlatformSidebar";
+import { PlatformShell } from "@/components/layout/PlatformShell";
 
 /**
  * Authenticated platform pages layout.
@@ -33,10 +33,5 @@ export default function PlatformPagesLayout({ children }: { children: React.Reac
     return null;
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <PlatformSidebar />
-      <main className="flex-1 overflow-y-auto bg-muted/30 p-6">{children}</main>
-    </div>
-  );
+  return <PlatformShell>{children}</PlatformShell>;
 }

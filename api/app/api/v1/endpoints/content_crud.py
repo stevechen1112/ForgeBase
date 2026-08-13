@@ -88,7 +88,6 @@ def make_crud_router(
     locale_filter: bool = True,
     sanitize_fields: tuple[str, ...] = (),
     revalidate_on_change: bool = False,
-    sync_entity_type: str | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
 
@@ -107,14 +106,6 @@ def make_crud_router(
         locale = getattr(item, "locale", "en") or "en"
         task = asyncio.create_task(revalidate_page(slug, locale, include_sitemap=True))
         task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
-
-    def _maybe_schedule_locale_sync(item: Any) -> None:
-        if not sync_entity_type:
-            return
-        from app.core.locale import is_source_locale
-        from app.services.locale_sync import schedule_locale_sync
-        if is_source_locale(getattr(item, "locale", None)):
-            schedule_locale_sync(sync_entity_type, item.id)
 
     def _apply_public_tenant_scope(
         query,
@@ -178,7 +169,13 @@ def make_crud_router(
         )
         if locale_filter and hasattr(Model, "locale") and locale:
             from app.core.locale import to_content_locale
-            base_q = base_q.where(Model.locale == to_content_locale(locale))
+            normalized_locale = to_content_locale(locale, default="")
+            if not normalized_locale:
+                return APIResponse(
+                    data=[],
+                    meta=PaginationMeta(total=0, page=page, page_size=page_size, total_pages=0),
+                )
+            base_q = base_q.where(Model.locale == normalized_locale)
         if item_status and hasattr(Model, "status"):
             base_q = base_q.where(Model.status == item_status)
         if slug and hasattr(Model, "slug"):
@@ -258,8 +255,8 @@ def make_crud_router(
         if "locale" in dump and dump["locale"] is not None:
             from app.core.locale import to_content_locale
             dump["locale"] = to_content_locale(str(dump["locale"]))
-        # FAQ: ensure variant_key for cross-locale pairing
-        if sync_entity_type == "faq" and not dump.get("variant_key"):
+        # FAQ: ensure variant_key for manually maintained locale variants.
+        if Model is FAQItem and not dump.get("variant_key"):
             import uuid as _uuid
             dump["variant_key"] = f"faq-{_uuid.uuid4().hex[:16]}"
         dump = _sanitize_dump(dump)
@@ -310,7 +307,6 @@ def make_crud_router(
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
             raise HTTPException(status.HTTP_409_CONFLICT, detail="Conflict creating resource")
         await session.refresh(item)
-        _maybe_schedule_locale_sync(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.get("/{item_id}", response_model=APIResponse)
@@ -343,13 +339,6 @@ def make_crud_router(
             from app.core.locale import to_content_locale
             updates["locale"] = to_content_locale(str(updates["locale"]))
 
-        from app.core.locale import is_source_locale
-        from app.services.locale_sync import detect_changed_translatable_fields, lock_changed_fields
-
-        changed_for_lock: list[str] = []
-        if sync_entity_type and not is_source_locale(getattr(item, "locale", None)):
-            changed_for_lock = detect_changed_translatable_fields(sync_entity_type, item, updates)
-
         if slug_field and slug_field in updates:
             new_slug = updates[slug_field]
             if new_slug != getattr(item, slug_field):
@@ -375,21 +364,11 @@ def make_crud_router(
         for f, v in _sanitize_dump(_sanitize_dump_item).items():
             setattr(item, f, v)
 
-        if sync_entity_type and changed_for_lock:
-            await lock_changed_fields(
-                session,
-                entity_type=sync_entity_type,
-                entity_id=item.id,
-                tenant_id=getattr(item, "tenant_id", None) or getattr(_user, "tenant_id", None),
-                changed_fields=changed_for_lock,
-            )
-
         session.add(item)
         await session.commit()
         await session.refresh(item)
         if getattr(item, "status", None) == "published":
             _schedule_revalidate(item)
-        _maybe_schedule_locale_sync(item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -414,7 +393,6 @@ applications_router = make_crud_router(
     prefix="/applications", tag="applications",
     Model=Application, ReadSchema=ApplicationRead,
     CreateSchema=ApplicationCreate, UpdateSchema=ApplicationUpdate,
-    sync_entity_type="application",
 )
 
 faqs_router = make_crud_router(
@@ -422,14 +400,12 @@ faqs_router = make_crud_router(
     Model=FAQItem, ReadSchema=FAQItemRead,
     CreateSchema=FAQItemCreate, UpdateSchema=FAQItemUpdate,
     slug_field=None,
-    sync_entity_type="faq",
 )
 
 comparisons_router = make_crud_router(
     prefix="/comparisons", tag="comparisons",
     Model=ComparisonTopic, ReadSchema=ComparisonTopicRead,
     CreateSchema=ComparisonTopicCreate, UpdateSchema=ComparisonTopicUpdate,
-    sync_entity_type="comparison",
 )
 
 certifications_router = make_crud_router(
@@ -437,14 +413,12 @@ certifications_router = make_crud_router(
     Model=Certification, ReadSchema=CertificationRead,
     CreateSchema=CertificationCreate, UpdateSchema=CertificationUpdate,
     slug_field="slug",
-    sync_entity_type="certification",
 )
 
 capabilities_router = make_crud_router(
     prefix="/capabilities", tag="capabilities",
     Model=Capability, ReadSchema=CapabilityRead,
     CreateSchema=CapabilityCreate, UpdateSchema=CapabilityUpdate,
-    sync_entity_type="capability",
 )
 
 ctas_router = make_crud_router(
@@ -452,7 +426,6 @@ ctas_router = make_crud_router(
     Model=CTA, ReadSchema=CTARead,
     CreateSchema=CTACreate, UpdateSchema=CTAUpdate,
     slug_field="cta_key",
-    sync_entity_type="cta",
 )
 
 pages_router = make_crud_router(
@@ -461,5 +434,4 @@ pages_router = make_crud_router(
     CreateSchema=PageCreate, UpdateSchema=PageUpdate,
     sanitize_fields=("body",),
     revalidate_on_change=True,
-    sync_entity_type="page",
 )

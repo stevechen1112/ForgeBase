@@ -27,9 +27,9 @@ export function localeLabel(value: string): string {
   return SUPPORTED_LOCALES.find((l) => l.value === canonical)?.label ?? value;
 }
 
-/** sessionStorage key for passing an AI translation draft to a /new form. */
+/** Legacy sessionStorage key retained only for harmless manual form-prefill compatibility. */
 export function draftKey(entityType: string, slug: string, locale: string): string {
-  return `translate-draft:${entityType}:${slug}:${locale}`;
+  return `content-prefill:${entityType}:${slug}:${locale}`;
 }
 
 export function saveDraft(key: string, fields: Record<string, string>): void {

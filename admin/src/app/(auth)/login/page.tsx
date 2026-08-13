@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, Loader2, Shield, Globe, TrendingUp, Award, Zap } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Loader2, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { authApi, type TokenResponse } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-
-const STATS = [
-  { value: "40+", label: "服務國家", icon: Globe },
-  { value: "500+", label: "線上商品", icon: TrendingUp },
-  { value: "98%", label: "客戶滿意度", icon: Award },
-];
 
 const FEATURES = [
   "全方位產品目錄管理",
@@ -122,17 +116,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            {STATS.map(({ value, label, icon: Icon }) => (
-              <div key={label} className="rounded-2xl bg-white/5 border border-white/10 p-5 backdrop-blur-sm">
-                <Icon className="h-5 w-5 text-[hsl(211,100%,60%)] mb-3" />
-                <p className="text-2xl font-bold text-white">{value}</p>
-                <p className="mt-1 text-xs text-slate-400">{label}</p>
-              </div>
-            ))}
-          </div>
-
           {/* Features */}
           <div className="space-y-2.5">
             {FEATURES.map((feat) => (
@@ -151,7 +134,7 @@ export default function LoginPage() {
           <p className="text-xs text-slate-600">© 2026 NorthForge. All rights reserved.</p>
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <Shield className="h-3 w-3" />
-            <span>ISO 27001 認證</span>
+            <span>安全登入</span>
           </div>
         </div>
       </div>
@@ -299,15 +282,6 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          {/* Trust badges */}
-          <div className="mt-6 flex items-center justify-center gap-6">
-            {["SSL 加密", "ISO 認證", "GDPR 合規"].map((badge) => (
-              <div key={badge} className="flex items-center gap-1.5 text-xs text-slate-400">
-                <div className="h-1 w-1 rounded-full bg-green-500" />
-                {badge}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

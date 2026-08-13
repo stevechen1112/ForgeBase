@@ -323,30 +323,3 @@ export const assetsApi = {
   updateAlt: (token: string, id: string, altText: string) =>
     apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, { alt_text: altText }, token),
 };
-
-// ── Translation Draft（AI 起草另一語系）────────────────────────────────────
-
-export type TranslateDraftResponse = {
-  entity_type: string;
-  source_id: string;
-  source_locale: string;
-  target_locale: string;
-  slug: string | null;
-  fields: Record<string, string>;
-  glossary_applied: number;
-};
-
-export const translateApi = {
-  draft: (token: string, payload: { entity_type: string; source_id: string; target_locale?: string }) =>
-    apiClient.post<TranslateDraftResponse>(`${BASE}/translate-draft`, payload, token),
-};
-
-// ── Translation Glossary（術語表）──────────────────────────────────────────
-
-export type GlossaryEntry = { source: string; target: string; note?: string };
-
-export const glossaryApi = {
-  list: (token: string) => apiClient.get<GlossaryEntry[]>(`/site-profile/glossary`, token),
-  update: (token: string, entries: GlossaryEntry[]) =>
-    apiClient.put<GlossaryEntry[]>(`/site-profile/glossary`, { entries }, token),
-};

@@ -54,7 +54,13 @@ async def list_products(
         base_q = base_q.where(Product.tenant_id.is_(None))
     if locale:
         from app.core.locale import to_content_locale
-        base_q = base_q.where(Product.locale == to_content_locale(locale))
+        normalized_locale = to_content_locale(locale, default="")
+        if not normalized_locale:
+            return APIResponse(
+                data=[],
+                meta=PaginationMeta(total=0, page=page, page_size=page_size, total_pages=0),
+            )
+        base_q = base_q.where(Product.locale == normalized_locale)
     if status:
         base_q = base_q.where(Product.status == status)
     if category_id:
@@ -91,8 +97,7 @@ async def create_product(
     _user=Depends(require_content_editor),
     _quota=Depends(QuotaEnforcer("product")),
 ):
-    from app.core.locale import to_content_locale, is_source_locale
-    from app.services.locale_sync import schedule_locale_sync
+    from app.core.locale import to_content_locale
 
     locale = to_content_locale(payload.locale)
     # slug uniqueness is per tenant+locale; model_number is per tenant+locale
@@ -122,8 +127,6 @@ async def create_product(
     session.add(product)
     await session.commit()
     await session.refresh(product)
-    if is_source_locale(product.locale):
-        schedule_locale_sync("product", product.id)
     return APIResponse(data=ProductRead.model_validate(product))
 
 
@@ -154,12 +157,7 @@ async def update_product(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
-    from app.core.locale import to_content_locale, is_source_locale
-    from app.services.locale_sync import (
-        detect_changed_translatable_fields,
-        lock_changed_fields,
-        schedule_locale_sync,
-    )
+    from app.core.locale import to_content_locale
 
     product = await session.get(Product, product_id)
     if not product:
@@ -170,10 +168,6 @@ async def update_product(
     updates = payload.model_dump(exclude_unset=True)
     if "locale" in updates and updates["locale"] is not None:
         updates["locale"] = to_content_locale(str(updates["locale"]))
-
-    changed_for_lock: list[str] = []
-    if not is_source_locale(product.locale):
-        changed_for_lock = detect_changed_translatable_fields("product", product, updates)
 
     if "slug" in updates and updates["slug"] != product.slug:
         locale_to_check = updates.get("locale", product.locale)
@@ -204,20 +198,9 @@ async def update_product(
         setattr(product, field, value)
     product.updated_at = utcnow_naive()
 
-    if changed_for_lock:
-        await lock_changed_fields(
-            session,
-            entity_type="product",
-            entity_id=product.id,
-            tenant_id=product.tenant_id or _user.tenant_id,
-            changed_fields=changed_for_lock,
-        )
-
     session.add(product)
     await session.commit()
     await session.refresh(product)
-    if is_source_locale(product.locale):
-        schedule_locale_sync("product", product.id)
     return APIResponse(data=ProductRead.model_validate(product))
 
 

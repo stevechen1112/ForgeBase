@@ -68,6 +68,32 @@ type RequestOptions = {
   token?: string;
 };
 
+function formatApiError(payload: unknown, fallback: string): string {
+  if (typeof payload === "string" && payload.trim()) return payload;
+  if (!payload || typeof payload !== "object") return fallback;
+
+  const record = payload as Record<string, unknown>;
+  const detail = record.detail ?? record.error ?? record.message;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (!item || typeof item !== "object") return "";
+        const issue = item as Record<string, unknown>;
+        const location = Array.isArray(issue.loc)
+          ? issue.loc.filter((part) => part !== "body").join(" → ")
+          : "";
+        const message = typeof issue.msg === "string" ? issue.msg : "輸入資料格式不正確";
+        return location ? `${location}：${message}` : message;
+      })
+      .filter(Boolean);
+    if (messages.length) return messages.join("；");
+  }
+
+  return fallback;
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, token } = options;
 
@@ -97,8 +123,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       clearAuthStorage();
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
-    const err = await res.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+    const err = await res.json().catch(() => null);
+    throw new Error(formatApiError(err, `操作失敗（HTTP ${res.status}）`));
   }
 
   if (res.status === 204 || res.status === 205) {
@@ -127,8 +153,8 @@ async function requestForm<T>(path: string, formData: FormData, token?: string):
       clearAuthStorage();
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
-    const err = await res.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+    const err = await res.json().catch(() => null);
+    throw new Error(formatApiError(err, `上傳失敗（HTTP ${res.status}）`));
   }
 
   return res.json();
