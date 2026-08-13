@@ -5,30 +5,20 @@
 | 服務 | 說明 | 對外路徑 |
 |---|---|---|
 | `caddy` | 反向代理＋自動 Let's Encrypt HTTPS | 80 / 443 |
-| `web` | Next.js 前台 | `https://www.mitselect.com/` |
-| `admin` | Next.js 後台（basePath=/backend） | `https://www.mitselect.com/backend` |
-| `api` | FastAPI（uvicorn ×2 workers） | `https://www.mitselect.com/api/v1`、`/uploads`、`/health` |
+| `web` | Next.js 前台 | `http://172.233.64.5/` |
+| `admin` | Next.js 後台（basePath=/backend） | `http://172.233.64.5/backend` |
+| `api` | FastAPI（uvicorn ×2 workers） | `http://172.233.64.5/api/v1`、`/uploads`、`/health` |
 | `db` | PostgreSQL 16（僅容器內網，不對外開 port） | — |
 | `migrate` | 一次性 alembic upgrade head（api 啟動前自動跑） | — |
 
-> `mitselect.com`（無 www）會由 Caddy 301 永久導向 `www.mitselect.com`。
-
-> **短期 IP 直連模式**：網域 DNS 還沒好時，把 `.env` 設成 `DOMAIN=<伺服器IP>`、`APEX_DOMAIN=<伺服器IP>`、`PROTOCOL=http`，
-> 並用 `deploy/Caddyfile.ip` 覆蓋 `deploy/Caddyfile`（`cp deploy/Caddyfile.ip deploy/Caddyfile`），
-> 重新 build admin/web 後 `up -d`，即可用 `http://<IP>/`、`http://<IP>/backend` 存取（無 HTTPS）。
-> 網域生效後：`.env` 改回 `PROTOCOL=https`、`DOMAIN=www.mitselect.com`，
-> `cp deploy/Caddyfile.domain deploy/Caddyfile`（或還原 git 版本），重新 build admin/web 再 `up -d`。
+> 正式環境目前沒有網域，以 `http://172.233.64.5` 提供服務。`deploy/Caddyfile` 預設即為 IP 純 HTTP 模式；若未來取得新網域，再另行啟用 `Caddyfile.domain` 與 HTTPS。
 
 ---
 
 ## 0. 前置作業
 
 1. **Linode 開機**：Ubuntu 24.04 LTS，建議 **Shared CPU 4 GB（或以上）**——Next.js build 很吃記憶體，2 GB 可能在 `next build` 時 OOM。
-2. **GoDaddy DNS**：到 GoDaddy → 我的產品 → mitselect.com → DNS → 新增／確認兩筆 A 紀錄：
-   - 主機名稱 `@` → Linode IP
-   - 主機名稱 `www` → Linode IP
-   - TTL 用預設即可。DNS 生效通常幾分鐘到一小時，**生效前不要啟動 Caddy**（避免 Let's Encrypt 驗證失敗被速率限制）。
-3. **防火牆**：只需對外開 22 / 80 / 443。
+2. **防火牆**：IP 模式只需對外開 22 / 80；443 可保留供未來 HTTPS 使用。
 
 ## 1. 安裝 Docker
 
@@ -61,8 +51,9 @@ nano .env
 
 | 變數 | 填法 |
 |---|---|
-| `DOMAIN` | 已預填 `www.mitselect.com`，不用改 |
-| `APEX_DOMAIN` | 已預填 `mitselect.com`，不用改 |
+| `PROTOCOL` | `http` |
+| `DOMAIN` | 正式伺服器 IP，例如 `172.233.64.5` |
+| `APEX_DOMAIN` | IP 模式填與 `DOMAIN` 相同的值 |
 | `POSTGRES_PASSWORD` | 強密碼 |
 | `REVALIDATE_SECRET` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `NEXT_PUBLIC_TENANT_SLUG` | **預設留空**，見下方說明 |
@@ -96,10 +87,15 @@ docker compose -f docker-compose.prod.yml up -d
 ## 5. 建立管理員帳號
 
 ```bash
-docker compose -f docker-compose.prod.yml run --rm --no-deps -e PYTHONPATH=/app api python scripts/seed_admin_bcrypt.py
+docker compose -f docker-compose.prod.yml run --rm --no-deps \
+  -e PYTHONPATH=/app \
+  -e ADMIN_EMAIL='admin@example.com' \
+  -e ADMIN_PASSWORD='<至少 16 字元的隨機密碼>' \
+  -e ADMIN_IS_SUPERUSER=true \
+  api python scripts/seed_admin_bcrypt.py
 ```
 
-預設建立 `admin@forgebase.com / ForgeBase2026!`（腳本內寫死），**登入後請立即到後台修改密碼**。
+管理員帳號、密碼與是否為平台超級管理員都必須透過環境變數明確提供；腳本不含預設密碼，也不會把密碼寫入 Git。
 公開註冊預設關閉（`REGISTRATION_KEY` 留空）。
 
 ## 6.（選填）匯入 demo 內容
@@ -108,10 +104,9 @@ docker compose -f docker-compose.prod.yml run --rm --no-deps -e PYTHONPATH=/app 
 
 ## 7. 驗證清單
 
-- [ ] `https://www.mitselect.com/health` → `{"status":"ok"}`
-- [ ] `http://mitselect.com` → 301 導向 `https://www.mitselect.com`
-- [ ] `https://www.mitselect.com/` 前台首頁正常
-- [ ] `https://www.mitselect.com/backend` 後台登入頁正常，能登入
+- [ ] `http://172.233.64.5/health` → `{"status":"ok"}`
+- [ ] `http://172.233.64.5/` 前台首頁正常
+- [ ] `http://172.233.64.5/backend` 後台登入頁正常，能登入
 - [ ] 後台商品／分類列表有資料（或為空但無錯誤）
 - [ ] 發布一篇內容 → 60 秒內前台更新（revalidate 生效）
 - [ ] AI 起草可用（OpenAI key 生效）

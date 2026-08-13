@@ -1,9 +1,5 @@
-# apex（mitselect.com）永久導向 www
-{$APEX_DOMAIN} {
-	redir https://{$DOMAIN}{uri} permanent
-}
-
-{$DOMAIN} {
+# 正式環境目前沒有網域，使用伺服器 IP 提供純 HTTP 服務。
+:80 {
 	encode zstd gzip
 
 	# web 前台自己的 /api 路由（ISR revalidate、素材自檢），必須比 /api/* 先匹配

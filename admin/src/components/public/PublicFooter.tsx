@@ -32,14 +32,14 @@ export function PublicFooter() {
               <a href="#pricing" className="text-slate-400 hover:text-slate-600 transition-colors">
                 方案定價
               </a>
-              <Link
-                href="https://mitselect.com"
+              <a
+                href="/"
                 target="_blank"
                 rel="noreferrer"
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 Demo 網站
-              </Link>
+              </a>
             </div>
             <div className="flex flex-col gap-3">
               <p className="font-semibold text-slate-800 mb-1">公司</p>

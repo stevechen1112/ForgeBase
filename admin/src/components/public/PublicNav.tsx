@@ -24,14 +24,14 @@ export function PublicNav() {
           <a href="#pricing" className="hover:text-slate-900 transition-colors">
             方案
           </a>
-          <Link
-            href="https://mitselect.com"
+          <a
+            href="/"
             target="_blank"
             rel="noreferrer"
             className="hover:text-slate-900 transition-colors"
           >
             Demo 網站
-          </Link>
+          </a>
         </div>
 
         {/* CTA */}

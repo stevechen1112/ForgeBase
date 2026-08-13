@@ -1,4 +1,4 @@
-# 短期 IP 直連模式：純 HTTP 80（網域 DNS 生效後請換回 deploy/Caddyfile）
+# IP 直連模式：純 HTTP 80
 :80 {
 	encode zstd gzip
 
