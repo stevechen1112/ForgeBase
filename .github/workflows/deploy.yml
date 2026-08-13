@@ -32,6 +32,8 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
       SECRET_KEY: release-check-secret-key-at-least-32-characters
       APP_ENV: test
+      OPENAI_API_KEY: sk-release-check
+      AI_MODEL_NAME: gpt-5.6-luna
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
