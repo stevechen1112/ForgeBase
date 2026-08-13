@@ -15,7 +15,7 @@ from app.api.v1.endpoints import (
     events, visitors, contacts, rfqs, integrations, segments,
     esp, analytics, nurture,
     ml_scoring, chat, chat_admin,
-    redirects, site_profile, translate,
+    redirects, site_profile,
 )
 from app.api.v1.endpoints.ai_intelligence import (
     rfq_ai_router, content_ai_router, visitor_ai_router,
@@ -47,7 +47,6 @@ content_router.include_router(orphans.router)
 content_router.include_router(public_relations.router)
 content_router.include_router(preview.router)
 content_router.include_router(redirects.router)     # /content/redirects/* SEO redirect mgmt
-content_router.include_router(translate.router)     # /content/translate-draft LLM locale drafting
 api_router.include_router(content_router)
 
 # Phase 1b: Tracking — /api/v1/tracking/

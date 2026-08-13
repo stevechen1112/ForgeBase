@@ -114,7 +114,6 @@ async def get_ops_config(
     profile = await _get_or_create_profile(db, current_user.tenant_id)
     return _load_ops_dict(profile)
 
-
 @router.put("/ops-config")
 async def update_ops_config(
     payload: OpsConfigUpdate,
@@ -145,52 +144,3 @@ async def update_ops_config(
     await db.commit()
     await db.refresh(profile)
     return _load_ops_dict(profile)
-
-
-# ── Translation Glossary（術語表）──────────────────────────────────────────
-# Admin-only — tenant glossary for LLM locale drafting
-# (app/services/translator.py). Stored as JSON list [{source, target, note?}].
-
-class GlossaryEntry(BaseModel):
-    source: str = Field(min_length=1, max_length=120)
-    target: str = Field(min_length=1, max_length=120)
-    note: Optional[str] = Field(default=None, max_length=200)
-
-
-class GlossaryUpdate(BaseModel):
-    entries: list[GlossaryEntry] = Field(default_factory=list, max_length=200)
-
-
-@router.get("/glossary", response_model=list[GlossaryEntry])
-async def get_glossary(
-    db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_admin),
-):
-    from app.services.translator import load_glossary
-
-    profile = await _get_or_create_profile(db, current_user.tenant_id)
-    return load_glossary(profile.translation_glossary_json)
-
-
-@router.put("/glossary", response_model=list[GlossaryEntry])
-async def update_glossary(
-    payload: GlossaryUpdate,
-    db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_admin),
-):
-    import json
-
-    profile = await _get_or_create_profile(db, current_user.tenant_id)
-    entries = [
-        {"source": e.source.strip(), "target": e.target.strip(), "note": (e.note or "").strip()}
-        for e in payload.entries
-    ]
-    profile.translation_glossary_json = json.dumps(entries, ensure_ascii=False)
-    profile.updated_at = utcnow_naive()
-    db.add(profile)
-    await db.commit()
-    await db.refresh(profile)
-
-    from app.services.translator import load_glossary
-
-    return load_glossary(profile.translation_glossary_json)

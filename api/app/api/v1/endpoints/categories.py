@@ -64,7 +64,13 @@ async def list_categories(
     base_q = select(ProductCategory)
     if locale != "all":
         from app.core.locale import to_content_locale
-        base_q = base_q.where(ProductCategory.locale == to_content_locale(locale))
+        normalized_locale = to_content_locale(locale, default="")
+        if not normalized_locale:
+            return APIResponse(
+                data=[],
+                meta=PaginationMeta(total=0, page=page, page_size=page_size, total_pages=0),
+            )
+        base_q = base_q.where(ProductCategory.locale == normalized_locale)
     if tenant_id:
         if auth_user is not None and getattr(auth_user, "tenant_id", None):
             base_q = base_q.where(
@@ -125,8 +131,7 @@ async def create_category(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
-    from app.core.locale import to_content_locale, is_source_locale
-    from app.services.locale_sync import schedule_locale_sync
+    from app.core.locale import to_content_locale
 
     locale = to_content_locale(payload.locale)
     existing = await session.exec(
@@ -146,8 +151,6 @@ async def create_category(
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
-    if is_source_locale(cat.locale):
-        schedule_locale_sync("category", cat.id)
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 
@@ -178,12 +181,7 @@ async def update_category(
     session: AsyncSession = Depends(get_session),
     _user: User = Depends(require_content_editor),
 ):
-    from app.core.locale import to_content_locale, is_source_locale
-    from app.services.locale_sync import (
-        detect_changed_translatable_fields,
-        lock_changed_fields,
-        schedule_locale_sync,
-    )
+    from app.core.locale import to_content_locale
 
     cat = await session.get(ProductCategory, category_id)
     if not cat:
@@ -194,10 +192,6 @@ async def update_category(
     updates = payload.model_dump(exclude_unset=True)
     if "locale" in updates and updates["locale"] is not None:
         updates["locale"] = to_content_locale(str(updates["locale"]))
-
-    changed_for_lock: list[str] = []
-    if not is_source_locale(cat.locale):
-        changed_for_lock = detect_changed_translatable_fields("category", cat, updates)
 
     # Check slug uniqueness if slug is being changed
     if "slug" in updates and updates["slug"] != cat.slug:
@@ -216,20 +210,9 @@ async def update_category(
         setattr(cat, field, value)
     cat.updated_at = utcnow_naive()
 
-    if changed_for_lock:
-        await lock_changed_fields(
-            session,
-            entity_type="category",
-            entity_id=cat.id,
-            tenant_id=cat.tenant_id or _user.tenant_id,
-            changed_fields=changed_for_lock,
-        )
-
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
-    if is_source_locale(cat.locale):
-        schedule_locale_sync("category", cat.id)
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 

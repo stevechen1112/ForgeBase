@@ -43,7 +43,7 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
   const [localeVariants, setLocaleVariants] = useState<Application[]>([]);
   const [draftNotice, setDraftNotice] = useState(false);
 
-  // AI 起草：/new?slug=..&locale=..&draft=1 → 從 sessionStorage 取出譯稿預填
+  // Legacy manual form-prefill compatibility for an already-opened create form.
   useEffect(() => {
     if (id || !aiDraft) return;
     const slug = initial?.slug ?? "";

@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AiDraftButton } from "@/components/ui/AiDraftButton";
 import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
@@ -29,7 +28,7 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
     locale: initial?.locale ?? "en",
     sort_order: initial?.sort_order ?? 0,
     status: initial?.status ?? "draft",
-    // 跨語系配對鍵：AI 起草繁中時沿用英文列的 key，避免產生重複繁中列
+    // 跨語系配對鍵：建立繁中版本時沿用英文列的 key，避免產生重複繁中列
     variant_key: initial?.variant_key ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -120,25 +119,6 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
               </select>
             </div>
           </div>
-          {id && form.locale === "en" && (
-            <div className="border-t pt-3 space-y-2">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                以英文為準：儲存後會自動同步繁中（Professional）。下方 AI 起草僅供手動補建；你手動改過的繁中欄位不會被覆蓋。
-              </p>
-              <AiDraftButton
-                entityType="faq"
-                id={id}
-                draftGroup={form.category_tag || id}
-                targetLocale="zh-tw"
-                newHref="/dashboard/faqs/new"
-                extraQuery={{
-                  category_tag: form.category_tag,
-                  draft_group: form.category_tag || id,
-                  ...(form.variant_key ? { variant_key: form.variant_key } : {}),
-                }}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -152,4 +132,3 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
     </form>
   );
 }
-

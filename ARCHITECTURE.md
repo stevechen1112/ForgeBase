@@ -53,9 +53,9 @@
 3. Standalone 產物透過 symlink 連接 `.next/static` 與 `public`，供 Nginx / Node runtime 直接服務。
 4. Smoke test 使用 mock site-profile server 驗證多租戶品牌、canonical、robots、sitemap、favicon 隔離。
 
-## AI 與內容生成規則
+## AI 與內容治理規則
 
-1. AI 內容生成必須綁定 PageBrief，且寫入 tenant-aware generation log。
+1. 公開網站內容一律由內容團隊人工建立、審核與發布；系統不得以 AI 自動產生、翻譯或改寫內容。
 2. AI context 查詢不得跨 tenant 讀取 Product / Application / FAQ / Category。
 3. Chat、handoff、RFQ、tracking 必須共享同一 tenant 與 visitor/session 邏輯。
 

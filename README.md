@@ -13,7 +13,7 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 
 | 層級 | 核心問題 | ForgeBase 做的事 |
 |------|----------|------------------|
-| **Capture** | 買家找得到你嗎？ | SEO 基礎設施、多語言內容、AI 內容生成、Legacy Site Intake 舊站匯入 |
+| **Capture** | 買家找得到你嗎？ | SEO 基礎設施、多語言內容、人工維護的產品與信任內容 |
 | **Intent** | 誰只是逛逛、誰在評估？ | 15 種行為追蹤、Intent Score 2.0 採購面向（facets）評分、「為何 Hot」解釋、ML 意圖評分、訪客分眾、GeoIP、Facet 驅動 Dynamic CTA、AI 業務顧問 |
 | **Conversion** | 高意圖訪客有被推進到詢價嗎？ | RFQ 表單、AI RFQ 分析與草擬回覆、Chat → RFQ handoff、品質分數、時區感知 SLA、即時通知、自動專業回覆、RFQ 事件審計 |
 | **Outcomes** | 詢價有變成訂單嗎？沒有立即詢價的呢？ | 成交漏斗（流量→成交七層）、客戶成果儀表板、內容→成交歸因、內容成效分析、顧問任務佇列；未轉換訪客以分眾＋Email 培育序列養回來再成交 |
@@ -28,22 +28,17 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 |------|------|
 | **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 |
 | **多語言支援** | 僅 **英文（`en`）+ 繁體中文（`zh-tw`）**；前台 hreflang；locale 全鏈路正規化（`zh-TW`→`zh-tw`）|
-| **英文母語自動同步（v1）** | 存英文內容後，LLM 自動 upsert 繁中並跟來源狀態上線（Professional `multilingual`）；人工改過的繁中欄位寫入 `content_field_locks`，下次同步跳過 |
-| **AI 內容生成** | 基於 PageBrief 工作流，AI 自動起草產品頁、應用頁、FAQ |
-| **LLM 多語草稿（選用）** | `POST /content/translate-draft`：手動 AI 起草繁中（補建／覆核用）；**主路徑是存英文自動同步**，無待審／核准 UI |
+| **人工多語內容管理** | 英文與繁體中文內容皆由團隊人工建立、審核與發布；系統不自動翻譯或改寫內容 |
 | **產品比較頁（Comparisons）** | 產品間規格比較內容型別，前後台完整 CRUD |
 | **製造能力頁（Capabilities）** | 產線、設備、製程能力內容型別，建立 B2B 信任 |
 | **內容關聯推薦** | AI 建議 Product ↔ Application 雙向關聯（`/content/*/recommend-relations`），加上行為共現推薦引擎 |
-| **Legacy Site Intake** | 匯入既有企業官網或型錄站，抽取內容候選資料後進入 admin 審核與提交流程 |
 | **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2；素材缺失可被自診斷健康檢查主動發現 |
 
-**多語 v1 行為摘要（已上線）：**
+**多語內容原則：**
 
-- **母語：** 英文；**目標語：** 僅繁中（日文等未開）
-- **觸發：** 商品／分類／頁面／應用／FAQ／認證／廠能／競品比較／CTA 的 EN create／update（commit 後背景任務）
-- **後台：** 列表語系篩選只留 en／zh-tw；多數內容表單有 `LocaleSwitcher` 同頁切語系；FAQ 以 `variant_key` 配對
-- **刻意不做：** 導覽／頁尾 JSON 自動同步、待審中心、術語庫必填  
-  詳見 [`MULTILINGUAL_PRODUCT_VISION.md`](MULTILINGUAL_PRODUCT_VISION.md)
+- 支援英文與繁體中文；每個語言版本均為獨立、可人工審核的內容。
+- 後台以 `LocaleSwitcher` 在對應語言版本間切換；FAQ 使用 `variant_key` 配對版本。
+- ForgeBase 不提供舊站自動匯入、LLM 自動翻譯、AI 草稿或自動發布內容。
 
 ### Intent — 辨識誰在評估、誰有採購意圖
 
@@ -221,19 +216,6 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ---
 
-## Legacy Site Intake
-
-正式的舊站匯入模組，把既有製造商官網、型錄站轉成可審核的 ForgeBase 導入資料：
-
-- Phase 1 `discover`：爬取站內 HTML 與 PDF，URL 分類為 product／category／application／faq 等頁型
-- Phase 2 `extract`：抽取 entity candidates、redirect candidates、PageBrief drafts
-- Admin 審核：`/dashboard/intake` 檢視、接受、略過或編修
-- Commit：已接受的 category / product / application / certification / FAQ 寫回正式資料表，同步建立 redirect、PageBrief 與內容關聯
-
-主要實作：`api/app/services/intake_engine.py`、`api/app/api/v1/endpoints/intake.py`（`/api/v1/intake/*`）、`admin/src/app/(dashboard)/dashboard/intake/page.tsx`。
-
----
-
 ## SaaS 方案分層
 
 ### Starter 入門（$149/月）— 數位型錄 + 詢價入口
@@ -247,9 +229,9 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ### Professional 專業（$699/月）— 意圖識別 + AI 導購 + 業務跟進全閉環
 
-含 Starter 全部，加上：多語言（EN 母語 → 繁中自動同步上線）、AI 內容生成、完整行為追蹤、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI 業務顧問、Chat → RFQ handoff、即時通知、逾時催辦；產品與管理員帳號無上限。
+含 Starter 全部，加上：人工維護的雙語內容、完整行為追蹤、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI 業務顧問、Chat → RFQ handoff、即時通知、逾時催辦；產品與管理員帳號無上限。
 
-方案由 feature flag 真正驅動前後台行為：Admin 側欄依方案裁切、`PlanGate` 路由層阻擋、inline upgrade UX、後端 `RequireFeature` 同步檢查。代表性 flags：`full_tracking`、`intent_scoring`、`chat_handoff`、`ai_content_generation`、`seo_redirects`、`multilingual`、`dynamic_cta`。
+方案由 feature flag 真正驅動前後台行為：Admin 側欄依方案裁切、`PlanGate` 路由層阻擋、inline upgrade UX、後端 `RequireFeature` 同步檢查。代表性 flags：`full_tracking`、`intent_scoring`、`chat_handoff`、`seo_redirects`、`multilingual`、`dynamic_cta`。
 
 ### 平台營運層（ForgeBase 營運方專用）
 
@@ -267,11 +249,11 @@ ForgeBase/
 ├── api/                      # 後端 API (Python 3.13 + FastAPI)
 │   ├── Dockerfile            # 生產映像（uvicorn）
 │   ├── app/
-│   │   ├── api/v1/           # REST endpoints（chat、intake、copilot、knowledge…）
+│   │   ├── api/v1/           # REST endpoints（chat、copilot、content、tracking…）
 │   │   ├── db/migrations/    # Alembic migrations（head = 0060）
 │   │   ├── models/           # SQLModel 資料模型（多租戶 tenant_id）
 │   │   ├── schemas/          # Pydantic 輸入/輸出 schema
-│   │   └── services/         # 業務服務（locale_sync、chat_service、copilot/、rfq_quality、sla…）
+│   │   └── services/         # 業務服務（chat_service、copilot/、rfq_quality、sla…）
 │   ├── scripts/              # 維運腳本（seed、backfill）
 │   └── tests/                # pytest（含 chat、copilot、e2e growth loop）
 ├── web/                      # 前台網站 (Next.js 15，standalone 輸出)
@@ -448,7 +430,6 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 - 所有 API 回應格式：`{"data": ..., "meta": ...}` 或 `{"error": ...}`
 - DB migration：`alembic revision --autogenerate -m "描述"` 後 commit；`alembic heads` 必須維持單一
 - 環境變數：`.env.example` 保持更新，**絕不 commit 真實 `.env`**（`.gitignore` 已全擋 `.env.*`，僅放行 example）
-- 所有 AI 生成必須有對應的 PageBrief（Approved 狀態）才能觸發
 - AI 客服回答公司事實必須接地於資料庫內容；缺資料時保守回答並導向 RFQ，禁止編造
 
 ---
@@ -467,7 +448,7 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 | [FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md](FORGEBASE_SPRINT_TICKETS_PHASE3_INTENT.md) | Phase 3 票級紀錄（Intent Score 2.0 facets）|
 | [FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md](FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md) | Phase 4 票級紀錄（成果與閉環）|
 | [FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md](FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md) | Phase 5 票級紀錄（歸因＋E2E）|
-| [MULTILINGUAL_PRODUCT_VISION.md](MULTILINGUAL_PRODUCT_VISION.md) | 多語產品構想與 v1（英文母語自動同步）範圍／決策 |
+| [MULTILINGUAL_PRODUCT_VISION.md](MULTILINGUAL_PRODUCT_VISION.md) | 已封存的多語自動化構想；不代表現行產品能力 |
 | [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
 | [ForgeBase_部署與維運注意事項.md](ForgeBase_部署與維運注意事項.md) | production 部署、standalone 資產檢查與維運紅線 |
 | [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
@@ -475,6 +456,14 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 ---
 
 ## 版本更新紀錄
+
+### v1.3 — 內容可靠性優先（2026-08-11）
+
+| 類別 | 變更 |
+|------|------|
+| **移除** | 停用 Legacy Site Intake、AI 內容生成、LLM 翻譯草稿與英文內容自動同步。 |
+| **內容治理** | 英文與繁中均改為人工建立、人工審核、人工發布；系統不會自行產生或改寫公開內容。 |
+| **保留** | AI 業務顧問、RFQ 分析與回覆草稿持續作為銷售協作工具，不會直接發布網站內容。 |
 
 ### v1.2 — 英文母語多語自動同步（2026-08-07）
 
