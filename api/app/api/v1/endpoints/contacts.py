@@ -23,6 +23,8 @@ from app.models.visitor import Visitor
 from app.models.user import User
 from uuid import UUID as _UUID
 
+logger = logging.getLogger(__name__)
+
 # Two separate routers — one public (forms), one admin (tracking)
 forms_router = APIRouter(prefix="/forms", tags=["Forms"])
 tracking_router = APIRouter(prefix="/tracking", tags=["Tracking"])

@@ -11,7 +11,7 @@ const child = spawn(process.execPath, [nextCli, "build"], {
   stdio: "inherit",
   env: {
     ...process.env,
-    FORGEBASE_STRICT_BUILD_API: "1",
+    FORGEBASE_STRICT_BUILD_API: process.env.FORGEBASE_STRICT_BUILD_API ?? "1",
   },
 });
 
