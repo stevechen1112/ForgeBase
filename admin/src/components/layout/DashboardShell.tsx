@@ -5,7 +5,7 @@ import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,6 +27,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           className="w-60 border-0 p-0 [&>button]:z-10 [&>button]:text-white"
         >
           <SheetTitle className="sr-only">後台功能選單</SheetTitle>
+          <SheetDescription className="sr-only">
+            選擇要前往的後台功能頁面。
+          </SheetDescription>
           <Sidebar />
         </SheetContent>
       </Sheet>

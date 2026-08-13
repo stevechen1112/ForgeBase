@@ -1,8 +1,9 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
+import { localizedPath } from "@/lib/localizedPath";
 
 type HeroProps = {
   eyebrow: string;
@@ -13,6 +14,7 @@ type HeroProps = {
   secondaryCta: string;
   heroImage?: string;
   stats?: Array<{ value: string; label: string }>;
+  locale?: string;
 };
 
 /**
@@ -29,6 +31,7 @@ export function IndustrialHero({
   secondaryCta,
   heroImage,
   stats,
+  locale = "en",
 }: HeroProps) {
   return (
     <>
@@ -64,7 +67,7 @@ export function IndustrialHero({
             <div className="mt-9 flex flex-wrap gap-4">
               {/* Primary: angular, skewed, amber */}
               <Link
-                href="/rfq"
+                href={localizedPath(locale, "/rfq")}
                 className="group flex items-center gap-2 bg-primary px-7 py-3 text-sm font-black uppercase tracking-wider text-primary-foreground skew-x-[-3deg] hover:brightness-110 transition-all"
               >
                 <span className="skew-x-[3deg]">{primaryCta}</span>
@@ -72,7 +75,7 @@ export function IndustrialHero({
               </Link>
               {/* Secondary: outlined angular */}
               <Link
-                href="/products"
+                href={localizedPath(locale, "/products")}
                 className="flex items-center gap-2 border-2 border-gray-600 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white skew-x-[-3deg] hover:border-gray-400 transition-colors"
               >
                 <span className="skew-x-[3deg]">{secondaryCta}</span>
