@@ -11,6 +11,7 @@ Remaining content CRUD endpoints:
 import asyncio
 import json
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -75,6 +76,14 @@ def build_slug(payload: Any, slug_field: str | None) -> str | None:
             return slugify(source_value, lowercase=True, separator="-")[:120]
 
     return None
+
+
+def normalize_datetimes(values: dict[str, Any]) -> dict[str, Any]:
+    """Store API timezone-aware datetimes in the legacy UTC-naive columns."""
+    for key, value in values.items():
+        if isinstance(value, datetime) and value.tzinfo is not None:
+            values[key] = value.astimezone(timezone.utc).replace(tzinfo=None)
+    return values
 
 
 def make_crud_router(
@@ -178,6 +187,12 @@ def make_crud_router(
             base_q = base_q.where(Model.locale == normalized_locale)
         if item_status and hasattr(Model, "status"):
             base_q = base_q.where(Model.status == item_status)
+        if auth_user is None and Model is Certification:
+            # Keep expired records available to editors for audit/history, but
+            # never advertise them on public trust and certification surfaces.
+            base_q = base_q.where(
+                or_(Certification.expires_at.is_(None), Certification.expires_at >= utcnow_naive())
+            )
         if slug and hasattr(Model, "slug"):
             base_q = base_q.where(Model.slug == slug)
         if page_type and hasattr(Model, "page_type"):
@@ -244,7 +259,7 @@ def make_crud_router(
                 if existing.first():
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
 
-        dump = payload.model_dump()
+        dump = normalize_datetimes(payload.model_dump())
         if slug_field and generated_slug:
             dump[slug_field] = generated_slug
         # inject created_by and tenant_id for models that support them
@@ -334,7 +349,7 @@ def make_crud_router(
         if not _editor_can_mutate(item, _user):
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
-        updates = payload.model_dump(exclude_unset=True)
+        updates = normalize_datetimes(payload.model_dump(exclude_unset=True))
         if "locale" in updates and updates["locale"] is not None:
             from app.core.locale import to_content_locale
             updates["locale"] = to_content_locale(str(updates["locale"]))

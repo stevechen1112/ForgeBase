@@ -282,6 +282,13 @@ class ChatService:
         if visitor is None:
             self.db.add(Visitor(visitor_id=visitor_id, tenant_id=tenant_id))
             await self.db.flush()
+        elif visitor.tenant_id is None and tenant_id is not None:
+            # Analytics can create a global visitor before the public chat
+            # endpoint resolves its configured tenant. Claim only that legacy
+            # unowned visitor; never move a visitor between real tenants.
+            visitor.tenant_id = tenant_id
+            self.db.add(visitor)
+            await self.db.flush()
         elif visitor.tenant_id != tenant_id:
             raise HTTPException(status_code=409, detail="visitor_id belongs to another tenant")
 
@@ -308,7 +315,15 @@ class ChatService:
                 )
             )
             await self.db.flush()
-        elif tracking_session.visitor_id != visitor_id or tracking_session.tenant_id != tenant_id:
+        elif tracking_session.visitor_id != visitor_id:
+            raise HTTPException(status_code=409, detail="session_id belongs to another visitor or tenant")
+        elif tracking_session.tenant_id is None and tenant_id is not None:
+            # Promote the matching global analytics session alongside its
+            # visitor. A session already owned by another tenant is rejected.
+            tracking_session.tenant_id = tenant_id
+            self.db.add(tracking_session)
+            await self.db.flush()
+        elif tracking_session.tenant_id != tenant_id:
             raise HTTPException(status_code=409, detail="session_id belongs to another visitor or tenant")
 
     async def create_session(
