@@ -322,7 +322,7 @@ ForgeBase/
 
 | 項目 | 值 |
 |------|----|
-| **前台** | http://172.233.64.5/ （網域 mitselect.com DNS 指向待完成）|
+| **前台** | http://172.233.64.5/（目前沒有綁定網域）|
 | **後台** | http://172.233.64.5/backend/login |
 | **API** | http://172.233.64.5/api/v1/ |
 | **伺服器** | Linode Ubuntu 24.04，IP `172.233.64.5` |
@@ -510,7 +510,7 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 
 以 `deploy/test-chat.sh` 對生產環境完成五段驗證：首頁跨品類採購問題（正確引用 FAQ + 結構化需求抽取 + 反問 MOQ）、模糊需求追問、handoff 需求摘要、產品頁規格接地回答（40–220 Nm／ISO 9001，未確認項目誠實標示）、繁體中文問答。後端回覆 3–9 秒，DB 稽核軌跡完整。v2 升級工程計畫已定案（見專章與計畫文件）。
 
-**已知待辦**：mitselect.com DNS 指向與 HTTPS 切換；Chat 端點速率限制；zh-TW greeting／suggestions 本地化；NULL-tenant handoff 通知 gate。以上已納入 AI 客服開發計畫 Phase 0。
+**已知待辦**：Chat 端點速率限制；zh-TW greeting／suggestions 本地化；NULL-tenant handoff 通知 gate。目前正式站沒有綁定網域，以 `http://172.233.64.5` 提供服務。
 
 ---
 

@@ -183,9 +183,9 @@ export default function LandingPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
-                <Link href="https://mitselect.com" target="_blank" rel="noreferrer">
+                <a href="/" target="_blank" rel="noreferrer">
                   查看 Demo 網站
-                </Link>
+                </a>
               </Button>
             </div>
             <p className="text-sm text-slate-400 mt-4">免費試用不需信用卡 · 隨時可取消</p>

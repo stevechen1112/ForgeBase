@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -eu
+test -n "${ADMIN_EMAIL:-}"
+test -n "${ADMIN_PASSWORD:-}"
 LOGIN=$(curl -s -X POST http://127.0.0.1/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@forgebase.com","password":"ForgeBase2026!"}')
+  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
 TOKEN=$(echo "$LOGIN" | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
 TID=$(echo "$LOGIN" | python3 -c 'import sys,json; print(json.load(sys.stdin)["user"]["tenant_id"])')
 AUTH="Authorization: Bearer $TOKEN"
