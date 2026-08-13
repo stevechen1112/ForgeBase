@@ -95,7 +95,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "Deployment succeeded → http://$DEPLOY_HOST"
+            echo "Deployment succeeded → https://$DEPLOY_HOST"
           else
             echo "Deployment FAILED — check logs above"
           fi
