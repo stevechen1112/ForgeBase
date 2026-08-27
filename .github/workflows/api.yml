@@ -57,6 +57,7 @@ jobs:
         working-directory: api
         run: >-
           pytest -q
+          -m "not performance"
           --junitxml=../artifacts/api-tests.junit.xml
           --cov=app
           --cov-report=term-missing

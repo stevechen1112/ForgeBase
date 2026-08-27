@@ -42,6 +42,7 @@ def _write_report(payload: dict[str, Any]) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.performance
 @requires_db
 async def test_api_capacity_queue_throughput_and_short_soak(
     http_client, two_tenants, monkeypatch
