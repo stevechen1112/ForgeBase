@@ -19,8 +19,8 @@
 | I9 | Security Automation | 完成 | 通過 | 完成 |
 | I10 | Tenant Delivery Factory | 完成 | 通過 | 完成 |
 | I11 | Privacy／Retention Operations | 完成 | 通過 | 完成 |
-| I12 | SLO／Monitoring／Incident Console | 未開始 | 未開始 | 待辦 |
-| I13 | Release Package | 未開始 | 未開始 | 待辦 |
+| I12 | SLO／Monitoring／Incident Console | 完成 | 通過 | 完成 |
+| I13 | Release Package | 完成 | 通過 | 完成 |
 | I14 | 類別四退場報告 | 未開始 | 未開始 | 待辦 |
 
 ## I1：完整 North Star E2E Lab
@@ -412,3 +412,36 @@
 
 - I12 內部產品化 Gate 與 code review 通過，可進入 I13。
 - 本批能證明內部 application／database 指標與事故決策鏈，不代表真實公網、DNS、CDN、第三方 LLM／ESP 的 uptime；正式站外 synthetic monitor、on-call routing 與告警到達演練仍需在可用外部資源的環境執行。
+
+## I13：Release Package
+
+### 已實作
+
+- 建立版本化內部候選規格 `2026.08.27-internal.1`，明確標記 `internal-candidate`；未完成外部 Gate 仍逐項列入 manifest，不以封包存在宣稱已正式上線。
+- 新增 fail-closed release builder：只允許乾淨 Git tree，從指定 commit 建立 source archive，計算 commit、單一 Alembic head、96 個 migration topology、六個應用 component、workflow／Dockerfile／lockfile／migration／deploy script 等關鍵檔案 SHA-256。
+- 封包內含 `RELEASE_MANIFEST.json`、`CHECKSUMS.sha256`、deterministic `SOURCE.tar.gz`、blocking security summary 與經正規化的 Python CycloneDX SBOM；封包外另產 detached SHA-256。
+- 新增獨立離線 verifier：檢查外層／內層 checksum、安全解壓路徑、manifest schema、版本、dirty 宣告、source archive digest、40-char commit、外部 Gate 邊界，以及每個關鍵檔案在 source archive 內的真實 bytes。
+- 新增 tag／manual `Attested Release Package` workflow；完整 Release Gate 通過後，下載六個 production image CycloneDX SBOM，缺任一份即 fail closed，再由 GitHub `actions/attest@v4`／Sigstore 對完整候選包建立 build provenance。
+- 新增 release readiness／驗證／部署／rollback 操作手冊；本機包明確標示 unsigned 且沒有 container SBOM，只能作內部驗證，不能冒充 CI attested release。
+
+### Code review 發現與修正
+
+1. 第一版 manifest 使用執行當下時間，同一 commit 兩次建立會產生不同 SHA：改用 commit timestamp，tar／gzip metadata 全部正規化為固定值。
+2. Security Gate 每次產生的 CycloneDX SBOM 含隨機 UUID 與當下 timestamp，會破壞重現性：封包階段依 commit 產 deterministic serial number，並以 commit timestamp 正規化 metadata。
+3. Windows `core.autocrlf` 使 `git archive` 輸出 CRLF、Linux 輸出 LF：source archive 強制 `core.autocrlf=false`，關鍵 digest 直接讀 Git object bytes，不再讀 checkout bytes。
+4. 離線 verifier 初版只驗 source archive 整體 checksum，未證明 manifest 中的 critical hashes 真存在於來源包：加入逐檔 archive member 與 digest 比對，缺檔或內容不符即拒絕。
+5. 第一版只嵌入 Python SBOM，無法代表六個 production image：正式 attested workflow 現在下載並強制六份 container CycloneDX SBOM；本機候選則明確標記 `ci_container_sboms_required: false`。
+6. Release action 介面依 2026-08-27 GitHub 官方 Artifact Attestations 文件核對，使用 `id-token: write`、`attestations: write` 與 `actions/attest@v4`；provenance 是來源／建置鏈證據，不被描述成安全性保證。
+
+### 驗證
+
+- Release contract unit tests：`4 passed`；涵蓋版本、單一 migration head、外部 Gate、corrupt checksum 與 dirty-tree guard。
+- 乾淨 tree 建立與離線 verifier 通過；本批最終測試包約 162.9 MB，manifest 為 `dirty: false`、Alembic head `0094_slo_incident_console`、revision count `96`。
+- 同一 commit 連續建立兩份封包，byte size 與 SHA-256 完全相同；跨 Windows checkout 的 source critical digest 驗證通過。
+- `--require-ci-evidence` 在缺少任一 production image SBOM 時確實拒絕建立；workflow YAML parse、blocking Ruff、compileall、`git diff --check` 通過。
+- 統一 Security Gate：dependency vulnerabilities `0`、SAST medium／high `0`、unreviewed secret candidates `0`。
+
+### Gate 結論
+
+- I13 內部產品化 Gate 與 code review 通過，可進入 I14。
+- 本機已建立的是可重現、可離線驗證的 unsigned internal candidate；只有遠端完整 Gate 成功後的 workflow artifact 才具有六個 container SBOM 與 Sigstore provenance。本批未 push tag、未建立遠端 release、未部署生產環境。
