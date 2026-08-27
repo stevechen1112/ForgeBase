@@ -76,7 +76,7 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
             json={
                 "email": f"delivery-{uuid.uuid4().hex[:10]}@example.com",
                 "full_name": "Delivery Operator",
-                "temporary_password": "temporary-password-123",
+                "temporary_password": "temporary-password-123",  # pragma: allowlist secret -- test fixture
             },
             headers=_auth(platform_token),
         )

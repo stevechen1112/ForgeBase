@@ -54,7 +54,7 @@ def resolve_manifest(path_arg: str | None) -> Path:
 
 
 def validate_api_key(api_key: str) -> None:
-    if not api_key or api_key == "your-gemini-api-key-here":
+    if not api_key or api_key == "your-gemini-api-key-here":  # pragma: allowlist secret -- documented placeholder
         raise RuntimeError("GEMINI_API_KEY is missing. Set it in demo/handtool-company/.env.gemini.")
 
 

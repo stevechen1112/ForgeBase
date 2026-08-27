@@ -144,7 +144,7 @@ async def test_snapshot_grounding_and_human_approved_delivery_lifecycle(
                 User(
                     id=actor_id,
                     email=f"outreach-{uuid.uuid4().hex[:8]}@test.invalid",
-                    hashed_password="test",
+                    hashed_password="test",  # pragma: allowlist secret -- test fixture
                     full_name="Reviewer",
                     role="admin",
                     is_superuser=True,
@@ -660,7 +660,7 @@ async def test_revision_is_new_snapshot_original_is_immutable_and_bad_claim_is_r
                 User(
                     id=actor_id,
                     email=f"revision-{uuid.uuid4().hex[:8]}@test.invalid",
-                    hashed_password="test",
+                    hashed_password="test",  # pragma: allowlist secret -- test fixture
                     full_name="Reviewer",
                     role="admin",
                     is_superuser=True,

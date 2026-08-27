@@ -130,7 +130,7 @@ def test_provider_contract_rejects_duplicate_keys_and_invalid_domains() -> None:
 
 def _pdl_provider(handler) -> PeopleDataLabsIPProvider:
     return PeopleDataLabsIPProvider(
-        api_key="test-key",
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
         endpoint="https://api.peopledatalabs.com/v5/ip/enrich",
         estimated_cost=Decimal("0.25"),
         transport=httpx.MockTransport(handler),

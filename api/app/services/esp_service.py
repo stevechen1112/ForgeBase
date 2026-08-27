@@ -59,7 +59,11 @@ async def mailchimp_upsert_member(
         return {"skipped": True}
 
     import hashlib
-    email_hash = hashlib.md5(email.lower().encode()).hexdigest()
+    # Mailchimp defines the member resource key as MD5(lowercase email). This
+    # digest is an external identifier, never a password or security primitive.
+    email_hash = hashlib.md5(
+        email.lower().encode(), usedforsecurity=False
+    ).hexdigest()
     url = f"{base}/lists/{settings.MAILCHIMP_AUDIENCE_ID}/members/{email_hash}"
     body: dict = {
         "email_address": email,
@@ -91,7 +95,10 @@ async def mailchimp_add_tags(email: str, tags: list[str]) -> bool:
         return False
 
     import hashlib
-    email_hash = hashlib.md5(email.lower().encode()).hexdigest()
+    # Mailchimp's API contract requires this non-security MD5 member key.
+    email_hash = hashlib.md5(
+        email.lower().encode(), usedforsecurity=False
+    ).hexdigest()
     url = f"{base}/lists/{settings.MAILCHIMP_AUDIENCE_ID}/members/{email_hash}/tags"
     body = {"tags": [{"name": t, "status": "active"} for t in tags]}
 

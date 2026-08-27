@@ -174,7 +174,7 @@ async def test_apollo_adapter_never_requests_personal_email_or_phone_and_filters
 )
 async def test_hunter_adapter_normalizes_verification_status(payload, expected) -> None:
     provider = HunterEmailVerificationProvider(
-        api_key="test-key",
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
         transport=httpx.MockTransport(lambda _: httpx.Response(200, json={"data": payload})),
     )
     result = await provider.verify("buyer@acme.example")

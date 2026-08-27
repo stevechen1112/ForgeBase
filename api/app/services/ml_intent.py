@@ -16,9 +16,12 @@ Score blending (3.2.2):
   blended = round(alpha * rule_score + (1-alpha) * ml_prob * 100)
   default alpha = 0.65 (rule-based weighted higher initially)
 """
+import hashlib
+import hmac
 import logging
 import os
 import pickle
+import tempfile
 from datetime import datetime, timezone
 from typing import Any
 
@@ -26,10 +29,15 @@ import numpy as np
 from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
-ML_MODEL_DIR = os.getenv("ML_MODEL_DIR", "/tmp/ml_models")
+ML_MODEL_DIR = os.getenv(
+    "ML_MODEL_DIR", os.path.join(tempfile.gettempdir(), "forgebase_ml_models")
+)
 ML_MODEL_FILE = os.path.join(ML_MODEL_DIR, "intent_v1.pkl")
+ML_MODEL_SIGNATURE_FILE = os.path.join(ML_MODEL_DIR, "intent_v1.pkl.sha256")
 ML_METADATA_FILE = os.path.join(ML_MODEL_DIR, "intent_v1_meta.json")
 
 FEATURE_NAMES = [
@@ -56,22 +64,38 @@ _model_cache: Any = None
 _model_meta: dict = {}
 
 
+def _model_signature(payload: bytes) -> str:
+    """Authenticate a local model artifact before allowing deserialization."""
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        b"forgebase-ml-intent-v1\0" + payload,
+        hashlib.sha256,
+    ).hexdigest()
+
+
 def _load_model() -> Any | None:
     global _model_cache, _model_meta
     if _model_cache is not None:
         return _model_cache
-    if not os.path.exists(ML_MODEL_FILE):
+    if not os.path.exists(ML_MODEL_FILE) or not os.path.exists(ML_MODEL_SIGNATURE_FILE):
         return None
     try:
         import json
         with open(ML_MODEL_FILE, "rb") as f:
-            _model_cache = pickle.load(f)
+            serialized_model = f.read()
+        with open(ML_MODEL_SIGNATURE_FILE, encoding="ascii") as f:
+            stored_signature = f.read().strip()
+        if not hmac.compare_digest(stored_signature, _model_signature(serialized_model)):
+            logger.error("Refusing to load ML intent model with an invalid signature")
+            return None
+        # The signed artifact was produced by this service using SECRET_KEY.
+        _model_cache = pickle.loads(serialized_model)  # nosec B301
         if os.path.exists(ML_METADATA_FILE):
             with open(ML_METADATA_FILE) as f:
                 _model_meta = json.load(f)
         logger.info("ML intent model loaded from disk")
         return _model_cache
-    except (OSError, pickle.UnpicklingError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, pickle.UnpicklingError, json.JSONDecodeError) as exc:
         logger.warning("Failed to load ML model: %s", exc)
         return None
 
@@ -289,8 +313,11 @@ async def train_model(session: AsyncSession) -> dict[str, Any]:
     os.makedirs(ML_MODEL_DIR, exist_ok=True)
     global _model_cache, _model_meta
 
+    serialized_model = pickle.dumps(model)
     with open(ML_MODEL_FILE, "wb") as f:
-        pickle.dump(model, f)
+        f.write(serialized_model)
+    with open(ML_MODEL_SIGNATURE_FILE, "w", encoding="ascii") as f:
+        f.write(_model_signature(serialized_model))
     _model_cache = model
 
     meta = {

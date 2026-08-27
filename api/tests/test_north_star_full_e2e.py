@@ -260,7 +260,7 @@ async def test_north_star_full_chain_isolated_idempotent_and_attributed(
                     id=actor_id,
                     tenant_id=tenant.id,
                     email=f"north-star-reviewer-{uuid.uuid4().hex[:8]}@test.invalid",
-                    hashed_password="test-only",
+                    hashed_password="test-only",  # pragma: allowlist secret -- test fixture
                     full_name="North Star Reviewer",
                     role="admin",
                     is_superuser=True,

@@ -51,7 +51,7 @@ async def test_internal_delivery_requires_allowlist(monkeypatch):
 
 def test_resend_signature_verification_and_replay_window(monkeypatch):
     key = b"k" * 32
-    secret = "whsec_" + base64.b64encode(key).decode()
+    secret = "whsec_" + base64.b64encode(key).decode()  # pragma: allowlist secret -- test fixture
     monkeypatch.setattr(settings, "RESEND_WEBHOOK_SECRET", secret)
     monkeypatch.setattr(settings, "RESEND_WEBHOOK_TOLERANCE_SECONDS", 300)
     raw = json.dumps({"type": "email.bounced", "data": {"to": ["a@example.com"]}}).encode()

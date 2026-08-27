@@ -16,7 +16,7 @@
 | I6 | AI／Knowledge Eval | 完成 | 通過 | 完成 |
 | I7 | Fault Injection／Endurance | 完成 | 通過 | 完成 |
 | I8 | Performance／Capacity／Soak | 完成 | 通過 | 完成 |
-| I9 | Security Automation | 未開始 | 未開始 | 待辦 |
+| I9 | Security Automation | 完成 | 通過 | 完成 |
 | I10 | Tenant Delivery Factory | 未開始 | 未開始 | 待辦 |
 | I11 | Privacy／Retention Operations | 未開始 | 未開始 | 待辦 |
 | I12 | SLO／Monitoring／Incident Console | 未開始 | 未開始 | 待辦 |
@@ -279,3 +279,36 @@
 
 - I8 內部產品化 Gate 與 code review 通過，可進入 I9。
 - 本批數字是同機、ASGI in-process、隔離 PostgreSQL 的 regression baseline，不是生產容量或網路 SLA；它不包含 TLS、reverse proxy、跨區 latency、Next.js render、真實 LLM/provider，也不把 40-request memory sample 宣稱成數小時 soak。正式容量仍需在 staging 以 production topology、預期資料量和長時間負載重新標定。
+
+## I9：Security Automation
+
+### 已實作
+
+- 新增單一 blocking security runner，執行 Python dependency CVE audit、Bandit runtime SAST、全 tracked-file secret scan 與 CycloneDX Python SBOM；每項結果及摘要寫入 30 天 CI evidence，任何已知相依漏洞、中高風險 SAST 或未審核 secret candidate 都阻止 release。
+- 將 73 個既有 Python 相依漏洞清為 0：移除 `python-jose`／`ecdsa`，改用限定 HS256 allowlist 的 PyJWT；升級 FastAPI、multipart、Pillow、pypdf、pydantic-settings 等安全版本，並把原本浮動的 Langfuse 改為明確版本。
+- ML intent 模型在 `pickle` 反序列化前必須通過以服務 secret、用途分離前綴及 SHA-256 建立的 HMAC；無簽章、遭竄改或簽章編碼異常一律拒絕載入。預設暫存路徑改用跨平台 temp directory。
+- Secret scan 不排除 tests／workflows；逐筆把已確認的 CI fixture、測試假密碼及文件 placeholder 加上同列 allowlist 理由，讓新增候選值仍會 fail closed。
+- 六個正式 production image matrix 現在實際 load image，逐一輸出 CycloneDX SBOM、完整 High／Critical vulnerability JSON，並以 Trivy 阻擋所有已有上游修補但映像尚未套用的 High／Critical CVE。
+- API image 改為 runtime／test requirements 分離、移除 pytest 與編譯器、build 時套用全部可用 OS security updates、排除 tests，並以固定 UID 10001 非 root 使用者執行。
+
+### Code review 發現與修正
+
+1. 初始 audit 發現 73 個漏洞，且 `python-jose` 帶入無修補版本的 `ecdsa`：JWT 改為 PyJWT，其他直接依賴升級並鎖定，最終 `pip-audit --strict` 為 0。
+2. 舊 ML 模型直接 `pickle.load`，任何可寫入模型路徑者都可能觸發任意反序列化：加入用途分離 HMAC、constant-time 比對及 malformed signature fail-closed；中斷於 model／signature 寫入中間也只會造成拒絕載入。
+3. Mailchimp member key 的 MD5 被 SAST 判為密碼學弱點：確認這是 Mailchimp API 強制的非安全識別碼後，使用 `usedforsecurity=False` 並保留理由，未以全域規則關閉 B324。
+4. 第一版容器仍安裝 pytest、gcc、開發 headers 且以 root 執行：拆分 runtime requirements、移除建置工具與 tests、改為專用非 root 使用者；實際容器 import API 並確認 pytest 不存在。
+5. 無差別阻擋所有 OS High／Critical 會被上游尚未提供修補的 Debian CVE 永久卡住：image 先套用所有可用安全更新，完整報告仍保留全部項目，blocking gate 精確阻擋「已有修補卻未套用」的項目；本機實掃為 0 個可修補 High／Critical 遺漏。
+6. 初版只保留 blocking Trivy 表格，`ignore-unfixed` 會讓尚無修補的項目不出現在該表：新增獨立、非遮蔽的完整 High／Critical JSON，再另跑 blocking policy，兼顧可發布性與風險可見性。
+7. Review 時從 runtime-only image 實際 import 發現 `cryptography` 原本只是 `python-jose` 的隱性 transitive dependency：改為直接、明確鎖定 dependency，避免移除 JWT 套件後加密服務在生產啟動失敗。
+
+### 驗證
+
+- 統一 Security Gate：Python dependency vulnerabilities `0`、Bandit medium／high findings `0`、unreviewed secret candidates `0`；成功產生 CycloneDX Python SBOM。
+- 完整 PostgreSQL API suite：`316 passed, 3 skipped`；PyJWT／模型簽章專用測試 `3 passed`，外部備份與加密 hardening `8 passed`。
+- Hardened API image 實際 build、以 UID／GID `10001` 啟動並 import `ForgeBase API`；runtime image 無 pytest。Trivy 0.72 本機實掃在套用可用 OS 更新後，fixable High／Critical 為 `0`。
+- Workflow YAML parse、`git diff --check` 與 security runner 回歸通過。
+
+### Gate 結論
+
+- I9 內部產品化 Gate 與 code review 通過，可進入 I10。
+- 本批建立的是持續、阻擋式安全基線，不代表未修補上游 CVE 已消失，也不取代外部滲透測試、正式雲端 IAM／WAF／KMS 設定、供應商風險審查或事故演練；完整容器 JSON 會保留未修補風險供後續評估。

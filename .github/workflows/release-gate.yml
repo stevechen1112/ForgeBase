@@ -46,6 +46,35 @@ jobs:
     name: Frontend contract
     uses: ./.github/workflows/frontend.yml
 
+  security:
+    name: SAST, secrets, dependencies, and SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            api/requirements.txt
+            api/requirements-runtime.txt
+            scripts/requirements-security.txt
+      - name: Install security gate dependencies
+        run: pip install -r api/requirements.txt -r scripts/requirements-security.txt
+      - name: Run blocking source and supply-chain security gate
+        run: python scripts/run_security_gate.py
+      - name: Upload security evidence and Python SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-security-evidence
+          path: artifacts/security-gate/
+          if-no-files-found: error
+          retention-days: 30
+
   admin-browser-rbac:
     name: Admin browser and RBAC
     runs-on: ubuntu-latest
@@ -55,7 +84,7 @@ jobs:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: forgebase_browser_test
-          POSTGRES_PASSWORD: forgebase_browser_test
+          POSTGRES_PASSWORD: forgebase_browser_test # pragma: allowlist secret -- CI-only fixture
           POSTGRES_DB: forgebase_browser_test
         ports:
           - 5432:5432
@@ -66,10 +95,10 @@ jobs:
           --health-retries 10
     env:
       APP_ENV: test
-      DATABASE_URL: postgresql+asyncpg://forgebase_browser_test:forgebase_browser_test@localhost:5432/forgebase_browser_test
+      DATABASE_URL: postgresql+asyncpg://forgebase_browser_test:forgebase_browser_test@localhost:5432/forgebase_browser_test # pragma: allowlist secret -- CI-only fixture
       DATABASE_NULL_POOL: "true"
-      SECRET_KEY: browser-release-check-secret-at-least-32-characters
-      OPENAI_API_KEY: sk-browser-release-check
+      SECRET_KEY: browser-release-check-secret-at-least-32-characters # pragma: allowlist secret -- CI-only fixture
+      OPENAI_API_KEY: sk-browser-release-check # pragma: allowlist secret -- deliberately non-routable fixture
       AI_MODEL_NAME: gpt-5.6-luna
       EMAIL_DRY_RUN: "true"
       EMAIL_EXTERNAL_DELIVERY_ENABLED: "false"
@@ -84,6 +113,7 @@ jobs:
           cache: pip
           cache-dependency-path: |
             api/requirements.txt
+            api/requirements-runtime.txt
             scripts/requirements-ui-scan.txt
       - uses: actions/setup-node@v4
         with:
@@ -165,7 +195,7 @@ jobs:
 
   production-images:
     name: Production image / ${{ matrix.label }}
-    needs: [api, frontend, admin-browser-rbac, recovery-drill, public-locale-browser]
+    needs: [api, frontend, security, admin-browser-rbac, recovery-drill, public-locale-browser]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -215,9 +245,49 @@ jobs:
         with:
           context: ${{ matrix.context }}
           push: false
+          load: true
+          tags: forgebase-ci:${{ matrix.id }}
           build-args: ${{ matrix.build_args }}
           cache-from: type=gha,scope=release-${{ matrix.id }}
           cache-to: type=gha,mode=max,scope=release-${{ matrix.id }}
+      - name: Prepare container security evidence
+        run: mkdir -p artifacts/container-security
+      - name: Generate container CycloneDX SBOM
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: forgebase-ci:${{ matrix.id }}
+          format: cyclonedx
+          output: artifacts/container-security/${{ matrix.id }}-sbom.cdx.json
+          exit-code: "0"
+      - name: Record all container vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: forgebase-ci:${{ matrix.id }}
+          format: json
+          output: artifacts/container-security/${{ matrix.id }}-vulnerabilities.json
+          severity: HIGH,CRITICAL
+          vuln-type: os,library
+          exit-code: "0"
+          skip-setup-trivy: true
+      - name: Block high and critical container vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: forgebase-ci:${{ matrix.id }}
+          format: table
+          output: artifacts/container-security/${{ matrix.id }}-vulnerabilities.txt
+          severity: HIGH,CRITICAL
+          vuln-type: os,library
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-setup-trivy: true
+      - name: Upload container security evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-security-${{ matrix.id }}
+          path: artifacts/container-security/
+          if-no-files-found: error
+          retention-days: 30
 
   production-compose:
     name: Production topology and deploy scripts
@@ -229,9 +299,9 @@ jobs:
       DOMAIN: forgebase.example
       APEX_DOMAIN: forgebase.example
       POSTGRES_USER: forgebase_ci
-      POSTGRES_PASSWORD: forgebase_ci_password
+      POSTGRES_PASSWORD: forgebase_ci_password # pragma: allowlist secret -- CI-only fixture
       POSTGRES_DB: forgebase_ci
-      REVALIDATE_SECRET: release-ci-revalidate-secret
+      REVALIDATE_SECRET: release-ci-revalidate-secret # pragma: allowlist secret -- CI-only fixture
       API_ENV_FILE: ./deploy/api.env.example
       NEXT_PUBLIC_SITE_NAME: ForgeBase CI
     steps:

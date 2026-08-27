@@ -12,7 +12,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from pydantic import BaseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -70,7 +71,7 @@ def _decode_preview_token(token: str) -> tuple[str, str | None]:
     """Return the bound page and tenant IDs if the token is valid."""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="Invalid or expired preview token") from exc
 
     if payload.get("type") != "preview":
