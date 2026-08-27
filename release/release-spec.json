@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "product": "ForgeBase",
+  "release_channel": "internal-candidate",
+  "components": [
+    {"name": "api", "image": "forgebase-api", "context": "api"},
+    {"name": "admin", "image": "forgebase-admin", "context": "admin"},
+    {"name": "web", "image": "forgebase-web", "context": "web"},
+    {"name": "web_precision", "image": "forgebase-web-precision", "context": "web"},
+    {"name": "marketing", "image": "forgebase-marketing", "context": "forgebase-site"},
+    {"name": "templates", "image": "forgebase-templates", "context": "template-demos"}
+  ],
+  "required_local_evidence": [
+    "security-gate/summary.json",
+    "security-gate/python-sbom.cdx.json"
+  ],
+  "required_external_gates": [
+    "production credentials and provider entitlements",
+    "external synthetic monitoring and alert delivery drill",
+    "real mailbox, ESP, company-identification and contact-enrichment validation",
+    "legal review for privacy, outreach and data licensing",
+    "staging capacity test using production topology"
+  ]
+}

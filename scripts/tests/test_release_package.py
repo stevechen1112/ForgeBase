@@ -1,0 +1,41 @@
+"""Release packaging must fail closed on topology, evidence and integrity."""
+
+import json
+from pathlib import Path
+
+import pytest
+
+from scripts.release_package import (
+    VERSION_PATTERN,
+    ReleasePackageError,
+    migration_topology,
+    verify_release_package,
+)
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_release_version_and_migration_topology_are_unambiguous() -> None:
+    version = (ROOT / "release/VERSION").read_text(encoding="utf-8").strip()
+    assert VERSION_PATTERN.fullmatch(version)
+    topology = migration_topology(ROOT)
+    assert topology["heads"] == ["0094_slo_incident_console"]
+    assert topology["revision_count"] >= 90
+
+
+def test_release_spec_keeps_external_gates_explicit() -> None:
+    spec = json.loads((ROOT / "release/release-spec.json").read_text(encoding="utf-8"))
+    assert spec["release_channel"] == "internal-candidate"
+    assert len(spec["components"]) == 6
+    assert len(spec["required_external_gates"]) >= 5
+    assert "security-gate/python-sbom.cdx.json" in spec["required_local_evidence"]
+
+
+def test_verifier_rejects_corrupt_outer_checksum(tmp_path: Path) -> None:
+    package = tmp_path / "forgebase-2026.08.27-internal.1.tar.gz"
+    package.write_bytes(b"not-a-release-package")
+    package.with_suffix(package.suffix + ".sha256").write_text(
+        f"{'0' * 64}  {package.name}\n", encoding="utf-8"
+    )
+    with pytest.raises(ReleasePackageError, match="Outer package checksum mismatch"):
+        verify_release_package(package)

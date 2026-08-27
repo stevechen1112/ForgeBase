@@ -1,0 +1,60 @@
+name: Attested Release Package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v20??.??.??-internal.*"
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    name: Complete release gate
+    uses: ./.github/workflows/release-gate.yml
+
+  package:
+    name: Package and attest candidate
+    needs: release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            api/requirements.txt
+            scripts/requirements-security.txt
+      - name: Validate tag against the immutable version declaration
+        if: github.ref_type == 'tag'
+        run: test "$GITHUB_REF_NAME" = "v$(cat release/VERSION)"
+      - name: Install release security dependencies
+        run: pip install -r api/requirements.txt -r scripts/requirements-security.txt
+      - name: Regenerate blocking security evidence and Python SBOM
+        run: python scripts/run_security_gate.py
+      - name: Test release packaging contract
+        run: python -m pytest scripts/tests/test_release_package.py -q
+      - name: Build and locally verify release package
+        run: |
+          python scripts/build_release_package.py
+          python scripts/verify_release_package.py "artifacts/release-package/forgebase-$(cat release/VERSION).tar.gz"
+      - name: Generate Sigstore build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: artifacts/release-package/forgebase-*.tar.gz
+      - name: Upload release candidate and detached checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: forgebase-${{ github.sha }}
+          path: artifacts/release-package/
+          if-no-files-found: error
+          retention-days: 90
