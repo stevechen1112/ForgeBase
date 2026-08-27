@@ -151,6 +151,73 @@ export type OperationalJobList = {
   items: OperationalJobItem[];
 };
 
+export type ServiceLevelMetric = {
+  key: string;
+  label: string;
+  kind: "rate" | "zero_tolerance";
+  window: string;
+  target: number;
+  actual: number | null;
+  numerator: number | null;
+  denominator: number | null;
+  evaluable: boolean;
+  compliant: boolean;
+  error_budget_remaining: number | null;
+};
+
+export type ServiceLevelReport = {
+  current: {
+    status: "healthy" | "at_risk" | "breached";
+    sampled_at: string;
+    metrics: ServiceLevelMetric[];
+    breached: string[];
+    insufficient_evidence: string[];
+    scope: string;
+    external_uptime_claimed: false;
+  };
+  history: {
+    id: string;
+    status: "healthy" | "at_risk" | "breached";
+    metrics: ServiceLevelMetric[];
+    sampled_at: string;
+  }[];
+  scope: string;
+  external_uptime_claimed: false;
+};
+
+export type OperationalIncidentEvent = {
+  id: string;
+  action: string;
+  actor_user_id?: string;
+  note?: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+};
+
+export type OperationalIncident = {
+  id: string;
+  incident_key: string;
+  incident_type: string;
+  severity: "warning" | "critical";
+  status: "open" | "acknowledged" | "resolved";
+  title: string;
+  summary: string;
+  metrics: ServiceLevelMetric;
+  occurrence_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  last_notified_at?: string;
+  notification_error?: string;
+  events: OperationalIncidentEvent[];
+};
+
+export type OperationalIncidentList = {
+  items: OperationalIncident[];
+  total: number;
+};
+
 export type SiteTemplate = {
   key: string;
   name: string;
@@ -1032,6 +1099,36 @@ export const platformAdminApi = {
 
   systemHealth: (token: string) =>
     apiClient.get<SystemHealth>("/admin/system/health", token),
+
+  serviceLevels: (token: string, historyLimit = 24) =>
+    apiClient.get<ServiceLevelReport>(
+      `/admin/operations/slo?history_limit=${historyLimit}`,
+      token,
+    ),
+
+  sampleServiceLevels: (token: string) =>
+    apiClient.post<Record<string, unknown>>(
+      "/admin/operations/slo/sample",
+      {},
+      token,
+    ),
+
+  operationalIncidents: (token: string, limit = 50) =>
+    apiClient.get<OperationalIncidentList>(
+      `/admin/operations/incidents?limit=${limit}`,
+      token,
+    ),
+
+  actOnIncident: (
+    token: string,
+    id: string,
+    body: { action: "acknowledge" | "resolve"; note: string },
+  ) =>
+    apiClient.post<OperationalIncident>(
+      `/admin/operations/incidents/${id}/actions`,
+      body,
+      token,
+    ),
 
   operationalJobSummary: (token: string) =>
     apiClient.get<OperationalJobSummary>(

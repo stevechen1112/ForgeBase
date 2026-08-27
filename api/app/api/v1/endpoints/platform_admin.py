@@ -32,6 +32,11 @@ from app.core.datetime import utcnow_naive
 from app.core.locale import PUBLIC_SITE_LOCALES
 from app.core.security import get_password_hash
 from app.db.session import get_session
+from app.models.observability import (
+    OperationalIncident,
+    OperationalIncidentEvent,
+    ServiceLevelSnapshot,
+)
 from app.models.platform_audit_log import PlatformAuditLog
 from app.models.privacy_operation import PrivacyOperation
 from app.models.site_build import SiteBuild
@@ -46,6 +51,11 @@ from app.services.capability_access import (
     resolve_tenant_features,
 )
 from app.services.external_test_readiness import external_test_readiness
+from app.services.observability import (
+    collect_observability_snapshot,
+    evaluate_service_levels,
+    update_incident_status,
+)
 from app.services.privacy_operations import (
     erase_anonymous_visitor,
     export_anonymous_visitor,
@@ -220,6 +230,11 @@ class VisitorPrivacyOperationIn(BaseModel):
 class RetentionRunIn(BaseModel):
     confirm: bool = False
     reason: str = Field(min_length=10, max_length=500)
+
+
+class IncidentActionIn(BaseModel):
+    action: str = Field(pattern=r"^(acknowledge|resolve)$")
+    note: str = Field(min_length=10, max_length=1000)
 
 
 class SiteBuildUpdate(BaseModel):
@@ -1270,6 +1285,168 @@ async def system_health(
         python_version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         external_test=external_test_readiness(),
     )
+
+
+def _incident_payload(
+    incident: OperationalIncident,
+    events: list[OperationalIncidentEvent] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": str(incident.id),
+        "incident_key": incident.incident_key,
+        "incident_type": incident.incident_type,
+        "severity": incident.severity,
+        "status": incident.status,
+        "title": incident.title,
+        "summary": incident.summary,
+        "metrics": incident.metrics,
+        "occurrence_count": incident.occurrence_count,
+        "first_seen_at": incident.first_seen_at,
+        "last_seen_at": incident.last_seen_at,
+        "acknowledged_at": incident.acknowledged_at,
+        "resolved_at": incident.resolved_at,
+        "last_notified_at": incident.last_notified_at,
+        "notification_error": incident.notification_error,
+        "events": [
+            {
+                "id": str(event.id),
+                "action": event.action,
+                "actor_user_id": str(event.actor_user_id)
+                if event.actor_user_id
+                else None,
+                "note": event.note,
+                "detail": event.detail,
+                "created_at": event.created_at,
+            }
+            for event in (events or [])
+        ],
+    }
+
+
+@router.get("/operations/slo")
+async def service_level_status(
+    history_limit: int = Query(default=24, ge=1, le=168),
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    """Current internal SLO evaluation plus durable sampling history."""
+    current = await evaluate_service_levels(session)
+    rows = (
+        await session.exec(
+            select(ServiceLevelSnapshot)
+            .order_by(ServiceLevelSnapshot.sampled_at.desc())
+            .limit(history_limit)
+        )
+    ).all()
+    return {
+        "current": current,
+        "history": [
+            {
+                "id": str(row.id),
+                "status": row.status,
+                "metrics": row.metrics,
+                "sampled_at": row.sampled_at,
+            }
+            for row in rows
+        ],
+        "scope": "application_and_database_internal",
+        "external_uptime_claimed": False,
+    }
+
+
+@router.post("/operations/slo/sample")
+async def sample_service_levels(
+    session: AsyncSession = Depends(get_session),
+    actor: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    """Persist a sample and reconcile incident lifecycle immediately."""
+    result = await collect_observability_snapshot(session)
+    await _record_platform_audit(
+        session,
+        actor,
+        action="observability.sampled",
+        target_type="service_level_snapshot",
+        target_id=result["snapshot_id"],
+        tenant_id=None,
+        changes={"status": result["status"], "breached": result["breached"]},
+    )
+    await session.commit()
+    return result
+
+
+@router.get("/operations/incidents")
+async def operational_incidents(
+    status: str | None = Query(default=None, pattern=r"^(open|acknowledged|resolved)$"),
+    limit: int = Query(default=50, ge=1, le=100),
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    query = select(OperationalIncident)
+    if status:
+        query = query.where(OperationalIncident.status == status)
+    incidents = (
+        await session.exec(
+            query.order_by(
+                OperationalIncident.resolved_at.asc().nullsfirst(),
+                OperationalIncident.last_seen_at.desc(),
+            ).limit(limit)
+        )
+    ).all()
+    events_by_incident: dict[UUID, list[OperationalIncidentEvent]] = {}
+    if incidents:
+        ids = [incident.id for incident in incidents]
+        events = (
+            await session.exec(
+                select(OperationalIncidentEvent)
+                .where(OperationalIncidentEvent.incident_id.in_(ids))
+                .order_by(OperationalIncidentEvent.created_at.desc())
+            )
+        ).all()
+        for event in events:
+            bucket = events_by_incident.setdefault(event.incident_id, [])
+            if len(bucket) < 20:
+                bucket.append(event)
+    return {
+        "items": [
+            _incident_payload(incident, events_by_incident.get(incident.id, []))
+            for incident in incidents
+        ],
+        "total": len(incidents),
+    }
+
+
+@router.post("/operations/incidents/{incident_id}/actions")
+async def act_on_operational_incident(
+    incident_id: UUID,
+    payload: IncidentActionIn,
+    session: AsyncSession = Depends(get_session),
+    actor: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    incident = await session.get(OperationalIncident, incident_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    try:
+        await update_incident_status(
+            session,
+            incident=incident,
+            action=payload.action,
+            actor_user_id=actor.id,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    await _record_platform_audit(
+        session,
+        actor,
+        action=f"incident.{payload.action}",
+        target_type="operational_incident",
+        target_id=str(incident.id),
+        tenant_id=None,
+        changes={"status": incident.status, "note": payload.note},
+    )
+    await session.commit()
+    await session.refresh(incident)
+    return _incident_payload(incident)
 
 
 @router.get("/resources/status", response_model=PlatformResourceStatus)

@@ -379,3 +379,36 @@
 
 - I11 內部產品化 Gate 與 code review 通過，可進入 I12。
 - 本批提供的是產品內的資料生命週期與作業證據，不構成特定司法管轄區的法律意見；正式市場仍需由法務確認 legal basis、法定保存義務、DSR 身分核驗與供應商同步刪除契約。
+
+## I12：SLO／Monitoring／Incident Console
+
+### 已實作
+
+- 新增 durable SLO snapshot 與事故生命週期：每次 scheduler 或平台手動取樣都量測核心背景工作、知識同步、外聯技術結果、真人接手 SLA、terminal failed jobs 與 stale claims；快照保留 90 天。
+- 明確區分 `healthy`、`at_risk`（樣本不足）與 `breached`；SLO 僅涵蓋應用與資料庫內部證據，API 與 UI 都標記 `external_uptime_claimed: false`，不把內部取樣冒充站外可用率。
+- 事故以固定 incident key 持久化，支援 open／acknowledged／resolved、自動復原、自動 reopen、發生次數、通知結果與 append-only decision events；移除原本僅存在單一 process memory 的告警去重。
+- 告警 webhook／內部 email 套用 durable cooldown；成功與失敗嘗試都受冷卻控制，失敗原因留在事故控制台，避免每五分鐘產生通知風暴。
+- 新增 superuser-only SLO／history／incident／action API；確認與結案必須填寫至少 10 字元依據，狀態變更與平台 audit 在同一 transaction 提交。
+- 平台「系統健康」重構為事故控制台：同頁呈現即時 DB／queue、內部服務目標、錯誤預算、樣本數、待處理事故、處置說明、背景工作重試與對外測試 Gate。
+- 新增 0094 migration 與完整事故狀態機驗收。
+
+### Code review 發現與修正
+
+1. 初版把 `at_risk` 樣本不足視為 scheduler unhealthy，會在低流量環境持續寫 error log：legacy `healthy` 契約改為只在實際 breached 時 false，UI 仍明確顯示證據不足。
+2. 告警失敗原本不記 `last_notified_at`，provider outage 期間每次 scheduler 都會再送：成功與失敗嘗試都寫入 durable cooldown，錯誤則另外保留供操作者處理。
+3. 初版重複 acknowledge／resolve 會新增無意義事件：狀態機改為 409 fail closed；事故若在人工結案後條件仍存在，下一次取樣會 reopen，並清除舊 acknowledged actor／timestamp。
+4. 原告警使用 process-local signature 與 timestamp，多 replica／restart 後會失去去重狀態：改由資料庫事故列與 event ledger 作唯一真相來源。
+5. SLO 計算沒有足夠樣本時不能聲稱達標：rate 指標要求至少 20 筆，未滿門檻列入 `insufficient_evidence` 而非綠燈；zero-tolerance operational 指標仍可即時評估。
+6. UI 把內部健康、外部測試準備度與站外 uptime 混在同一概念：重新標示三者邊界，站外監控仍是正式外部環境 Gate，不由本批虛構完成。
+
+### 驗證
+
+- 事故狀態機驗收：`1 passed`；驗證 persistent open、單一 incident row、occurrence 累計、重複 action 409、人工 resolve 後自動 reopen、恢復後自動 resolve、history 與 event ledger。
+- 完整 PostgreSQL API suite：`319 passed, 3 skipped`。
+- 0094 migration 完成 `0093 → 0094 → 0093 → 0094` upgrade／downgrade round trip。
+- Admin TypeScript、ESLint、production build（75 routes）通過；blocking Ruff 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I12 內部產品化 Gate 與 code review 通過，可進入 I13。
+- 本批能證明內部 application／database 指標與事故決策鏈，不代表真實公網、DNS、CDN、第三方 LLM／ESP 的 uptime；正式站外 synthetic monitor、on-call routing 與告警到達演練仍需在可用外部資源的環境執行。

@@ -88,6 +88,11 @@ from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
 from app.models.tenant_provisioning_run import TenantProvisioningRun
 from app.models.privacy_operation import PrivacyOperation
+from app.models.observability import (
+    OperationalIncident,
+    OperationalIncidentEvent,
+    ServiceLevelSnapshot,
+)
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.user import User
@@ -171,6 +176,9 @@ __all__ = [
     "Tenant",
     "TenantProvisioningRun",
     "PrivacyOperation",
+    "OperationalIncident",
+    "OperationalIncidentEvent",
+    "ServiceLevelSnapshot",
     "TrackingEvent",
     "TrackingSession",
     "User",
