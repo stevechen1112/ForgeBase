@@ -228,7 +228,12 @@ def build_release_package(
             source_timestamp=source_timestamp,
         )
         critical = [
-            {"path": path, "sha256": sha256_file(root / path)}
+            {
+                "path": path,
+                "sha256": sha256_bytes(
+                    bytes(run_git(root, "show", f"HEAD:{path}", binary=True))
+                ),
+            }
             for path in _tracked_critical_files(root)
         ]
         manifest = {
