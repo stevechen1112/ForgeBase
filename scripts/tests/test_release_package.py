@@ -29,6 +29,7 @@ def test_release_spec_keeps_external_gates_explicit() -> None:
     spec = json.loads((ROOT / "release/release-spec.json").read_text(encoding="utf-8"))
     assert spec["release_channel"] == "internal-candidate"
     assert len(spec["components"]) == 6
+    assert len(spec["required_ci_evidence"]) == 6
     assert len(spec["required_external_gates"]) >= 5
     assert "security-gate/python-sbom.cdx.json" in spec["required_local_evidence"]
 

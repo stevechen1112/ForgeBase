@@ -12,11 +12,16 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("artifacts/release-package"))
     parser.add_argument("--version")
     parser.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--require-ci-evidence", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     try:
         package = build_release_package(
-            root, (root / args.output).resolve(), args.version, allow_dirty=args.allow_dirty
+            root,
+            (root / args.output).resolve(),
+            args.version,
+            allow_dirty=args.allow_dirty,
+            require_ci_evidence=args.require_ci_evidence,
         )
     except ReleasePackageError as exc:
         print(json.dumps({"status": "failed", "error": str(exc)}))

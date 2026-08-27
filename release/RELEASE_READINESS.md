@@ -12,7 +12,7 @@ python scripts/verify_release_package.py artifacts/release-package/forgebase-202
 
 建立程序預設要求 Git working tree 完全乾淨，從 `git archive HEAD` 產生 source archive，並把 commit、Alembic head、部署關鍵檔案 digest、release components、可用 evidence、Python CycloneDX SBOM 與未完成外部 Gate 寫入 manifest。成品含內部 `CHECKSUMS.sha256`，旁邊另有整包 SHA-256。
 
-正式 tag workflow 會先通過 Complete Release Gate，再建立相同封包並以 GitHub Artifact Attestations／Sigstore 建立不可竄改的 build provenance。沒有 CI attestation 的本機封包只能視為內部驗證品。
+正式 tag workflow 會先通過 Complete Release Gate，下載六個 production image 的 CycloneDX SBOM，要求它們全部納入封包，再以 GitHub Artifact Attestations／Sigstore 建立不可竄改的 build provenance。沒有六個 container SBOM 與 CI attestation 的本機封包只能視為內部驗證品。
 
 ## 發行前人工確認
 

@@ -14,6 +14,14 @@
     "security-gate/summary.json",
     "security-gate/python-sbom.cdx.json"
   ],
+  "required_ci_evidence": [
+    "api-sbom.cdx.json",
+    "admin-sbom.cdx.json",
+    "web-northforge-sbom.cdx.json",
+    "web-precision-sbom.cdx.json",
+    "marketing-sbom.cdx.json",
+    "templates-sbom.cdx.json"
+  ],
   "required_external_gates": [
     "production credentials and provider entitlements",
     "external synthetic monitoring and alert delivery drill",

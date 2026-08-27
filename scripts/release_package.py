@@ -177,6 +177,29 @@ def _copy_evidence(
     return copied
 
 
+def _copy_ci_evidence(
+    root: Path, stage: Path, spec: dict[str, Any], *, required: bool
+) -> list[dict[str, str]]:
+    source_root = root / "artifacts/ci-container-security"
+    copied: list[dict[str, str]] = []
+    for filename in spec.get("required_ci_evidence", []):
+        source = source_root / filename
+        if not source.is_file():
+            if required:
+                raise ReleasePackageError(f"Required CI container SBOM missing: {filename}")
+            continue
+        payload = json.loads(source.read_text(encoding="utf-8"))
+        if payload.get("bomFormat") != "CycloneDX":
+            raise ReleasePackageError(f"Container SBOM is not CycloneDX: {filename}")
+        target = stage / "evidence/container-security" / filename
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+        copied.append({"path": target.relative_to(stage).as_posix(), "sha256": sha256_file(target)})
+    if required and len(copied) != len(spec.get("required_ci_evidence", [])):
+        raise ReleasePackageError("CI container SBOM set is incomplete")
+    return copied
+
+
 def _write_checksums(stage: Path) -> None:
     lines = []
     for path in sorted(item for item in stage.rglob("*") if item.is_file()):
@@ -207,7 +230,12 @@ def _deterministic_tar(source: Path, destination: Path) -> None:
 
 
 def build_release_package(
-    root: Path, output: Path, version: str | None = None, *, allow_dirty: bool = False
+    root: Path,
+    output: Path,
+    version: str | None = None,
+    *,
+    allow_dirty: bool = False,
+    require_ci_evidence: bool = False,
 ) -> Path:
     root = root.resolve()
     version = version or (root / "release/VERSION").read_text(encoding="utf-8").strip()
@@ -237,6 +265,9 @@ def build_release_package(
             revision=revision,
             source_timestamp=source_timestamp,
         )
+        ci_evidence = _copy_ci_evidence(
+            root, stage, spec, required=require_ci_evidence
+        )
         critical = [
             {
                 "path": path,
@@ -260,6 +291,8 @@ def build_release_package(
             "components": spec["components"],
             "critical_files": critical,
             "evidence": evidence,
+            "ci_container_sboms": ci_evidence,
+            "ci_container_sboms_required": require_ci_evidence,
             "source_archive_sha256": sha256_file(source_archive),
             "required_external_gates": spec["required_external_gates"],
             "external_gates_completed": False,
@@ -320,6 +353,9 @@ def verify_release_package(package: Path) -> dict[str, Any]:
             raise ReleasePackageError("Dirty package cannot be accepted as a release")
         if manifest.get("external_gates_completed") is not False:
             raise ReleasePackageError("External gate declaration is invalid")
+        ci_sboms = manifest.get("ci_container_sboms", [])
+        if manifest.get("ci_container_sboms_required") and len(ci_sboms) != 6:
+            raise ReleasePackageError("Required CI container SBOM set is incomplete")
         source = root / "SOURCE.tar.gz"
         if sha256_file(source) != manifest.get("source_archive_sha256"):
             raise ReleasePackageError("Source archive digest mismatch")

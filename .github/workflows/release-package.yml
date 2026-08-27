@@ -41,11 +41,17 @@ jobs:
         run: pip install -r api/requirements.txt -r scripts/requirements-security.txt
       - name: Regenerate blocking security evidence and Python SBOM
         run: python scripts/run_security_gate.py
+      - name: Download all production-image security evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: container-security-*
+          path: artifacts/ci-container-security
+          merge-multiple: true
       - name: Test release packaging contract
         run: python -m pytest scripts/tests/test_release_package.py -q
       - name: Build and locally verify release package
         run: |
-          python scripts/build_release_package.py
+          python scripts/build_release_package.py --require-ci-evidence
           python scripts/verify_release_package.py "artifacts/release-package/forgebase-$(cat release/VERSION).tar.gz"
       - name: Generate Sigstore build provenance
         uses: actions/attest@v4
