@@ -65,3 +65,21 @@ async def validate_and_store_readiness(db: AsyncSession, build: SiteBuild) -> di
     await db.commit()
     await db.refresh(build)
     return readiness
+
+
+def evaluate_delivery_stage(build: SiteBuild) -> dict[str, Any]:
+    """Prevent a work order from claiming launch/live before its evidence exists."""
+    checks: dict[str, bool] = {}
+    if build.delivery_stage in {"launch_ready", "live"}:
+        checks["technical_site_ready"] = build.status in {"ready", "published"}
+    if build.delivery_stage == "live":
+        checks.update(
+            {
+                "technical_site_published": build.status == "published",
+                "delivery_owner_assigned": build.delivery_owner_id is not None,
+                "handoff_recorded": build.handoff_at is not None,
+                "acceptance_complete": build.acceptance_status in {"accepted", "waived"},
+            }
+        )
+    blockers = [name for name, passed in checks.items() if not passed]
+    return {"ready": not blockers, "checks": checks, "blockers": blockers}

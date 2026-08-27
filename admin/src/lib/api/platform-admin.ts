@@ -179,6 +179,33 @@ export type TenantProvision = {
   layout_key: string;
 };
 
+export type TenantProvisionPreflight = {
+  ready: boolean;
+  checks: Record<string, boolean>;
+  blockers: string[];
+  normalized: {
+    primary_domain?: string;
+    site_url: string;
+    owner_email: string;
+  };
+};
+
+export type TenantProvisioningManifest = {
+  run_id: string;
+  created_at: string;
+  status_code: number;
+  manifest: {
+    tenant_id: string;
+    owner_id: string;
+    site_build_id: string;
+    provisioning_run_id: string;
+    status: string;
+    delivery_stage: DeliveryStage;
+    readiness: { ready: boolean; checks: Record<string, boolean>; blockers: string[] };
+    next_actions: string[];
+  };
+};
+
 export type FeatureCatalogItem = {
   key: string;
   label: string;
@@ -744,6 +771,12 @@ export const platformAdminApi = {
   tenant: (token: string, id: string) =>
     apiClient.get<TenantDetail>(`/admin/tenants/${id}`, token),
 
+  tenantProvisioningManifest: (token: string, id: string) =>
+    apiClient.get<TenantProvisioningManifest>(
+      `/admin/tenants/${id}/provisioning-manifest`,
+      token,
+    ),
+
   updateTenant: (token: string, id: string, body: TenantUpdate) =>
     apiClient.put<TenantSummary>(`/admin/tenants/${id}`, body, token),
 
@@ -753,13 +786,24 @@ export const platformAdminApi = {
   siteTemplates: (token: string) =>
     apiClient.get<SiteTemplate[]>("/admin/site-templates", token),
 
-  provisionTenant: (token: string, body: TenantProvision) =>
+  preflightTenant: (token: string, body: TenantProvision) =>
+    apiClient.post<TenantProvisionPreflight>(
+      "/admin/tenant-provisioning/preflight",
+      body,
+      token,
+    ),
+
+  provisionTenant: (token: string, body: TenantProvision, idempotencyKey: string) =>
     apiClient.post<{
       tenant_id: string;
       owner_id: string;
       site_build_id: string;
+      provisioning_run_id: string;
       status: string;
-    }>("/admin/tenants", body, token),
+      delivery_stage: DeliveryStage;
+      readiness: { ready: boolean; checks: Record<string, boolean>; blockers: string[] };
+      next_actions: string[];
+    }>("/admin/tenants", body, token, { "Idempotency-Key": idempotencyKey }),
 
   siteBuild: (token: string, id: string) =>
     apiClient.get<SiteBuild>(`/admin/tenants/${id}/site-build`, token),

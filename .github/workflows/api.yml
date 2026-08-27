@@ -80,6 +80,11 @@ jobs:
         run: >-
           python scripts/run_performance_capacity_lab.py
           --artifacts-dir ../artifacts/performance-capacity-soak
+      - name: Run replay-safe tenant delivery factory gate
+        working-directory: api
+        run: >-
+          python scripts/run_tenant_delivery_factory_lab.py
+          --artifacts-dir ../artifacts/tenant-delivery-factory
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

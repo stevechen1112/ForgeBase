@@ -86,6 +86,7 @@ from app.models.segment import Segment
 from app.models.site_build import SiteBuild
 from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
+from app.models.tenant_provisioning_run import TenantProvisioningRun
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.user import User
@@ -167,6 +168,7 @@ __all__ = [
     "SiteBuild",
     "SiteProfile",
     "Tenant",
+    "TenantProvisioningRun",
     "TrackingEvent",
     "TrackingSession",
     "User",

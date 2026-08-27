@@ -17,9 +17,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -33,18 +35,25 @@ from app.models.platform_audit_log import PlatformAuditLog
 from app.models.site_build import SiteBuild
 from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
+from app.models.tenant_provisioning_run import TenantProvisioningRun
 from app.models.user import User
 from app.schemas.site_profile import SiteProfileRead, SiteProfileUpdate
-from app.services.external_test_readiness import external_test_readiness
-from app.services.site_provisioning import (
-    SITE_TEMPLATES,
-    template_catalog,
-    validate_and_store_readiness,
-)
 from app.services.capability_access import (
     FEATURE_CATALOG,
     feature_catalog_payload,
     resolve_tenant_features,
+)
+from app.services.external_test_readiness import external_test_readiness
+from app.services.site_provisioning import (
+    SITE_TEMPLATES,
+    evaluate_delivery_stage,
+    evaluate_site_readiness,
+    template_catalog,
+    validate_and_store_readiness,
+)
+from app.services.tenant_delivery_factory import (
+    evaluate_provisioning_preflight,
+    request_fingerprint,
 )
 
 router = APIRouter(prefix="/admin", tags=["Platform Admin"])
@@ -1401,54 +1410,140 @@ async def list_site_templates(_: User = Depends(require_superuser)) -> Any:
     return template_catalog()
 
 
+@router.post("/tenant-provisioning/preflight")
+async def tenant_provisioning_preflight(
+    body: TenantProvisionIn,
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> Any:
+    """Validate the complete delivery specification without mutating state."""
+    return await evaluate_provisioning_preflight(
+        session,
+        slug=body.slug,
+        owner_email=str(body.owner_email),
+        template_key=body.template_key,
+        site_url=body.site_url,
+        primary_domain=body.primary_domain,
+        default_locale=body.default_locale,
+        locales=body.locales,
+    )
+
+
 @router.post("/tenants", status_code=201)
 async def provision_tenant(
     body: TenantProvisionIn,
+    idempotency_key: str = Header(
+        min_length=8, max_length=128, alias="Idempotency-Key"
+    ),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_superuser),
 ) -> Any:
-    if not body.site_url.startswith(("http://", "https://")):
-        raise HTTPException(status_code=422, detail="site_url must be an absolute HTTP(S) URL")
-    if body.default_locale not in body.locales:
-        raise HTTPException(status_code=422, detail="default_locale must be included in locales")
-    existing_tenant = (await session.exec(select(Tenant).where(Tenant.slug == body.slug))).first()
-    existing_user = (await session.exec(select(User).where(User.email == str(body.owner_email).lower()))).first()
-    normalized_domain = (body.primary_domain or "").strip().lower() or None
-    existing_domain = None
-    if normalized_domain:
-        existing_domain = (
-            await session.exec(select(SiteBuild).where(SiteBuild.primary_domain == normalized_domain))
-        ).first()
-    if existing_tenant:
-        raise HTTPException(status_code=409, detail="Tenant slug already exists")
-    if existing_user:
-        raise HTTPException(status_code=409, detail="Owner email already exists")
-    if existing_domain:
-        raise HTTPException(status_code=409, detail="Primary domain is already assigned")
+    fingerprint = request_fingerprint(body.model_dump(mode="json"))
+    if session.get_bind().dialect.name == "postgresql":
+        await session.exec(
+            text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+            params={"lock_key": f"forgebase-tenant-provision:{idempotency_key}"},
+        )
+    replay = (
+        await session.exec(
+            select(TenantProvisioningRun).where(
+                TenantProvisioningRun.idempotency_key == idempotency_key
+            )
+        )
+    ).first()
+    if replay:
+        if replay.request_fingerprint != fingerprint:
+            raise HTTPException(
+                status_code=409,
+                detail="Idempotency-Key was already used with a different delivery specification",
+            )
+        return JSONResponse(
+            status_code=replay.status_code,
+            content=json.loads(replay.response_json),
+            headers={"Idempotent-Replayed": "true"},
+        )
+
+    preflight = await evaluate_provisioning_preflight(
+        session,
+        slug=body.slug,
+        owner_email=str(body.owner_email),
+        template_key=body.template_key,
+        site_url=body.site_url,
+        primary_domain=body.primary_domain,
+        default_locale=body.default_locale,
+        locales=body.locales,
+    )
+    if not preflight["ready"]:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "tenant_delivery_preflight_failed", **preflight},
+        )
+
+    normalized = preflight["normalized"]
 
     tenant = Tenant(
         name=body.name.strip(), slug=body.slug,
     )
     session.add(tenant)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant delivery conflicts with an existing slug, owner, domain, or request key",
+        ) from exc
     owner = User(
-        tenant_id=tenant.id, email=str(body.owner_email).lower(), full_name=body.owner_full_name.strip(),
+        tenant_id=tenant.id, email=normalized["owner_email"], full_name=body.owner_full_name.strip(),
         hashed_password=get_password_hash(body.temporary_password), role="owner", is_active=True,
     )
     profile = SiteProfile(
         tenant_id=tenant.id, brand_name=body.brand_name.strip(), logo_mark=body.logo_mark.strip().upper(),
         contact_email=str(body.contact_email).lower(), contact_phone=body.contact_phone,
-        site_url=body.site_url.rstrip("/"), default_locale=body.default_locale,
+        site_url=normalized["site_url"], default_locale=body.default_locale,
         theme_key=body.theme_key, layout_key=body.layout_key,
     )
     build = SiteBuild(
         tenant_id=tenant.id, template_key=body.template_key,
-        primary_domain=normalized_domain,
+        primary_domain=normalized["primary_domain"],
         locales_json=json.dumps(body.locales), cms_connected=False,
     )
     session.add(owner)
     session.add(profile)
     session.add(build)
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant delivery conflicts with an existing slug, owner, domain, or request key",
+        ) from exc
+    readiness = await evaluate_site_readiness(session, build)
+    build.readiness_json = json.dumps(readiness)
+    build.status = "ready" if readiness["ready"] else "blocked"
+    build.last_error = None if readiness["ready"] else ", ".join(readiness["blockers"])
+    response = {
+        "tenant_id": str(tenant.id),
+        "owner_id": str(owner.id),
+        "site_build_id": str(build.id),
+        "status": build.status,
+        "delivery_stage": build.delivery_stage,
+        "readiness": readiness,
+        "next_actions": ["confirm_cms_adapter", "validate_site", "publish_site"],
+    }
+    run = TenantProvisioningRun(
+        idempotency_key=idempotency_key,
+        request_fingerprint=fingerprint,
+        actor_user_id=current_user.id,
+        tenant_id=tenant.id,
+        status_code=201,
+        response_json=json.dumps(response),
+    )
+    session.add(run)
+    response["provisioning_run_id"] = str(run.id)
+    run.response_json = json.dumps(response)
+    session.add(run)
     await _record_platform_audit(
         session,
         current_user,
@@ -1461,11 +1556,44 @@ async def provision_tenant(
             "owner_email": owner.email,
             "template_key": build.template_key,
             "primary_domain": build.primary_domain,
+            "provisioning_run_id": str(run.id),
+            "readiness_blockers": readiness["blockers"],
         },
     )
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant delivery conflicts with an existing slug, owner, domain, or request key",
+        ) from exc
     clear_tenant_host_cache()
-    return {"tenant_id": str(tenant.id), "owner_id": str(owner.id), "site_build_id": str(build.id), "status": build.status}
+    return response
+
+
+@router.get("/tenants/{tenant_id}/provisioning-manifest")
+async def tenant_provisioning_manifest(
+    tenant_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> Any:
+    """Return the latest immutable creation manifest for delivery evidence."""
+    run = (
+        await session.exec(
+            select(TenantProvisioningRun)
+            .where(TenantProvisioningRun.tenant_id == tenant_id)
+            .order_by(TenantProvisioningRun.created_at.desc())
+        )
+    ).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Provisioning manifest not found")
+    return {
+        "run_id": str(run.id),
+        "created_at": run.created_at,
+        "status_code": run.status_code,
+        "manifest": json.loads(run.response_json),
+    }
 
 
 def _site_build_payload(build: SiteBuild) -> dict[str, Any]:
@@ -1769,6 +1897,12 @@ async def update_site_build(
         build.status = "draft"
         build.readiness_json = "{}"
         build.last_error = None
+    delivery_readiness = evaluate_delivery_stage(build)
+    if not delivery_readiness["ready"]:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "delivery_stage_not_ready", **delivery_readiness},
+        )
     build.updated_at = utcnow_naive()
     session.add(build)
     await _record_platform_audit(

@@ -66,6 +66,7 @@ type RequestOptions = {
   method?: string;
   body?: unknown;
   token?: string;
+  headers?: HeadersInit;
 };
 
 export class ApiError extends Error {
@@ -121,9 +122,10 @@ function formatApiError(payload: unknown, fallback: string): string {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body, token, headers: extraHeaders } = options;
 
-  const headers = buildApiHeaders(token, { "Content-Type": "application/json" });
+  const headers = buildApiHeaders(token, extraHeaders);
+  headers.set("Content-Type", "application/json");
 
   let res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -194,8 +196,8 @@ export const apiClient = {
   get: <T>(path: string, token?: string) =>
     request<T>(path, { method: "GET", token }),
 
-  post: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: "POST", body, token }),
+  post: <T>(path: string, body: unknown, token?: string, headers?: HeadersInit) =>
+    request<T>(path, { method: "POST", body, token, headers }),
 
   put: <T>(path: string, body: unknown, token?: string) =>
     request<T>(path, { method: "PUT", body, token }),

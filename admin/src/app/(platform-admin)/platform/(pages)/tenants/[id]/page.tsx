@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
-import { platformAdminApi, type AcceptanceStatus, type AdminUser, type DeliveryStage, type FeatureCatalog, type FeatureCatalogItem, type PlatformAuditItem, type SiteBuild, type SiteTemplate, type TenantDetail, type TenantUpdate } from "@/lib/api/platform-admin";
+import { platformAdminApi, type AcceptanceStatus, type AdminUser, type DeliveryStage, type FeatureCatalog, type FeatureCatalogItem, type PlatformAuditItem, type SiteBuild, type SiteTemplate, type TenantDetail, type TenantProvisioningManifest, type TenantUpdate } from "@/lib/api/platform-admin";
 import {
   ArrowLeft, AlertCircle, Users, Package, ClipboardList, Eye,
   Settings2, CheckCircle2, XCircle, Globe2, ExternalLink, History, TriangleAlert,
@@ -67,6 +67,7 @@ export default function TenantDetailPage() {
   const [siteBuild, setSiteBuild] = useState<SiteBuild | null>(null);
   const [templates, setTemplates] = useState<SiteTemplate[]>([]);
   const [auditLog, setAuditLog] = useState<PlatformAuditItem[]>([]);
+  const [provisioningManifest, setProvisioningManifest] = useState<TenantProvisioningManifest | null>(null);
   const [editTemplate, setEditTemplate] = useState("handtool-company");
   const [editDomain, setEditDomain] = useState("");
   const [editLocales, setEditLocales] = useState<string[]>(["en"]);
@@ -83,7 +84,7 @@ export default function TenantDetailPage() {
     if (!token || !id) return;
     platformAdminApi.tenant(token, id)
       .then(async (tenantDetail) => {
-        const [build, siteTemplates, audit, users, catalog] = await Promise.all([
+        const [build, siteTemplates, audit, users, catalog, manifest] = await Promise.all([
           tenantDetail.site_build_status
             ? platformAdminApi.siteBuild(token, id)
             : Promise.resolve(null),
@@ -91,16 +92,18 @@ export default function TenantDetailPage() {
           platformAdminApi.tenantAuditLog(token, id).catch(() => []),
           platformAdminApi.users(token, { limit: 200 }).catch(() => []),
           platformAdminApi.featureCatalog(token),
+          platformAdminApi.tenantProvisioningManifest(token, id).catch(() => null),
         ]);
-        return [tenantDetail, build, siteTemplates, audit, users, catalog] as const;
+        return [tenantDetail, build, siteTemplates, audit, users, catalog, manifest] as const;
       })
-      .then(([t, build, siteTemplates, audit, users, catalog]) => {
+      .then(([t, build, siteTemplates, audit, users, catalog, manifest]) => {
         setTenant(t);
         setEditFeatureOverrides(t.feature_overrides || {});
         setFeatureCatalog(catalog);
         setSiteBuild(build);
         setTemplates(siteTemplates);
         setAuditLog(audit);
+        setProvisioningManifest(manifest);
         setPlatformUsers(users.filter((user) => user.is_superuser && user.is_active));
         if (build) {
           setEditTemplate(build.template_key);
@@ -396,6 +399,24 @@ export default function TenantDetailPage() {
           </div>
         ) : <p className="mt-5 text-xs text-muted-foreground">讀取功能清單中…</p>}
       </div>
+
+      {provisioningManifest && (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">初始交付清單</h3>
+              <p className="mt-1 text-xs text-muted-foreground">租戶建立時保存的不可變驗收基準，後續設定異動不會覆寫此紀錄。</p>
+            </div>
+            <time className="text-xs text-muted-foreground">{new Date(provisioningManifest.created_at).toLocaleString("zh-TW")}</time>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">建立狀態</p><p className="mt-1 text-sm font-medium">{provisioningManifest.manifest.status}</p></div>
+            <div className="rounded-lg bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">初始交付階段</p><p className="mt-1 text-sm font-medium">{DELIVERY_STAGE_OPTIONS.find((item) => item.value === provisioningManifest.manifest.delivery_stage)?.label || provisioningManifest.manifest.delivery_stage}</p></div>
+            <div className="rounded-lg bg-muted/40 p-3"><p className="text-[11px] text-muted-foreground">建立批次</p><p className="mt-1 truncate font-mono text-xs" title={provisioningManifest.run_id}>{provisioningManifest.run_id}</p></div>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">初始待辦：{provisioningManifest.manifest.next_actions.join(" → ")}</p>
+        </div>
+      )}
 
       {token && <PlatformSiteProfileEditor token={token} tenantId={tenant.id} />}
 

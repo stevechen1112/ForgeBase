@@ -17,7 +17,7 @@
 | I7 | Fault Injection／Endurance | 完成 | 通過 | 完成 |
 | I8 | Performance／Capacity／Soak | 完成 | 通過 | 完成 |
 | I9 | Security Automation | 完成 | 通過 | 完成 |
-| I10 | Tenant Delivery Factory | 未開始 | 未開始 | 待辦 |
+| I10 | Tenant Delivery Factory | 完成 | 通過 | 完成 |
 | I11 | Privacy／Retention Operations | 未開始 | 未開始 | 待辦 |
 | I12 | SLO／Monitoring／Incident Console | 未開始 | 未開始 | 待辦 |
 | I13 | Release Package | 未開始 | 未開始 | 待辦 |
@@ -312,3 +312,36 @@
 
 - I9 內部產品化 Gate 與 code review 通過，可進入 I10。
 - 本批建立的是持續、阻擋式安全基線，不代表未修補上游 CVE 已消失，也不取代外部滲透測試、正式雲端 IAM／WAF／KMS 設定、供應商風險審查或事故演練；完整容器 JSON 會保留未修補風險供後續評估。
+
+## I10：Tenant Delivery Factory
+
+### 已實作
+
+- 平台建租戶流程改為「唯讀預檢 → 單一資料庫交易建立 → 不可變 manifest → 可安全重播」：一次建立 Tenant、Owner、Site Profile、Site Build、初始 readiness、交付待辦、稽核紀錄與 provisioning run，任何一步衝突都整批回滾。
+- 新增全域 `Idempotency-Key` 與 PostgreSQL transaction advisory lock；同一建立規格重試會回傳原始 201 manifest，不會重複建立租戶、帳號或網站交付單；同 key 改變永久規格則 409 fail closed。
+- 建立規格指紋刻意排除臨時密碼。臨時密碼只在首次交易中雜湊寫入，不保存於 manifest、audit 或 request fingerprint；重試時重新產生密碼仍只會重播第一次結果。
+- 預檢涵蓋 slug、Owner email、可發布範本、HTTPS、網址 credential／query／fragment／port、合法且未占用的主網域、網址網域一致性、五語集合與預設語系；靜態 Demo 不可被誤當可交付網站。
+- 網站交付階段新增 invariant：`launch_ready` 必須技術就緒；`live` 必須已發布、已指派內部負責人、已記錄 handoff 且客戶已接受或明確 waived。
+- 後台新增預檢 UI、逐項阻擋提示、預設語系控制與 retry-stable idempotency key；租戶詳情可查閱不可變的初始交付清單，與後續會變動的交付工作單分離。
+- 新增 0092 migration、factory 專用 Lab、JSON／JUnit evidence，並接入 API Release Contract。
+
+### Code review 發現與修正
+
+1. 第一版在同一個 flush 加入 Tenant、Owner、Profile 與 Build，ORM flush ordering 未保證 Tenant 先寫入，實際觸發 Site Build FK failure：先 flush Tenant 取得已存在的 parent row，再 flush 其餘資料；兩段仍在同一 transaction，失敗整批 rollback。
+2. 第一版把臨時密碼納入 HMAC request fingerprint；密碼輪替或 retry 重新產生密碼會讓相同操作錯誤衝突，且 service secret rotation 會破壞歷史 replay：改為只對 canonical durable spec 做版本化 SHA-256，明確排除 write-only credential。
+3. 第一版網址解析直接讀取 `hostname`／`port`，破損 IPv6 bracket 或非法 port 可拋出 `ValueError` 形成 500：完整包住解析，所有畸形網址都回到預檢 blocker，不進入建立交易。
+4. 建立後雖有 durable run，後台只能從 audit id 推知，無法直接查驗原始交付基準：新增 superuser-only manifest endpoint 與租戶詳情卡片，不暴露 idempotency key 或臨時密碼。
+5. 舊流程可直接把未發布或未完成 handoff 的交付單標成 `live`：在 update transaction 內加入階段 invariant，缺少發布、Owner、handoff 或 acceptance 任一證據即 409。
+6. 建立衝突原本只依賴預先查詢，併發 request 仍可能越過檢查：保留資料庫 unique constraints，捕捉 flush／commit `IntegrityError` 並 rollback，以 DB 作最後一致性邊界。
+
+### 驗證
+
+- Tenant Delivery Factory Lab：`1 passed`；唯讀預檢、靜態範本阻擋、atomic create、重播、改規格衝突、密碼不落 manifest、過早 live 阻擋、完整 handoff gate 與 cleanup 全數通過，外部網路呼叫 `0`。
+- 專用 API 回歸：`2 passed`；完整 PostgreSQL API suite：`317 passed, 3 skipped`。
+- 0092 migration 已完成 `0091 → 0092 → 0091 → 0092` upgrade／downgrade round trip。
+- Admin TypeScript、ESLint 與 production build（74 routes）通過；blocking Ruff、`git diff --check` 與統一 Security Gate 通過，dependency vulnerabilities、Bandit medium／high、未審核 secrets 均為 `0`。
+
+### Gate 結論
+
+- I10 內部產品化 Gate 與 code review 通過，可進入 I11。
+- 本批證明 ForgeBase 可用一致、可追溯且 retry-safe 的方式產生租戶交付骨架；DNS、憑證、真實 CMS tenant、mailbox／ESP、外部資料授權與客戶內容驗收仍是對外資源或人工 Gate，不因建立 factory 而被虛構為已完成。
