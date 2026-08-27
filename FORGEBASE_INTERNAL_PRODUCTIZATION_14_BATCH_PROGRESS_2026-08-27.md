@@ -292,6 +292,8 @@
 - Secret scan 不排除 tests／workflows；逐筆把已確認的 CI fixture、測試假密碼及文件 placeholder 加上同列 allowlist 理由，讓新增候選值仍會 fail closed。
 - 六個正式 production image matrix 現在實際 load image，逐一輸出 CycloneDX SBOM、完整 High／Critical vulnerability JSON，並以 Trivy 阻擋所有已有上游修補但映像尚未套用的 High／Critical CVE。
 - API image 改為 runtime／test requirements 分離、移除 pytest 與編譯器、build 時套用全部可用 OS security updates、排除 tests，並以固定 UID 10001 非 root 使用者執行。
+- 三個 Next.js production images 升級至 Node 24 Alpine；runtime 套用可用 OS security updates，移除僅建置需要的 npm／corepack，只保留 Node 與 standalone application，並維持專用非 root 使用者。
+- Template portfolio builder 與 CI Node jobs 同步升至 Node 24；final image 改為乾淨 Alpine 3.23 安裝已修補 nginx，維持既有 port 80 upstream contract 並以 UID 100 執行。
 
 ### Code review 發現與修正
 
@@ -302,12 +304,17 @@
 5. 無差別阻擋所有 OS High／Critical 會被上游尚未提供修補的 Debian CVE 永久卡住：image 先套用所有可用安全更新，完整報告仍保留全部項目，blocking gate 精確阻擋「已有修補卻未套用」的項目；本機實掃為 0 個可修補 High／Critical 遺漏。
 6. 初版只保留 blocking Trivy 表格，`ignore-unfixed` 會讓尚無修補的項目不出現在該表：新增獨立、非遮蔽的完整 High／Critical JSON，再另跑 blocking policy，兼顧可發布性與風險可見性。
 7. Review 時從 runtime-only image 實際 import 發現 `cryptography` 原本只是 `python-jose` 的隱性 transitive dependency：改為直接、明確鎖定 dependency，避免移除 JWT 套件後加密服務在生產啟動失敗。
+8. 2026-08-28 release scan 發現 `node:20-alpine` runtime 同時包含可升級的 OpenSSL 與不需要的 npm 工具鏈 CVE（含 Critical `node-tar`）：升級 Node 24、執行 `apk upgrade` 並從 runtime 移除 npm／corepack；未以 Trivy ignore 規則或例外清單繞過。
+9. 更新 Trivy DB 後發現舊 `nginx:1.27-alpine` 有 35 個可修補 High／Critical；`nginxinc/nginx-unprivileged:1.28-alpine` 又落後在 1.28.2，`nginx:1.28-alpine` 的客製 modules 會鎖住 Alpine 修補版。Final stage 因此改以純 Alpine security repository 安裝 nginx 1.28.3-r7，保留非 root 與既有 port 80 contract，不混用兩套 package source。
+10. `release-package.yml` 的 tag filter 使用 GitHub 不接受的連續 `?` glob，造成每次 main push 額外產生 0-job failure：改為數字字元類別 pattern，並以 actionlint 對全部 workflows 做 blocking 語法驗證。
 
 ### 驗證
 
 - 統一 Security Gate：Python dependency vulnerabilities `0`、Bandit medium／high findings `0`、unreviewed secret candidates `0`；成功產生 CycloneDX Python SBOM。
 - 完整 PostgreSQL API suite：`316 passed, 3 skipped`；PyJWT／模型簽章專用測試 `3 passed`，外部備份與加密 hardening `8 passed`。
 - Hardened API image 實際 build、以 UID／GID `10001` 啟動並 import `ForgeBase API`；runtime image 無 pytest。Trivy 0.72 本機實掃在套用可用 OS 更新後，fixable High／Critical 為 `0`。
+- Admin、Web、Marketing Node 24 images 全數實際 build；Admin `/backend/login`、Web 五語系路由與 Marketing `/` 回傳 200，runtime UID `100`、npm 不存在。Trivy 0.74 對三個最終映像實掃 High／Critical 均為 `0`。
+- Template image 實際 build，`/templates/` 回傳 200、nginx 1.28.3 以 UID 100 執行；更新版 Trivy 0.74 實掃 High／Critical `0`，production Compose／Caddy port 80 graph 驗證通過。
 - Workflow YAML parse、`git diff --check` 與 security runner 回歸通過。
 
 ### Gate 結論

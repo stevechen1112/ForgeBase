@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v20??.??.??-internal.*"
+      - "v20[0-9][0-9].[0-9][0-9].[0-9][0-9]-internal.*"
 
 permissions:
   contents: read
