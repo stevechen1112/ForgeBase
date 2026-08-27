@@ -78,6 +78,10 @@ jobs:
           --artifacts-dir ../artifacts/fault-injection-endurance
       - name: Run performance, capacity, and short-soak gate
         working-directory: api
+        env:
+          # ubuntu-latest is a shared, variable-capacity host. Keep the
+          # application/lab default at 40; this is the hosted-runner regression floor.
+          FORGEBASE_QUEUE_MIN_JOBS_PER_SECOND: "35"
         run: >-
           python scripts/run_performance_capacity_lab.py
           --artifacts-dir ../artifacts/performance-capacity-soak

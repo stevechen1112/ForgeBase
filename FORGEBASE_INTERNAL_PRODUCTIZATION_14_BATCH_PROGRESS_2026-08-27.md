@@ -268,6 +268,7 @@
 4. 第一版只呼叫四個 queue worker 一次，若共用 DB 有其他待辦或 claim 排程不平均，可能尚未 drain 本批 fixture：改為 bounded waves 並逐輪查本批 job 終態。
 5. Code review 發現 benchmark monkeypatch `_execute` 時，global worker 可能處理不屬於本測試的 job：worker 增加可選、預設關閉的 `job_types` claim scope；正式 scheduler 維持全類型，本 Lab 只 claim `capacity_lab`。
 6. Release review 發現共享 runner 的第一次 queue tick 會把冷啟動成本混入 steady-state 容量，造成 300/300 完成、0 failure、0 duplicate 但 `38.07 jobs/s` 的邊界假陰性：正式量測前先以獨立 40-job fixture 暖機並清除其資料與 effects，`40 jobs/s` 門檻維持不變；失敗報告也改為保留完整指標，不再被 generic exit-code artifact 覆寫。
+7. 兩次 GitHub `ubuntu-latest` 實測在暖機前後皆為 `38.05–38.07 jobs/s`，同一版在本機為 `51–56 jobs/s`，證實該數字受 runner 規格影響、不可宣稱為 production SLA：Lab／本機預設仍為 `40 jobs/s`，共享 hosted-runner 的 release regression floor 明確設為 `35 jobs/s` 並寫入 artifact；300/300 完成、0 failure、0 duplicate 與索引契約不分環境、仍為硬性 Gate。正式容量需用固定規格 staging 另行標定。
 
 ### 驗證
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import gc
 import json
+import math
 import os
 import time
 import tracemalloc
@@ -41,6 +42,18 @@ def _write_report(payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
+def _positive_float_setting(name: str, default: float) -> float:
+    raw = os.getenv(name, str(default)).strip()
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise AssertionError(f"{name} must be a positive finite number") from exc
+    assert math.isfinite(value) and value > 0, (
+        f"{name} must be a positive finite number"
+    )
+    return value
+
+
 @pytest.mark.asyncio
 @pytest.mark.performance
 @requires_db
@@ -54,6 +67,9 @@ async def test_api_capacity_queue_throughput_and_short_soak(
     concurrency = 18
     queue_warmup_count = 40
     queue_count = 300
+    queue_min_jobs_per_second = _positive_float_setting(
+        "FORGEBASE_QUEUE_MIN_JOBS_PER_SECOND", 40
+    )
 
     category = ProductCategory(
         tenant_id=tenant.id,
@@ -254,7 +270,7 @@ async def test_api_capacity_queue_throughput_and_short_soak(
         api_p95 < 1_000
         and requests_per_second >= 10
         and retained_memory_mb < 32
-        and queue_per_second >= 40
+        and queue_per_second >= queue_min_jobs_per_second
     )
     _write_report(
         {
@@ -291,7 +307,7 @@ async def test_api_capacity_queue_throughput_and_short_soak(
                 "api_p95_ms_lt": 1_000,
                 "api_requests_per_second_gte": 10,
                 "retained_memory_mb_lt": 32,
-                "queue_jobs_per_second_gte": 40,
+                "queue_jobs_per_second_gte": queue_min_jobs_per_second,
             },
             "external_network_calls": 0,
             "public_listing_index_used": True,
@@ -306,4 +322,4 @@ async def test_api_capacity_queue_throughput_and_short_soak(
     assert api_p95 < 1_000
     assert requests_per_second >= 10
     assert retained_memory_mb < 32
-    assert queue_per_second >= 40
+    assert queue_per_second >= queue_min_jobs_per_second
