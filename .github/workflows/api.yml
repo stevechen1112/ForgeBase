@@ -68,6 +68,11 @@ jobs:
         run: >-
           python scripts/run_north_star_lab.py
           --artifacts-dir ../artifacts/north-star-lab
+      - name: Run concurrent fault-injection and endurance gate
+        working-directory: api
+        run: >-
+          python scripts/run_fault_injection_endurance.py
+          --artifacts-dir ../artifacts/fault-injection-endurance
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

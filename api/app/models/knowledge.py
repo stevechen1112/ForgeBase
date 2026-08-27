@@ -91,6 +91,8 @@ class KnowledgeSyncJob(SQLModel, table=True):
     dedupe_key: str = Field(max_length=200)
     status: str = Field(default="queued", max_length=20, index=True)
     attempts: int = Field(default=0)
+    max_attempts: int = Field(default=5)
+    locked_at: Optional[datetime] = Field(default=None)
     last_error: Optional[str] = Field(default=None, max_length=2000)
     available_at: datetime = Field(default_factory=utcnow_naive, index=True)
     created_at: datetime = Field(default_factory=utcnow_naive)

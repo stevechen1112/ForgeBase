@@ -14,7 +14,7 @@
 | I4 | Restore／Rollback 自動化 | 完成 | 通過 | 完成 |
 | I5 | 日／法／俄公開網站介面包 | 完成 | 通過 | 完成 |
 | I6 | AI／Knowledge Eval | 完成 | 通過 | 完成 |
-| I7 | Fault Injection／Endurance | 未開始 | 未開始 | 待辦 |
+| I7 | Fault Injection／Endurance | 完成 | 通過 | 完成 |
 | I8 | Performance／Capacity／Soak | 未開始 | 未開始 | 待辦 |
 | I9 | Security Automation | 未開始 | 未開始 | 待辦 |
 | I10 | Tenant Delivery Factory | 未開始 | 未開始 | 待辦 |
@@ -219,3 +219,34 @@
 
 - I6 內部產品化 Gate 與 code review 通過，可進入 I7。
 - 本批證明 deterministic retrieval／grounding／language／handoff 安全契約，不宣稱目前外部 LLM provider 的自然語言事實正確率已被證實；少量核准模型 smoke eval、完整線上模型 regression、真實 citation precision 與真實 retrieval recall 仍應在 staging／夜間外部驗證中執行，不能由零網路 CI 虛構為完成。
+
+## I7：Fault Injection／Endurance
+
+### 已實作
+
+- 新增 test-database-only 的併發故障注入與耐久 Lab，以 4 個 Operational Outbox worker 與 4 個 Knowledge Sync worker 處理 286 筆 durable jobs；測試暫時 provider／extractor 失敗、永久拒絕、retry-after、延後執行不消耗 attempt、重試耗盡、worker crash 後 stale claim 回收，以及 auxiliary maintenance／backfill 故障隔離。
+- Knowledge Sync Queue 新增 `locked_at`、`max_attempts`、正值／非負 DB constraints、`FOR UPDATE SKIP LOCKED` 併發 claim、10 分鐘 stale-running 回收、bounded exponential backoff、明確 `retried`／terminal `failed` 統計與完成後 lock 清除。
+- 每個 knowledge compile／tombstone 置於 savepoint；SQL transaction fault 只回滾該次業務處理，worker 仍能可靠地把 job 記為 retry／failed。Backfill 另有獨立 rollback 與 `backfill_failed` 訊號，不再讓已完成的 queue 結果被尾端 backfill 故障掩蓋。
+- Operational Outbox 的 inbound retention 與 handoff SLA scan 改為各自 savepoint 隔離；附帶維護 SQL 失敗不再令核心 North Star job queue 整批停止。
+- 新增可重跑 runner、JSON／JUnit evidence 與生產環境／非測試資料庫 fail-closed guard，並納入 API Release Contract。Lab 不呼叫外部網路、不寄信、不接觸生產資料。
+
+### Code review 發現與修正
+
+1. Knowledge worker 原本先把 job 標成 `running`，但沒有 row lock、claim timestamp 或 stale recovery；多 worker 可能重複取得同一批，worker crash 則永久卡住：新增 durable claim schema、`SKIP LOCKED` 與 stale reclaim，migration 同時把既有 `running` row 的 `locked_at` 回填為 `updated_at`。
+2. Knowledge job 固定以程式常數重試 5 次，沒有 DB constraint，也把「已排程重試」統計成 failed：改為 row-level `max_attempts`、DB constraints，以及 `retried`／`failed` 分離。
+3. Compile 若觸發 PostgreSQL error，原本 catch exception 後仍在 aborted transaction 中更新 job，後續 commit 會再次失敗：每筆工作包在 nested transaction；Lab 實際注入 `SELECT 1 / 0` 驗證 savepoint rollback 後能重試成功。
+4. Outbox 在 claim 前執行 retention 與 SLA maintenance，任一失敗就完全不處理核心 queue；改成兩個隔離 savepoint，Lab 注入 SQL transaction failure 後仍完成全部業務工作。
+5. 第一版 Lab 只宣告沒有重複 effect，未以執行資料計算：新增成功 effect ledger，逐筆確認 completed／succeeded job 恰好產生一次終態效果，再由 ledger 計算 evidence 的 duplicate count。
+6. 第一輪失敗清理假設 KnowledgeSyncJob 的 tenant FK 會 cascade，但原 migration 沒有 `ON DELETE CASCADE`：Lab teardown 改為明確、只刪本次 tenant 的兩類 job 後才刪 tenant；已驗證不殘留測試資料。
+
+### 驗證
+
+- Fault／Endurance Lab：`1 passed`；Operational jobs `164/164`、Knowledge jobs `122/122` 皆進入預期終態，注入 Operational retries `18`、Knowledge retries `13`、stale claims 皆被回收，`duplicate_terminal_effects: 0`、`external_network_calls: 0`。
+- 相關 durability／knowledge／conversion 回歸：`22 passed`；套用 0090 migration 後完整 PostgreSQL API suite：`312 passed, 3 skipped`；North Star schema contract 通過。
+- Migration 已在隔離 PostgreSQL 完成 `0089 → 0090 → 0089 → 0090` upgrade／downgrade round trip。
+- Production guard 拒絕執行（exit 1）；Blocking Ruff、compileall、workflow YAML parse 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I7 內部產品化 Gate 與 code review 通過，可進入 I8。
+- 本批證明應用層 queue 在受控故障與 286-job 併發批次下的 claim、retry、rollback 與終態一致性；主機斷電、跨區網路分割、真實 provider 長時間 outage 與數小時／數日 soak 屬 I8 或 staging／production 演練，不在本批宣稱完成。

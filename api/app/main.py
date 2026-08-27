@@ -124,7 +124,12 @@ async def _knowledge_sync_job() -> None:
     from app.services.knowledge_sync import process_knowledge_sync_jobs
     try:
         stats = await process_knowledge_sync_jobs()
-        if stats["completed"] or stats["failed"]:
+        if (
+            stats["completed"]
+            or stats["retried"]
+            or stats["failed"]
+            or stats["backfill_failed"]
+        ):
             logger.info("Knowledge sync: %s", stats)
     except Exception:
         logger.exception("Knowledge sync job failed")

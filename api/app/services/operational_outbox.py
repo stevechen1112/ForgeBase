@@ -160,17 +160,29 @@ async def _execute(job: OperationalJob) -> None:
         raise ValueError(f"Unsupported operational job type: {job.job_type}")
 
 
+async def _run_worker_maintenance(db: AsyncSession) -> None:
+    """Keep auxiliary maintenance failures from stopping the durable queue."""
+    from app.services.inbound_reply.runtime import (
+        mark_breached_handoff_slas,
+        redact_expired_inbound_content,
+    )
+
+    for label, operation in (
+        ("inbound content retention", redact_expired_inbound_content),
+        ("handoff SLA scan", mark_breached_handoff_slas),
+    ):
+        try:
+            async with db.begin_nested():
+                await operation(db)
+        except Exception:
+            logger.exception("Operational outbox maintenance failed: %s", label)
+
+
 async def process_operational_jobs(limit: int = 25) -> dict[str, int]:
     stats = {"completed": 0, "retried": 0, "failed": 0}
     async with get_session_ctx() as db:
         now = utcnow_naive()
-        from app.services.inbound_reply.runtime import (
-            mark_breached_handoff_slas,
-            redact_expired_inbound_content,
-        )
-
-        await redact_expired_inbound_content(db)
-        await mark_breached_handoff_slas(db)
+        await _run_worker_maintenance(db)
         jobs = list(
             (
                 await db.exec(
