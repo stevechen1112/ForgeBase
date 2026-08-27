@@ -216,6 +216,8 @@ bash deploy/restore-drill.sh --offsite \
   forgebase/database-TIMESTAMP.sql.gz.enc
 ```
 
+Off-site upload／download utility 維持 API image 的非 root UID 10001：上傳只暫時授權並唯讀掛載單一 database backup，完成或中斷後還原原始 owner／mode；restore 只掛載預建的單一下載目的檔。若未同步修改 API image UID，請勿覆寫 `FORGEBASE_API_RUNTIME_UID`／`FORGEBASE_API_RUNTIME_GID`。
+
 Restore drill 會比對 checksum、Alembic head、table 數及核心 row counts，輸出 `restore-drills/*.json` 的 RTO／backup age evidence，並在結束時刪除唯一 `forgebase_restore_drill_*` 暫存資料庫。只有確認 migration 不向前相容時，才另行人工審核正式資料庫回復；drill 永遠不會覆寫 production database。
 
 PR／release 使用 `bash deploy/restore-rollback-lab.sh` 在獨立 Compose project 自動演練 point-in-time backup／restore、API schema approval gate、non-mutating dry-run 與兩版 application image rollback，不使用 production 設定或資源。

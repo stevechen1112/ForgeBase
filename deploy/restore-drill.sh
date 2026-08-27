@@ -34,6 +34,18 @@ stamp="$(date -u +%Y%m%d%H%M%S)"
 drill_id="${stamp}_$RANDOM"
 drill_db="forgebase_restore_drill_$drill_id"
 drill_database_removed=false
+api_runtime_uid="${FORGEBASE_API_RUNTIME_UID:-10001}"
+api_runtime_gid="${FORGEBASE_API_RUNTIME_GID:-10001}"
+case "$api_runtime_uid" in ''|*[!0-9]*) printf 'Invalid API runtime UID.\n' >&2; exit 1 ;; esac
+case "$api_runtime_gid" in ''|*[!0-9]*) printf 'Invalid API runtime GID.\n' >&2; exit 1 ;; esac
+if ! test "$api_runtime_uid" -gt 0; then
+  printf 'Invalid API runtime UID.\n' >&2
+  exit 1
+fi
+if ! test "$api_runtime_gid" -gt 0; then
+  printf 'Invalid API runtime GID.\n' >&2
+  exit 1
+fi
 drill_dir="$(mktemp -d)"
 downloaded_file="$drill_dir/restore.sql.gz"
 project_args=()
@@ -72,8 +84,14 @@ if [ "$mode" = "local" ]; then
   fi
 else
   backup_file="$downloaded_file"
-  compose run --rm --no-deps -v "$drill_dir:/drill" api \
+  # Give the non-root utility process a single writable destination rather
+  # than exposing the root-owned restore-drill directory.
+  install -m 0600 -o "$api_runtime_uid" -g "$api_runtime_gid" \
+    -- /dev/null "$downloaded_file"
+  compose run --rm --no-deps -v "$downloaded_file:/drill/restore.sql.gz" api \
     python scripts/offsite_backup.py download "$source_value" /drill/restore.sql.gz
+  chown -- "$(id -u):$(id -g)" "$downloaded_file"
+  chmod -- 0600 "$downloaded_file"
 fi
 
 gzip -t "$backup_file"

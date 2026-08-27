@@ -12,6 +12,22 @@ database_file="$backup_dir/database-$stamp.sql.gz"
 partial_file="$database_file.partial"
 compose_snapshot="$backup_dir/compose-$stamp.yml"
 manifest_file="$backup_dir/database-$stamp.manifest.json"
+api_runtime_uid="${FORGEBASE_API_RUNTIME_UID:-10001}"
+api_runtime_gid="${FORGEBASE_API_RUNTIME_GID:-10001}"
+database_permissions_delegated=false
+database_original_uid=""
+database_original_gid=""
+database_original_mode=""
+case "$api_runtime_uid" in ''|*[!0-9]*) printf 'Invalid API runtime UID.\n' >&2; exit 1 ;; esac
+case "$api_runtime_gid" in ''|*[!0-9]*) printf 'Invalid API runtime GID.\n' >&2; exit 1 ;; esac
+if ! test "$api_runtime_uid" -gt 0; then
+  printf 'Invalid API runtime UID.\n' >&2
+  exit 1
+fi
+if ! test "$api_runtime_gid" -gt 0; then
+  printf 'Invalid API runtime GID.\n' >&2
+  exit 1
+fi
 project_args=()
 if [ -n "${FORGEBASE_COMPOSE_PROJECT_NAME:-}" ]; then
   project_args=(--project-name "$FORGEBASE_COMPOSE_PROJECT_NAME")
@@ -31,8 +47,16 @@ for target in "$database_file" "$compose_snapshot" "$manifest_file"; do
     exit 1
   fi
 done
+restore_database_permissions() {
+  if [ "$database_permissions_delegated" = true ] && [ -e "$database_file" ]; then
+    chown -- "$database_original_uid:$database_original_gid" "$database_file"
+    chmod -- "$database_original_mode" "$database_file"
+    database_permissions_delegated=false
+  fi
+}
 cleanup() {
   rm -f -- "$partial_file"
+  restore_database_permissions || true
 }
 trap cleanup EXIT
 
@@ -128,13 +152,23 @@ PY
 # configured off-site upload still fails the deployment, but never erases the
 # usable local recovery metadata.
 if [ "$offsite_configured" = true ]; then
+  # The backup is created with umask 077 by the deployment user. Delegate only
+  # this file to the non-root API utility process, expose it read-only, and
+  # restore the exact original owner/mode even when the upload is interrupted.
+  database_original_uid="$(stat -c '%u' -- "$database_file")"
+  database_original_gid="$(stat -c '%g' -- "$database_file")"
+  database_original_mode="$(stat -c '%a' -- "$database_file")"
+  database_permissions_delegated=true
+  chown -- "$api_runtime_uid:$api_runtime_gid" "$database_file"
+  chmod -- 0400 "$database_file"
   if offsite_object_key="$(compose run --rm --no-deps \
-    -v "$backup_dir:/backups" api \
-    python scripts/offsite_backup.py upload "/backups/$(basename "$database_file")")"; then
+    -v "$database_file:/backups/database.sql.gz:ro" api \
+    python scripts/offsite_backup.py upload /backups/database.sql.gz)"; then
     offsite_status="passed"
   else
     offsite_status="failed"
   fi
+  restore_database_permissions
   python3 - "$manifest_file" "$offsite_object_key" "$offsite_status" <<'PY'
 import json
 import sys
