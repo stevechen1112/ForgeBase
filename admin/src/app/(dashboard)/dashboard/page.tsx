@@ -2,19 +2,19 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ClipboardList,
-  Globe, Eye, MousePointerClick, Percent, ArrowUpRight,
-  RefreshCcw, Lock, Sunrise, AlertTriangle, Flame, Sparkles,
-  ChevronRight, Bot,
+  Bell, Eye, Percent, ArrowUpRight,
+  RefreshCcw, Sunrise, AlertTriangle, Flame,
+  ChevronRight, ListChecks, PanelsTopLeft, Route,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/store";
+import { useCapabilities } from "@/lib/hooks/useCapabilities";
 import { apiClient } from "@/lib/api/client";
-import { PlanGate, UpgradeChip } from "@/components/plan/PlanGate";
+import { localeCoverageApi } from "@/lib/api/content";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { agentosApi, type RunView } from "@/lib/api/agentos";
 
 // ── 型別 ────────────────────────────────────────────────────────────────────
 type FunnelData = {
@@ -59,25 +59,29 @@ export default function DashboardPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
   const user = state.status === "authenticated" ? state.user : null;
+  const { hasFeature, isLoading: featuresLoading } = useCapabilities();
+  const hasFullTracking = !featuresLoading && hasFeature("full_tracking");
+  const hasMultilingual = !featuresLoading && hasFeature("multilingual");
 
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
+  const [localeSummary, setLocaleSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [agentRuns, setAgentRuns] = useState<RunView[]>([]);
-  const [agentOsOnline, setAgentOsOnline] = useState<boolean | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!token) return;
+    if (!token || featuresLoading) return;
     setLoading(true);
     setError(null);
     try {
-      // Funnel requires full_tracking; do not let a 403 wipe the RFQ list.
-      const [funnelResult, rfqResult] = await Promise.allSettled([
-        apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
-        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=8", token),
+      const [funnelResult, rfqResult, coverageResult] = await Promise.allSettled([
+        hasFullTracking
+          ? apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token)
+          : Promise.resolve(null),
+        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=200", token),
+        hasMultilingual ? localeCoverageApi.get(token) : Promise.resolve(null),
       ]);
-      if (funnelResult.status === "fulfilled") {
+      if (funnelResult.status === "fulfilled" && funnelResult.value) {
         setFunnel(funnelResult.value);
       } else {
         setFunnel(null);
@@ -88,31 +92,36 @@ export default function DashboardPage() {
         setRfqs([]);
         setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入 RFQ");
       }
-      agentosApi.listRuns()
-        .then((runs) => {
-          setAgentRuns(runs);
-          setAgentOsOnline(true);
-        })
-        .catch(() => {
-          setAgentRuns([]);
-          setAgentOsOnline(false);
-        });
+      if (coverageResult.status === "fulfilled" && coverageResult.value) {
+        const coverage = coverageResult.value;
+        const parts: string[] = [];
+        if (coverage.missing > 0) parts.push(`${coverage.missing} 筆缺${coverage.target_locale === "en" ? "英文" : "買方語系"}`);
+        if (coverage.draft > 0) parts.push(`${coverage.draft} 筆草稿未上架`);
+        if (coverage.stale > 0) parts.push(`${coverage.stale} 筆需更新`);
+        setLocaleSummary(parts.length ? parts.join("、") : "買方語系內容已齊");
+      } else {
+        setLocaleSummary(null);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "載入失敗");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [featuresLoading, hasFullTracking, hasMultilingual, token]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── 衍生數值 ──────────────────────────────────────────────────────────────
   const visitors = funnel?.totals.visitors ?? 0;
-  const rfqCount = funnel?.totals.rfqs ?? 0;
   const convRate = funnel?.conversion_rates.visitor_to_rfq ?? 0;
-  const newRfqs = funnel?.rfq_by_status["new"] ?? 0;
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const recentRfqs = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= thirtyDaysAgo);
+  const rfqCount = recentRfqs.length;
+  const newRfqs = recentRfqs.filter((rfq) => rfq.status === "new").length;
+  const rfqByStatus = recentRfqs.reduce<Record<string, number>>((counts, rfq) => {
+    counts[rfq.status] = (counts[rfq.status] ?? 0) + 1;
+    return counts;
+  }, {});
   const overdueRfqs = recentRfqs.filter(r => {
     const hrs = (Date.now() - new Date(r.created_at).getTime()) / 3600000;
     return (r.status === "new" || r.status === "assigned") && hrs > 24;
@@ -130,7 +139,7 @@ export default function DashboardPage() {
       {/* ─── AI 晨報 Hero ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/10 pointer-events-none" />
-        <div className="relative flex items-start justify-between gap-4">
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-400">
               <Sunrise className="h-5 w-5" />
@@ -156,8 +165,15 @@ export default function DashboardPage() {
             <>
               近 30 天共 <strong className="text-white">{rfqCount} 筆詢價</strong>
               {overdueRfqs.length > 0 && <>，其中 <strong className="text-red-300">{overdueRfqs.length} 筆逾時未回覆</strong></>}
-              {visitors > 0 && <>，追蹤到 <strong className="text-white">{visitors} 位訪客</strong></>}
-              。轉換率目前 <strong className="text-amber-300">{convRate}%</strong>。
+              {hasFullTracking && visitors > 0 && <>，追蹤到 <strong className="text-white">{visitors} 位訪客</strong></>}
+              {hasFullTracking
+                ? <>。訪客轉詢價率目前 <strong className="text-amber-300">{convRate}%</strong>。</>
+                : <>。請依待辦與案件狀態安排後續處理。</>}
+              {localeSummary && (
+                <> 買方語系：{localeSummary}。{localeSummary !== "買方語系內容已齊" && (
+                  <Link href="/dashboard/products?pair_status=missing_target" className="ml-1 underline decoration-white/40 hover:decoration-white">查看商品</Link>
+                )}</>
+              )}
             </>
           )}
         </p>
@@ -207,7 +223,7 @@ export default function DashboardPage() {
       {/* ─── KPI Grid（真實資料）─── */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">📊 營運數據概覽</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className={cn("grid grid-cols-1 gap-4", hasFullTracking ? "sm:grid-cols-3" : "sm:grid-cols-1")}>
           {/* RFQ KPI — always available */}
           <Card className="hover:shadow-card-hover transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -222,28 +238,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Visitor KPI — requires full_tracking */}
-          <PlanGate
-            feature="full_tracking"
-            inline
-            fallback={
-              <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                    近 30 天訪客
-                    <Lock className="h-3 w-3 text-muted-foreground/60" />
-                  </CardTitle>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
-                    <Eye className="h-4 w-4 text-violet-500" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
-                  <div className="mt-1"><UpgradeChip label="Professional 方案解鎖" /></div>
-                </CardContent>
-              </Card>
-            }
-          >
+          {/* 只顯示目前可用的訪客與轉換能力，不呈現付費升級語意。 */}
+          {hasFullTracking && (
             <Card className="hover:shadow-card-hover transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天訪客</CardTitle>
@@ -256,30 +252,9 @@ export default function DashboardPage() {
                 <p className="mt-1 text-xs text-muted-foreground">追蹤器記錄的不重複訪客</p>
               </CardContent>
             </Card>
-          </PlanGate>
+          )}
 
-          {/* Conversion rate — requires full_tracking */}
-          <PlanGate
-            feature="full_tracking"
-            inline
-            fallback={
-              <Card className="hover:shadow-card-hover transition-shadow duration-200 opacity-60">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                    訪客 → 詢價轉換率
-                    <Lock className="h-3 w-3 text-muted-foreground/60" />
-                  </CardTitle>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50">
-                    <Percent className="h-4 w-4 text-amber-500" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold tracking-tight text-muted-foreground">—</p>
-                  <div className="mt-1"><UpgradeChip label="Professional 方案解鎖" /></div>
-                </CardContent>
-              </Card>
-            }
-          >
+          {hasFullTracking && (
             <Card className="hover:shadow-card-hover transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">訪客 → 詢價轉換率</CardTitle>
@@ -292,7 +267,7 @@ export default function DashboardPage() {
                 <p className="mt-1 text-xs text-muted-foreground">{visitors} 訪客 → {rfqCount} 詢價</p>
               </CardContent>
             </Card>
-          </PlanGate>
+          )}
         </div>
       </div>
 
@@ -316,7 +291,7 @@ export default function DashboardPage() {
               <p className="py-8 text-center text-sm text-muted-foreground">尚無詢價資料</p>
             ) : (
               <div className="divide-y">
-                {recentRfqs.map((rfq) => {
+                {recentRfqs.slice(0, 8).map((rfq) => {
                   const cfg = STATUS_CONFIG[rfq.status] ?? { label: rfq.status, variant: "secondary" as const };
                   return (
                     <Link
@@ -351,10 +326,10 @@ export default function DashboardPage() {
               <CardDescription className="text-xs">近 30 天各狀態數量</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2.5">
-              {funnel === null ? (
+              {loading ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">載入中…</p>
-              ) : Object.entries(funnel.rfq_by_status).length > 0 ? (
-                Object.entries(funnel.rfq_by_status).map(([status, count]) => {
+              ) : Object.entries(rfqByStatus).length > 0 ? (
+                Object.entries(rfqByStatus).map(([status, count]) => {
                   const cfg = STATUS_CONFIG[status] ?? { label: status, variant: "secondary" as const };
                   return (
                     <div key={status} className="flex items-center justify-between">
@@ -369,54 +344,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {agentOsOnline === true && <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-1.5">
-                  <Bot className="h-4 w-4 text-muted-foreground" />
-                  自動任務進度
-                </CardTitle>
-                <Link href="/dashboard/agent-runs" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                  查看全部 <ArrowUpRight className="h-3 w-3" />
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {agentRuns.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2 text-center">尚無自動任務紀錄</p>
-              ) : (
-                <>
-                  {(["waiting_approval", "running", "failed", "completed"] as const).map((status) => {
-                    const count = agentRuns.filter((r) => r.run.status === status).length;
-                    if (count === 0) return null;
-                    const cfg: Record<string, { label: string; cls: string }> = {
-                      waiting_approval: { label: "等待審批", cls: "text-amber-700 bg-amber-50 border-amber-200" },
-                      running:          { label: "執行中",   cls: "text-blue-700 bg-blue-50 border-blue-200" },
-                      failed:           { label: "失敗",     cls: "text-red-700 bg-red-50 border-red-200" },
-                      completed:        { label: "已完成",   cls: "text-green-700 bg-green-50 border-green-200" },
-                    };
-                    const { label, cls } = cfg[status];
-                    return (
-                      <div key={status} className={`flex items-center justify-between rounded-md border px-2.5 py-1.5 ${cls}`}>
-                        <span className="text-xs font-medium">{label}</span>
-                        <span className="text-sm font-bold">{count}</span>
-                      </div>
-                    );
-                  })}
-                  {agentRuns.some((r) => r.run.status === "waiting_approval") && (
-                    <Link
-                      href="/dashboard/agent-runs"
-                      className="mt-1 flex items-center justify-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
-                    >
-                      <Bot className="h-3.5 w-3.5" />
-                      前往審批
-                    </Link>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>}
-
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -425,10 +352,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-1.5">
               {[
-                { label: "買家關注度", href: "/dashboard/intent", icon: Eye },
-                { label: "AI 行銷助理", href: "/dashboard/copilot", icon: Sparkles },
-                { label: "通知中心", href: "/dashboard/notifications", icon: Globe },
-                { label: "整合設定", href: "/dashboard/integrations", icon: MousePointerClick },
+                { label: "買家管線", href: "/dashboard/buyers", icon: Route },
+                { label: "內容中心", href: "/dashboard/content", icon: PanelsTopLeft },
+                { label: "今日待辦", href: "/dashboard/tasks", icon: ListChecks },
+                { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
               ].map(({ label, href, icon: Icon }) => (
                 <Link
                   key={label}

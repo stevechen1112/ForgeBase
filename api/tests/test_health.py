@@ -26,3 +26,14 @@ async def test_readiness_check_reports_dependencies():
     body = response.json()
     assert body["status"] in ("ready", "degraded")
     assert set(body["checks"]) == {"database", "migration", "storage", "scheduler"}
+
+
+@pytest.mark.asyncio
+async def test_readiness_check_accepts_head_for_external_monitors():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.head("/health/ready")
+
+    assert response.status_code in (200, 503)
+    assert response.content == b""

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { trackRFQStart, trackRFQSubmit, getVisitorId } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ type RFQFormMessages = {
   footerNote: string;
   submitFailed: string;
   unexpectedError: string;
+  validationFailed: string;
+  challengeRefreshed: string;
   tradeSectionTitle: string;
   labels: {
     fullName: string;
@@ -57,6 +59,20 @@ type RFQFormMessages = {
 
 const DRAFT_KEY = "fb_rfq_draft";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
+type TurnstileApi = {
+  render: (container: HTMLElement, options: {
+    sitekey: string;
+    theme: "auto";
+    action: string;
+    callback: (token: string) => void;
+    "expired-callback": () => void;
+    "error-callback": () => void;
+  }) => string;
+  remove: (widgetId: string) => void;
+  reset: (widgetId: string) => void;
+};
 
 const SELECT_CLS = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -85,17 +101,75 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
   const [submitted, setSubmitted] = useState(false);
   const [rfqNumber, setRfqNumber] = useState("");
   const [error, setError] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftProductIds, setDraftProductIds] = useState<string[]>([]);
+  const [draftApplicationId, setDraftApplicationId] = useState<string | undefined>();
+  const [botChallenge, setBotChallenge] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [website, setWebsite] = useState("");
   const startedRef = useRef(false);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(DRAFT_KEY);
+      const saved = sessionStorage.getItem(DRAFT_KEY);
       if (saved) { const parsed = JSON.parse(saved) as Partial<FormState>; setForm((prev) => ({ ...prev, ...parsed })); }
     } catch { /* ignore */ }
   }, []);
 
+  const fetchChallenge = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/forms/rfq/challenge`, { headers: withTenantHeaders() });
+      if (!response.ok) throw new Error("challenge unavailable");
+      const payload = await response.json();
+      setBotChallenge(String(payload.challenge || ""));
+    } catch {
+      setBotChallenge("");
+    }
+  }, []);
+
+  useEffect(() => { void fetchChallenge(); }, [fetchChallenge]);
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+    let cancelled = false;
+    const turnstileWindow = window as typeof window & { turnstile?: TurnstileApi };
+    const renderWidget = () => {
+      if (cancelled || !turnstileWindow.turnstile || !turnstileContainerRef.current || turnstileWidgetIdRef.current) return;
+      turnstileWidgetIdRef.current = turnstileWindow.turnstile.render(turnstileContainerRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: "auto",
+        action: "rfq_submit",
+        callback: setTurnstileToken,
+        "expired-callback": () => setTurnstileToken(""),
+        "error-callback": () => setTurnstileToken(""),
+      });
+    };
+    let script = document.querySelector<HTMLScriptElement>('script[data-forgebase-turnstile="true"]');
+    if (!script) {
+      script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.dataset.forgebaseTurnstile = "true";
+      document.head.appendChild(script);
+    }
+    if (turnstileWindow.turnstile) renderWidget();
+    else script.addEventListener("load", renderWidget, { once: true });
+    return () => {
+      cancelled = true;
+      script?.removeEventListener("load", renderWidget);
+      if (turnstileWidgetIdRef.current && turnstileWindow.turnstile) {
+        turnstileWindow.turnstile.remove(turnstileWidgetIdRef.current);
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const serverDraftId = params.get("draft");
     setForm((prev) => ({
       ...prev,
       full_name: params.get("name") || prev.full_name,
@@ -107,10 +181,36 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         .filter(Boolean)
         .join("\n\n") || prev.message,
     }));
-  }, []);
+    if (!serverDraftId) return;
+    const visitorId = getVisitorId();
+    fetch(`${API_BASE}/api/v1/chat/handoffs/${encodeURIComponent(serverDraftId)}?visitor_id=${encodeURIComponent(visitorId)}`, {
+      headers: withTenantHeaders(),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(copy.submitFailed);
+        return response.json();
+      })
+      .then((payload) => {
+        const prefill = payload?.data?.prefill || {};
+        setDraftId(serverDraftId);
+        setDraftProductIds(Array.isArray(prefill.product_ids) ? prefill.product_ids : []);
+        setDraftApplicationId(prefill.application_id || undefined);
+        setForm((prev) => ({
+          ...prev,
+          quantity: prefill.quantity || prev.quantity,
+          specifications: prefill.specifications || prev.specifications,
+          message: [prefill.message, prefill.requirement_summary].filter(Boolean).join("\n\n") || prev.message,
+        }));
+      })
+      .catch(() => setError(copy.submitFailed));
+  }, [copy.submitFailed]);
 
   function saveDraft(nextForm: FormState) {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(nextForm)); } catch { /* ignore quota errors */ }
+    try {
+      // RFQ PII should not survive the browser session, and consent must be
+      // actively confirmed for each final submission rather than restored.
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...nextForm, consent: false }));
+    } catch { /* ignore quota errors */ }
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -125,38 +225,40 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
       const currentPath = `${window.location.pathname}${window.location.search}`;
       const payload = {
         ...form,
-        product_ids: preselectedProductIds,
-        application_id: preselectedApplicationId || undefined,
+        product_ids: draftProductIds.length ? draftProductIds : preselectedProductIds,
+        application_id: draftApplicationId || preselectedApplicationId || undefined,
+        draft_id: draftId || undefined,
         visitor_id: getVisitorId(),
         source_page: currentPath,
+        bot_challenge: botChallenge || undefined,
+        turnstile_token: turnstileToken || undefined,
+        website,
       };
       const res = await fetch(`${API_BASE}/api/v1/forms/rfq`, {
         method: "POST",
         headers: withTenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const detail = data?.detail;
-        const message = Array.isArray(detail)
-          ? detail
-              .map((item: unknown) => {
-                if (typeof item === "string") return item;
-                if (item && typeof item === "object" && "msg" in item) {
-                  return String((item as { msg: unknown }).msg);
-                }
-                return JSON.stringify(item);
-              })
-              .filter(Boolean)
-              .join("; ")
-          : typeof detail === "string"
-            ? detail
-            : copy.submitFailed;
-        throw new Error(message || copy.submitFailed);
+        const detail = data?.detail ?? data?.error;
+        const detailText = typeof detail === "string" ? detail.toLowerCase() : "";
+        const challengeExpired = detailText.includes("challenge") || detailText.includes("bot verification");
+        if (challengeExpired) {
+          await fetchChallenge();
+          const turnstileWindow = window as typeof window & { turnstile?: TurnstileApi };
+          if (turnstileWidgetIdRef.current && turnstileWindow.turnstile) {
+            turnstileWindow.turnstile.reset(turnstileWidgetIdRef.current);
+            setTurnstileToken("");
+          }
+          throw new Error(copy.challengeRefreshed);
+        }
+        if (Array.isArray(detail)) throw new Error(copy.validationFailed);
+        throw new Error(copy.submitFailed);
       }
       trackRFQSubmit();
       setRfqNumber(data.rfq_number); setSubmitted(true);
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.unexpectedError);
     } finally { setSubmitting(false); }
@@ -175,6 +277,10 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+        <Label htmlFor="website">Website</Label>
+        <Input id="website" name="website" value={website} onChange={(event) => setWebsite(event.target.value)} tabIndex={-1} autoComplete="off" />
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="full_name">{copy.labels.fullName} <span className="text-destructive">*</span></Label>
@@ -222,8 +328,8 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
       </div>
 
       <div className="space-y-1.5">
-        <Label>{copy.labels.timeline}</Label>
-        <select name="timeline" value={form.timeline} onChange={handleChange} className={SELECT_CLS}>
+        <Label htmlFor="timeline">{copy.labels.timeline}</Label>
+        <select id="timeline" name="timeline" value={form.timeline} onChange={handleChange} className={SELECT_CLS}>
           {copy.timelineOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
@@ -232,8 +338,8 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         <legend className="px-1 text-sm font-semibold text-muted-foreground">{copy.tradeSectionTitle}</legend>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>{copy.labels.incoterm}</Label>
-            <select name="incoterm" value={form.incoterm} onChange={handleChange} className={SELECT_CLS}>
+            <Label htmlFor="incoterm">{copy.labels.incoterm}</Label>
+            <select id="incoterm" name="incoterm" value={form.incoterm} onChange={handleChange} className={SELECT_CLS}>
               {copy.incotermOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
@@ -273,13 +379,17 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
       </div>
 
       <div className="space-y-1.5">
-        <Label>{copy.labels.howFound}</Label>
-        <select name="how_did_you_find_us" value={form.how_did_you_find_us} onChange={handleChange} className={SELECT_CLS}>
+        <Label htmlFor="how_did_you_find_us">{copy.labels.howFound}</Label>
+        <select id="how_did_you_find_us" name="how_did_you_find_us" value={form.how_did_you_find_us} onChange={handleChange} className={SELECT_CLS}>
           {copy.howOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+      {TURNSTILE_SITE_KEY && (
+        <div ref={turnstileContainerRef} />
+      )}
 
       <label className="flex items-start gap-3 rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground cursor-pointer">
         <input
@@ -297,7 +407,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
         <span>{copy.labels.consent}</span>
       </label>
 
-      <Button type="submit" size="lg" className="w-full" disabled={submitting || !form.consent}>
+      <Button type="submit" size="lg" className="w-full" disabled={submitting || !form.consent || (TURNSTILE_SITE_KEY ? !turnstileToken : false)}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {submitting ? copy.submitting : copy.submit}
       </Button>

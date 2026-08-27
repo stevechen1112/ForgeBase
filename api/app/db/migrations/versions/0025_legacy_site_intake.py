@@ -10,8 +10,8 @@ Create tables for the Legacy Site Intake module:
 Revision ID: 0025_legacy_site_intake
 Revises: 0024_redirects_table
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0025_legacy_site_intake"
 down_revision = "0024_redirects_table"

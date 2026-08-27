@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { INDUSTRIAL_PROSE_CLASS, IndustrialPageHero } from "@/components/themes";
+import { ConsentPreferences } from "@/components/tracking/ConsentPreferences";
 
 type CommonMessages = {
   home: string;
@@ -53,6 +54,7 @@ export default async function CookiesPage({ params }: Props) {
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
+              <ConsentPreferences locale={locale} />
             </div>
           </div>
         </section>
@@ -77,6 +79,7 @@ export default async function CookiesPage({ params }: Props) {
           {copy.paragraphs?.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
+          <ConsentPreferences locale={locale} />
         </div>
       </section>
     </main>

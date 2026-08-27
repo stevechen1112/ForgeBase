@@ -11,19 +11,36 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_admin, resolve_tenant_id
+from app.api.v1.deps import (
+    clear_tenant_host_cache,
+    optional_current_user,
+    require_admin,
+    require_content_editor,
+    resolve_tenant_id,
+)
+from app.core.datetime import utcnow_naive
+from app.core.locale import to_content_locale
 from app.db.session import get_session
 from app.models.site_profile import SiteProfile
 from app.models.user import User
 from app.schemas.site_profile import SiteProfileRead, SiteProfileUpdate
-from app.core.datetime import utcnow_naive
 
 router = APIRouter(prefix="/site-profile", tags=["Site Profile"])
+
+_TENANT_EDITABLE_PROFILE_FIELDS = {
+    "brand_name",
+    "logo_mark",
+    "logo_url",
+    "contact_email",
+    "contact_phone",
+    "default_locale",
+    "translation_glossary_json",
+}
 
 
 async def _get_or_create_profile(
@@ -50,9 +67,11 @@ async def _get_or_create_profile(
 async def get_site_profile(
     db: AsyncSession = Depends(get_session),
     tenant_id: Optional[uuid.UUID] = Depends(resolve_tenant_id),
+    current_user: User | None = Depends(optional_current_user),
 ):
-    """Public endpoint — returns site branding and theme settings for the current tenant."""
-    profile = await _get_or_create_profile(db, tenant_id)
+    """Return branding for the authenticated tenant or the resolved public host."""
+    resolved_tenant_id = current_user.tenant_id if current_user and current_user.tenant_id else tenant_id
+    profile = await _get_or_create_profile(db, resolved_tenant_id)
     return profile
 
 
@@ -65,12 +84,28 @@ async def update_site_profile(
     """Admin-only — updates site branding and theme settings for the current user's tenant."""
     profile = await _get_or_create_profile(db, current_user.tenant_id)
     update_data = payload.model_dump(exclude_unset=True)
+    if "default_locale" in update_data and update_data["default_locale"] is not None:
+        locale = to_content_locale(str(update_data["default_locale"]), default="")
+        if locale not in {"en", "zh-tw"}:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="default_locale must be en or zh-TW")
+        # Persist the route/admin form (zh-TW) so existing UI comparisons keep working.
+        update_data["default_locale"] = "zh-TW" if locale == "zh-tw" else "en"
+    restricted_fields = sorted(set(update_data) - _TENANT_EDITABLE_PROFILE_FIELDS)
+    if restricted_fields:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": "These delivery settings can only be changed by ForgeBase support.",
+                "fields": restricted_fields,
+            },
+        )
     for key, value in update_data.items():
         setattr(profile, key, value)
     profile.updated_at = utcnow_naive()
     db.add(profile)
     await db.commit()
     await db.refresh(profile)
+    clear_tenant_host_cache()
     return profile
 
 
@@ -144,3 +179,78 @@ async def update_ops_config(
     await db.commit()
     await db.refresh(profile)
     return _load_ops_dict(profile)
+
+
+class TenantCopyUpdate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    locale: str = "en"
+    copy_payload: dict = Field(default_factory=dict, alias="copy")
+    assets: dict | None = None
+    hidden_blocks: dict | None = None
+    logo_url: str | None = None
+
+
+@router.get("/tenant-copy")
+async def get_tenant_copy(
+    locale: str = Query("en"),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_content_editor),
+):
+    from app.services import tenant_copy as tenant_copy_service
+
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant context required")
+    profile = await _get_or_create_profile(db, current_user.tenant_id)
+    site_copy = tenant_copy_service.parse_json_object(profile.site_copy_json)
+    manifest = tenant_copy_service.parse_json_object(profile.asset_manifest_json)
+    resolved = tenant_copy_service.locale_key(locale)
+    overlay = tenant_copy_service.extract_locale_overlay(site_copy, resolved)
+    return {
+        "locale": resolved,
+        "copy": tenant_copy_service.serialize_overlay(overlay),
+        "assets": tenant_copy_service.read_assets(manifest),
+        "hidden_blocks": tenant_copy_service.read_hidden_blocks(site_copy),
+        "logo_url": profile.logo_url or "",
+    }
+
+
+@router.put("/tenant-copy")
+async def update_tenant_copy(
+    payload: TenantCopyUpdate,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_content_editor),
+):
+    from app.services import tenant_copy as tenant_copy_service
+    from app.services.revalidate import revalidate_tenant_copy
+
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant context required")
+    profile = await _get_or_create_profile(db, current_user.tenant_id)
+    site_copy = tenant_copy_service.parse_json_object(profile.site_copy_json)
+    manifest = tenant_copy_service.parse_json_object(profile.asset_manifest_json)
+    resolved = tenant_copy_service.locale_key(payload.locale)
+    try:
+        site_copy = tenant_copy_service.apply_copy_overlay(site_copy, resolved, payload.copy_payload)
+        site_copy = tenant_copy_service.apply_hidden_blocks(site_copy, payload.hidden_blocks)
+        manifest = tenant_copy_service.apply_assets(manifest, payload.assets)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    profile.site_copy_json = tenant_copy_service.dump_json(site_copy)
+    profile.asset_manifest_json = tenant_copy_service.dump_json(manifest)
+    if "logo_url" in payload.model_fields_set:
+        cleaned_logo = (payload.logo_url or "").strip()
+        profile.logo_url = cleaned_logo[:500] or None
+    profile.updated_at = utcnow_naive()
+    db.add(profile)
+    await db.commit()
+    await db.refresh(profile)
+    clear_tenant_host_cache()
+    await revalidate_tenant_copy()
+    overlay = tenant_copy_service.extract_locale_overlay(site_copy, resolved)
+    return {
+        "locale": resolved,
+        "copy": tenant_copy_service.serialize_overlay(overlay),
+        "assets": tenant_copy_service.read_assets(manifest),
+        "hidden_blocks": tenant_copy_service.read_hidden_blocks(site_copy),
+        "logo_url": profile.logo_url or "",
+    }

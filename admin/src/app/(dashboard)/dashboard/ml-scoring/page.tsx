@@ -64,7 +64,7 @@ export default function MLScoringPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">智慧評分（進階）</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">依歷史行為資料預測買家關注程度（進階功能）</p>

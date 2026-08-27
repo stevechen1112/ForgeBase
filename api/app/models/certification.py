@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship, UniqueConstraint
+from typing import TYPE_CHECKING, List, Optional
+
+from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
+
 from app.core.datetime import utcnow_naive
 from app.models.associations import ProductCertificationLink
 

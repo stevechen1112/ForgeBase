@@ -5,9 +5,9 @@ Provides a traced AsyncOpenAI client and workflow-span utilities that are
 fully backward-compatible: when Langfuse is not configured, everything
 degrades to plain OpenAI calls with zero overhead.
 
-Phases of adoption
-──────────────────
-Phase 1 (start here):
+Tracing rollout checklist
+─────────────────────────
+Minimum instrumentation:
   - Replace `AsyncOpenAI(api_key=settings.OPENAI_API_KEY)` with
     `get_openai_client()` in each AI service module.
   - Decorate each service entry-point with `@observe_workflow(name=WorkflowType.X)`.
@@ -15,11 +15,11 @@ Phase 1 (start here):
   Result: every LLM call is captured as a span; traces are grouped by workflow,
   tenant, and session without touching OpenAI call signatures.
 
-Phase 2 (next):
+Prompt and evaluation integration:
   - Pull prompt templates into Langfuse Prompt Management.
   - Add LLM-as-judge eval scorers on production traces.
 
-Phase 3 (later):
+Regression and experimentation:
   - Build datasets from production traces for offline regression testing.
   - Add online prompt experiments tied to tenant cohorts.
 
@@ -143,8 +143,9 @@ _TracedAsyncOpenAI: type | None = None
 
 if _langfuse_enabled:
     try:
-        from langfuse import Langfuse
         from langfuse.openai import AsyncOpenAI as _T
+
+        from langfuse import Langfuse
 
         _TracedAsyncOpenAI = _T
 

@@ -83,7 +83,7 @@ export default function CertificationsListPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">認證管理</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理 ISO、RoHS、CE 等品質認證資料，展示於前台認證頁並支援 PDF 下載</p>

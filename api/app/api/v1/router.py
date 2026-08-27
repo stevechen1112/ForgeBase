@@ -1,32 +1,83 @@
-from fastapi import APIRouter
-from app.api.v1.endpoints import auth, categories, products, subscription, platform_admin, copilot
-from app.api.v1.endpoints.content_crud import (
-    applications_router,
-    faqs_router,
-    comparisons_router,
-    certifications_router,
-    capabilities_router,
-    ctas_router,
-    pages_router,
-)
+from fastapi import APIRouter, Depends
+
+from app.api.v1.deps import RequireFeature
 from app.api.v1.endpoints import (
-    assets, relations, publish, orphans,
-    public_relations, preview, page_meta, growth_ops,
-    events, visitors, contacts, rfqs, integrations, segments,
-    esp, analytics, nurture,
-    ml_scoring, chat, chat_admin,
-    redirects, site_profile,
+    adoption_applications,
+    analytics,
+    assets,
+    auth,
+    categories,
+    capability_access,
+    chat,
+    chat_admin,
+    company_identification,
+    contact_enrichment,
+    contacts,
+    copilot,
+    esp,
+    events,
+    growth_attribution,
+    growth_ops,
+    inbound_replies,
+    integrations,
+    locale_draft,
+    locale_quality,
+    ml_scoring,
+    nurture,
+    orphans,
+    outreach,
+    page_meta,
+    platform_admin,
+    preview,
+    privacy,
+    products,
+    public_relations,
+    publish,
+    redirects,
+    relations,
+    retirement_audit,
+    rfqs,
+    segments,
+    site_profile,
+    visitors,
+    webhooks,
 )
 from app.api.v1.endpoints.ai_intelligence import (
-    rfq_ai_router, content_ai_router, visitor_ai_router,
+    content_ai_router,
+    rfq_ai_router,
+    visitor_ai_router,
+)
+from app.api.v1.endpoints.content_crud import (
+    applications_router,
+    capabilities_router,
+    certifications_router,
+    comparisons_router,
+    ctas_router,
+    faqs_router,
+    pages_router,
 )
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth.router)
-api_router.include_router(subscription.router)
+api_router.include_router(capability_access.router)
 api_router.include_router(platform_admin.router)  # Platform super-admin
-api_router.include_router(copilot.router)          # AI Copilot notifications
+api_router.include_router(retirement_audit.router)  # Safe-retirement evidence gate
+api_router.include_router(company_identification.router)  # Platform Shadow Mode
+api_router.include_router(
+    contact_enrichment.router
+)  # Review-only company contact candidates
+api_router.include_router(
+    outreach.router
+)  # Review and human-approved outreach delivery
+api_router.include_router(
+    outreach.public_router
+)  # Signed unsubscribe confirmation/one-click
+api_router.include_router(
+    inbound_replies.admin_router
+)  # Platform review of unlinked replies
+api_router.include_router(adoption_applications.admin_router)
+api_router.include_router(copilot.router)  # AI Copilot notifications
 
 # Content CRUD — all under /api/v1/content/
 content_router = APIRouter(prefix="/content")
@@ -34,45 +85,72 @@ content_router.include_router(categories.router)
 content_router.include_router(products.router)
 content_router.include_router(applications_router)
 content_router.include_router(faqs_router)
-content_router.include_router(comparisons_router)
+content_router.include_router(
+    comparisons_router, dependencies=[Depends(RequireFeature("advanced_content"))]
+)
 content_router.include_router(certifications_router)
 content_router.include_router(capabilities_router)
-content_router.include_router(ctas_router)
+content_router.include_router(
+    ctas_router, dependencies=[Depends(RequireFeature("dynamic_cta"))]
+)
 content_router.include_router(pages_router)
 content_router.include_router(page_meta.router)
 content_router.include_router(assets.router)
 content_router.include_router(relations.router)
 content_router.include_router(publish.router)
+content_router.include_router(locale_draft.router)
 content_router.include_router(orphans.router)
 content_router.include_router(public_relations.router)
 content_router.include_router(preview.router)
-content_router.include_router(redirects.router)     # /content/redirects/* SEO redirect mgmt
+content_router.include_router(
+    redirects.router
+)  # /content/redirects/* SEO redirect mgmt
+content_router.include_router(locale_quality.router)
 api_router.include_router(content_router)
 
-# Phase 1b: Tracking — /api/v1/tracking/
+# Buyer tracking and intent — /api/v1/tracking/
 tracking_router = APIRouter()
-tracking_router.include_router(events.router)              # /tracking/events
-tracking_router.include_router(visitors.router)            # /tracking/visitors, /tracking/sessions
-tracking_router.include_router(contacts.tracking_router)   # /tracking/contacts
-tracking_router.include_router(rfqs.tracking_router)       # /tracking/rfqs
-tracking_router.include_router(segments.router)            # /tracking/segments
-tracking_router.include_router(esp.router)                 # /tracking/esp/*
-tracking_router.include_router(analytics.router)           # /tracking/analytics/*
-tracking_router.include_router(growth_ops.tracking_router) # /tracking/outcomes, /tracking/funnel
-tracking_router.include_router(nurture.router)             # /tracking/nurture/*
+tracking_router.include_router(events.router)  # /tracking/events
+tracking_router.include_router(
+    visitors.router
+)  # /tracking/visitors, /tracking/sessions
+tracking_router.include_router(contacts.tracking_router)  # /tracking/contacts
+tracking_router.include_router(rfqs.tracking_router)  # /tracking/rfqs
+tracking_router.include_router(
+    inbound_replies.tracking_router
+)  # /tracking/replies, handoffs
+tracking_router.include_router(segments.router)  # /tracking/segments
+tracking_router.include_router(
+    esp.router, dependencies=[Depends(RequireFeature("integrations"))]
+)  # /tracking/esp/*
+tracking_router.include_router(analytics.router)  # /tracking/analytics/*
+tracking_router.include_router(
+    growth_ops.tracking_router,
+    dependencies=[Depends(RequireFeature("outcomes_dashboard"))],
+)  # /tracking/outcomes, /tracking/funnel
+tracking_router.include_router(
+    growth_attribution.router,
+    dependencies=[Depends(RequireFeature("closed_loop_attribution"))],
+)  # /tracking/growth-funnel, /tracking/rfqs/{id}/attribution
+tracking_router.include_router(
+    nurture.router, dependencies=[Depends(RequireFeature("nurture_email"))]
+)  # /tracking/nurture/*
 api_router.include_router(tracking_router)
-api_router.include_router(growth_ops.ops_router)           # /ops/task-queue
+api_router.include_router(growth_ops.ops_router)  # /ops/task-queue
 
-# Phase 3: AI Intelligence — RFQ / visitor / dynamic CTA (content factory removed)
-api_router.include_router(rfq_ai_router)       # /tracking/rfqs/{id}/analyze, /draft-reply
-api_router.include_router(visitor_ai_router)   # /tracking/visitors/{id}/recommend-cta
-api_router.include_router(content_ai_router)   # /content/dynamic-cta, /recommend-relations
-api_router.include_router(ml_scoring.router)   # /tracking/ml/*
+# AI intelligence — RFQ / visitor / dynamic CTA (content factory removed)
+api_router.include_router(rfq_ai_router)  # /tracking/rfqs/{id}/analyze, /draft-reply
+api_router.include_router(visitor_ai_router)  # /tracking/visitors/{id}/recommend-cta
+api_router.include_router(
+    content_ai_router
+)  # /content/dynamic-cta, /recommend-relations
+api_router.include_router(ml_scoring.router)  # /tracking/ml/*
 
-# Phase 1b: Public Forms — /api/v1/forms/
+# Public conversion forms — /api/v1/forms/
 forms_router = APIRouter()
 forms_router.include_router(contacts.forms_router)  # /forms/contact
-forms_router.include_router(rfqs.forms_router)      # /forms/rfq
+forms_router.include_router(rfqs.forms_router)  # /forms/rfq
+forms_router.include_router(adoption_applications.forms_router)  # /forms/adoption
 api_router.include_router(forms_router)
 
 # Chat MVP — /api/v1/chat/*
@@ -81,6 +159,8 @@ api_router.include_router(chat_admin.router)
 
 # Site Profile — /api/v1/site-profile
 api_router.include_router(site_profile.router)
+api_router.include_router(privacy.router)
+api_router.include_router(webhooks.router)
 
-# Phase 1b: Admin utilities — /api/v1/admin/
-api_router.include_router(integrations.router)      # /admin/integrations/status
+# Admin integrations — /api/v1/admin/
+api_router.include_router(integrations.router)  # /admin/integrations/status

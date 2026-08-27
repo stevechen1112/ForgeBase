@@ -60,6 +60,13 @@ jobs:
           AI_MODEL_NAME: gpt-5.6-luna
         run: pytest tests/ -v --cov=app --cov-report=term-missing
 
+      - name: Verify North Star database contract
+        working-directory: api
+        env:
+          DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
+          SECRET_KEY: test-secret-key-for-ci-only
+        run: python scripts/verify_schema_contract.py
+
   lint:
     runs-on: ubuntu-latest
     steps:

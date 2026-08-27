@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { INDUSTRIAL_PROSE_CLASS, IndustrialPageHero } from "@/components/themes";

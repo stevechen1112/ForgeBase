@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Bell, BellOff, CheckCircle2, Loader2, Send, Trash2 } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
+import { useCapabilities } from "@/lib/hooks/useCapabilities";
 
 type NotificationPref = {
   id: string;
@@ -22,18 +23,22 @@ type NotificationPref = {
   created_at: string;
 };
 
-const TOGGLE_LABELS: { key: keyof NotificationPref; label: string; desc: string }[] = [
+const TOGGLE_LABELS: { key: keyof NotificationPref; label: string; desc: string; requiredFeature?: string }[] = [
   { key: "notify_new_rfq", label: "新 RFQ 通知", desc: "有新詢價時立即推送，含 AI 摘要" },
-  { key: "notify_hot_visitor", label: "高關注訪客警報", desc: "訪客進入「高度關注」或「可成交」時通知" },
+  { key: "notify_hot_visitor", label: "高關注訪客警報", desc: "訪客進入「高度關注」或「可成交」時通知", requiredFeature: "intent_scoring" },
   { key: "notify_daily_summary", label: "每日營運摘要", desc: "每日 08:00 推送前一天數據摘要" },
-  { key: "notify_churn_risk", label: "客戶流失預警", desc: "已識別客戶的關注分數下降時通知" },
-  { key: "notify_chat_handoff", label: "對話轉業務接手", desc: "官網 AI 對話轉交業務時通知" },
-  { key: "notify_content_suggestion", label: "內容優化建議", desc: "AI 偵測到頁面需優化時推薦（低頻）" },
+  { key: "notify_churn_risk", label: "客戶流失預警", desc: "已識別客戶的關注分數下降時通知", requiredFeature: "intent_scoring" },
+  { key: "notify_chat_handoff", label: "對話轉業務接手", desc: "官網 AI 對話轉交業務時通知", requiredFeature: "chat_handoff" },
+  { key: "notify_content_suggestion", label: "內容優化建議", desc: "AI 偵測到頁面需優化時推薦（低頻）", requiredFeature: "full_tracking" },
 ];
 
 export default function NotificationSettingsPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const { hasFeature, isLoading: featuresLoading } = useCapabilities();
+  const visibleToggleLabels = TOGGLE_LABELS.filter(
+    (item) => !item.requiredFeature || (!featuresLoading && hasFeature(item.requiredFeature))
+  );
 
   const [prefs, setPrefs] = useState<NotificationPref[]>([]);
   const [loading, setLoading] = useState(false);
@@ -161,9 +166,9 @@ export default function NotificationSettingsPage() {
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">AI 行銷助理通知設定</h1>
+        <h1 className="text-2xl font-bold tracking-tight">營運通知設定</h1>
         <p className="text-muted-foreground mt-1">
-          設定 Telegram／LINE 等通知管道，以及新詢價、熱門買家等事件偏好。
+          設定 Telegram／LINE 等通知管道；通知項目會依目前導入階段顯示。
         </p>
       </div>
 
@@ -321,7 +326,7 @@ export default function NotificationSettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {TOGGLE_LABELS.map(({ key, label, desc }) => (
+                  {visibleToggleLabels.map(({ key, label, desc }) => (
                     <label
                       key={key}
                       className="flex items-start gap-3 cursor-pointer rounded-md p-2 hover:bg-muted/50"

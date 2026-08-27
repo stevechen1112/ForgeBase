@@ -101,9 +101,9 @@ export default function IntentPage() {
   const identifiedCount = contacts.length;
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+    <div className="min-w-0">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight">買家關注度</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">依瀏覽行為辨識高關注買家，協助安排優先跟進</p>
         </div>
@@ -119,29 +119,29 @@ export default function IntentPage() {
       )}
 
       {/* Actionable KPI Cards */}
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="min-w-0">
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">最高關注分數</p>
             <p className="mt-2 text-3xl font-bold">{topScore}</p>
             <p className="text-xs text-muted-foreground">最高分訪客</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">前 10 名平均分數</p>
             <p className="mt-2 text-3xl font-bold">{avgScore}</p>
             <p className="text-xs text-muted-foreground">高關注訪客均值</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">可成交（前 10 名）</p>
             <p className="mt-2 text-3xl font-bold">{salesReadyCount}</p>
             <p className="text-xs text-muted-foreground">可立即跟進</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">已識別聯絡人</p>
             <p className="mt-2 text-3xl font-bold">{identifiedCount}</p>
@@ -150,9 +150,9 @@ export default function IntentPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2">
         {/* Top Visitors — Actionable Worktable */}
-        <Card className="lg:col-span-2">
+        <Card className="min-w-0 overflow-hidden lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Flame className="h-4 w-4 text-orange-500" />高關注訪客
@@ -186,11 +186,12 @@ export default function IntentPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {topVisitors.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">尚無訪客資料</p>
             ) : (
-              <table className="w-full text-sm">
+              <div className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">訪客</th>
@@ -250,23 +251,25 @@ export default function IntentPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-2">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4 text-primary" />已識別聯絡人意圖
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {contacts.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">尚無已識別聯絡人</p>
             ) : (
-              <table className="w-full text-sm">
+              <div className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">聯絡人</th>
@@ -287,12 +290,13 @@ export default function IntentPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
         <span className="flex items-center gap-1"><TrendingUp className="h-4 w-4" />顯示前 {topVisitors.length} 位高關注訪客</span>
         <span className="flex items-center gap-1"><Thermometer className="h-4 w-4" />已識別聯絡人：{identifiedCount}</span>
       </div>

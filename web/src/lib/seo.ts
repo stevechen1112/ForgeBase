@@ -76,3 +76,26 @@ export function buildTwitterMeta(opts: {
     images: opts.imageUrl ? [opts.imageUrl] : undefined,
   };
 }
+
+export function buildCoreLocaleAlternates(path: string, config: SiteConfig = siteConfig): Record<string, string> {
+  const english = buildCanonicalUrl(path, "en", config);
+  return { "x-default": english, en: english, "zh-TW": buildCanonicalUrl(path, "zh-TW", config) };
+}
+
+export function buildLocalizedMetadata(
+  base: Metadata,
+  path: string,
+  locale: string,
+  config: SiteConfig = siteConfig,
+): Metadata {
+  const canonical = buildCanonicalUrl(path, locale, config);
+  const title = typeof base.title === "string" && base.title.toLocaleLowerCase().includes(config.brandName.toLocaleLowerCase())
+    ? { absolute: base.title }
+    : base.title;
+  return {
+    ...base,
+    title,
+    alternates: { ...base.alternates, canonical, languages: buildCoreLocaleAlternates(path, config) },
+    openGraph: { ...base.openGraph, url: canonical, locale: locale === "zh-TW" ? "zh_TW" : "en_US" },
+  };
+}

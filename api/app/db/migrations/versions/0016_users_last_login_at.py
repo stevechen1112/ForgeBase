@@ -2,8 +2,8 @@
 
 - users: add last_login_at (nullable timestamp with timezone)
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0016_users_last_login_at"
 down_revision = "0015_certification_slug"

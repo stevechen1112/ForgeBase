@@ -17,6 +17,7 @@ async def _send_event(client, tenant_id, visitor_id, event_name, page_type=None,
         "session_id": str(session_id or uuid.uuid4()),
         "page_url": "https://www.test.com/x",
         "page_type": page_type,
+        "analytics_consent": True,
     }
     resp = await client.post("/api/v1/tracking/events", json=payload, headers={"X-Tenant-ID": str(tenant_id)})
     assert resp.status_code in (200, 201, 202), resp.text
@@ -98,7 +99,7 @@ async def test_full_growth_loop_end_to_end(http_client, two_tenants, admin_token
     funnel = (await http_client.get("/api/v1/tracking/funnel?days=30", headers=auth)).json()
     layers = {l["layer"]: l for l in funnel["layers"]}
     assert layers["won"]["count"] >= 1
-    assert layers["negotiation"]["count"] == 0  # won 後不再是 negotiation
+    assert layers["negotiation"]["count"] >= 1  # 累計到達談判／成交，不因成交而回退
 
     attribution = (await http_client.get("/api/v1/tracking/attribution/content", headers=auth)).json()
     blog_bucket = next((b for b in attribution["by_page_type"] if b["key"] == "blog_post"), None)

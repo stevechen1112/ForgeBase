@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
 
@@ -14,8 +15,12 @@ class NotificationLog(SQLModel, table=True):
     __tablename__ = "notification_log"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id", index=True)
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="SET NULL", index=True
+    )
+    user_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL", index=True
+    )
 
     channel: str = Field(max_length=20)
     # Event types: 'new_rfq' | 'hot_visitor' | 'daily_summary' | 'churn_risk' | 'chat_handoff'

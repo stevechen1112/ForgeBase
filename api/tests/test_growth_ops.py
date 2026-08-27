@@ -214,7 +214,14 @@ async def test_funnel_layers_and_conversion(http_client, two_tenants, admin_toke
     assert list(layers) == ["traffic", "high_intent", "rfq", "qualified_rfq", "quoted", "negotiation", "won"]
     assert layers["rfq"]["count"] >= 1
     assert layers["quoted"]["count"] >= 1
-    assert "conversion_from_prev_pct" in layers["rfq"]
+    assert layers["rfq"]["conversion_from_prev_pct"] is None
+    assert layers["traffic"]["cohort"] == "visitor"
+    assert layers["rfq"]["cohort"] == "rfq"
+    assert all(
+        layer["conversion_from_prev_pct"] is None
+        or 0 <= layer["conversion_from_prev_pct"] <= 100
+        for layer in layers.values()
+    )
     # negotiation 層必須套用 days 視窗（本測試剛建立的 quoted 不應算進 negotiation）
     assert layers["negotiation"]["count"] == 0
 
@@ -236,8 +243,10 @@ async def test_task_queue_aggregates(http_client, two_tenants, admin_token_for_t
     assert r.status_code == 200, r.text
     data = r.json()
     types = {t["type"] for t in data["tasks"]}
-    assert {"sla_breached_rfq", "hot_visitor_unassigned", "low_quality_rfq",
+    assert {"sla_breached_rfq", "rfq_follow_up_due", "hot_visitor_unassigned", "low_quality_rfq",
             "content_pending_approval", "verification_anomaly"} == types
+    follow_up = next(t for t in data["tasks"] if t["type"] == "rfq_follow_up_due")
+    assert follow_up["link"] == "/dashboard/rfqs?follow_up=due"
     low = next(t for t in data["tasks"] if t["type"] == "low_quality_rfq")
     assert low["count"] >= 1
     anomaly = next(t for t in data["tasks"] if t["type"] == "verification_anomaly")

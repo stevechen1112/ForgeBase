@@ -87,7 +87,7 @@ export default function FAQsListPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">常見問題</h1>
           <p className="mt-1 text-sm text-muted-foreground">維護常見問答，可顯示在產品頁與應用頁，也有助搜尋引擎理解</p>

@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-
 ConversationStage = Literal["discovery", "qualification", "rfq_ready"]
 IntentStrength = Literal["low", "medium", "high"]
 ProgramType = Literal["unknown", "standard", "oem"]

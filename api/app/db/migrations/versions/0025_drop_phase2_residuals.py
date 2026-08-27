@@ -8,7 +8,6 @@ Revision ID: 0025_drop_phase2_residuals
 Revises: 0024_redirects_table
 """
 from alembic import op
-import sqlalchemy as sa
 
 revision = "0025_drop_phase2_residuals"
 down_revision = "0024_redirects_table"

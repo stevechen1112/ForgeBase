@@ -6,8 +6,8 @@ tool hit rate, error rate, average latency per tenant.
 Revision ID: 0040_copilot_run_log
 Revises: 0039_intent_scoring_config
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0040_copilot_run_log"
 down_revision = "0039_intent_scoring_config"

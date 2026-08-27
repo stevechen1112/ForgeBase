@@ -5,6 +5,8 @@ import { Link } from "@/i18n/navigation";
 import { useMessageNamespace } from "@/lib/messages";
 import { resolveLocalizedText, type SiteConfig, type SiteFooterSection } from "@/lib/siteConfig";
 import { ArrowRight } from "lucide-react";
+import { BrandMark } from "@/components/ui/BrandMark";
+import { rewriteLegacyPublicPath } from "@/lib/legacyPublicPaths";
 
 type FooterMessages = {
   description: string;
@@ -32,6 +34,7 @@ function getDefaultSections(copy: FooterMessages): SiteFooterSection[] {
         { href: "/products", label: copy.sections.products.catalog },
         { href: "/applications", label: copy.sections.products.applications },
         { href: "/rfq", label: copy.sections.products.rfq },
+        { href: "/oem-odm", label: copy.sections.products.custom },
       ],
     },
     {
@@ -48,6 +51,7 @@ function getDefaultSections(copy: FooterMessages): SiteFooterSection[] {
         { href: "/faq", label: copy.sections.support.faq },
         { href: "/contact", label: copy.sections.support.contact },
         { href: "/docs", label: copy.sections.support.docs },
+        { href: "/dealers", label: copy.sections.support.dealers },
       ],
     },
   ];
@@ -61,6 +65,7 @@ export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
   const copy = useMessageNamespace<FooterMessages>("footer");
   const locale = useLocale();
   const siteName = siteConfig.brandName;
+  const isTestScenario = Boolean(siteConfig.demoCompanyFolder);
   const year = new Date().getFullYear();
   const linkGroups = siteConfig.footerSections?.length ? siteConfig.footerSections : getDefaultSections(copy);
   const badges = siteConfig.footerBadges?.length ? siteConfig.footerBadges : copy.certifications;
@@ -86,7 +91,7 @@ export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
             </p>
           </div>
           <Link
-            href={footerCta?.action.href ?? "/rfq"}
+            href={rewriteLegacyPublicPath(footerCta?.action.href ?? "/rfq")}
             className="flex items-center gap-2 bg-gray-950 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white skew-x-[-3deg] hover:bg-gray-800 transition-colors"
           >
             <span className="skew-x-[3deg]">{resolveLocalizedText(footerCta?.action.label, locale, copy.footerCta.requestQuote)}</span>
@@ -101,18 +106,20 @@ export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
           {/* Brand column */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center bg-primary text-sm font-black text-primary-foreground skew-x-[-3deg]">
-                {siteConfig.logoMark}
-              </div>
+              <BrandMark name={siteName} mark={siteConfig.logoMark} logoUrl={siteConfig.logoUrl} className="h-10 w-10 text-sm font-black skew-x-[-3deg]" imageClassName="h-10" />
               <span className="text-lg font-black uppercase tracking-widest text-white">
                 {siteName}
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed">{copy.description}</p>
-            <div className="mt-5 space-y-2 text-sm">
-              <p className="text-white">{siteConfig.contactEmail}</p>
-              <p>{siteConfig.contactPhone}</p>
-            </div>
+            {isTestScenario ? (
+              <p className="mt-5 text-sm text-amber-300">{locale === "zh-TW" ? "測試情境，不提供 NorthForge 業務聯繫或供貨服務。" : "Test scenario; NorthForge does not provide sales contact or supply service."}</p>
+            ) : (
+              <div className="mt-5 space-y-2 text-sm">
+                <p className="text-white">{siteConfig.contactEmail}</p>
+                <p>{siteConfig.contactPhone}</p>
+              </div>
+            )}
           </div>
 
           {/* Link columns */}
@@ -122,13 +129,16 @@ export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
                 {resolveLocalizedText(group.heading, locale, "Section")}
               </h3>
               <ul className="mt-4 space-y-2.5">
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="text-sm transition-colors hover:text-white">
-                      {resolveLocalizedText(item.label, locale, item.href)}
+                {group.items.map((item) => {
+                  const href = rewriteLegacyPublicPath(item.href);
+                  return (
+                  <li key={href}>
+                    <Link href={href} className="text-sm transition-colors hover:text-white">
+                      {resolveLocalizedText(item.label, locale, href)}
                     </Link>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           ))}

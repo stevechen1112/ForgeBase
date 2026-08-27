@@ -1,5 +1,5 @@
 import CertificationForm from "../CertificationForm";
-export const metadata = { title: "新增認證 — NorthForge Admin" };
+export const metadata = { title: "新增認證 — ForgeBase 管理後台" };
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

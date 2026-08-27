@@ -16,12 +16,13 @@ import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { StructuredData, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getCategoryCardImage, getHomeHeroImage, getProductImage } from "@/lib/demoAssets";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
-import { IndustrialHomePage } from "@/components/themes";
+import { IndustrialHomePage, PrecisionHomePage } from "@/components/themes";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { localizedPath } from "@/lib/localizedPath";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
 function isSupportedLocale(locale: string): boolean {
   return locale === "en" || locale === "zh-TW";
@@ -131,18 +132,19 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 
   const resolvedLocale = resolveLocale(locale);
+  const { siteConfig } = await getRuntimeSiteContext();
   const pageOverride = await getPublishedPageByType("home", resolvedLocale);
-  if (pageOverride) {
-    return {
+  if (pageOverride && !siteConfig.demoCompanyFolder) {
+    return buildLocalizedMetadata({
       title: pageOverride.seo_title ?? pageOverride.title,
       description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
-    };
+    }, "/", resolvedLocale, siteConfig);
   }
   const copy = await getMessageNamespace<HomeMessages>("home");
-  return {
+  return buildLocalizedMetadata({
     title: copy.metadata.title,
     description: copy.metadata.description,
-  };
+  }, "/", resolvedLocale, siteConfig);
 }
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -156,7 +158,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     return <FlexiblePageRenderer page={customPage} />;
   }
 
-  const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const { siteUrl: SITE_URL, siteName: SITE_NAME, isIndustrial, isPrecision, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const resolvedLocale = resolveLocale(locale);
   // Seeded CMS `home` pages are sparse FlexiblePage bodies. They must not replace the
   // assembled marketing homepage (featured products / categories / applications).
@@ -173,6 +175,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     resolvedLocale,
     [...categories, ...applications, ...certifications, ...featuredProducts]
   );
+
+  if (isPrecision) {
+    return (
+      <>
+        <PageViewTracker pageType="home" />
+        <ChatWidget contextPage="/" contextEntityType="home" />
+        <StructuredData data={buildOrganizationSchema({ name: SITE_NAME, url: SITE_URL })} />
+        {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mx-auto my-6 max-w-7xl px-6" />}
+        <PrecisionHomePage copy={copy} featuredProducts={featuredProducts} categories={categories} applications={applications} certifications={certifications} categorySlugById={categorySlugById} siteConfig={runtimeSiteConfig} locale={resolvedLocale} />
+      </>
+    );
+  }
 
   // ── Industrial layout: completely different page assembly ──
   if (isIndustrial) {

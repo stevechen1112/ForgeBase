@@ -86,7 +86,7 @@ export default function CapabilitiesListPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">廠能介紹</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理工廠能力與服務說明，展示於官網以建立買家信任</p>

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { OpsConfigCard } from "@/components/settings/ops-config-card";
 
 type Template = {
   id: string;
@@ -142,6 +143,8 @@ export default function ReplyTemplatesPage() {
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
+
+      <OpsConfigCard />
 
       <Card>
         <CardHeader>

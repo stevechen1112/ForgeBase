@@ -15,6 +15,7 @@ async def load_ops_config(tenant_id, db) -> dict[str, Any]:
         return {}
     try:
         from sqlmodel import select
+
         from app.models.site_profile import SiteProfile
 
         profile = (

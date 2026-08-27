@@ -15,35 +15,45 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 from types import SimpleNamespace
-from app.core.datetime import utcnow_naive
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
 
+from app.core.datetime import utcnow_naive
+
 logger = logging.getLogger(__name__)
-from sqlmodel import select, col, func
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
 from app.db.session import get_session
+from app.models.contact import Contact
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
-from app.models.visitor import Visitor
-from app.models.contact import Contact
 from app.models.user import User
-from app.services.intent_scoring import calculate_score_delta, get_intent_stage, should_alert
+from app.models.visitor import Visitor
+from app.services.client_ip import get_request_client_ip
+from app.services.company_identification.eligibility import (
+    maybe_create_network_observation,
+)
+from app.services.email_governance import is_authorized_synthetic_request
 from app.services.intent_facets import apply_event_to_visitor, build_intent_explanation
+from app.services.intent_scoring import (
+    calculate_score_delta,
+    get_intent_stage,
+    should_alert,
+)
+from app.services.meta_conversions import fire_meta_event
 from app.services.notifications import notify_visitor_hot
 from app.services.webhook import fire_webhook
-from app.services.meta_conversions import fire_meta_event
-from app.services.ip_resolver import resolve_ip_to_company
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
 # ── Per-tenant scoring config cache (TTL = 120s) ──────────────────────────────
 import json as _json
 import time as _time
+
 _SCORING_CACHE: dict[str, tuple[dict, float]] = {}
 _SCORING_CACHE_TTL = 120.0
 
@@ -64,6 +74,7 @@ async def _load_custom_scores(
     custom: Optional[dict[str, int]] = None
     try:
         from sqlmodel import select as _sel
+
         from app.models.site_profile import SiteProfile
         stmt = _sel(SiteProfile)
         if tenant_id:
@@ -87,7 +98,7 @@ async def _load_custom_scores(
 VALID_EVENT_NAMES = {
     "page_view", "category_view", "product_view", "application_view",
     "faq_expand", "comparison_view", "spec_download", "certification_view",
-    "cta_click", "form_start", "form_submit", "rfq_start", "rfq_submit",
+    "cta_click", "cta_impression", "form_start", "form_submit", "rfq_start", "rfq_submit",
     "return_visit", "session_depth_reached", "chat_start", "chat_rfq_handoff",
 }
 
@@ -107,6 +118,7 @@ class EventIn(BaseModel):
     user_agent: Optional[str] = None
     device_type: Optional[str] = None
     properties: Optional[dict] = None
+    analytics_consent: bool = False
 
     @field_validator("event_name")
     @classmethod
@@ -126,10 +138,7 @@ class EventOut(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_client_ip(request: Request) -> Optional[str]:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return getattr(request.client, "host", None)
+    return get_request_client_ip(request)
 
 
 async def _upsert_session(
@@ -138,6 +147,8 @@ async def _upsert_session(
     event: EventIn,
     db: AsyncSession,
     tenant_id: Optional[uuid.UUID] = None,
+    is_test_data: bool = False,
+    test_run_id: Optional[str] = None,
 ) -> bool:
     """
     Create or update a tracking session record.
@@ -155,6 +166,8 @@ async def _upsert_session(
             device_type=event.device_type,
             entry_page=event.page_url,
             tenant_id=tenant_id,
+            is_test_data=is_test_data,
+            test_run_id=test_run_id,
         )
         if event.campaign_id:
             # Parse UTM params if campaign_id is a JSON string or plain string
@@ -167,6 +180,8 @@ async def _upsert_session(
                 ts.utm_content = utms.get("utm_content")
             except (json.JSONDecodeError, TypeError):
                 ts.utm_campaign = event.campaign_id
+    elif ts.visitor_id != visitor_id or ts.tenant_id != tenant_id:
+        raise HTTPException(status_code=409, detail="session_id belongs to another visitor or tenant")
     prev_count = ts.page_count
     ts.page_count += 1
     ts.end_time = now
@@ -186,6 +201,8 @@ async def _upsert_visitor(
     score_delta: int,
     client_ip: Optional[str] = None,
     tenant_id: Optional[uuid.UUID] = None,
+    is_test_data: bool = False,
+    test_run_id: Optional[str] = None,
 ) -> tuple[int, str, str, bool]:
     """
     Create or update visitor record. Apply score_delta.
@@ -200,7 +217,11 @@ async def _upsert_visitor(
             visitor_id=visitor_id,
             device_type=event.device_type,
             tenant_id=tenant_id,
+            is_test_data=is_test_data,
+            test_run_id=test_run_id,
         )
+    elif visitor.tenant_id != tenant_id:
+        raise HTTPException(status_code=409, detail="visitor_id belongs to another tenant")
     else:
         # Return visit detection: same visitor, gap > 24 hours
         last_seen_naive = visitor.last_seen.replace(tzinfo=None) if visitor.last_seen.tzinfo is not None else visitor.last_seen
@@ -216,6 +237,9 @@ async def _upsert_visitor(
     visitor.last_seen = now
     visitor.last_activity_at = now
     visitor.updated_at = now
+    if visitor.analytics_consent_status != "granted":
+        visitor.analytics_consent_status = "granted"
+        visitor.consent_updated_at = now
 
     if event.page_type == "product" or event.event_name == "page_view":
         visitor.total_page_views += 1
@@ -237,17 +261,20 @@ async def _upsert_visitor(
     # Nurture trigger: linked contact reaching a triggered intent stage (§2.1.4)
     if stage_changed and visitor.intent_stage in ("warm", "hot", "sales_ready"):
         try:
-            from app.services.subscription import get_plan_feature
+            from app.services.capability_access import tenant_has_feature
             plan_ok = True
             if tenant_id:
                 from app.models.tenant import Tenant
                 tenant = await db.get(Tenant, tenant_id)
-                plan_ok = bool(tenant and get_plan_feature(tenant.plan, "nurture_email"))
+                plan_ok = bool(tenant and tenant_has_feature(tenant, "nurture_email"))
             if plan_ok:
-                cq = select(Contact).where(Contact.visitor_id == visitor.visitor_id)
-                if tenant_id:
-                    cq = cq.where(Contact.tenant_id == tenant_id)
-                contact = (await db.exec(cq)).first()
+                contact = (
+                    await db.get(Contact, visitor.contact_id)
+                    if visitor.contact_id
+                    else None
+                )
+                if contact and tenant_id and contact.tenant_id != tenant_id:
+                    contact = None
                 if contact:
                     from app.api.v1.endpoints.nurture import trigger_nurture_for_contact
                     await trigger_nurture_for_contact(
@@ -312,7 +339,15 @@ async def receive_event(
     No authentication required — public endpoint.
     Applies intent scoring to the visitor.
     """
+    if not body.analytics_consent:
+        raise HTTPException(status_code=403, detail="Analytics consent is required")
     props = body.properties or {}
+    is_test_data = is_authorized_synthetic_request(
+        request.headers.get("x-forgebase-test-token")
+    )
+    test_run_id = (
+        request.headers.get("x-forgebase-test-run", "")[:100] or None
+    ) if is_test_data else None
     custom_scores = await _load_custom_scores(tenant_id, db)
     score_delta = calculate_score_delta(body.event_name, props, custom_scores=custom_scores)
     client_ip = _get_client_ip(request)
@@ -326,16 +361,21 @@ async def receive_event(
     if body.session_id and body.visitor_id:
         # Visitor must be upserted FIRST to satisfy FK constraint on tracking_sessions
         new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip, tenant_id
+            body.visitor_id, body, db, score_delta, client_ip, tenant_id,
+            is_test_data, test_run_id,
         )
-        depth_reached = await _upsert_session(body.session_id, body.visitor_id, body, db, tenant_id)
+        depth_reached = await _upsert_session(
+            body.session_id, body.visitor_id, body, db, tenant_id,
+            is_test_data, test_run_id,
+        )
         if is_return:
             computed_events.append("return_visit")
         if depth_reached:
             computed_events.append("session_depth_reached")
     elif body.visitor_id:
         new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip, tenant_id
+            body.visitor_id, body, db, score_delta, client_ip, tenant_id,
+            is_test_data, test_run_id,
         )
         if is_return:
             computed_events.append("return_visit")
@@ -362,6 +402,8 @@ async def receive_event(
         properties=json.dumps(props) if props else None,
         score_delta=score_delta,
         tenant_id=tenant_id,
+        is_test_data=is_test_data,
+        test_run_id=test_run_id,
     )
     db.add(event_obj)
 
@@ -387,15 +429,29 @@ async def receive_event(
             ip_address=client_ip,
             score_delta=c_delta,
             tenant_id=tenant_id,
+            is_test_data=is_test_data,
+            test_run_id=test_run_id,
         ))
 
     await db.flush()
     if body.visitor_id:
         await _refresh_intent_explanation(body.visitor_id, db, tenant_id)
+    if not is_test_data and tenant_id and body.visitor_id and client_ip:
+        visitor_for_identification = await db.get(Visitor, body.visitor_id)
+        if visitor_for_identification:
+            await maybe_create_network_observation(
+                db,
+                tenant_id=tenant_id,
+                visitor=visitor_for_identification,
+                source_event=event_obj,
+                client_ip=client_ip,
+                analytics_consent=body.analytics_consent,
+                user_agent=request.headers.get("user-agent") or body.user_agent,
+            )
     await db.commit()
 
     # 1b.3.5 Intent trigger: fire sales alert on stage escalation to hot/sales_ready
-    if body.visitor_id and new_score is not None and new_stage in ("hot", "sales_ready"):
+    if not is_test_data and body.visitor_id and new_score is not None and new_stage in ("hot", "sales_ready"):
         if should_alert(old_stage, new_stage):
             asyncio.create_task(notify_visitor_hot(body.visitor_id, new_stage, new_score))
             # Copilot hot visitor notification
@@ -425,7 +481,7 @@ async def receive_event(
                 logger.warning("visitor intent stage webhook failed", exc_info=True)
 
     # 1b.5.5 Meta Conversions API — fire server-side event for mapped event types
-    if body.visitor_id:
+    if body.visitor_id and not is_test_data:
         asyncio.create_task(fire_meta_event(
             event_name=body.event_name,
             visitor_id=str(body.visitor_id),
@@ -453,7 +509,17 @@ async def receive_events_batch(
     """Receive up to 20 events at once (e.g. queued while offline)."""
     if len(body) > 20:
         raise HTTPException(status_code=400, detail="Max 20 events per batch")
+    if any(not event.analytics_consent for event in body):
+        raise HTTPException(status_code=403, detail="Analytics consent is required")
+    is_test_data = is_authorized_synthetic_request(
+        request.headers.get("x-forgebase-test-token")
+    )
+    test_run_id = (
+        request.headers.get("x-forgebase-test-run", "")[:100] or None
+    ) if is_test_data else None
+    client_ip = _get_client_ip(request)
     results = []
+    observation_inputs: list[tuple[EventIn, TrackingEvent]] = []
     for ev in body:
         props = ev.properties or {}
         score_delta = calculate_score_delta(ev.event_name, props)
@@ -462,14 +528,19 @@ async def receive_events_batch(
         if ev.session_id and ev.visitor_id:
             # Visitor MUST be upserted first to satisfy FK on tracking_sessions
             new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id
+                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id,
+                is_test_data=is_test_data, test_run_id=test_run_id,
             )
             await db.flush()
-            await _upsert_session(ev.session_id, ev.visitor_id, ev, db, tenant_id)
+            await _upsert_session(
+                ev.session_id, ev.visitor_id, ev, db, tenant_id,
+                is_test_data=is_test_data, test_run_id=test_run_id,
+            )
             await db.flush()  # Also flush session before inserting event (fk_events_session_id)
         elif ev.visitor_id:
             new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id
+                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id,
+                is_test_data=is_test_data, test_run_id=test_run_id,
             )
         event_obj = TrackingEvent(
             event_name=ev.event_name,
@@ -484,12 +555,15 @@ async def receive_events_batch(
             campaign_id=ev.campaign_id,
             user_agent=ev.user_agent,
             device_type=ev.device_type,
-            ip_address=_get_client_ip(request),
+            ip_address=client_ip,
             properties=json.dumps(props) if props else None,
             score_delta=score_delta,
             tenant_id=tenant_id,
+            is_test_data=is_test_data,
+            test_run_id=test_run_id,
         )
         db.add(event_obj)
+        observation_inputs.append((ev, event_obj))
         results.append({
             "event_id": str(event_obj.event_id),
             "score_delta": score_delta,
@@ -502,6 +576,21 @@ async def receive_events_batch(
         if ev.visitor_id and ev.visitor_id not in refreshed:
             refreshed.add(ev.visitor_id)
             await _refresh_intent_explanation(ev.visitor_id, db, tenant_id)
+    if not is_test_data and tenant_id and client_ip:
+        for ev, event_obj in observation_inputs:
+            if not ev.visitor_id:
+                continue
+            visitor_for_identification = await db.get(Visitor, ev.visitor_id)
+            if visitor_for_identification:
+                await maybe_create_network_observation(
+                    db,
+                    tenant_id=tenant_id,
+                    visitor=visitor_for_identification,
+                    source_event=event_obj,
+                    client_ip=client_ip,
+                    analytics_consent=ev.analytics_consent,
+                    user_agent=request.headers.get("user-agent") or ev.user_agent,
+                )
     await db.commit()
     return {"processed": len(results), "results": results}
 

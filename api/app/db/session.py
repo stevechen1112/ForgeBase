@@ -1,16 +1,22 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
 from app.core.config import settings
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.APP_ENV == "development",
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
+_engine_options: dict[str, Any] = {
+    "echo": settings.APP_ENV == "development",
+    "pool_pre_ping": True,
+}
+if settings.DATABASE_NULL_POOL:
+    _engine_options["poolclass"] = NullPool
+else:
+    _engine_options.update({"pool_size": 10, "max_overflow": 20})
+
+engine = create_async_engine(settings.DATABASE_URL, **_engine_options)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,

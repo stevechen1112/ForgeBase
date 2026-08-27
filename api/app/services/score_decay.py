@@ -14,8 +14,7 @@ Run via APScheduler (registered in app startup) or cron trigger.
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import select, col
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import col, select
 
 from app.db.session import get_session_ctx
 from app.models.visitor import Visitor
@@ -75,13 +74,14 @@ async def run_daily_score_decay() -> dict:
                         # Notify copilot — fire-and-forget
                         if v.tenant_id:
                             import asyncio
+
                             from app.services.copilot import on_churn_risk
                             asyncio.create_task(
                                 on_churn_risk(v.visitor_id, v.tenant_id, old_stage)
                             )
 
             await db.commit()
-    except Exception as exc:
+    except Exception:
         logger.exception("Score decay job failed")
 
     logger.info(

@@ -9,16 +9,24 @@ DELETE /api/v1/content/products/{id}
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import select, func
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor, QuotaEnforcer, resolve_tenant_id, optional_current_user
+from app.api.v1.deps import (
+    optional_current_user,
+    require_admin,
+    require_content_editor,
+    resolve_tenant_id,
+)
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
+from app.models.content_asset import ContentAsset
 from app.models.product import Product
 from app.models.user import User
 from app.schemas.base import APIResponse, PaginationMeta
-from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
+from app.schemas.product import ProductCreate, ProductGalleryReorder, ProductUpdate
+from app.services.knowledge_sync import sync_knowledge_now
+from app.services.product_gallery import products_to_read
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -33,6 +41,7 @@ async def list_products(
     slug: str | None = Query(None),
     q: str | None = Query(None, description="Full-text search on product_name and model_number"),
     featured: bool | None = Query(None, description="Filter by is_featured"),
+    pair_status: str | None = Query(None, description="missing_target | draft_target | stale"),
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
     auth_user=Depends(optional_current_user),
@@ -43,13 +52,7 @@ async def list_products(
         tenant_id = auth_user.tenant_id
     base_q = select(Product)
     if tenant_id:
-        # Authenticated tenant editors also see legacy NULL-tenant rows.
-        if auth_user is not None and getattr(auth_user, "tenant_id", None):
-            base_q = base_q.where(
-                (Product.tenant_id == tenant_id) | (Product.tenant_id.is_(None))
-            )
-        else:
-            base_q = base_q.where(Product.tenant_id == tenant_id)
+        base_q = base_q.where(Product.tenant_id == tenant_id)
     else:
         base_q = base_q.where(Product.tenant_id.is_(None))
     if locale:
@@ -74,13 +77,29 @@ async def list_products(
         )
     if featured is not None:
         base_q = base_q.where(Product.is_featured == featured)
+    if pair_status:
+        from app.services.locale_support import (
+            apply_pair_status_filter,
+            default_buyer_locale,
+            get_source_locale,
+        )
+        source_locale = await get_source_locale(session, tenant_id)
+        base_q = apply_pair_status_filter(
+            base_q,
+            Product,
+            tenant_id=tenant_id,
+            source_locale=source_locale,
+            target_locale=default_buyer_locale(source_locale),
+            pair_status=pair_status,
+            key_field="slug",
+        )
 
     total = (await session.exec(select(func.count()).select_from(base_q.subquery()))).one()
     items_q = base_q.order_by(Product.display_priority.desc(), Product.product_name).offset((page - 1) * page_size).limit(page_size)
     items = (await session.exec(items_q)).all()
 
     return APIResponse(
-        data=[ProductRead.model_validate(p) for p in items],
+        data=await products_to_read(session, list(items), tenant_id),
         meta=PaginationMeta(
             total=total,
             page=page,
@@ -95,7 +114,6 @@ async def create_product(
     payload: ProductCreate,
     session: AsyncSession = Depends(get_session),
     _user=Depends(require_content_editor),
-    _quota=Depends(QuotaEnforcer("product")),
 ):
     from app.core.locale import to_content_locale
 
@@ -127,7 +145,9 @@ async def create_product(
     session.add(product)
     await session.commit()
     await session.refresh(product)
-    return APIResponse(data=ProductRead.model_validate(product))
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=product)
+    await session.commit()
+    return APIResponse(data=(await products_to_read(session, [product], _user.tenant_id))[0])
 
 
 @router.get("/{product_id}", response_model=APIResponse)
@@ -143,11 +163,9 @@ async def get_product(
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if tenant_id is None and product.tenant_id is not None:
+    if product.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if tenant_id is not None and product.tenant_id is not None and product.tenant_id != tenant_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return APIResponse(data=ProductRead.model_validate(product))
+    return APIResponse(data=(await products_to_read(session, [product], tenant_id))[0])
 
 
 @router.patch("/{product_id}", response_model=APIResponse)
@@ -162,7 +180,7 @@ async def update_product(
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if _user.tenant_id and product.tenant_id is not None and product.tenant_id != _user.tenant_id:
+    if not _user.is_superuser and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -201,7 +219,39 @@ async def update_product(
     session.add(product)
     await session.commit()
     await session.refresh(product)
-    return APIResponse(data=ProductRead.model_validate(product))
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=product)
+    await session.commit()
+    return APIResponse(data=(await products_to_read(session, [product], _user.tenant_id))[0])
+
+
+@router.put("/{product_id}/gallery", response_model=APIResponse)
+async def reorder_product_gallery(
+    product_id: uuid.UUID,
+    payload: ProductGalleryReorder,
+    session: AsyncSession = Depends(get_session),
+    _user: User = Depends(require_content_editor),
+):
+    product = await session.get(Product, product_id)
+    if not product or (not _user.is_superuser and product.tenant_id != _user.tenant_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    assets = (
+        await session.exec(
+            select(ContentAsset).where(
+                ContentAsset.product_id == product_id,
+                ContentAsset.tenant_id == _user.tenant_id,
+                ContentAsset.asset_type == "image",
+            )
+        )
+    ).all()
+    by_id = {asset.id: asset for asset in assets}
+    for item in payload.items:
+        asset = by_id.get(item.id)
+        if not asset:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Gallery image not found")
+        asset.display_order = item.display_order
+        session.add(asset)
+    await session.commit()
+    return APIResponse(data=(await products_to_read(session, [product], _user.tenant_id))[0])
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -213,7 +263,8 @@ async def delete_product(
     product = await session.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if _user.tenant_id and product.tenant_id is not None and product.tenant_id != _user.tenant_id:
+    if not _user.is_superuser and product.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Product not found")
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=product, action="tombstone")
     await session.delete(product)
     await session.commit()

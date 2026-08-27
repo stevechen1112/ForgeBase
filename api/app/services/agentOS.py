@@ -7,20 +7,18 @@ This service is responsible for:
 3. Handling failures gracefully (fault tolerance)
 """
 
-import asyncio
 import json
 import logging
 import uuid
 from typing import Optional
 
 import httpx
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_session_ctx
 from app.models.rfq_event import RFQEvent
 from app.models.rfq_request import RFQRequest
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,16 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
-from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from typing import TYPE_CHECKING, List, Optional
+
 from sqlalchemy import UniqueConstraint
-from app.models.associations import ProductFAQLink, ApplicationFAQLink
+from sqlmodel import Field, Relationship, SQLModel
+
+from app.core.datetime import utcnow_naive
+from app.models.associations import ApplicationFAQLink, ProductFAQLink
 
 if TYPE_CHECKING:
-    from app.models.product import Product
     from app.models.application import Application
+    from app.models.product import Product
 
 
 class FAQItem(SQLModel, table=True):

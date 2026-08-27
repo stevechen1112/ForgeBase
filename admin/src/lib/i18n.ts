@@ -2,11 +2,14 @@
  * Shared locale constants + draft handoff helpers for content forms.
  */
 
-export const SOURCE_LOCALE = "en";
+export const SOURCE_LOCALE = "zh-tw";
 
 export const SUPPORTED_LOCALES = [
   { value: "en", label: "English" },
   { value: "zh-tw", label: "繁體中文" },
+  { value: "ja", label: "日本語" },
+  { value: "fr", label: "Français" },
+  { value: "ru", label: "Русский" },
 ] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]["value"];
@@ -17,8 +20,7 @@ export function toContentLocale(raw: string | null | undefined, fallback: Suppor
   const key = raw.trim();
   if (key === "en") return "en";
   const lowered = key.toLowerCase().replace(/_/g, "-");
-  if (lowered === "zh-tw") return "zh-tw";
-  if (lowered === "en") return "en";
+  if (SUPPORTED_LOCALES.some((locale) => locale.value === lowered)) return lowered;
   return fallback;
 }
 

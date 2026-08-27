@@ -24,6 +24,7 @@ class ChatSession(SQLModel, table=True):
     message_count: int = Field(default=0)
     quality_rating: Optional[int] = Field(default=None)  # 1-5 admin quality rating
     admin_notes: Optional[str] = Field(default=None)  # admin review notes
+    qualification_json: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
 
@@ -34,9 +35,12 @@ class ChatMessage(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     chat_session_id: uuid.UUID = Field(
         foreign_key="chat_sessions.id",
+        ondelete="CASCADE",
         index=True,
     )
     role: str = Field(max_length=10)
     content: str
     sources: Optional[str] = Field(default=None)
+    grounding_status: Optional[str] = Field(default=None, max_length=20)
+    claim_warnings: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=utcnow_naive)

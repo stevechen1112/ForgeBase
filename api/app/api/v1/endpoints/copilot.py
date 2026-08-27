@@ -14,7 +14,6 @@ Endpoints:
   GET    /copilot/chat/history         — Web chat: fetch recent conversation history
   DELETE /copilot/chat/history         — Web chat: clear conversation history
 """
-import asyncio
 import json
 import logging
 import random
@@ -24,19 +23,30 @@ from datetime import timedelta
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
-from pydantic import BaseModel, Field as PydanticField
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    status,
+)
+from pydantic import BaseModel
+from pydantic import Field as PydanticField
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import RequireFeature, get_current_user
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
-from app.models.notification_preference import NotificationPreference
 from app.models.notification_log import NotificationLog
+from app.models.notification_preference import NotificationPreference
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.services.channels.telegram import TelegramChannel
+from app.services.capability_access import tenant_has_feature
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/copilot", tags=["Copilot"])
@@ -103,7 +113,7 @@ async def _get_preference(
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/preferences")
+@router.get("/preferences", dependencies=[Depends(RequireFeature("notifications"))])
 async def list_preferences(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -136,7 +146,7 @@ async def list_preferences(
     }
 
 
-@router.post("/preferences", status_code=status.HTTP_201_CREATED)
+@router.post("/preferences", status_code=status.HTTP_201_CREATED, dependencies=[Depends(RequireFeature("notifications"))])
 async def create_preference(
     body: PreferenceIn,
     db: AsyncSession = Depends(get_session),
@@ -166,7 +176,7 @@ async def create_preference(
     return {"data": {"id": str(pref.id)}}
 
 
-@router.put("/preferences/{pref_id}")
+@router.put("/preferences/{pref_id}", dependencies=[Depends(RequireFeature("notifications"))])
 async def update_preference(
     pref_id: uuid.UUID,
     body: PreferenceUpdate,
@@ -182,7 +192,7 @@ async def update_preference(
     return {"ok": True}
 
 
-@router.delete("/preferences/{pref_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/preferences/{pref_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(RequireFeature("notifications"))])
 async def delete_preference(
     pref_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
@@ -193,15 +203,24 @@ async def delete_preference(
     await db.commit()
 
 
-@router.get("/notifications")
+@router.get("/notifications", dependencies=[Depends(RequireFeature("notifications"))])
 async def list_notifications(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Recent notification history for the current user's tenant."""
+    tenant = await db.get(Tenant, current_user.tenant_id)
+    allowed_event_types = {"new_rfq", "daily_summary"}
+    if tenant and tenant_has_feature(tenant, "intent_scoring"):
+        allowed_event_types.update({"hot_visitor", "churn_risk"})
+    if tenant and tenant_has_feature(tenant, "chat_handoff"):
+        allowed_event_types.add("chat_handoff")
+    if tenant and tenant_has_feature(tenant, "full_tracking"):
+        allowed_event_types.add("content_suggestion")
     result = await db.exec(
         select(NotificationLog)
         .where(NotificationLog.tenant_id == current_user.tenant_id)
+        .where(NotificationLog.event_type.in_(allowed_event_types))
         .order_by(NotificationLog.sent_at.desc())
         .limit(100)
     )
@@ -224,7 +243,7 @@ async def list_notifications(
 
 # ── Telegram Binding ──────────────────────────────────────────────────────────
 
-@router.post("/telegram/bind-start")
+@router.post("/telegram/bind-start", dependencies=[Depends(RequireFeature("notifications"))])
 async def telegram_bind_start(
     body: TelegramBindStart,
     db: AsyncSession = Depends(get_session),
@@ -280,7 +299,7 @@ async def telegram_bind_start(
     return {"message": f"驗證碼已發送至 Telegram，請在 {_BINDING_CODE_EXPIRY_MINUTES} 分鐘內完成驗證"}
 
 
-@router.post("/telegram/bind-verify")
+@router.post("/telegram/bind-verify", dependencies=[Depends(RequireFeature("notifications"))])
 async def telegram_bind_verify(
     body: TelegramBindVerify,
     db: AsyncSession = Depends(get_session),
@@ -437,7 +456,7 @@ class WebChatIn(BaseModel):
     message: str
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[Depends(RequireFeature("ai_copilot"))])
 async def web_chat(
     body: WebChatIn,
     current_user: User = Depends(get_current_user),
@@ -470,7 +489,7 @@ async def web_chat(
     return {"reply": reply}
 
 
-@router.get("/chat/history")
+@router.get("/chat/history", dependencies=[Depends(RequireFeature("ai_copilot"))])
 async def web_chat_history(
     limit: int = 40,
     db: AsyncSession = Depends(get_session),
@@ -480,8 +499,9 @@ async def web_chat_history(
     Return recent web-channel conversation history for the current user.
     Returned in chronological order (oldest first), skipping tool messages.
     """
-    from app.models.copilot_conversation import CopilotConversation
     from sqlmodel import col
+
+    from app.models.copilot_conversation import CopilotConversation
 
     limit = min(max(limit, 1), 100)
     result = await db.exec(
@@ -506,14 +526,15 @@ async def web_chat_history(
     }
 
 
-@router.delete("/chat/history", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/chat/history", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(RequireFeature("ai_copilot"))])
 async def clear_web_chat_history(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Clear all web-channel conversation history for the current user."""
-    from app.models.copilot_conversation import CopilotConversation
     from sqlmodel import delete
+
+    from app.models.copilot_conversation import CopilotConversation
 
     await db.exec(
         delete(CopilotConversation)
@@ -525,7 +546,7 @@ async def clear_web_chat_history(
 
 # ── Observability ─────────────────────────────────────────────────────────────
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(RequireFeature("ai_copilot"))])
 async def get_copilot_stats(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),

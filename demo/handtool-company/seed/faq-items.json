@@ -142,5 +142,149 @@
     "locale": "en",
     "sort_order": 180,
     "status": "published"
+  },
+  {
+    "question": "NorthForge 可以在工具組與工具箱上提供自有品牌標示嗎？",
+    "answer": "<p>可以。依專案範圍與訂單形式，NorthForge 可為指定產品線、模塑工具箱、包裝內卡、外箱標示與條碼標籤提供自有品牌配置。</p>",
+    "category_tag": "OEM",
+    "locale": "zh-tw",
+    "sort_order": 10,
+    "status": "published"
+  },
+  {
+    "question": "標準目錄工具的一般最低訂購量是多少？",
+    "answer": "<p>最低訂購量取決於產品類型、包裝形式，以及採用標準包裝或自有品牌包裝。標準品通常比客製專案有更彈性的起訂數量。</p>",
+    "category_tag": "MOQ",
+    "locale": "zh-tw",
+    "sort_order": 20,
+    "status": "published"
+  },
+  {
+    "question": "你們是否提供客製手工具的 OEM 或 ODM 開發？",
+    "answer": "<p>NorthForge 支援 OEM 與部分 ODM 開發，包括 Logo 標示、包裝調整、品項組合規劃，以及部分產品修改或依圖面進行可行性評估。</p>",
+    "category_tag": "OEM",
+    "locale": "zh-tw",
+    "sort_order": 30,
+    "status": "published"
+  },
+  {
+    "question": "出貨前可以提供檢驗報告嗎？",
+    "answer": "<p>NorthForge 可提供內部檢驗摘要；買方如有要求，也可協調第三方出貨前檢驗。實際文件範圍需依產品與訂單確認。</p>",
+    "category_tag": "Quality",
+    "locale": "zh-tw",
+    "sort_order": 40,
+    "status": "published"
+  },
+  {
+    "question": "絕緣工具是否附有相關合規文件？",
+    "answer": "<p>針對專業電氣市場的絕緣工具專案，NorthForge 可協助整理合規相關文件與製程說明；實際適用標準與文件仍需依型號及目標市場確認。</p>",
+    "category_tag": "Compliance",
+    "locale": "zh-tw",
+    "sort_order": 50,
+    "status": "published"
+  },
+  {
+    "question": "可以依指定品項組合製作混合工具組嗎？",
+    "answer": "<p>可以。NorthForge 支援混合 SKU 工具組，包括 EVA 泡棉配置、模塑工具箱、品項組合規劃與自有品牌包裝。</p>",
+    "category_tag": "Toolkits",
+    "locale": "zh-tw",
+    "sort_order": 60,
+    "status": "published"
+  },
+  {
+    "question": "如何維持核准樣品與量產之間的一致性？",
+    "answer": "<p>NorthForge 透過圖面與版本控管、核准確認、檢驗流程及重複訂單管理，降低樣品與量產訂單之間可避免的差異。</p>",
+    "category_tag": "Quality",
+    "locale": "zh-tw",
+    "sort_order": 70,
+    "status": "published"
+  },
+  {
+    "question": "你們服務進口商與經銷商，還是只服務大型品牌？",
+    "answer": "<p>NorthForge 的服務對象包含進口商、經銷商、自有品牌與工業買家，定位以制度化的中型專案為主，不只承接大型企業帳戶。</p>",
+    "category_tag": "Business Model",
+    "locale": "zh-tw",
+    "sort_order": 80,
+    "status": "published"
+  },
+  {
+    "question": "可以提供 RoHS 或 REACH 相關材質聲明嗎？",
+    "answer": "<p>對於需要掌握出口專案材質合規資訊的買方，NorthForge 可協助處理 RoHS 與 REACH 相關文件；實際文件內容需依產品與供應鏈資料確認。</p>",
+    "category_tag": "Compliance",
+    "locale": "zh-tw",
+    "sort_order": 90,
+    "status": "published"
+  },
+  {
+    "question": "OEM 客戶可以選擇哪些包裝方式？",
+    "answer": "<p>依專案需求，可討論零售盒、模塑工具箱、EVA 內襯、標籤、條碼貼紙、說明書與出口外箱客製等包裝方式。</p>",
+    "category_tag": "Packaging",
+    "locale": "zh-tw",
+    "sort_order": 100,
+    "status": "published"
+  },
+  {
+    "question": "NorthForge 可以支援外勤維修與承包商工具組嗎？",
+    "answer": "<p>可以。NorthForge 可為外勤技師與承包商供應專案規劃精簡維修工具組、電工工具組與行動維護組合。</p>",
+    "category_tag": "Toolkits",
+    "locale": "zh-tw",
+    "sort_order": 110,
+    "status": "published"
+  },
+  {
+    "question": "你們接受混合 SKU 的重複訂單嗎？",
+    "answer": "<p>可以。在品項組合、包裝規則與標示要求明確的情況下，NorthForge 可支援混合 SKU 的持續補貨專案。</p>",
+    "category_tag": "Ordering",
+    "locale": "zh-tw",
+    "sort_order": 120,
+    "status": "published"
+  },
+  {
+    "question": "可以配合零售商或經銷商的條碼與外箱標籤要求嗎？",
+    "answer": "<p>可以。條碼標籤、外箱標示與包裝結構細節可納入自有品牌及經銷通路專案一併管理。</p>",
+    "category_tag": "Packaging",
+    "locale": "zh-tw",
+    "sort_order": 130,
+    "status": "published"
+  },
+  {
+    "question": "NorthForge 通常與哪些類型的買家合作？",
+    "answer": "<p>常見買家包括手工具進口商、工業經銷商、汽車售後市場供應商、承包商通路工具品牌，以及自有品牌採購團隊。</p>",
+    "category_tag": "Business Model",
+    "locale": "zh-tw",
+    "sort_order": 140,
+    "status": "published"
+  },
+  {
+    "question": "可以協助製作可直接上架銷售的手工具組嗎？",
+    "answer": "<p>可以。NorthForge 可協助規劃混合手工具組、包裝與自有品牌配置，供買方推出或擴充品牌產品線。</p>",
+    "category_tag": "Retail Programs",
+    "locale": "zh-tw",
+    "sort_order": 150,
+    "status": "published"
+  },
+  {
+    "question": "你們支援汽車用途的專用工具專案嗎？",
+    "answer": "<p>可以。可討論的品項包括扭力工具、套筒組、火星塞工具、拔卸工具、煞車維修工具組、飾板工具與車間工具組合。</p>",
+    "category_tag": "Automotive",
+    "locale": "zh-tw",
+    "sort_order": 160,
+    "status": "published"
+  },
+  {
+    "question": "正式下量產訂單前可以先申請樣品嗎？",
+    "answer": "<p>是否可提供樣品取決於品項與專案類型；NorthForge 可在制度化的 OEM 與重複訂單流程中安排樣品評估與核准。</p>",
+    "category_tag": "Samples",
+    "locale": "zh-tw",
+    "sort_order": 170,
+    "status": "published"
+  },
+  {
+    "question": "買家為什麼選擇 NorthForge，而不只比較最低價格？",
+    "answer": "<p>重視重複訂單一致性、包裝執行、文件清楚度與商務溝通效率的買家，通常不會只以最低單價作為選擇依據。</p>",
+    "category_tag": "Positioning",
+    "locale": "zh-tw",
+    "sort_order": 180,
+    "status": "published"
   }
 ]

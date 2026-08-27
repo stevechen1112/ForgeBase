@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from typing import TYPE_CHECKING, Optional
+
+from sqlmodel import Field, Relationship, SQLModel
+
 from app.core.datetime import utcnow_naive
 
 if TYPE_CHECKING:
@@ -16,21 +18,31 @@ class ContentAsset(SQLModel, table=True):
     __tablename__ = "content_assets"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
     original_filename: str = Field(max_length=255)
-    r2_key: str = Field(max_length=500, unique=True)   # path in R2 bucket
+    r2_key: str = Field(max_length=500, unique=True, index=True)   # path in R2 bucket
     public_url: str = Field(max_length=500)
     mime_type: str = Field(max_length=80)
     file_size_bytes: int = Field(default=0)
+    sha256: Optional[str] = Field(default=None, max_length=64, index=True)
     asset_type: str = Field(max_length=30)
     # "image" | "pdf" | "cad" | "video" | "other"
     alt_text: Optional[str] = Field(default=None, max_length=200)
     title: Optional[str] = Field(default=None, max_length=200)
     # 2.3.2 PDF indexing
-    is_indexable: bool = Field(default=False)
+    is_indexable: bool = Field(default=False, index=True)
+    index_status: str = Field(default="not_indexed", max_length=30)
+    index_error: Optional[str] = Field(default=None, max_length=500)
     seo_title: Optional[str] = Field(default=None, max_length=200)
-    product_id: Optional[uuid.UUID] = Field(default=None, foreign_key="products.id")
-    page_id: Optional[uuid.UUID] = Field(default=None, foreign_key="pages.id")
+    product_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="products.id", ondelete="SET NULL"
+    )
+    page_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="pages.id", ondelete="SET NULL"
+    )
+    display_order: int = Field(default=0)
     uploaded_by: uuid.UUID = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=utcnow_naive)
 

@@ -74,6 +74,7 @@ async def test_has_rfq_uses_rfq_requests_not_events(
         "event_name": "certification_view",
         "visitor_id": str(visitor_id), "session_id": str(session_id),
         "page_url": "https://www.test.com/cert",
+        "analytics_consent": True,
     })
     tag = uuid.uuid4().hex[:8]
     r = await http_client.post("/api/v1/forms/rfq", headers={"X-Tenant-ID": str(tenant_a.id)}, json={
@@ -108,6 +109,7 @@ async def test_batch_events_refresh_intent_explanation(
             "event_name": "certification_view",
             "visitor_id": str(visitor_id), "session_id": str(session_id),
             "page_url": "https://www.test.com/c", "page_type": "certification",
+            "analytics_consent": True,
         }
         for _ in range(3)
     ]

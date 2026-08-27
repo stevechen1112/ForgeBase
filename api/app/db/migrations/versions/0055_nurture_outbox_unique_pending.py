@@ -8,7 +8,6 @@ Revises: 0054_nurture_outbox
 """
 from alembic import op
 
-
 revision = "0055_nurture_outbox_unique_pending"
 down_revision = "0054_nurture_outbox"
 branch_labels = None

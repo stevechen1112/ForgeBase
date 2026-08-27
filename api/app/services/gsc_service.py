@@ -10,7 +10,6 @@ Required env vars:
 """
 from __future__ import annotations
 
-import json
 import logging
 from datetime import date, timedelta
 from typing import Optional
@@ -36,8 +35,9 @@ async def _get_access_token() -> Optional[str]:
         return None
 
     try:
-        import time, base64
+        import base64
         import json as _json
+        import time
 
         key_data = _json.loads(key_json)
         client_email = key_data["client_email"]

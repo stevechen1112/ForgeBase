@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
 from typing import Optional
+
 from pydantic import EmailStr
 from sqlmodel import SQLModel
+
 from app.models.user import UserRole
 
 

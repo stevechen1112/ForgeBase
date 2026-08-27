@@ -16,6 +16,7 @@ import {
   normalizeThemeKey,
 } from "@/lib/siteConfig";
 import { withTenantHost } from "@/lib/tenant";
+import { rewriteLegacyPublicPath } from "@/lib/legacyPublicPaths";
 
 export type RuntimeSiteContext = {
   siteConfig: SiteConfig;
@@ -25,6 +26,7 @@ export type RuntimeSiteContext = {
   contactPhone: string;
   careersEmail: string;
   isIndustrial: boolean;
+  isPrecision: boolean;
 };
 
 type SiteProfileResponse = {
@@ -50,6 +52,7 @@ type SiteProfileResponse = {
   footer_cta_label?: string | null;
   footer_cta_href?: string | null;
   asset_manifest_json?: string | null;
+  site_copy_json?: string | null;
 };
 
 const API_BASE =
@@ -105,7 +108,7 @@ function normalizeNavItems(value?: unknown): SiteNavItem[] | undefined {
       continue;
     }
     items.push({
-      href,
+      href: rewriteLegacyPublicPath(href),
       label: normalizeLocalizedText((item as { label?: unknown }).label),
     });
   }
@@ -126,7 +129,7 @@ function normalizeActions(value?: unknown): SiteAction[] | undefined {
       if (!href || !label) {
         return null;
       }
-      return { href, label } satisfies SiteAction;
+      return { href: rewriteLegacyPublicPath(href), label } satisfies SiteAction;
     })
     .filter((item): item is SiteAction => Boolean(item));
   return items.length ? items : undefined;
@@ -195,7 +198,25 @@ function normalizeFooterCta(profile: SiteProfileResponse): SiteFooterCta | undef
   return {
     title,
     description: normalizeLocalizedText(profile.footer_cta_description),
-    action: { label, href },
+    action: { label, href: rewriteLegacyPublicPath(href) },
+  };
+}
+
+function mergeAssetManifest(
+  fallback?: SiteAssetManifest,
+  incoming?: SiteAssetManifest,
+): SiteAssetManifest | undefined {
+  if (!incoming) return fallback;
+  if (!fallback) return incoming;
+  return {
+    homeHero: incoming.homeHero || fallback.homeHero,
+    aboutHero: incoming.aboutHero || fallback.aboutHero,
+    productsHero: incoming.productsHero || fallback.productsHero,
+    qualityInspection: incoming.qualityInspection || fallback.qualityInspection,
+    customPackaging: incoming.customPackaging || fallback.customPackaging,
+    categoryBySlug: incoming.categoryBySlug ?? fallback.categoryBySlug,
+    applicationBySlug: incoming.applicationBySlug ?? fallback.applicationBySlug,
+    productByKey: incoming.productByKey ?? fallback.productByKey,
   };
 }
 
@@ -246,6 +267,8 @@ export const getRuntimeSiteConfig = cache(async (): Promise<SiteConfig> => {
       ...fallback,
       brandName: normalizeString(profile.brand_name) ?? fallback.brandName,
       logoMark: normalizeString(profile.logo_mark) ?? fallback.logoMark,
+      logoUrl: normalizeString(profile.logo_url) ?? fallback.logoUrl,
+      hiddenBlocks: parseJsonField<{ hiddenBlocks?: SiteConfig["hiddenBlocks"] }>(profile.site_copy_json)?.hiddenBlocks ?? fallback.hiddenBlocks,
       siteUrl: normalizeSiteUrl(profile.site_url) ?? fallback.siteUrl,
       contactEmail: normalizeString(profile.contact_email) ?? fallback.contactEmail,
       contactPhone: normalizeString(profile.contact_phone) ?? fallback.contactPhone,
@@ -259,7 +282,11 @@ export const getRuntimeSiteConfig = cache(async (): Promise<SiteConfig> => {
       footerBadges: normalizeLocalizedList(parseJsonField(profile.footer_badges_json)) ?? fallback.footerBadges,
       socialLinks: normalizeSocialLinks(parseJsonField(profile.social_links_json)) ?? fallback.socialLinks,
       footerCta: normalizeFooterCta(profile) ?? fallback.footerCta,
-      assetManifest: normalizeAssetManifest(parseJsonField(profile.asset_manifest_json)) ?? fallback.assetManifest,
+      assetManifest: mergeAssetManifest(
+        fallback.assetManifest,
+        normalizeAssetManifest(parseJsonField(profile.asset_manifest_json)),
+      ),
+      siteCopy: parseJsonField<Record<string, unknown>>(profile.site_copy_json),
     };
   } catch {
     return fallback;
@@ -276,6 +303,7 @@ export const getRuntimeSiteContext = cache(async (): Promise<RuntimeSiteContext>
     contactEmail: runtimeSiteConfig.contactEmail,
     contactPhone: runtimeSiteConfig.contactPhone,
     careersEmail: runtimeSiteConfig.careersEmail,
-    isIndustrial: runtimeSiteConfig.layout === "industrial",
+    isIndustrial: runtimeSiteConfig.layout === "industrial" || runtimeSiteConfig.layout === "precision",
+    isPrecision: runtimeSiteConfig.layout === "precision",
   };
 });

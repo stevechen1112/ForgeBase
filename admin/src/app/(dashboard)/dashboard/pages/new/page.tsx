@@ -1,5 +1,5 @@
 import PageContentForm from "../PageContentForm";
-export const metadata = { title: "新增頁面 — NorthForge Admin" };
+export const metadata = { title: "新增頁面 — ForgeBase 管理後台" };
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

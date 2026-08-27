@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class TrackingSession(SQLModel, table=True):
@@ -17,14 +19,14 @@ class TrackingSession(SQLModel, table=True):
     # session_id is generated client-side per session (sessionStorage)
 
     visitor_id: uuid.UUID = Field(
-        foreign_key="visitors.visitor_id", index=True
+        foreign_key="visitors.visitor_id", ondelete="CASCADE", index=True
     )
 
     tenant_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="tenants.id", index=True
+        default=None, foreign_key="tenants.id", ondelete="SET NULL", index=True
     )
 
-    start_time: datetime = Field(default_factory=utcnow_naive)
+    start_time: datetime = Field(default_factory=utcnow_naive, index=True)
     end_time: Optional[datetime] = Field(default=None)
     # last event time in session; updated on each event
 
@@ -44,6 +46,9 @@ class TrackingSession(SQLModel, table=True):
 
     device_type: Optional[str] = Field(default=None, max_length=20)
     country: Optional[str] = Field(default=None, max_length=2)
+
+    is_test_data: bool = Field(default=False, index=True)
+    test_run_id: Optional[str] = Field(default=None, max_length=100)
 
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

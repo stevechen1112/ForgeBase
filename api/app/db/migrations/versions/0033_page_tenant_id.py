@@ -4,8 +4,8 @@ Revision ID: 0033_page_tenant_id
 Revises: 0032_tracking_session_tenant
 Create Date: 2026-04-12
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers
 revision = "0033_page_tenant_id"

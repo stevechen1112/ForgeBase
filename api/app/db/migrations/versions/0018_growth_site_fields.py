@@ -4,8 +4,8 @@
 - rfq_requests: add first_response_at (timestamp), quote_sent_at (timestamp), lost_reason (varchar 500)
 - ctas: add target_intent_stage (varchar 20, default 'any')
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0018_growth_site_fields"
 down_revision = "0017_add_brief_status_to_page_briefs"

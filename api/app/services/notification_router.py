@@ -28,10 +28,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
-from app.models.notification_preference import NotificationPreference
 from app.models.notification_log import NotificationLog
-from app.services.channels.telegram import TelegramChannel
+from app.models.notification_preference import NotificationPreference
 from app.services.channels.line import LineChannel
+from app.services.channels.telegram import TelegramChannel
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,8 @@ async def _is_rate_limited(
     tenant_id: uuid.UUID,
     event_type: str,
     event_ref_id: Optional[uuid.UUID],
+    user_id: Optional[uuid.UUID],
+    channel: str,
 ) -> bool:
     """True if the same event was already sent in the last RATE_LIMIT_MINUTES."""
     if event_ref_id is None:
@@ -82,6 +84,8 @@ async def _is_rate_limited(
         .where(NotificationLog.tenant_id == tenant_id)
         .where(NotificationLog.event_type == event_type)
         .where(NotificationLog.event_ref_id == event_ref_id)
+        .where(NotificationLog.user_id == user_id)
+        .where(NotificationLog.channel == channel)
         .where(NotificationLog.sent_at >= cutoff)
         .where(NotificationLog.status == "sent")
         .limit(1)
@@ -121,6 +125,7 @@ async def send_notification(
     message: str,
     event_ref_id: Optional[uuid.UUID] = None,
     buttons: Optional[list[dict]] = None,
+    raise_on_failure: bool = False,
 ) -> int:
     """
     Dispatch a notification to all enabled subscribers for this tenant + event type.
@@ -128,16 +133,28 @@ async def send_notification(
     """
     pref_col = _EVENT_PREF_COL.get(event_type)
     sent_count = 0
+    failed_count = 0
 
     async with get_session_ctx() as session:
-        # Check rate limit (tenant-wide, not per-user)
-        if await _is_rate_limited(session, tenant_id, event_type, event_ref_id):
-            logger.debug(
-                "Notification rate-limited: tenant=%s event=%s ref=%s",
-                tenant_id, event_type, event_ref_id,
+        from app.models.tenant import Tenant
+        from app.services.capability_access import tenant_has_feature
+
+        tenant = await session.get(Tenant, tenant_id)
+        if not tenant or not tenant_has_feature(tenant, "notifications"):
+            logger.info("Notification %s skipped because tenant notifications are disabled", event_type)
+            return 0
+        event_feature = {
+            "hot_visitor": "intent_scoring",
+            "churn_risk": "intent_scoring",
+            "chat_handoff": "chat_handoff",
+        }.get(event_type)
+        if event_feature and not tenant_has_feature(tenant, event_feature):
+            logger.info(
+                "Notification %s skipped because tenant feature %s is disabled",
+                event_type,
+                event_feature,
             )
             return 0
-
         # Fetch active preferences for this tenant
         q = (
             select(NotificationPreference)
@@ -150,6 +167,19 @@ async def send_notification(
         for pref in prefs:
             # Check per-event toggle
             if pref_col and not getattr(pref, pref_col, True):
+                continue
+
+            # Retry only failed recipients. A successful delivery for this
+            # user/channel is idempotently skipped without suppressing other
+            # recipients that still need a retry.
+            if await _is_rate_limited(
+                session,
+                tenant_id,
+                event_type,
+                event_ref_id,
+                pref.user_id,
+                pref.channel,
+            ):
                 continue
 
             # Check quiet hours
@@ -179,9 +209,12 @@ async def send_notification(
                 status = "sent" if ok else "failed"
                 if ok:
                     sent_count += 1
+                else:
+                    failed_count += 1
             except Exception as exc:
                 ok = False
                 status = "failed"
+                failed_count += 1
                 error_detail = str(exc)[:300]
                 logger.error(
                     "Notification send error (channel=%s, user=%s): %s",
@@ -196,4 +229,8 @@ async def send_notification(
                 status, None if ok else (error_detail or "send returned False"),
             )
 
+    if raise_on_failure and failed_count:
+        raise RuntimeError(
+            f"{failed_count} {event_type} notification delivery attempt(s) failed"
+        )
     return sent_count

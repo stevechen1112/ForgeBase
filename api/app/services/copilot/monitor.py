@@ -20,10 +20,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_session_ctx
+from app.models.chat import ChatSession
+from app.models.contact import Contact
 from app.models.rfq_request import RFQRequest
 from app.models.visitor import Visitor
-from app.models.contact import Contact
-from app.models.chat import ChatSession
 from app.services.notification_router import send_notification
 
 logger = logging.getLogger(__name__)
@@ -178,6 +178,7 @@ async def on_new_rfq(rfq_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
         event_ref_id=rfq_id,
         message=msg,
         buttons=buttons,
+        raise_on_failure=True,
     )
 
 
@@ -269,6 +270,7 @@ async def on_chat_handoff(session_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
         event_ref_id=session_id,
         message=msg,
         buttons=buttons,
+        raise_on_failure=True,
     )
 
 

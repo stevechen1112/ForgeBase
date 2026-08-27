@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
 from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class Capability(SQLModel, table=True):
@@ -15,7 +17,7 @@ class Capability(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    capability_name: str = Field(max_length=100, index=True)
+    capability_name: str = Field(max_length=100)
     slug: str = Field(max_length=100, index=True)
     icon_url: Optional[str] = Field(default=None, max_length=500)
     image_url: Optional[str] = Field(default=None, max_length=500)

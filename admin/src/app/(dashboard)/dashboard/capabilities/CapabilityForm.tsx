@@ -36,7 +36,7 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
     icon_url: initial?.icon_url ?? "",
     image_url: initial?.image_url ?? "",
     sort_order: initial?.sort_order ?? 0,
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     status: initial?.status ?? "draft",
   });
   const [saving, setSaving] = useState(false);
@@ -97,6 +97,27 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="capability"
+          basePath="/dashboard/capabilities"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: v.updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">廠能資訊</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -120,7 +141,7 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
             <Label>指標數據（例如：精度 ±0.01mm）</Label>
             <Input {...f("metrics")} maxLength={500} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>分類標籤</Label>
               <Input {...f("category_tag")} maxLength={80} />
@@ -130,7 +151,7 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
@@ -158,25 +179,6 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
           </div>
         </CardContent>
       </Card>
-
-      {id && (
-        <LocaleSwitcher
-          entityType="capability"
-          basePath="/dashboard/capabilities"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

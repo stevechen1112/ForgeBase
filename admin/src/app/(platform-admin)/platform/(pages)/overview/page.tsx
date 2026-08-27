@@ -1,12 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type PlatformDashboard } from "@/lib/api/platform-admin";
 import {
   Building2, Users, Package, ClipboardList, Eye,
-  TrendingUp, AlertCircle,
+  TrendingUp, AlertCircle, Globe2, TriangleAlert, Workflow,
 } from "lucide-react";
+
+const ATTENTION_LABELS: Record<string, string> = {
+  tenant_inactive: "租戶停用",
+  site_build_missing: "缺交付單",
+  site_not_published: "網站未發布",
+  site_blocked: "上線條件未通過",
+  cms_not_connected: "CMS 未確認",
+  active_owner_missing: "缺有效 Owner",
+  failed_jobs: "背景工作失敗",
+};
 
 function StatCard({
   icon: Icon,
@@ -51,7 +62,7 @@ export default function PlatformOverviewPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">平台總覽</h1>
-        <p className="mt-1 text-sm text-muted-foreground">跨租戶整體運營指標</p>
+        <p className="mt-1 text-sm text-muted-foreground">先看需要處理的租戶，再看跨租戶整體數字。</p>
       </div>
 
       {loading && (
@@ -75,8 +86,30 @@ export default function PlatformOverviewPage() {
             <StatCard icon={Building2} label="租戶總數" value={data.total_tenants} sub={`${data.active_tenants} 個活躍`} />
             <StatCard icon={Users} label="用戶總數" value={data.total_users} sub={`${data.active_users} 個活躍`} />
             <StatCard icon={Package} label="商品總數" value={data.total_products} />
-            <StatCard icon={ClipboardList} label="RFQ 總數" value={data.total_rfqs} />
-            <StatCard icon={Eye} label="訪客記錄" value={data.total_visitors} />
+            <StatCard icon={ClipboardList} label="RFQ 總數" value={data.total_rfqs} sub={data.legacy_unassigned_rfqs ? `${data.legacy_unassigned_rfqs} 筆舊資料待歸戶` : undefined} />
+            <StatCard icon={Eye} label="訪客記錄" value={data.total_visitors} sub={data.legacy_unassigned_visitors ? `${data.legacy_unassigned_visitors} 筆舊資料待歸戶` : undefined} />
+            <StatCard icon={Globe2} label="已發布網站" value={data.published_sites} sub={`${data.blocked_sites} 個待補上線條件`} />
+            <StatCard icon={TriangleAlert} label="待處理租戶" value={data.tenants_needing_attention} sub={`${data.failed_jobs} 個失敗背景工作`} />
+            <StatCard icon={Workflow} label="近 30 天 RFQ" value={data.rfqs_30d} />
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 shadow-sm">
+            <div className="flex items-center justify-between border-b border-amber-200 px-5 py-3">
+              <div className="flex items-center gap-2"><TriangleAlert className="h-4 w-4 text-amber-700" /><h3 className="text-sm font-semibold">租戶待處理清單</h3></div>
+              <Link href="/platform/tenants" className="text-xs font-medium text-amber-800 hover:underline">查看全部租戶</Link>
+            </div>
+            {data.attention_tenants.length === 0 ? (
+              <p className="p-5 text-sm text-emerald-700">目前沒有需要處理的租戶。</p>
+            ) : (
+              <div className="divide-y divide-amber-100">
+                {data.attention_tenants.map((tenant) => (
+                  <Link key={tenant.id} href={`/platform/tenants/${tenant.id}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 hover:bg-amber-100/50">
+                    <div><p className="text-sm font-medium text-foreground">{tenant.name}</p><p className="text-xs text-muted-foreground">{tenant.slug}</p></div>
+                    <div className="flex flex-wrap justify-end gap-1.5">{tenant.reasons.map((reason) => <span key={reason} className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] text-amber-800">{ATTENTION_LABELS[reason] || reason}</span>)}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -116,7 +149,8 @@ export default function PlatformOverviewPage() {
               {data.top_tenants.length === 0 ? (
                 <p className="p-5 text-sm text-muted-foreground">尚無資料</p>
               ) : (
-                <table className="w-full">
+                <div className="max-w-full overflow-x-auto">
+                <table className="w-full min-w-[420px]">
                   <thead>
                     <tr className="border-b border-border bg-muted/30 text-left text-xs font-medium uppercase text-muted-foreground">
                       <th className="px-5 py-2">租戶</th>
@@ -132,6 +166,7 @@ export default function PlatformOverviewPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

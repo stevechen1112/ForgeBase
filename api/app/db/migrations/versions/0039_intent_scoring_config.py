@@ -6,8 +6,8 @@ per-tenant customizable scoring rules and stage thresholds.
 Revision ID: 0039_intent_scoring_config
 Revises: 0038_copilot_notifications
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0039_intent_scoring_config"
 down_revision = "0038_copilot_notifications"

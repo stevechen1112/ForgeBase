@@ -1,4 +1,5 @@
 import type { Product, ProductCategory, Application } from "@/types/content";
+import { withBasePath } from "@/lib/basePath";
 import { siteConfig, type SiteAssetManifest, type SiteConfig } from "@/lib/siteConfig";
 
 type AssetConfigLike = Pick<SiteConfig, "assetManifest">;
@@ -9,7 +10,8 @@ function withVersion(path?: string | null): string | null {
   if (!path) {
     return null;
   }
-  return path.includes("?") ? path : `${path}${V}`;
+  const publicPath = withBasePath(path);
+  return publicPath.includes("?") ? publicPath : `${publicPath}${V}`;
 }
 
 function getManifest(config: AssetConfigLike = siteConfig): SiteAssetManifest | undefined {

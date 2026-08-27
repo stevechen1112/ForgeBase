@@ -28,8 +28,15 @@ from app.api.v1.deps import get_current_user, require_admin, require_content_edi
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
-from app.models.nurture import NurtureEnrollment, NurtureSequence, NurtureStep, NurtureOutbox
+from app.models.nurture import (
+    NurtureEnrollment,
+    NurtureOutbox,
+    NurtureSequence,
+    NurtureStep,
+)
+from app.models.tenant import Tenant
 from app.models.user import User
+from app.services.capability_access import tenant_has_feature
 
 router = APIRouter(prefix="/nurture", tags=["Nurture"])
 
@@ -483,7 +490,7 @@ async def process_all_due_enrollments() -> dict:
     from app.db.session import get_session_ctx
 
     now = utcnow_naive()
-    stats = {"queued": 0, "skipped_existing": 0, "completed": 0, "bounced": 0}
+    stats = {"queued": 0, "skipped_existing": 0, "skipped_disabled": 0, "completed": 0, "bounced": 0}
 
     async with get_session_ctx() as db:
         active = (await db.exec(
@@ -500,7 +507,20 @@ async def process_all_due_enrollments() -> dict:
                 approved_cache[seq_id] = bool(s)
             return approved_cache[seq_id]
 
+        tenant_feature_cache: dict[uuid.UUID, bool] = {}
+
+        async def _tenant_enabled(tenant_id: uuid.UUID | None) -> bool:
+            if tenant_id is None:
+                return False
+            if tenant_id not in tenant_feature_cache:
+                tenant = await db.get(Tenant, tenant_id)
+                tenant_feature_cache[tenant_id] = bool(tenant and tenant_has_feature(tenant, "nurture_email"))
+            return tenant_feature_cache[tenant_id]
+
         for enrollment in active:
+            if not await _tenant_enabled(enrollment.tenant_id):
+                stats["skipped_disabled"] += 1
+                continue
             if not await _is_approved(enrollment.sequence_id):
                 continue
 
@@ -595,6 +615,7 @@ def _outbox_dict(o: NurtureOutbox) -> dict:
         "sequence_id": str(o.sequence_id),
         "step_id": str(o.step_id),
         "contact_id": str(o.contact_id),
+        "outreach_message_id": str(o.outreach_message_id) if o.outreach_message_id else None,
         "status": o.status,
         "subject": o.subject,
         "due_at": o.due_at.isoformat() if o.due_at else None,
@@ -640,7 +661,7 @@ async def send_outbox_item(
     current_user: User = Depends(require_admin),
 ):
     """Manually approve and send one queued nurture email."""
-    from app.services.email_service import send_nurture_step
+    from app.services.email_service import send_nurture_step_result
 
     # Atomic claim: lock row so concurrent send/skip cannot double-send
     o = (await db.exec(
@@ -692,13 +713,22 @@ async def send_outbox_item(
         )
 
     now = utcnow_naive()
-    sent = await send_nurture_step(contact, step)
+    delivery = await send_nurture_step_result(
+        contact,
+        step,
+        idempotency_key=f"nurture-outbox-{o.id}",
+    )
     o.reviewed_by = current_user.id
     o.reviewed_at = now
-    if sent:
+    if delivery.delivered:
         o.status = "sent"
         o.sent_at = now
         await _advance_enrollment_after_send(db, enrollment)
+    elif delivery.dry_run:
+        # Keep the item pending: an administrator approved the content, but the
+        # system did not contact a provider and must not advance the sequence.
+        o.status = "pending"
+        o.error = "safe mode simulation — no email was sent"
     else:
         o.status = "failed"
         o.error = "send failed (check ESP config)"

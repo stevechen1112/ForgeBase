@@ -6,9 +6,8 @@ that require manual approval (send/skip) instead of being sent automatically.
 Revision ID: 0054_nurture_outbox
 Revises: 0053_nurture_approval_gate
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0054_nurture_outbox"
 down_revision = "0053_nurture_approval_gate"

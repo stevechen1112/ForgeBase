@@ -4,10 +4,11 @@ import type { Metadata } from "next";
 import { getCertificationBySlug } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
+import { withBasePath } from "@/lib/basePath";
 import { IndustrialPageHero } from "@/components/themes";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -35,8 +36,15 @@ type CertificationDetailMessages = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
+  const { siteConfig } = await getRuntimeSiteContext();
   const certification = await getCertificationBySlug(slug, locale);
   if (!certification) return { title: "Not Found" };
+  if (siteConfig.demoCompanyFolder) {
+    return {
+      title: `${certification.cert_name} | Test scenario`,
+      description: "ForgeBase functional-test credential page. This is not a real verification document.",
+    };
+  }
   return {
     title: certification.cert_name,
     description: certification.description || certification.issuer || undefined,
@@ -54,7 +62,7 @@ export default async function CertificationDetailPage({ params }: Props) {
   const certification = await getCertificationBySlug(slug, locale);
   if (!certification) notFound();
   const badgeImageSrc = certification.badge_image_url
-    ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
+    ? `${withBasePath(certification.badge_image_url)}?v=${CERT_BADGE_VERSION}`
     : null;
   const showLocaleFallback = hasLocaleFallback(resolvedLocale, [certification]);
   const isExpired = certification.expires_at
@@ -80,7 +88,7 @@ export default async function CertificationDetailPage({ params }: Props) {
               { label: copy.certifications, href: "/certifications" },
               { label: certification.cert_name },
             ]}
-            eyebrow="Certification"
+            eyebrow="Test scenario · not a real certification"
             title={certification.cert_name}
             description={certification.issuer ? `${copy.issuedBy} ${certification.issuer}` : undefined}
           />
@@ -96,6 +104,9 @@ export default async function CertificationDetailPage({ params }: Props) {
                 )}
               </div>
               <div>
+                <p className="mb-4 border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-950">
+                  {resolvedLocale === "zh-TW" ? "測試情境：此頁與所列證書均非真實驗證文件。" : "Test scenario: this page and the listed credential are not real verification documents."}
+                </p>
                 <div className="mb-6 border-l-4 border-primary bg-gray-50 p-5">
                   <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.whyTitle}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.whyDescription}</p>
@@ -109,7 +120,7 @@ export default async function CertificationDetailPage({ params }: Props) {
                 </dl>
                 <div className="mt-6 flex flex-wrap gap-4">
                   {certification.document_url && (
-                    <a href={certification.document_url} target="_blank" rel="noopener noreferrer" className="bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground skew-x-[-3deg]">
+                    <a href={withBasePath(certification.document_url)} target="_blank" rel="noopener noreferrer" className="bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground skew-x-[-3deg]">
                       <span className="block skew-x-[3deg]">{copy.download}</span>
                     </a>
                   )}
@@ -142,6 +153,9 @@ export default async function CertificationDetailPage({ params }: Props) {
             <span className="text-gray-600">{certification.cert_name}</span>
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">{certification.cert_name}</h1>
+          <p className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
+            {resolvedLocale === "zh-TW" ? "測試情境：此頁與所列證書均非真實驗證文件。" : "Test scenario: this page and the listed credential are not real verification documents."}
+          </p>
           {certification.issuer && <p className="mt-2 text-gray-500">{copy.issuedBy} {certification.issuer}</p>}
         </div>
       </section>
@@ -175,7 +189,7 @@ export default async function CertificationDetailPage({ params }: Props) {
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className={`font-medium ${isExpired ? "text-red-600" : "text-gray-700"}`}>{expiryDisplay}</dd></div>
             </dl>
             {certification.document_url && (
-              <a href={certification.document_url} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
+              <a href={withBasePath(certification.document_url)} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
                 {copy.download}
               </a>
             )}

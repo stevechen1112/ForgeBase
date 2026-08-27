@@ -14,8 +14,9 @@ import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
 import { getApplicationImage, getCustomPackagingImage, getProductImage, getQualityInspectionImage } from "@/lib/demoAssets";
+import { withBasePath } from "@/lib/basePath";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
 
@@ -53,7 +54,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!application) return { title: "Not Found" };
 
   const pagePath = `/applications/${application.slug}`;
-  const canonical = buildCanonicalUrl(pagePath, undefined, runtimeSiteConfig);
+  const actualLocale = application.locale || "en";
+  const canonical = buildCanonicalUrl(pagePath, actualLocale, runtimeSiteConfig);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getApplicationLocales(application.slug).catch(() => []);
@@ -61,10 +63,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = application.seo_title ?? application.application_name;
   const description = application.seo_description ?? application.description ?? undefined;
-  const ogImage =
-    application.og_image_url ??
-    getApplicationImage(application, runtimeSiteConfig) ??
-    undefined;
+  const ogImage = application.og_image_url
+    ? withBasePath(application.og_image_url)
+    : getApplicationImage(application, runtimeSiteConfig) ?? undefined;
 
   return {
     title,
@@ -73,6 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical,
       languages,
     },
+    robots: resolveLocale(actualLocale) === resolveLocale(locale) ? undefined : { index: false, follow: true },
     openGraph: {
       title,
       description,

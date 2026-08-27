@@ -18,18 +18,18 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import exists
-from sqlmodel import select, col, func
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import RequireFeature, get_current_user, require_content_editor
 from app.db.session import get_session
+from app.models.audience_tag import AudienceTag, VisitorTagLink
+from app.models.chat import ChatMessage, ChatSession
+from app.models.rfq_request import RFQRequest
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
-from app.models.visitor import Visitor
-from app.models.audience_tag import AudienceTag, VisitorTagLink
 from app.models.user import User
-from app.models.chat import ChatSession, ChatMessage
-from app.models.rfq_request import RFQRequest
+from app.models.visitor import Visitor
 from app.services.intent_facets import VISITOR_FACET_COLUMN
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
@@ -496,6 +496,7 @@ async def get_audience_members(
     """
     import json as _json
     from datetime import timedelta
+
     from app.models.tracking_event import TrackingEvent
 
     tag = await db.get(AudienceTag, tag_id)

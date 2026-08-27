@@ -10,7 +10,7 @@ import { RefreshCw, AlarmClock, Flame, Filter, FileCheck, ShieldQuestion } from 
 import { apiClient } from "@/lib/api/client";
 
 // 顧問 Growth Ops 工作台（實效計畫 §7.1）：一個入口清「今日待辦」
-type TaskItem = Record<string, unknown> & { id?: string; rfq_number?: string; visitor_id?: string };
+type TaskItem = Record<string, unknown> & { id?: string; rfq_number?: string; visitor_id?: string; page_title?: string };
 type Task = {
   type: string;
   title: string;
@@ -24,6 +24,7 @@ type Task = {
 type TaskQueue = { generated_at: string; total_open: number; tasks: Task[] };
 
 const TYPE_ICON: Record<string, React.ElementType> = {
+  rfq_follow_up_due: AlarmClock,
   sla_breached_rfq: AlarmClock,
   hot_visitor_unassigned: Flame,
   low_quality_rfq: Filter,
@@ -68,7 +69,7 @@ export default function TasksPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">今日待辦</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -121,8 +122,10 @@ export default function TasksPage() {
                               {item.rfq_number}
                             </Link>
                             <span className="text-xs text-muted-foreground">
-                              品質 {String(item.quality_score ?? "—")} 分
-                              {item.sla_due_at ? `・SLA 截止 ${new Date(String(item.sla_due_at)).toLocaleString("zh-TW")}` : ""}
+                              {item.next_follow_up_at
+                                ? `${item.overdue ? "已逾期" : "跟進時間"} ${new Date(String(item.next_follow_up_at)).toLocaleString("zh-TW")}`
+                                : `品質 ${String(item.quality_score ?? "—")} 分`}
+                              {item.sla_due_at ? `・回覆期限 ${new Date(String(item.sla_due_at)).toLocaleString("zh-TW")}` : ""}
                             </span>
                           </>
                         ) : item.visitor_id ? (
@@ -135,8 +138,15 @@ export default function TasksPage() {
                               {item.intent_explanation ? `・${String(item.intent_explanation)}` : ""}
                             </span>
                           </>
+                        ) : item.page_title ? (
+                          <>
+                            <Link href={`/dashboard/pages/${item.id}/edit`} className="text-sm font-medium text-primary hover:underline">
+                              {String(item.page_title)}
+                            </Link>
+                            <span className="text-xs text-muted-foreground">/{String(item.slug)}</span>
+                          </>
                         ) : (
-                          <span className="text-xs text-muted-foreground">{JSON.stringify(item)}</span>
+                          <span className="text-xs text-muted-foreground">此項目需要 ForgeBase 協助確認</span>
                         )}
                       </li>
                     ))}

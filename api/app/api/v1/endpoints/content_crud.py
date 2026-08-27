@@ -10,20 +10,20 @@ Remaining content CRUD endpoints:
 """
 import asyncio
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
-from sqlmodel import select, func, SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
 from slugify import slugify
+from sqlalchemy import or_, text
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import (
-    get_current_user,
     optional_current_user,
     require_admin,
     require_content_editor,
@@ -32,25 +32,53 @@ from app.api.v1.deps import (
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.application import Application
-from app.models.faq_item import FAQItem
-from app.models.comparison_topic import ComparisonTopic
-from app.models.certification import Certification
 from app.models.capability import Capability
+from app.models.certification import Certification
+from app.models.comparison_topic import ComparisonTopic
 from app.models.cta import CTA
+from app.models.faq_item import FAQItem
 from app.models.idempotency_key import IdempotencyKey
 from app.models.page import Page
 from app.schemas.base import APIResponse, PaginationMeta
-from app.services.html_sanitize import sanitize_html
-from app.services.revalidate import revalidate_page
 from app.schemas.content import (
-    ApplicationCreate, ApplicationRead, ApplicationUpdate,
-    FAQItemCreate, FAQItemRead, FAQItemUpdate,
-    ComparisonTopicCreate, ComparisonTopicRead, ComparisonTopicUpdate,
-    CertificationCreate, CertificationRead, CertificationUpdate,
-    CapabilityCreate, CapabilityRead, CapabilityUpdate,
-    CTACreate, CTARead, CTAUpdate,
-    PageCreate, PageRead, PageUpdate,
+    ApplicationCreate,
+    ApplicationRead,
+    ApplicationUpdate,
+    CapabilityCreate,
+    CapabilityRead,
+    CapabilityUpdate,
+    CertificationCreate,
+    CertificationRead,
+    CertificationUpdate,
+    ComparisonTopicCreate,
+    ComparisonTopicRead,
+    ComparisonTopicUpdate,
+    CTACreate,
+    CTARead,
+    CTAUpdate,
+    FAQItemCreate,
+    FAQItemRead,
+    FAQItemUpdate,
+    PageCreate,
+    PageRead,
+    PageUpdate,
 )
+from app.services.html_sanitize import sanitize_html
+from app.services.knowledge_sync import source_type_for, sync_knowledge_now
+from app.services.revalidate import revalidate_page
+
+logger = logging.getLogger(__name__)
+
+
+async def _sync_public_index(session: AsyncSession, item: Any, *, action: str = "compile") -> None:
+    if source_type_for(item) is None:
+        return
+    tenant_id = getattr(item, "tenant_id", None)
+    try:
+        await sync_knowledge_now(session, tenant_id=tenant_id, item=item, action=action)
+        await session.commit()
+    except Exception:
+        logger.exception("public knowledge sync failed")
 
 
 # ── Generic CRUD factory ──────────────────────────────────────────────────────
@@ -97,6 +125,9 @@ def make_crud_router(
     locale_filter: bool = True,
     sanitize_fields: tuple[str, ...] = (),
     revalidate_on_change: bool = False,
+    mutation_guard=require_content_editor,
+    create_guard=require_content_editor,
+    editor_update_fields: tuple[str, ...] | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
 
@@ -119,39 +150,29 @@ def make_crud_router(
     def _apply_public_tenant_scope(
         query,
         tenant_id: uuid.UUID | None,
-        *,
-        include_legacy_null: bool = False,
     ):
         tenant_col = getattr(Model, "tenant_id", None)
         if tenant_col is None:
             return query
         if tenant_id is None:
             return query.where(tenant_col.is_(None))
-        # Authenticated tenant editors still need to see pre-tenant (NULL) CMS rows.
-        if include_legacy_null:
-            return query.where((tenant_col == tenant_id) | (tenant_col.is_(None)))
         return query.where(tenant_col == tenant_id)
 
     def _ensure_item_access(item: Any, tenant_id: uuid.UUID | None) -> None:
         if not hasattr(item, "tenant_id"):
             return
         item_tenant_id = getattr(item, "tenant_id", None)
-        if tenant_id is None:
-            if item_tenant_id is not None:
-                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
-            return
-        # Allow legacy NULL-tenant rows for the active tenant.
-        if item_tenant_id is None:
-            return
         if item_tenant_id != tenant_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
     def _editor_can_mutate(item: Any, user: Any) -> bool:
+        if getattr(user, "is_superuser", False):
+            return True
         if not hasattr(item, "tenant_id"):
             return True
         item_tenant_id = getattr(item, "tenant_id", None)
         if item_tenant_id is None:
-            return True
+            return False
         return item_tenant_id == getattr(user, "tenant_id", None)
 
     @router.get("", response_model=APIResponse)
@@ -162,20 +183,18 @@ def make_crud_router(
         locale: str | None = Query(None),
         slug: str | None = Query(None),
         page_type: str | None = Query(None),
+        pair_status: str | None = Query(None),
+        variant_key: str | None = Query(None),
         session: AsyncSession = Depends(get_session),
         tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
         auth_user=Depends(optional_current_user),
     ):
         # 帶有效憑證（如 CF service account）時以 caller tenant 為準，
         # 覆寫 host/header 解析（契約 §5.1 slug 查詢流程依賴此行為）
-        include_legacy_null = False
         if auth_user is not None and getattr(auth_user, "tenant_id", None):
             tenant_id = auth_user.tenant_id
-            include_legacy_null = True
         base_q = select(Model)
-        base_q = _apply_public_tenant_scope(
-            base_q, tenant_id, include_legacy_null=include_legacy_null
-        )
+        base_q = _apply_public_tenant_scope(base_q, tenant_id)
         if locale_filter and hasattr(Model, "locale") and locale:
             from app.core.locale import to_content_locale
             normalized_locale = to_content_locale(locale, default="")
@@ -185,6 +204,24 @@ def make_crud_router(
                     meta=PaginationMeta(total=0, page=page, page_size=page_size, total_pages=0),
                 )
             base_q = base_q.where(Model.locale == normalized_locale)
+        if pair_status and hasattr(Model, "locale"):
+            from app.services.locale_support import (
+                apply_pair_status_filter,
+                default_buyer_locale,
+                get_source_locale,
+            )
+            source_locale = await get_source_locale(session, tenant_id)
+            key = slug_field or ("variant_key" if hasattr(Model, "variant_key") else "slug")
+            if key and hasattr(Model, key):
+                base_q = apply_pair_status_filter(
+                    base_q,
+                    Model,
+                    tenant_id=tenant_id,
+                    source_locale=source_locale,
+                    target_locale=default_buyer_locale(source_locale),
+                    pair_status=pair_status,
+                    key_field=key,
+                )
         if item_status and hasattr(Model, "status"):
             base_q = base_q.where(Model.status == item_status)
         if auth_user is None and Model is Certification:
@@ -195,11 +232,13 @@ def make_crud_router(
             )
         if slug and hasattr(Model, "slug"):
             base_q = base_q.where(Model.slug == slug)
+        if variant_key and hasattr(Model, "variant_key"):
+            base_q = base_q.where(Model.variant_key == variant_key)
         if page_type and hasattr(Model, "page_type"):
             base_q = base_q.where(Model.page_type == page_type)
 
         total = (await session.exec(select(func.count()).select_from(base_q.subquery()))).one()
-        order_col = getattr(Model, "sort_order", None) or getattr(Model, "created_at")
+        order_col = getattr(Model, "sort_order", None) or Model.created_at
         items_q = base_q.order_by(order_col).offset((page - 1) * page_size).limit(page_size)
         items = (await session.exec(items_q)).all()
 
@@ -218,7 +257,7 @@ def make_crud_router(
         payload: CreateSchema,
         request: Request,
         session: AsyncSession = Depends(get_session),
-        _user=Depends(require_content_editor),
+        _user=Depends(create_guard),
     ):
         tenant_id = _user.tenant_id if hasattr(Model, "tenant_id") else None
 
@@ -226,6 +265,15 @@ def make_crud_router(
         idem_key = request.headers.get("Idempotency-Key")
         endpoint_id = f"POST {prefix}"
         if idem_key:
+            # Serialize the first write for this key before checking either the
+            # idempotency ledger or the resource slug.  Without this lock, a
+            # concurrent loser can miss the uncommitted ledger row and then
+            # observe the winner's committed slug, incorrectly returning 409.
+            if session.get_bind().dialect.name == "postgresql":
+                await session.exec(
+                    text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+                    params={"lock_key": f"forgebase-idem:{tenant_id}:{endpoint_id}:{idem_key}"},
+                )
             idem_q = select(IdempotencyKey).where(
                 IdempotencyKey.key == idem_key,
                 IdempotencyKey.endpoint == endpoint_id,
@@ -322,6 +370,7 @@ def make_crud_router(
                     raise HTTPException(status.HTTP_409_CONFLICT, detail=f"{slug_field} already exists")
             raise HTTPException(status.HTTP_409_CONFLICT, detail="Conflict creating resource")
         await session.refresh(item)
+        await _sync_public_index(session, item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.get("/{item_id}", response_model=APIResponse)
@@ -329,7 +378,10 @@ def make_crud_router(
         item_id: uuid.UUID,
         session: AsyncSession = Depends(get_session),
         tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
+        auth_user=Depends(optional_current_user),
     ):
+        if auth_user is not None and getattr(auth_user, "tenant_id", None):
+            tenant_id = auth_user.tenant_id
         item = await session.get(Model, item_id)
         if not item:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -341,7 +393,7 @@ def make_crud_router(
         item_id: uuid.UUID,
         payload: UpdateSchema,
         session: AsyncSession = Depends(get_session),
-        _user=Depends(require_content_editor),
+        _user=Depends(mutation_guard),
     ):
         item = await session.get(Model, item_id)
         if not item:
@@ -350,6 +402,15 @@ def make_crud_router(
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
 
         updates = normalize_datetimes(payload.model_dump(exclude_unset=True))
+        if (
+            editor_update_fields is not None
+            and _user.role == "marketing_manager"
+            and any(key not in editor_update_fields for key in updates)
+        ):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                detail="This role may only update approved page content fields",
+            )
         if "locale" in updates and updates["locale"] is not None:
             from app.core.locale import to_content_locale
             updates["locale"] = to_content_locale(str(updates["locale"]))
@@ -384,6 +445,7 @@ def make_crud_router(
         await session.refresh(item)
         if getattr(item, "status", None) == "published":
             _schedule_revalidate(item)
+        await _sync_public_index(session, item)
         return APIResponse(data=ReadSchema.model_validate(item))
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -397,6 +459,7 @@ def make_crud_router(
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
         if not _editor_can_mutate(item, _user):
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Not found")
+        await _sync_public_index(session, item, action="tombstone")
         await session.delete(item)
         await session.commit()
 
@@ -449,4 +512,7 @@ pages_router = make_crud_router(
     CreateSchema=PageCreate, UpdateSchema=PageUpdate,
     sanitize_fields=("body",),
     revalidate_on_change=True,
+    mutation_guard=require_content_editor,
+    create_guard=require_admin,
+    editor_update_fields=("title", "subtitle", "body", "hero_image_url"),
 )

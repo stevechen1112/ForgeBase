@@ -10,7 +10,6 @@ Revises: 0057_products_image_url
 """
 from alembic import op
 
-
 revision = "0058_normalize_locale_case"
 down_revision = "0057_products_image_url"
 branch_labels = None

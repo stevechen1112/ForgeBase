@@ -89,10 +89,9 @@ export function OpsConfigCard() {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>營運設定（RFQ 自動回覆 / SLA）</CardTitle>
+            <CardTitle>詢價回覆與時限</CardTitle>
             <CardDescription>
-              控制新 RFQ 進來時的自動確認信與首次回應 SLA；高品質 RFQ（≥70 分）即時推播為系統固定門檻。
-              LINE 推播金鑰為環境變數（LINE_CHANNEL_ACCESS_TOKEN），不在此設定。
+              設定收到詢價後是否寄出固定格式的收件確認信，以及希望業務在多久內第一次回覆。
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -134,7 +133,7 @@ export function OpsConfigCard() {
             </p>
           </div>
           <div className="space-y-2">
-            <Label>RFQ 自動專業回覆</Label>
+            <Label>自動寄送收件確認信</Label>
             <label className="flex items-center gap-2.5 rounded-md border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -142,10 +141,10 @@ export function OpsConfigCard() {
                 onChange={(e) => setAutoReplyEnabled(e.target.checked)}
                 className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               />
-              <span>收到 RFQ 後自動寄出專業確認信給買家</span>
+              <span>收到詢價後，立即通知買家「我們已收到」</span>
             </label>
             <p className="text-xs text-muted-foreground">
-              內容依 RFQ 欄位（產品、數量、時程）組成，以買家時區的用語回覆；可隨時關閉。
+              這只是確認收件，不會代替業務報價或答應交期；可隨時關閉。
             </p>
           </div>
           <div className="space-y-2">

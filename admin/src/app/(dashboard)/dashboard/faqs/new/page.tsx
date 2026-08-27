@@ -1,5 +1,5 @@
 import FAQForm from "../FAQForm";
-export const metadata = { title: "新增常見問題 — NorthForge Admin" };
+export const metadata = { title: "新增常見問題 — ForgeBase 管理後台" };
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

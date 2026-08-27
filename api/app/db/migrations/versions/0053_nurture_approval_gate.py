@@ -6,9 +6,8 @@ that have been explicitly approved by an admin/owner.
 Revision ID: 0053_nurture_approval_gate
 Revises: 0052_restore_nurture_engine
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0053_nurture_approval_gate"
 down_revision = "0052_restore_nurture_engine"

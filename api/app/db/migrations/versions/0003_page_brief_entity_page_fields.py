@@ -10,8 +10,8 @@ Changes:
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0003_page_brief_entity_page_fields"

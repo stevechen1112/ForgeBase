@@ -25,8 +25,12 @@ export function RouteGuard({ children, allowedRoles }: Props) {
   useEffect(() => {
     if (state.status === "unauthenticated") {
       router.replace("/login");
+    } else if (state.status === "authenticated" && state.user.is_superuser) {
+      router.replace("/platform/overview");
+    } else if (state.status === "authenticated" && !state.user.tenant_id) {
+      router.replace("/login");
     }
-  }, [state.status, router]);
+  }, [state, router]);
 
   if (state.status === "loading") {
     return (
@@ -40,16 +44,21 @@ export function RouteGuard({ children, allowedRoles }: Props) {
     return null; // redirect in progress
   }
 
+  if (state.user.is_superuser || !state.user.tenant_id) {
+    return null;
+  }
+
   const adminOnlyRoutes = [
     "/dashboard/ml-scoring",
     "/dashboard/redirects",
+    "/dashboard/pages",
     "/dashboard/users",
     "/dashboard/settings/site-profile",
     "/dashboard/integrations",
     "/dashboard/settings/integrations",
-    "/dashboard/settings/billing",
   ];
   const salesHiddenRoutes = [
+    "/dashboard/growth",
     "/dashboard/intent-rules",
     "/dashboard/content-performance",
     "/dashboard/copilot",
@@ -65,6 +74,8 @@ export function RouteGuard({ children, allowedRoles }: Props) {
     "/dashboard/capabilities",
     "/dashboard/comparisons",
     "/dashboard/ctas",
+    "/dashboard/settings/site-copy",
+    "/dashboard/content/locales",
   ];
   const matchesRoute = (routes: string[]) => routes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),

@@ -1,0 +1,129 @@
+"""Encrypt and transfer ForgeBase backups to an S3-compatible off-site bucket."""
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import os
+import secrets
+import sys
+from pathlib import Path
+
+import boto3
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+MAGIC = b"FGBK1"
+CHUNK = 1024 * 1024
+
+
+def required(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Missing {name}")
+    return value
+
+
+def encryption_key() -> bytes:
+    value = required("BACKUP_ENCRYPTION_KEY")
+    try:
+        key = base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    except ValueError as exc:
+        raise RuntimeError("BACKUP_ENCRYPTION_KEY must be URL-safe base64") from exc
+    if len(key) != 32:
+        raise RuntimeError("BACKUP_ENCRYPTION_KEY must decode to exactly 32 bytes")
+    return key
+
+
+def client():
+    return boto3.client(
+        "s3",
+        endpoint_url=required("BACKUP_S3_ENDPOINT_URL"),
+        aws_access_key_id=required("BACKUP_S3_ACCESS_KEY_ID"),
+        aws_secret_access_key=required("BACKUP_S3_SECRET_ACCESS_KEY"),
+        region_name=os.environ.get("BACKUP_S3_REGION", "auto"),
+    )
+
+
+def encrypt(source: Path, target: Path) -> str:
+    nonce = secrets.token_bytes(12)
+    encryptor = Cipher(algorithms.AES(encryption_key()), modes.GCM(nonce)).encryptor()
+    digest = hashlib.sha256()
+    with source.open("rb") as src, target.open("wb") as dst:
+        dst.write(MAGIC + nonce)
+        while chunk := src.read(CHUNK):
+            digest.update(chunk)
+            dst.write(encryptor.update(chunk))
+        dst.write(encryptor.finalize())
+        dst.write(encryptor.tag)
+    return digest.hexdigest()
+
+
+def decrypt(source: Path, target: Path) -> None:
+    size = source.stat().st_size
+    if size <= len(MAGIC) + 12 + 16:
+        raise RuntimeError("Encrypted backup is truncated")
+    with source.open("rb") as src:
+        if src.read(len(MAGIC)) != MAGIC:
+            raise RuntimeError("Unknown backup format")
+        nonce = src.read(12)
+        src.seek(-16, 2)
+        tag = src.read(16)
+        ciphertext_length = size - len(MAGIC) - 12 - 16
+        src.seek(len(MAGIC) + 12)
+        decryptor = Cipher(algorithms.AES(encryption_key()), modes.GCM(nonce, tag)).decryptor()
+        remaining = ciphertext_length
+        with target.open("wb") as dst:
+            while remaining:
+                chunk = src.read(min(CHUNK, remaining))
+                if not chunk:
+                    raise RuntimeError("Encrypted backup ended early")
+                remaining -= len(chunk)
+                dst.write(decryptor.update(chunk))
+            dst.write(decryptor.finalize())
+
+
+def upload(source: Path) -> None:
+    if not source.is_file():
+        raise RuntimeError(f"Backup does not exist: {source}")
+    encrypted = source.with_suffix(source.suffix + ".enc")
+    checksum = encrypt(source, encrypted)
+    bucket = required("BACKUP_S3_BUCKET_NAME")
+    prefix = os.environ.get("BACKUP_S3_PREFIX", "forgebase").strip("/")
+    key = f"{prefix}/{encrypted.name}"
+    client().upload_file(
+        str(encrypted), bucket, key,
+        ExtraArgs={"Metadata": {"plaintext-sha256": checksum, "format": "fgbk1-aes256-gcm"}},
+    )
+    encrypted.unlink()
+    print(key)
+
+
+def download(key: str, destination: Path) -> None:
+    encrypted = destination.with_suffix(destination.suffix + ".enc")
+    client().download_file(required("BACKUP_S3_BUCKET_NAME"), key, str(encrypted))
+    try:
+        decrypt(encrypted, destination)
+    finally:
+        encrypted.unlink(missing_ok=True)
+    print(destination)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+    upload_parser = sub.add_parser("upload")
+    upload_parser.add_argument("source", type=Path)
+    download_parser = sub.add_parser("download")
+    download_parser.add_argument("key")
+    download_parser.add_argument("destination", type=Path)
+    args = parser.parse_args()
+    try:
+        upload(args.source) if args.command == "upload" else download(args.key, args.destination)
+        return 0
+    except Exception as exc:
+        print(f"off-site backup failed: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

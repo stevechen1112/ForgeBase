@@ -6,8 +6,8 @@ add tenant-aware unique constraints, and introduce site_profiles.layout_key.
 Revision ID: 0034_multitenant_content_phase3
 Revises: 0033_page_tenant_id
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision = "0034_multitenant_content_phase3"

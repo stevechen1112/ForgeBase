@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, Loader2, Shield, Zap } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Loader2, Shield } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
-import { authApi, type TokenResponse } from "@/lib/api/auth";
+import { clearAuthStorage } from "@/lib/auth/storage";
+import { clearPlatformAuthStorage, writePlatformAuthStorage } from "@/lib/auth/platform-storage";
+import { authApi } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,14 +15,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 const FEATURES = [
-  "全方位產品目錄管理",
-  "多語系詢報價系統",
-  "即時業績分析儀表板",
-  "客戶關係管理整合",
+  "產品、應用與文件集中維護",
+  "多語外銷網站內容管理",
+  "詢價、分派與回覆時效管理",
+  "訪客意圖與成效追蹤",
 ];
-
-/** Demo-only UI flag. Turn off / remove before public launch. */
-const DEMO_QUICK_LOGIN = process.env.NEXT_PUBLIC_DEMO_QUICK_LOGIN === "1";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +29,6 @@ export default function LoginPage() {
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +36,16 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await authApi.login({ email, password });
+      if (res.user?.is_superuser) {
+        clearAuthStorage();
+        writePlatformAuthStorage(JSON.stringify(res));
+        router.replace("/platform/overview");
+        return;
+      }
+      if (!res.user?.tenant_id) {
+        throw new Error("此帳號尚未綁定客戶網站，請聯繫 ForgeBase 管理員");
+      }
+      clearPlatformAuthStorage();
       login(res);
       router.replace("/dashboard");
     } catch (err: unknown) {
@@ -46,32 +53,6 @@ export default function LoginPage() {
       setError(msg.includes("401") || msg.includes("400") ? "帳號或密碼錯誤，請重新輸入" : msg);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleDemoQuickPass() {
-    setError("");
-    setDemoLoading(true);
-    try {
-      // basePath=/backend → route is /backend/api/demo-login
-      const res = await fetch("/backend/api/demo-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(
-          typeof body?.detail === "string" ? body.detail : "快速通關失敗，請改用帳密登入"
-        );
-      }
-      login(body as TokenResponse);
-      router.replace("/dashboard");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "快速通關失敗";
-      setError(msg);
-    } finally {
-      setDemoLoading(false);
     }
   }
 
@@ -90,10 +71,10 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(211,100%,50%)] text-sm font-bold shadow-lg">
-            NF
+            FB
           </div>
           <div>
-            <span className="text-xl font-bold tracking-tight">NorthForge</span>
+            <span className="text-xl font-bold tracking-tight">ForgeBase</span>
             <span className="ml-2 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/60">
               Admin
             </span>
@@ -104,15 +85,15 @@ export default function LoginPage() {
         <div className="relative space-y-8">
           <div className="space-y-4">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(211,100%,70%)]">
-              製造商全球化管理平台
+              傳產外銷網站管理平台
             </p>
             <h2 className="text-4xl font-light leading-tight text-white">
-              將製造專業轉化為
+              讓網站成為全天候的
               <br />
-              <span className="font-bold text-[hsl(211,100%,70%)]">全球市場成長</span>
+              <span className="font-bold text-[hsl(211,100%,70%)]">多工業務助手</span>
             </h2>
             <p className="text-base text-slate-400 leading-relaxed">
-              NorthForge 提供完整的 B2B 電商管理工具，讓您的製造業專業知識觸達全球買家。
+              ForgeBase 協助製造業管理產品內容、接收詢價、追蹤買家關注與安排後續工作；不把網站包裝成商城，也不承諾自動帶來訂單。
             </p>
           </div>
 
@@ -131,7 +112,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="relative flex items-center justify-between">
-          <p className="text-xs text-slate-600">© 2026 NorthForge. All rights reserved.</p>
+          <p className="text-xs text-slate-600">© 2026 ForgeBase. All rights reserved.</p>
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <Shield className="h-3 w-3" />
             <span>安全登入</span>
@@ -145,9 +126,9 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(211,100%,50%)] text-xs font-bold text-white">
-              NF
+              FB
             </div>
-            <span className="text-lg font-bold text-slate-900">NorthForge Admin</span>
+            <span className="text-lg font-bold text-slate-900">ForgeBase 管理後台</span>
           </div>
 
           <Card className="shadow-xl border-0">
@@ -157,40 +138,6 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="space-y-5">
-              {DEMO_QUICK_LOGIN && (
-                <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <div className="flex items-start gap-2">
-                    <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-amber-900">Demo 快速通關</p>
-                      <p className="text-xs text-amber-800/80 leading-relaxed">
-                        僅供內部演示使用，一鍵進入後台，免記帳密。對外上線前請關閉此開關。
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    className="w-full h-11 text-base bg-amber-600 hover:bg-amber-700 text-white"
-                    disabled={demoLoading || loading}
-                    onClick={handleDemoQuickPass}
-                  >
-                    {demoLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        進入中…
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="mr-2 h-4 w-4" />
-                        一鍵進入 Demo 後台
-                      </>
-                    )}
-                  </Button>
-                  <Separator />
-                  <p className="text-center text-xs text-muted-foreground">或使用帳密登入</p>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email */}
                 <div className="space-y-2">
@@ -269,15 +216,7 @@ export default function LoginPage() {
                   <Shield className="h-3.5 w-3.5" />
                   <span>僅限授權人員存取。如需協助請聯繫系統管理員。</span>
                 </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  還沒有帳號？{" "}
-                  <Link
-                    href="/register"
-                    className="text-primary font-medium hover:underline underline-offset-2"
-                  >
-                    立即免費試用 →
-                  </Link>
-                </p>
+                <p className="text-center text-sm text-muted-foreground">需要開通帳號？請聯繫 ForgeBase 管理員。</p>
               </div>
             </CardContent>
           </Card>

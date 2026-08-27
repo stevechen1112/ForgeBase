@@ -31,6 +31,7 @@ export type EventName =
   | "spec_download"
   | "certification_view"
   | "cta_click"
+  | "cta_impression"
   | "form_start"
   | "form_submit"
   | "rfq_start"
@@ -51,6 +52,7 @@ export interface TrackPayload {
   referrer?: string;
   campaign_id?: string;
   properties?: Record<string, unknown>;
+  analytics_consent: true;
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -64,7 +66,9 @@ const TRACKING_DISABLED =
 const EVENTS_URL = `${API_ENDPOINT}/api/v1/tracking/events`;
 const VISITOR_COOKIE = "fb_vid";   // first-party cookie name
 const SESSION_KEY = "fb_sid";      // sessionStorage key
+const SESSION_VISITOR_KEY = "fb_session_vid";
 const QUEUE_KEY = "fb_eq";         // localStorage offline queue
+const CONSENT_COOKIE = "fb_analytics_consent";
 const COOKIE_DAYS = 365;
 
 // ── GA4 Integration (1b.5.1) ─────────────────────────────────────────────────
@@ -138,12 +142,72 @@ function uuidv4(): string {
 // ── Visitor & Session identity ────────────────────────────────────────────────
 
 export function getVisitorId(): string {
-  let vid = getCookie(VISITOR_COOKIE);
+  if (hasAnalyticsConsent()) {
+    let vid = getCookie(VISITOR_COOKIE);
+    if (!vid) {
+      vid = typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(SESSION_VISITOR_KEY)
+        : null;
+      vid ||= uuidv4();
+      setCookie(VISITOR_COOKIE, vid, COOKIE_DAYS);
+    }
+    return vid;
+  }
+  if (typeof sessionStorage === "undefined") return uuidv4();
+  let vid = sessionStorage.getItem(SESSION_VISITOR_KEY);
   if (!vid) {
     vid = uuidv4();
-    setCookie(VISITOR_COOKIE, vid, COOKIE_DAYS);
+    sessionStorage.setItem(SESSION_VISITOR_KEY, vid);
   }
   return vid;
+}
+
+export function hasAnalyticsConsent(): boolean {
+  return getCookie(CONSENT_COOKIE) === "granted";
+}
+
+export function getAnalyticsVisitorId(): string | null {
+  return hasAnalyticsConsent() ? getVisitorId() : null;
+}
+
+async function syncAnalyticsConsent(visitorId: string, status: "granted" | "denied" | "revoked"): Promise<void> {
+  try {
+    await fetch(`${API_ENDPOINT}/api/v1/privacy/analytics-consent`, {
+      method: "POST",
+      headers: withTenantHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ visitor_id: visitorId, status, source: "web" }),
+      keepalive: true,
+    });
+  } catch {
+    // The local choice still takes effect if the audit endpoint is unavailable.
+  }
+}
+
+export function setAnalyticsConsent(granted: boolean, revoke = false): void {
+  const persistentVisitor = getCookie(VISITOR_COOKIE);
+  const sessionVisitor = (
+    typeof sessionStorage !== "undefined" ? sessionStorage.getItem(SESSION_VISITOR_KEY) : null
+  );
+  const visitorId = persistentVisitor || sessionVisitor || uuidv4();
+  setCookie(CONSENT_COOKIE, granted ? "granted" : "denied", COOKIE_DAYS);
+  if (granted) {
+    if (!persistentVisitor) setCookie(VISITOR_COOKIE, visitorId, COOKIE_DAYS);
+    void flushQueue();
+  } else {
+    if (persistentVisitor && typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(SESSION_VISITOR_KEY, persistentVisitor);
+    }
+    setCookie(VISITOR_COOKIE, "", -1);
+    if (typeof localStorage !== "undefined") localStorage.removeItem(QUEUE_KEY);
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("forgebase:analytics-consent", { detail: { granted } }));
+  }
+  void syncAnalyticsConsent(visitorId, granted ? "granted" : (revoke ? "revoked" : "denied"));
+}
+
+export function revokeAnalyticsConsent(): void {
+  setAnalyticsConsent(false, true);
 }
 
 export function getSessionId(): string {
@@ -173,7 +237,7 @@ function enqueue(payload: TrackPayload): void {
 }
 
 async function flushQueue(): Promise<void> {
-  if (typeof localStorage === "undefined" || TRACKING_DISABLED) return;
+  if (typeof localStorage === "undefined" || TRACKING_DISABLED || !hasAnalyticsConsent()) return;
   try {
     const raw = localStorage.getItem(QUEUE_KEY) || "[]";
     const q: TrackPayload[] = JSON.parse(raw);
@@ -206,7 +270,7 @@ export async function track(
   eventName: EventName,
   properties: Record<string, unknown> = {}
 ): Promise<void> {
-  if (typeof window === "undefined" || TRACKING_DISABLED) return; // SSR guard
+  if (typeof window === "undefined" || TRACKING_DISABLED || !hasAnalyticsConsent()) return; // SSR/consent guard
 
   const { page_type, page_id, locale, ...rest } = properties as {
     page_type?: string;
@@ -226,6 +290,7 @@ export async function track(
     referrer: document.referrer || undefined,
     campaign_id: new URLSearchParams(window.location.search).get("utm_campaign") || undefined,
     properties: Object.keys(rest).length > 0 ? rest : undefined,
+    analytics_consent: true,
   };
 
   try {

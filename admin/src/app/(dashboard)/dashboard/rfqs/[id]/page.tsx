@@ -1,18 +1,93 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/store";
+import { useParams, useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  MessageSquareText,
+  RefreshCw,
+  UserRound,
+} from "lucide-react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, CheckCircle2, XCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 import { authApi, type TeamMember } from "@/lib/api/auth";
+import { useAuth } from "@/lib/auth/store";
 
-const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
+type Contact = {
+  id: string;
+  full_name: string;
+  company_name: string | null;
+  email: string;
+  phone: string | null;
+  country: string | null;
+  job_title: string | null;
+};
+
+type VisitorEvent = {
+  event_name: string;
+  timestamp: string;
+  page_url: string | null;
+  page_type: string | null;
+  traffic_source: string | null;
+  campaign_id: string | null;
+  locale: string | null;
+  score_delta: number;
+};
+
+type RFQDetail = {
+  id: string;
+  rfq_number: string;
+  status: string;
+  priority: string;
+  assigned_to: string | null;
+  assigned_to_name: string | null;
+  next_follow_up_at: string | null;
+  contact: Contact | null;
+  form_data: Record<string, unknown> | null;
+  products: { id: string; name: string; model_number: string }[];
+  source_page: string | null;
+  visitor_id: string | null;
+  visitor_history: VisitorEvent[];
+  duplicate_candidates: {
+    id: string;
+    rfq_number: string;
+    status: string;
+    created_at: string;
+  }[];
+  quality_score: number | null;
+  quality_reasons?: string[];
+  intent_score_at_submit: number;
+  sla_due_at: string | null;
+  sla_breached: boolean;
+  incoterm?: string | null;
+  annual_volume?: string | null;
+  is_trial_order?: boolean | null;
+  target_price?: string | null;
+  required_certs?: string[];
+  created_at: string;
+  updated_at: string;
+  first_response_at: string | null;
+  quote_sent_at: string | null;
+  won_reason: string | null;
+  lost_reason: string | null;
+  deal_amount: string | null;
+  deal_currency: string;
+  is_spam: boolean;
+  spam_reason: string | null;
+  merged_into_rfq_id: string | null;
+  crm_sync: {
+    hubspot: { status: string; external_id: string | null };
+    salesforce: { status: string; external_id: string | null };
+  };
+};
 
 type RFQEvent = {
   id: string;
@@ -20,417 +95,639 @@ type RFQEvent = {
   summary: string;
   detail: Record<string, unknown> | null;
   actor_id: string | null;
+  actor_name?: string | null;
   created_at: string;
 };
 
-const EVENT_ICON: Record<string, string> = {
-  created: "🟢",
-  status_changed: "🔄",
-  assigned: "👤",
-  first_response: "💬",
-  quote_sent: "📨",
-  lost_reason_set: "❌",
-  notification_sent: "🔔",
-  ai_analysis_run: "🤖",
-  draft_reply_generated: "✉️",
+type RFQNote = {
+  id: string;
+  body: string;
+  author_id: string;
+  author_name: string;
+  created_at: string;
 };
 
-type RFQDetail = {
-  id: string; rfq_number: string; contact_id: string | null; visitor_id: string | null;
-  status: string; priority: string; intent_score_at_submit: number; assigned_to: string | null;
-  application_id: string | null; source_page: string | null; hubspot_deal_id: string | null;
-  product_ids: string[]; form_data: Record<string, unknown> | null;
-  assigned_notified_at: string | null; reminder_24h_sent_at: string | null;
-  escalation_48h_sent_at: string | null; closed_at: string | null;
-  created_at: string; updated_at: string;
-  first_response_at: string | null; quote_sent_at: string | null;
-  lost_reason: string | null; won_reason: string | null;
-  quality_score: number | null;
-  sla_due_at: string | null; sla_breached: boolean;
-  quality_reasons?: string[];
-  incoterm?: string | null; annual_volume?: string | null;
-  is_trial_order?: boolean | null; target_price?: string | null;
-  required_certs?: string[]; buyer_timezone?: string | null;
+type AttributionDetail = {
+  attribution_type: "direct" | "assisted" | "unknown" | "manual";
+  confidence: number;
+  manually_overridden: boolean;
+  override_reason: string | null;
+  lineage: Record<string, string | null>;
+  evidence: Record<string, unknown>;
+  events: {
+    id: string;
+    action: string;
+    previous_type: string | null;
+    attribution_type: string;
+    reason: string | null;
+    created_at: string;
+  }[];
 };
 
-type RFQAnalysis = {
-  match_score: number; urgency_level: string; key_requirements: string[];
-  matched_products: { id: string; name: string; reason: string }[];
-  unmet_requirements: string[]; recommended_actions: string[];
-  summary: string; language_detected: string;
-};
-type DraftReply = { subject: string; body: string; language: string };
-
-// §5.4 回覆品質輔助
-type ReplyAssist = {
-  checklist: { key: string; label: string; ok: boolean; ask: string | null }[];
-  quote_readiness: { score: number; ready: boolean; gaps: string[]; message: string };
-  suggested_questions: string[];
-  templates: { id: string; name: string; body: string }[];
-  buyer_country: string | null;
-};
-
-const STATUSES = ["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"];
 const STATUS_LABEL: Record<string, string> = {
-  new: "新進",
-  assigned: "已指派",
-  in_progress: "處理中",
-  quoted: "已報價",
-  negotiation: "談判中",
-  won: "成交",
-  lost: "流失",
-  expired: "過期",
+  new: "待處理",
+  assigned: "待處理（已分派）",
+  in_progress: "聯繫中",
+  quoted: "報價／樣品",
+  negotiation: "洽談中",
+  won: "已成交",
+  lost: "未成交",
+  expired: "已結案",
 };
-const PRIORITY_LABEL: Record<string, string> = {
-  normal: "一般",
-  high: "高",
-  urgent: "緊急",
+
+const STATUS_STYLE: Record<string, string> = {
+  new: "bg-blue-100 text-blue-800",
+  assigned: "bg-sky-100 text-sky-800",
+  in_progress: "bg-amber-100 text-amber-800",
+  quoted: "bg-violet-100 text-violet-800",
+  negotiation: "bg-indigo-100 text-indigo-800",
+  won: "bg-emerald-100 text-emerald-800",
+  lost: "bg-muted text-muted-foreground",
+  expired: "bg-slate-100 text-slate-700",
 };
-const PRIORITY_VARIANT: Record<string, string> = {
-  urgent: "bg-red-100 text-red-700",
-  high: "bg-orange-100 text-orange-700",
-  normal: "bg-muted text-muted-foreground",
+
+const EVENT_LABEL: Record<string, string> = {
+  created: "收到詢價",
+  status_changed: "更新案件階段",
+  assigned: "指派負責業務",
+  first_response: "記錄首次回覆",
+  quote_sent: "記錄報價發出",
+  next_follow_up_set: "設定下次跟進",
+  note_added: "新增內部備註",
+  spam_marked: "移至垃圾隔離區",
+  spam_restored: "從垃圾隔離區還原",
+  duplicate_merged: "合併重複詢價",
+  merged_into: "案件已被合併",
+  notification_sent: "寄送內部提醒",
 };
+
+const SELECT_CLS =
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+function toLocalInput(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
+
+function displayValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+}
+
+function errorMessage(data: unknown, fallback: string) {
+  if (data && typeof data === "object" && "detail" in data) {
+    const detail = (data as { detail?: unknown }).detail;
+    if (typeof detail === "string") return detail;
+  }
+  return fallback;
+}
 
 export default function RFQDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const user = state.status === "authenticated" ? state.user : null;
+  const isManager = user?.role === "owner" || user?.role === "admin";
+  const canOperate = isManager || user?.role === "sales";
 
   const [rfq, setRfq] = useState<RFQDetail | null>(null);
+  const [events, setEvents] = useState<RFQEvent[]>([]);
+  const [notes, setNotes] = useState<RFQNote[]>([]);
+  const [attribution, setAttribution] = useState<AttributionDetail | null>(
+    null,
+  );
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newStatus, setNewStatus] = useState("");
-  const [assignTo, setAssignTo] = useState("");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-
-  const [analysis, setAnalysis] = useState<RFQAnalysis | null>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisError, setAnalysisError] = useState("");
-  const [reply, setReply] = useState<DraftReply | null>(null);
-  const [replyLoading, setReplyLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const [ownerId, setOwnerId] = useState("");
+  const [nextFollowUp, setNextFollowUp] = useState("");
   const [closeReason, setCloseReason] = useState("");
-  const [assist, setAssist] = useState<ReplyAssist | null>(null);
+  const [dealAmount, setDealAmount] = useState("");
+  const [dealCurrency, setDealCurrency] = useState("USD");
+  const [noteBody, setNoteBody] = useState("");
+  const [spamReason, setSpamReason] = useState("");
 
-  // Follow-up state
-  const [followUpSaving, setFollowUpSaving] = useState(false);
-  const [lostReason, setLostReason] = useState("");
-
-  // Timeline events
-  const [events, setEvents] = useState<RFQEvent[]>([]);
-
-  const fetchEvents = useCallback(async () => {
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/events`, {
-        headers: buildApiHeaders(token),
-      });
-      if (res.ok) setEvents(await res.json());
-    } catch { /* non-critical */ }
+      const [
+        detailResponse,
+        eventsResponse,
+        notesResponse,
+        attributionResponse,
+      ] = await Promise.all([
+        fetch(`${API_BASE}/tracking/rfqs/${id}`, {
+          headers: buildApiHeaders(token),
+        }),
+        fetch(`${API_BASE}/tracking/rfqs/${id}/events`, {
+          headers: buildApiHeaders(token),
+        }),
+        fetch(`${API_BASE}/tracking/rfqs/${id}/notes`, {
+          headers: buildApiHeaders(token),
+        }),
+        fetch(`${API_BASE}/tracking/rfqs/${id}/attribution`, {
+          headers: buildApiHeaders(token),
+        }),
+      ]);
+      const detail = await detailResponse.json().catch(() => null);
+      if (!detailResponse.ok)
+        throw new Error(errorMessage(detail, "找不到詢價案件"));
+      setRfq(detail);
+      setStatus(detail.status);
+      setOwnerId(detail.assigned_to ?? "");
+      setNextFollowUp(toLocalInput(detail.next_follow_up_at));
+      setDealAmount(detail.deal_amount ?? "");
+      setDealCurrency(detail.deal_currency ?? "USD");
+      setEvents(eventsResponse.ok ? await eventsResponse.json() : []);
+      setNotes(notesResponse.ok ? await notesResponse.json() : []);
+      setAttribution(
+        attributionResponse.ok ? await attributionResponse.json() : null,
+      );
+    } catch (cause) {
+      setRfq(null);
+      setError(cause instanceof Error ? cause.message : "詢價案件載入失敗");
+    } finally {
+      setLoading(false);
+    }
   }, [id, token]);
-
-  const fetchAssist = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/reply-assist`, {
-        headers: buildApiHeaders(token),
-      });
-      if (res.ok) setAssist(await res.json());
-    } catch { /* non-critical */ }
-  }, [id, token]);
-
-  async function saveFollowUp(field: "first_response_at" | "quote_sent_at") {
-    setFollowUpSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
-        method: "PUT",
-        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ [field]: new Date().toISOString() }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setRfq((prev) => prev ? { ...prev, [field]: new Date().toISOString() } : prev);
-      setMessage(`${field === "first_response_at" ? "首次回覆" : "報價發出"}時間已記錄 ✓`);
-      fetchEvents();
-    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
-    finally { setFollowUpSaving(false); }
-  }
-
-  async function saveLostReason() {
-    if (!lostReason.trim()) return;
-    setFollowUpSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/follow-up`, {
-        method: "PUT",
-        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ lost_reason: lostReason }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setRfq((prev) => prev ? { ...prev, lost_reason: lostReason } : prev);
-      setMessage("流失原因已儲存 ✓");
-      fetchEvents();
-    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
-    finally { setFollowUpSaving(false); }
-  }
-
-  async function runAnalysis() {
-    setAnalysisLoading(true); setAnalysisError("");
-    try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/analyze`, {
-        method: "POST", headers: buildApiHeaders(token),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Analysis failed");
-      setAnalysis(data);
-    } catch (e) { setAnalysisError(e instanceof Error ? e.message : "Unknown error"); }
-    finally { setAnalysisLoading(false); }
-  }
-
-  async function generateReply() {
-    setReplyLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/draft-reply`, {
-        method: "POST",
-        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ analysis }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Draft generation failed");
-      setReply(data);
-    } catch (e) { setAnalysisError(e instanceof Error ? e.message : "Unknown error"); }
-    finally { setReplyLoading(false); }
-  }
 
   useEffect(() => {
-    fetch(`${API_BASE}/tracking/rfqs/${id}`, { headers: buildApiHeaders(token) })
-      .then((r) => r.json())
-      .then((data) => { setRfq(data); setNewStatus(data.status); setAssignTo(data.assigned_to ?? ""); })
-      .finally(() => setLoading(false));
-    fetchEvents();
-    fetchAssist();
-    if (token) {
-      authApi.listTeam(token)
-        .then((members) => setTeamMembers(members.filter((member) => member.is_active)))
-        .catch(() => setTeamMembers([]));
-    }
-  }, [fetchAssist, fetchEvents, id, token]);
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!token || !isManager) return;
+    authApi
+      .listTeam(token)
+      .then((members) =>
+        setTeam(
+          members.filter(
+            (member) =>
+              member.is_active &&
+              ["sales", "admin", "owner"].includes(member.role),
+          ),
+        ),
+      )
+      .catch(() => setTeam([]));
+  }, [isManager, token]);
+
+  const form = rfq?.form_data ?? {};
+  const isClosedChoice = status === "won" || status === "lost";
+  const followUpOverdue = useMemo(
+    () =>
+      Boolean(
+        rfq?.next_follow_up_at &&
+        new Date(rfq.next_follow_up_at) < new Date() &&
+        !["won", "lost", "expired"].includes(rfq.status),
+      ),
+    [rfq],
+  );
+
+  async function request(path: string, method: string, body: object) {
+    const response = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok)
+      throw new Error(errorMessage(data, `HTTP ${response.status}`));
+    return data;
+  }
 
   async function saveStatus() {
-    if (!rfq || newStatus === rfq.status) return;
+    if (!rfq || (status === rfq.status && !isClosedChoice)) return;
+    if (
+      isClosedChoice &&
+      !closeReason.trim() &&
+      !(status === "won" ? rfq.won_reason : rfq.lost_reason)
+    ) {
+      setError(status === "won" ? "請填寫成交原因" : "請填寫未成交原因");
+      return;
+    }
+    if (status === "won" && !dealAmount && !rfq.deal_amount) {
+      setError("請填寫成交金額");
+      return;
+    }
     setSaving(true);
+    setError("");
+    setMessage("");
     try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/status`, {
-        method: "PUT",
-        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          status: newStatus,
-          ...(closeReason.trim() ? { reason: closeReason.trim() } : {}),
-        }),
+      await request(`/tracking/rfqs/${id}/status`, "PUT", {
+        status,
+        ...(closeReason.trim() ? { reason: closeReason.trim() } : {}),
+        ...(status === "won" && dealAmount
+          ? { deal_amount: dealAmount, deal_currency: dealCurrency }
+          : {}),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        const d = data.detail;
-        const msg = typeof d === "string"
-          ? d
-          : Array.isArray(d)
-            ? d.map((x: { msg?: string }) => x?.msg || JSON.stringify(x)).join("; ")
-            : (d ? JSON.stringify(d) : res.statusText);
-        throw new Error(msg);
-      }
-      setRfq((prev) => prev ? { ...prev, status: data.status, ...(newStatus === "won" && closeReason.trim() ? { won_reason: closeReason.trim() } : {}), ...(newStatus === "lost" && closeReason.trim() ? { lost_reason: closeReason.trim() } : {}) } : prev);
+      setMessage("案件階段已更新");
       setCloseReason("");
-      setMessage("狀態已更新 ✓");
-      fetchEvents();
-    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
-    finally { setSaving(false); }
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "更新失敗");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  async function saveAssign() {
-    if (!rfq || !assignTo) return;
+  async function saveOwner() {
+    if (!ownerId) return;
     setSaving(true);
+    setError("");
+    setMessage("");
     try {
-      const res = await fetch(`${API_BASE}/tracking/rfqs/${id}/assign`, {
-        method: "PUT",
-        headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ assigned_to: assignTo }),
+      await request(`/tracking/rfqs/${id}/assign`, "PUT", {
+        assigned_to: ownerId,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail);
-      setRfq((prev) => prev ? { ...prev, assigned_to: data.assigned_to, status: data.status } : prev);
-      setMessage("已指派 ✓");
-      fetchEvents();
-    } catch (e) { setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`); }
-    finally { setSaving(false); }
+      setMessage("負責業務已更新");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "指派失敗");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (loading) return <div className="py-12 text-center text-muted-foreground">載入中…</div>;
-  if (!rfq) return <div className="py-12 text-center text-destructive">找不到 RFQ</div>;
+  async function saveFollowUp() {
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await request(`/tracking/rfqs/${id}/follow-up`, "PUT", {
+        next_follow_up_at: nextFollowUp
+          ? new Date(nextFollowUp).toISOString()
+          : null,
+      });
+      setMessage(nextFollowUp ? "下次跟進時間已設定" : "已清除跟進時間");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "跟進時間更新失敗");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-  const formData = rfq.form_data ?? {};
-  const assignedMember = teamMembers.find((member) => member.id === rfq.assigned_to);
+  async function addNote() {
+    if (!noteBody.trim()) return;
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await request(`/tracking/rfqs/${id}/notes`, "POST", {
+        body: noteBody.trim(),
+      });
+      setNoteBody("");
+      setMessage("內部備註已加入");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "備註儲存失敗");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleSpam() {
+    if (!rfq) return;
+    if (!rfq.is_spam && !spamReason.trim()) {
+      setError("請先填寫判定為垃圾詢價的原因");
+      return;
+    }
+    const action = rfq.is_spam ? "還原此詢價" : "移至垃圾隔離區";
+    if (!window.confirm(`確定要${action}？案件不會被刪除。`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      await request(`/tracking/rfqs/${id}/spam`, "PUT", {
+        is_spam: !rfq.is_spam,
+        reason: spamReason.trim() || null,
+      });
+      setMessage(rfq.is_spam ? "詢價已還原" : "詢價已移至垃圾隔離區");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "操作失敗");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function mergeDuplicate(
+    duplicate: RFQDetail["duplicate_candidates"][number],
+  ) {
+    if (
+      !window.confirm(
+        `確定將 ${duplicate.rfq_number} 合併至目前案件？原資料會保留在「已合併案件」。`,
+      )
+    )
+      return;
+    setSaving(true);
+    setError("");
+    try {
+      await request(`/tracking/rfqs/${id}/merge`, "POST", {
+        duplicate_rfq_id: duplicate.id,
+      });
+      setMessage(`${duplicate.rfq_number} 已合併`);
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "合併失敗");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading)
+    return (
+      <div className="py-14 text-center text-sm text-muted-foreground">
+        載入詢價案件…
+      </div>
+    );
+  if (!rfq)
+    return (
+      <div>
+        <Alert variant="destructive">
+          <AlertDescription>{error || "找不到詢價案件"}</AlertDescription>
+        </Alert>
+        <Button
+          variant="ghost"
+          className="mt-4"
+          onClick={() => router.push("/dashboard/rfqs")}
+        >
+          ← 返回詢價案件
+        </Button>
+      </div>
+    );
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-6 flex items-center gap-3">
-        <Button asChild variant="ghost" size="sm" className="-ml-2">
-          <Link href="/dashboard/rfqs">← 返回列表</Link>
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight">{rfq.rfq_number}</h1>
-        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${PRIORITY_VARIANT[rfq.priority] ?? "bg-muted text-muted-foreground"}`}>
-          {PRIORITY_LABEL[rfq.priority] ?? rfq.priority}
-        </span>
+    <div className="max-w-6xl">
+      <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2">
+        <Link href="/dashboard/rfqs">← 返回詢價案件</Link>
+      </Button>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {rfq.contact?.company_name || "未填公司"}
+            </h1>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[rfq.status] ?? "bg-muted"}`}
+            >
+              {STATUS_LABEL[rfq.status] ?? rfq.status}
+            </span>
+            {rfq.is_spam && (
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                垃圾隔離
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {rfq.rfq_number} · {rfq.contact?.full_name || "未填聯絡人"} ·{" "}
+            {new Date(rfq.created_at).toLocaleString("zh-TW")}
+          </p>
+        </div>
+        {followUpOverdue && (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            <AlertTriangle className="h-4 w-4" />
+            跟進已逾期
+          </div>
+        )}
       </div>
 
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       {message && (
+        <Alert className="mb-4 border-emerald-200 bg-emerald-50">
+          <AlertDescription className="text-emerald-800">
+            {message}
+          </AlertDescription>
+        </Alert>
+      )}
+      {!canOperate && (
         <Alert className="mb-4">
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription>
+            您目前可以查看案件與來源資訊；案件處理操作由負責業務或主管執行。
+          </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main info */}
-        <div className="lg:col-span-2 space-y-5">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-5">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">聯絡資訊</CardTitle></CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-2 gap-3 text-sm">
+            <CardHeader>
+              <CardTitle className="text-base">客戶與詢價需求</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  ["姓名", formData.full_name], ["Email", formData.email],
-                  ["公司", formData.company_name], ["電話", formData.phone],
-                  ["國家", formData.country], ["職稱", formData.job_title],
+                  ["聯絡人", rfq.contact?.full_name],
+                  ["Email", rfq.contact?.email],
+                  ["電話", rfq.contact?.phone],
+                  ["國家", rfq.contact?.country],
+                  ["職稱", rfq.contact?.job_title],
+                  ["期望交期", form.timeline],
                 ].map(([label, value]) => (
                   <div key={String(label)}>
-                    <dt className="text-xs text-muted-foreground">{String(label)}</dt>
-                    <dd className="font-medium">{String(value ?? "—")}</dd>
+                    <dt className="text-xs text-muted-foreground">
+                      {String(label)}
+                    </dt>
+                    <dd className="mt-1 font-medium break-words">
+                      {displayValue(value)}
+                    </dd>
                   </div>
                 ))}
               </dl>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">需求內容</CardTitle></CardHeader>
-            <CardContent>
-              <dl className="space-y-3 text-sm">
+              {rfq.products.length > 0 && (
                 <div>
-                  <dt className="text-xs text-muted-foreground">數量</dt>
-                  <dd>{String(formData.quantity ?? "—")}</dd>
+                  <p className="mb-2 text-xs text-muted-foreground">詢問產品</p>
+                  <div className="flex flex-wrap gap-2">
+                    {rfq.products.map((product) => (
+                      <span
+                        key={product.id}
+                        className="rounded-md border bg-muted/40 px-2.5 py-1.5 text-sm"
+                      >
+                        {product.name}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          {product.model_number}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
+              )}
+              <dl className="grid gap-4 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-muted-foreground">期望交期</dt>
-                  <dd>{String(formData.timeline ?? "—")}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">技術規格</dt>
-                  <dd className="mt-1 whitespace-pre-wrap rounded bg-muted border p-3 font-mono text-xs">
-                    {String(formData.specifications ?? "—")}
+                  <dt className="text-xs text-muted-foreground">需求數量</dt>
+                  <dd className="mt-1 font-medium">
+                    {displayValue(form.quantity)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">補充訊息</dt>
-                  <dd className="whitespace-pre-wrap">{String(formData.message ?? "—")}</dd>
+                  <dd className="mt-1 whitespace-pre-wrap">
+                    {displayValue(form.message)}
+                  </dd>
                 </div>
               </dl>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">品質分數與貿易條件</CardTitle></CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-                  (rfq.quality_score ?? 0) >= 70 ? "bg-green-100 text-green-800"
-                  : (rfq.quality_score ?? 0) >= 40 ? "bg-yellow-100 text-yellow-800"
-                  : "bg-gray-100 text-gray-600"
-                }`}>
-                  品質 {rfq.quality_score ?? "—"}/100
-                </span>
-                {rfq.sla_breached ? (
-                  <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">SLA 已逾期</span>
-                ) : rfq.sla_due_at ? (
-                  <span className="text-xs text-muted-foreground">SLA 截止 {new Date(rfq.sla_due_at).toLocaleString("zh-TW")}</span>
-                ) : null}
+              <div>
+                <p className="text-xs text-muted-foreground">規格與要求</p>
+                <div className="mt-1 whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-sm">
+                  {displayValue(form.specifications)}
+                </div>
               </div>
-              {(rfq.quality_reasons?.length ?? 0) > 0 && (
-                <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
-                  {rfq.quality_reasons!.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-              )}
-              <dl className="grid grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-xs text-muted-foreground">Incoterm</dt>
-                  <dd className="font-medium">{rfq.incoterm ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">預估年採購量</dt>
-                  <dd className="font-medium">{rfq.annual_volume ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">目標價格</dt>
-                  <dd className="font-medium">{rfq.target_price ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">試單</dt>
-                  <dd className="font-medium">{rfq.is_trial_order == null ? "—" : rfq.is_trial_order ? "是" : "否"}</dd>
-                </div>
-                {(rfq.required_certs?.length ?? 0) > 0 && (
-                  <div className="col-span-2">
-                    <dt className="text-xs text-muted-foreground">需求認證</dt>
-                    <dd className="font-medium">{rfq.required_certs!.join("、")}</dd>
-                  </div>
-                )}
-              </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">追蹤資訊</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">北極星來源與歸因證據</CardTitle>
+            </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-2 gap-2 text-sm">
-                {[
-                  ["意圖分數", rfq.intent_score_at_submit], ["來源頁", rfq.source_page],
-                  ["訪客 ID", rfq.visitor_id], ["聯絡人 ID", rfq.contact_id],
-                  ["提交時間", new Date(rfq.created_at).toLocaleString()],
-                  ["最後更新", new Date(rfq.updated_at).toLocaleString()],
-                ].map(([label, value]) => (
-                  <div key={String(label)}>
-                    <dt className="text-xs text-muted-foreground">{String(label)}</dt>
-                    <dd className="font-medium truncate max-w-[200px]">{String(value ?? "—")}</dd>
+              {!attribution ? (
+                <p className="text-sm text-muted-foreground">
+                  此租戶尚未開放閉環歸因，或尚未建立可追溯紀錄。
+                </p>
+              ) : (
+                <div className="space-y-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">
+                      {attribution.attribution_type}
+                    </span>
+                    <span>
+                      信心 {Math.round(attribution.confidence * 100)}%
+                    </span>
+                    {attribution.manually_overridden && (
+                      <span className="text-amber-700">人工覆寫</span>
+                    )}
                   </div>
-                ))}
-              </dl>
+                  <p className="text-muted-foreground">
+                    {String(
+                      attribution.evidence.causal_claim ??
+                        attribution.evidence.rule ??
+                        "沒有足夠因果證據",
+                    )}
+                  </p>
+                  <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {Object.entries(attribution.lineage).map(([key, value]) => (
+                      <div key={key}>
+                        <dt className="text-xs text-muted-foreground">{key}</dt>
+                        <dd className="break-all font-mono text-xs">
+                          {value ?? "—"}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {attribution.override_reason && (
+                    <Alert>
+                      <AlertDescription>
+                        覆寫原因：{attribution.override_reason}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <details>
+                    <summary className="cursor-pointer font-medium">
+                      歸因決策歷程（{attribution.events.length}）
+                    </summary>
+                    <ol className="mt-3 space-y-2 border-l pl-4">
+                      {attribution.events.map((event) => (
+                        <li key={event.id}>
+                          <p>
+                            {event.action} · {event.attribution_type}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {event.reason ?? "—"} ·{" "}
+                            {new Date(event.created_at).toLocaleString("zh-TW")}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Activity Timeline */}
           <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">活動紀錄</CardTitle>
-                <Button size="sm" variant="ghost" onClick={fetchEvents} className="text-xs">
-                  重新整理
-                </Button>
-              </div>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageSquareText className="h-4 w-4" />
+                內部備註
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {canOperate && (
+                <div className="space-y-2">
+                  <textarea
+                    className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={noteBody}
+                    onChange={(event) => setNoteBody(event.target.value)}
+                    placeholder="記下客戶回覆、報價內容或下一步；這些文字不會寄給客戶。"
+                    maxLength={4000}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={addNote}
+                      disabled={saving || !noteBody.trim()}
+                    >
+                      加入備註
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {notes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">尚無內部備註</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="rounded-md border bg-muted/20 p-3"
+                    >
+                      <p className="whitespace-pre-wrap text-sm">{note.body}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {note.author_name} ·{" "}
+                        {new Date(note.created_at).toLocaleString("zh-TW")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-base">處理歷程</CardTitle>
+              <Button variant="ghost" size="sm" onClick={load}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                重新整理
+              </Button>
             </CardHeader>
             <CardContent>
               {events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">尚無紀錄</p>
+                <p className="text-sm text-muted-foreground">尚無處理紀錄</p>
               ) : (
-                <ol className="relative border-l border-muted-foreground/20 ml-2 space-y-4">
-                  {events.map((evt) => (
-                    <li key={evt.id} className="ml-4">
-                      <div className="absolute -left-2.5 mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-background border text-xs">
-                        {EVENT_ICON[evt.event_type] ?? "📌"}
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className="text-sm font-medium">{evt.summary}</p>
-                        <time className="shrink-0 text-xs text-muted-foreground">
-                          {new Date(evt.created_at).toLocaleString()}
-                        </time>
-                      </div>
-                      {evt.detail && (
-                        <pre className="mt-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1 overflow-x-auto">
-                          {JSON.stringify(evt.detail, null, 2)}
-                        </pre>
-                      )}
+                <ol className="space-y-4 border-l pl-5">
+                  {events.map((event) => (
+                    <li key={event.id} className="relative">
+                      <span className="absolute -left-[25px] top-1 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" />
+                      <p className="text-sm font-medium">
+                        {EVENT_LABEL[event.event_type] ?? event.summary}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {event.actor_name ? `${event.actor_name} · ` : ""}
+                        {new Date(event.created_at).toLocaleString("zh-TW")}
+                      </p>
                     </li>
                   ))}
                 </ol>
@@ -438,281 +735,337 @@ export default function RFQDetailPage() {
             </CardContent>
           </Card>
 
-          {/* 回覆品質輔助 Panel（§5.4） */}
-          {assist && (
-            <Card className="border-emerald-200 bg-emerald-50/30">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base text-emerald-800">回覆前檢查（Quote Readiness）</CardTitle>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${assist.quote_readiness.ready ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                    {assist.quote_readiness.score} 分 — {assist.quote_readiness.message}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <ul className="space-y-1.5">
-                  {assist.checklist.map((item) => (
-                    <li key={item.key} className="flex items-start gap-2">
-                      {item.ok
-                        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                        : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />}
-                      <span className={item.ok ? "text-muted-foreground" : "font-medium"}>{item.label}</span>
-                    </li>
+          <details className="group rounded-lg border bg-card">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold">
+              <span>更多業務與來源資訊</span>
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="space-y-5 border-t p-5 text-sm">
+              <section>
+                <h2 className="mb-3 font-semibold">採購條件</h2>
+                <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {[
+                    ["貿易條件", rfq.incoterm],
+                    ["年採購量", rfq.annual_volume],
+                    ["目標價格", rfq.target_price],
+                    [
+                      "是否試單",
+                      rfq.is_trial_order == null
+                        ? null
+                        : rfq.is_trial_order
+                          ? "是"
+                          : "否",
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={String(label)}>
+                      <dt className="text-xs text-muted-foreground">
+                        {String(label)}
+                      </dt>
+                      <dd className="font-medium">{displayValue(value)}</dd>
+                    </div>
                   ))}
-                </ul>
-                {assist.suggested_questions.length > 0 && (
-                  <div className="border-t border-emerald-200 pt-3">
-                    <p className="mb-1.5 text-xs font-semibold text-muted-foreground">建議反問買家</p>
-                    <ul className="list-inside list-disc space-y-1 text-xs">
-                      {assist.suggested_questions.map((q, i) => <li key={i}>{q}</li>)}
-                    </ul>
-                  </div>
+                </dl>
+                {(rfq.required_certs?.length ?? 0) > 0 && (
+                  <p className="mt-3">
+                    需求認證：{rfq.required_certs?.join("、")}
+                  </p>
                 )}
-                {assist.templates.length > 0 && (
-                  <div className="border-t border-emerald-200 pt-3">
-                    <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
-                      匹配範本{assist.buyer_country ? `（買家國家：${assist.buyer_country}）` : ""}
-                    </p>
-                    {assist.templates.map((t) => (
-                      <details key={t.id} className="mb-1.5 rounded border bg-background px-3 py-2 text-xs">
-                        <summary className="cursor-pointer font-medium">{t.name}</summary>
-                        <pre className="mt-2 whitespace-pre-wrap font-sans text-muted-foreground">{t.body}</pre>
-                      </details>
+              </section>
+              <section>
+                <h2 className="mb-2 font-semibold">如何找到我們</h2>
+                <p>來源頁：{rfq.source_page || "未記錄"}</p>
+                <p className="text-muted-foreground">
+                  品質判定：{rfq.quality_score ?? 0} 分 · 訪客關注分數：
+                  {rfq.intent_score_at_submit}
+                </p>
+                {(rfq.quality_reasons?.length ?? 0) > 0 && (
+                  <ul className="mt-2 list-inside list-disc text-muted-foreground">
+                    {rfq.quality_reasons?.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section>
+                <h2 className="mb-2 font-semibold">近期網站行為</h2>
+                {rfq.visitor_history.length === 0 ? (
+                  <p className="text-muted-foreground">沒有可顯示的訪客歷程</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {rfq.visitor_history.slice(0, 10).map((event, index) => (
+                      <li
+                        key={`${event.timestamp}-${index}`}
+                        className="flex flex-wrap justify-between gap-2 rounded border px-3 py-2"
+                      >
+                        <span>
+                          {event.event_name}
+                          {event.page_url ? ` · ${event.page_url}` : ""}
+                        </span>
+                        <time className="text-xs text-muted-foreground">
+                          {new Date(event.timestamp).toLocaleString("zh-TW")}
+                        </time>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section>
+                <h2 className="mb-2 font-semibold">CRM 同步介面</h2>
+                <p>
+                  HubSpot：
+                  {rfq.crm_sync.hubspot.status === "linked"
+                    ? `已連結 ${rfq.crm_sync.hubspot.external_id}`
+                    : "尚未連結"}
+                </p>
+                <p>Salesforce：尚未設定（保留未來 connector）</p>
+              </section>
+              {isManager && rfq.duplicate_candidates.length > 0 && (
+                <section>
+                  <h2 className="mb-2 font-semibold">可能重複詢價</h2>
+                  <div className="space-y-2">
+                    {rfq.duplicate_candidates.map((candidate) => (
+                      <div
+                        key={candidate.id}
+                        className="flex items-center justify-between rounded border p-3"
+                      >
+                        <div>
+                          <Link
+                            className="font-mono text-primary hover:underline"
+                            href={`/dashboard/rfqs/${candidate.id}`}
+                          >
+                            {candidate.rfq_number}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">
+                            {STATUS_LABEL[candidate.status] ?? candidate.status}{" "}
+                            ·{" "}
+                            {new Date(candidate.created_at).toLocaleDateString(
+                              "zh-TW",
+                            )}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => mergeDuplicate(candidate)}
+                          disabled={saving}
+                        >
+                          確認合併
+                        </Button>
+                      </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* AI Analysis Panel */}
-          <Card className="border-indigo-200 bg-indigo-50/30">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-indigo-800">AI 分析</CardTitle>
-                <Button
-                  size="sm"
-                  onClick={runAnalysis}
-                  disabled={analysisLoading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {analysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  <span className="ml-1.5">{analysisLoading ? "分析中…" : analysis ? "重新分析" : "執行 AI 分析"}</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {analysisError && (
-                <Alert variant="destructive" className="mb-3">
-                  <AlertDescription>{analysisError}</AlertDescription>
-                </Alert>
+                </section>
               )}
-              {analysis && (
-                <div className="space-y-4 text-sm">
-                  <div className="flex gap-4">
-                    <div className="rounded-lg bg-white border border-indigo-100 px-4 py-2 text-center">
-                      <div className="text-2xl font-bold text-indigo-700">{analysis.match_score}</div>
-                      <div className="text-xs text-muted-foreground">媒合分數</div>
-                    </div>
-                    <div className={`rounded-lg border px-4 py-2 text-center ${
-                      analysis.urgency_level === "high" ? "bg-red-50 border-red-200" :
-                      analysis.urgency_level === "medium" ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"
-                    }`}>
-                      <div className="text-lg font-bold">{({ high: "高", medium: "中", low: "低" } as Record<string, string>)[analysis.urgency_level] ?? analysis.urgency_level}</div>
-                      <div className="text-xs text-muted-foreground">急迫性</div>
-                    </div>
-                    <div className="rounded-lg bg-white border border-indigo-100 px-4 py-2 text-center">
-                      <div className="text-sm font-semibold uppercase">{analysis.language_detected}</div>
-                      <div className="text-xs text-muted-foreground">語言</div>
-                    </div>
-                  </div>
-                  <div className="rounded bg-white border border-indigo-100 p-3">
-                    <div className="text-xs font-semibold text-muted-foreground mb-1">摘要</div>
-                    <p>{analysis.summary}</p>
-                  </div>
-                  {analysis.key_requirements.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-muted-foreground mb-1">關鍵需求</div>
-                      <ul className="list-disc list-inside space-y-0.5">{analysis.key_requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
-                    </div>
+              {canOperate && (
+                <section className="rounded-md border border-red-200 bg-red-50/40 p-4">
+                  <h2 className="font-semibold text-red-800">垃圾詢價處理</h2>
+                  {!rfq.is_spam && (
+                    <Input
+                      className="mt-3"
+                      value={spamReason}
+                      onChange={(event) => setSpamReason(event.target.value)}
+                      placeholder="原因，例如：廣告推銷、無效聯絡資料"
+                    />
                   )}
-                  {analysis.matched_products.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-muted-foreground mb-1">匹配商品</div>
-                      <div className="space-y-1">
-                        {analysis.matched_products.map((p, i) => (
-                          <div key={i} className="rounded bg-green-50 border border-green-100 px-3 py-1.5">
-                            <span className="font-medium text-green-800">{p.name}</span>
-                            {p.reason && <span className="ml-2 text-xs text-muted-foreground">— {p.reason}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {analysis.unmet_requirements.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-muted-foreground mb-1">未滿足需求</div>
-                      <ul className="list-disc list-inside text-amber-700 space-y-0.5">{analysis.unmet_requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
-                    </div>
-                  )}
-                  {analysis.recommended_actions.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-muted-foreground mb-1">建議行動</div>
-                      <ul className="list-disc list-inside text-blue-700 space-y-0.5">{analysis.recommended_actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                    </div>
-                  )}
-                  <div className="border-t border-indigo-200 pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs font-semibold text-muted-foreground">AI 草稿回覆信</div>
-                      <Button size="sm" variant="outline" onClick={generateReply} disabled={replyLoading} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
-                        {replyLoading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
-                        {replyLoading ? "產生中…" : reply ? "重新產生" : "產生草稿"}
-                      </Button>
-                    </div>
-                    {reply && (
-                      <div className="rounded bg-white border border-indigo-100 p-3 space-y-2">
-                        <div className="text-xs text-muted-foreground">主旨：<span className="font-medium text-foreground">{reply.subject}</span></div>
-                        <pre className="whitespace-pre-wrap text-xs font-sans leading-relaxed max-h-64 overflow-y-auto">{reply.body}</pre>
-                        <button onClick={() => navigator.clipboard.writeText(`Subject: ${reply.subject}\n\n${reply.body}`)} className="text-xs text-indigo-600 hover:underline">
-                          複製到剪貼簿
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <Button
+                    className="mt-3"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSpam}
+                    disabled={saving}
+                  >
+                    {rfq.is_spam ? "還原為一般詢價" : "移至垃圾隔離區"}
+                  </Button>
+                </section>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </details>
         </div>
 
-        {/* Actions sidebar */}
-        <div className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">更新狀態</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <select className={SELECT_CLS} value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>)}
-              </select>
-              {(newStatus === "won" || newStatus === "lost") && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">
-                    {newStatus === "won" ? "成交原因（必填）" : "流失原因（必填）"}
-                  </Label>
-                  <Input
-                    value={closeReason}
-                    onChange={(e) => setCloseReason(e.target.value)}
-                    placeholder={newStatus === "won" ? "例：價格與交期具競爭力" : "例：報價高於競爭對手 15%"}
-                    className="text-xs"
-                  />
-                </div>
-              )}
-              <Button
-                className="w-full"
-                onClick={saveStatus}
-                disabled={saving || newStatus === rfq.status || ((newStatus === "won" || newStatus === "lost") && !closeReason.trim() && !((newStatus === "won" && rfq.won_reason) || (newStatus === "lost" && rfq.lost_reason)))}
-              >
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                更新狀態
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">指派負責人</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">成員編號</Label>
+            <CardHeader>
+              <CardTitle className="text-base">案件下一步</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="case-status">目前階段</Label>
                 <select
-                  id="rfq-assignee"
-                  value={assignTo}
-                  onChange={(e) => setAssignTo(e.target.value)}
+                  id="case-status"
                   className={SELECT_CLS}
-                  aria-label="選擇負責成員"
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value)}
+                  disabled={!canOperate}
                 >
-                  <option value="">請選擇負責成員</option>
-                  {rfq.assigned_to && !assignedMember && (
-                    <option value={rfq.assigned_to}>目前負責人（帳號已停用或不存在）</option>
-                  )}
-                  {teamMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.full_name || member.email}（{member.role}）
+                  {Object.entries(STATUS_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
                   ))}
                 </select>
               </div>
-              <Button variant="secondary" className="w-full" onClick={saveAssign} disabled={saving || !assignTo}>
-                指派
-              </Button>
-              {rfq.assigned_to && (
-                <p className="text-xs text-muted-foreground truncate">
-                  目前：{assignedMember?.full_name || assignedMember?.email || "帳號已停用或不存在"}
+              {isClosedChoice && (
+                <div className="space-y-3 rounded-md border bg-muted/25 p-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="close-reason">
+                      {status === "won" ? "成交原因" : "未成交原因"}
+                    </Label>
+                    <Input
+                      id="close-reason"
+                      value={closeReason}
+                      onChange={(event) => setCloseReason(event.target.value)}
+                      placeholder={
+                        status === "won"
+                          ? "例如：品質與交期符合需求"
+                          : "例如：價格、交期或專案取消"
+                      }
+                    />
+                  </div>
+                  {status === "won" && (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="deal-amount">成交金額</Label>
+                        <Input
+                          id="deal-amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={dealAmount}
+                          onChange={(event) =>
+                            setDealAmount(event.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="deal-currency">幣別</Label>
+                        <select
+                          id="deal-currency"
+                          className={SELECT_CLS}
+                          value={dealCurrency}
+                          onChange={(event) =>
+                            setDealCurrency(event.target.value)
+                          }
+                        >
+                          {["USD", "EUR", "TWD", "JPY", "CNY"].map(
+                            (currency) => (
+                              <option key={currency}>{currency}</option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {canOperate && (
+                <Button
+                  className="w-full"
+                  onClick={saveStatus}
+                  disabled={
+                    saving || (status === rfq.status && !isClosedChoice)
+                  }
+                >
+                  {saving ? "儲存中…" : "更新案件階段"}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserRound className="h-4 w-4" />
+                負責業務
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isManager ? (
+                <>
+                  <select
+                    className={SELECT_CLS}
+                    value={ownerId}
+                    onChange={(event) => setOwnerId(event.target.value)}
+                  >
+                    <option value="">請選擇負責業務</option>
+                    {team.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.full_name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={saveOwner}
+                    disabled={saving || !ownerId || ownerId === rfq.assigned_to}
+                  >
+                    儲存負責人
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm font-medium">
+                  {rfq.assigned_to_name || "尚未分派"}
                 </p>
               )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">通知紀錄</CardTitle></CardHeader>
-            <CardContent>
-              <ul className="space-y-1.5 text-xs">
-                {[
-                  ["指派通知", rfq.assigned_notified_at],
-                  ["24h 提醒", rfq.reminder_24h_sent_at],
-                  ["48h 升級", rfq.escalation_48h_sent_at],
-                ].map(([label, dt]) => (
-                  <li key={String(label)} className="flex justify-between">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className={dt ? "text-green-600" : "text-muted-foreground/50"}>
-                      {dt ? new Date(String(dt)).toLocaleDateString() : "待發送"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* Sales Follow-up Tracking */}
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">銷售跟進</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock className="h-4 w-4" />
+                下次跟進
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">首次回覆</span>
-                {rfq.first_response_at ? (
-                  <span className="text-xs text-green-600">{new Date(rfq.first_response_at).toLocaleDateString()}</span>
-                ) : (
-                  <Button size="sm" variant="outline" disabled={followUpSaving} onClick={() => saveFollowUp("first_response_at")}>記錄</Button>
-                )}
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">報價發出</span>
-                {rfq.quote_sent_at ? (
-                  <span className="text-xs text-green-600">{new Date(rfq.quote_sent_at).toLocaleDateString()}</span>
-                ) : (
-                  <Button size="sm" variant="outline" disabled={followUpSaving} onClick={() => saveFollowUp("quote_sent_at")}>記錄</Button>
-                )}
-              </div>
-              {rfq.status === "lost" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">流失原因</Label>
-                  <textarea
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                    rows={2}
-                    value={lostReason}
-                    onChange={(e) => setLostReason(e.target.value)}
-                    placeholder="請記錄流失原因..."
-                  />
-                  <Button size="sm" variant="secondary" className="w-full" disabled={followUpSaving || !lostReason.trim()} onClick={saveLostReason}>
-                    儲存原因
-                  </Button>
-                  {rfq.lost_reason && (
-                    <p className="text-xs text-muted-foreground">已記錄: {rfq.lost_reason}</p>
-                  )}
-                </div>
+              <Input
+                type="datetime-local"
+                value={nextFollowUp}
+                onInput={(event) => setNextFollowUp(event.currentTarget.value)}
+                onChange={(event) => setNextFollowUp(event.target.value)}
+                disabled={!canOperate}
+              />
+              {canOperate && (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={saveFollowUp}
+                  disabled={
+                    saving ||
+                    nextFollowUp === toLocalInput(rfq.next_follow_up_at)
+                  }
+                >
+                  儲存跟進時間
+                </Button>
               )}
+              <p className="text-xs text-muted-foreground">
+                設定後會出現在「今日待辦」與逾期提醒中。
+              </p>
             </CardContent>
           </Card>
 
-        </div>
+          {(rfq.won_reason || rfq.lost_reason || rfq.deal_amount) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">結案結果</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {rfq.deal_amount && (
+                  <p>
+                    <span className="text-muted-foreground">成交金額：</span>
+                    <strong>
+                      {rfq.deal_currency} {rfq.deal_amount}
+                    </strong>
+                  </p>
+                )}
+                <p>
+                  <span className="text-muted-foreground">原因：</span>
+                  {rfq.won_reason || rfq.lost_reason}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </aside>
       </div>
     </div>
   );

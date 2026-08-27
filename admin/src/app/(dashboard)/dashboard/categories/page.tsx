@@ -84,7 +84,7 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">商品分類</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">管理產品分類；會影響官網選單與產品頁路徑</p>

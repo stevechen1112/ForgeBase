@@ -121,7 +121,7 @@ export default function ChatSessionsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">官網對話</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -209,7 +209,7 @@ export default function ChatSessionsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="max-w-full overflow-hidden rounded-lg border bg-card">
         {loading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">載入中…</div>
         ) : items.length === 0 ? (
@@ -218,7 +218,8 @@ export default function ChatSessionsPage() {
             尚無對話紀錄
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
             <thead className="bg-muted/50 border-b">
               <tr>
                 {[
@@ -305,6 +306,7 @@ export default function ChatSessionsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

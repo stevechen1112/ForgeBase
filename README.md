@@ -27,18 +27,32 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 | 模組 | 說明 |
 |------|------|
 | **SEO 基礎設施** | canonical、sitemap、JSON-LD schema 自動生成、SEO 重導向管理 |
-| **多語言支援** | 僅 **英文（`en`）+ 繁體中文（`zh-tw`）**；前台 hreflang；locale 全鏈路正規化（`zh-TW`→`zh-tw`）|
-| **人工多語內容管理** | 英文與繁體中文內容皆由團隊人工建立、審核與發布；系統不自動翻譯或改寫內容 |
+| **多語內容支援** | CMS 內容目錄支援英文、繁中、日文、法文與俄文；台灣交付預設以繁中為來源語系。完整公開網站介面包目前為英文／繁中，其他語系不冒充整站已完成在地化 |
+| **買方語系草稿** | 可依來源語系產任一支援語系草稿（規格／型號／圖片不亂翻）；草稿不上公開站，人工確認後才發布；已發布版本不會被新草稿覆蓋，只標記過期 |
+| **語系覆蓋與批次審核** | `/dashboard/content/locales` 與 `GET /content/locale-coverage` 顯示缺漏／草稿／過期；每批最多建立 25 筆缺少草稿，固定自動發布 0 筆 |
 | **產品比較頁（Comparisons）** | 產品間規格比較內容型別，前後台完整 CRUD |
 | **製造能力頁（Capabilities）** | 產線、設備、製程能力內容型別，建立 B2B 信任 |
-| **內容關聯推薦** | AI 建議 Product ↔ Application 雙向關聯（`/content/*/recommend-relations`），加上行為共現推薦引擎 |
+| **內容關聯推薦** | 已發布的 Product ↔ Application 關聯資料與人工管理保留；AI 推薦 API 進入退場觀察並預設關閉 |
 | **靜態資產管理** | 產品圖、PDF 規格書上傳至 Cloudflare R2；素材缺失可被自診斷健康檢查主動發現 |
 
 **多語內容原則：**
 
-- 支援英文與繁體中文；每個語言版本均為獨立、可人工審核的內容。
+- 內容草稿支援英文、繁中、日文、法文與俄文；台灣受管交付預設以繁中為正本，買方語系先產草稿再上架。
 - 後台以 `LocaleSwitcher` 在對應語言版本間切換；FAQ 使用 `variant_key` 配對版本。
-- ForgeBase 不提供舊站自動匯入、LLM 自動翻譯、AI 草稿或自動發布內容。
+- 系統可起草買方語系文案，但不會自動發布；缺該語系已上架內容時，公開站不拿另一語冒充已翻譯。
+- AI 客服回覆語言與網站內容語系解耦；訪客使用日文、法文、俄文或其他已辨識語言時，客服維持該語言，不會因知識來源是英文而切回英文。
+
+## 北極星買家管線
+
+ForgeBase 採單一產品，不再區分 Starter／Professional 或第一／第二階段方案。核心流程固定為：
+
+```text
+匿名訪客 → 行為追蹤 → 意圖評分 → 推測公司 → 公司相關聯絡窗口候選
+→ 依旅程產生個人化信件 → 受控寄送與追蹤 → 對方回覆
+→ 真人業務接手 → RFQ／成交
+```
+
+公司推測、聯絡窗口、個人化外聯、回覆與接手都是核心能力；若外部資料權利、真實 precision、寄送環境或法遵 Gate 尚未通過，系統以 capability 與 runtime mode fail closed，而不是把它們視為可刪除的實驗功能。公司候選不等於訪客本人，窗口候選也不等於實際訪客。
 
 ### Intent — 辨識誰在評估、誰有採購意圖
 
@@ -68,7 +82,7 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 | **時區感知 SLA** | 依租戶營業時區計算首次回應期限，APScheduler 自動掃描逾期 |
 | **即時通知 & 自動回覆** | 高品質 RFQ 即時推播 Telegram／LINE；可選自動寄出專業確認信 |
 | **RFQ 事件審計** | RFQ 生命週期完整紀錄，含狀態變更、指派、首次回覆、報價等事件時間軸 |
-| **AgentOS 工作流（選配）** | 外接 AgentOS runtime 時，新 RFQ 自動觸發分析工作流；`/dashboard/agent-runs` 檢視執行狀態與人工審批（approval checkpoint）佇列 |
+| **AgentOS 工作流（退場觀察）** | runtime 與 tenantless job 均鎖定關閉；歷史 `agent_run_id`／writeback 欄位暫留以支援資料回查與可回復性 |
 
 ### Outcomes — 成果閉環、讓客戶看得見成效
 
@@ -112,7 +126,7 @@ ForgeBase 的 AI 業務顧問不是通用聊天機器人，而是**接地於公�
 | **來源引用** | 回覆附產品頁、FAQ、認證頁的來源連結 |
 | **商業推進** | 規則式對話政策（`chat_policy.py`）：偵測採購意圖、每輪最多追問一個高價值缺口（方案類型／數量 MOQ／用途／規格／交期／包裝／市場），時機成熟自動產生 RFQ 預填連結 |
 | **需求摘要** | handoff 時將整段對話收斂為「業務拿到就能報價」的可詢價需求摘要（`summarize_quotable_needs`），寫入 RFQ prefill |
-| **多語回答** | LLM 層級支援多語；已實測繁體中文提問獲得通順且內容正確的中文回覆 |
+| **多語回答** | 回答語言與網站內容語系解耦；依訪客最新有效提問自動辨識並以同一語言回答，短型號／數量訊息沿用對話語言；日文、德文、韓文與繁中均有偵測及安全降級測試 |
 | **數據閉環** | `chat_start`／`chat_rfq_handoff` 寫入 tracking events 並累積 intent score；後台 `/dashboard/chats` 可審閱對話、評品質分數（1–5）、寫備註 |
 | **回應速度** | 生產環境實測每則回覆 3–9 秒 |
 
@@ -126,16 +140,16 @@ POST /api/v1/chat/sessions/{chat_session_id}/messages
 POST /api/v1/chat/sessions/{chat_session_id}/handoff
 ```
 
-### v2 升級藍圖 — 規格已定案，開發計畫排程中
+### 可信顧問架構 — 核心程式已落地，外部品質 Gate 受控
 
-完整工程計畫見 [FORGEBASE_AI_CUSTOMER_SERVICE_DEVELOPMENT_PLAN.md](FORGEBASE_AI_CUSTOMER_SERVICE_DEVELOPMENT_PLAN.md)。目標定位：從「頁面型產品顧問」升級為「可信、掌握全公司公開知識、可完成 RFQ 資格蒐集、知道何時轉人的 B2B AI 業務顧問」。四個階段：
+現況已具備公開 CMS／文件知識來源、可追溯引用、跨語言回覆、資格蒐集、RFQ handoff、知識同步與品質評估基礎。外部模型品質、正式文件內容與生產流量指標仍需依交付 Gate 驗證，不能只因程式存在就宣稱達標。
 
 | 階段 | 主題 | 關鍵交付 |
 |------|------|----------|
-| **Phase 0** | 生產安全與語言一致性 | Chat 端點跨 worker 速率限制與成本護欄（Redis）；locale 全鏈路一致（greeting／建議問題／政策句本地化）；價格、交期、法務、客訴、認證責任等風險分類與真人交接；LLM timeout／retry／可觀察降級 |
-| **Phase 1** | 全公司公開知識庫 | PostgreSQL + pgvector；`knowledge_sources`／`knowledge_chunks`／`knowledge_sync_jobs` 三表（版本化、有效期、visibility 分層）；CMS 結構化索引器；PDF 型錄與認證文件解析切塊（頁碼可追溯）；耐久索引 queue；知識管理後台 |
-| **Phase 2** | Hybrid RAG 與可信回答 | 向量 + 關鍵字混合檢索（RRF 合併，當前頁面 boost）；來源契約與引用驗證器（拒絕捏造 citation）；prompt injection 防護；前端來源／頁碼／確認狀態 UX |
-| **Phase 3** | 資格蒐集與完整 RFQ | 多語結構化 qualification slots（12 個標準 slot）；server-side RFQ draft token → 買家確認頁 → 正式 RFQ；真人接手狀態機（AI 與業務不競答）；串接既有品質分數／SLA／Copilot 通知 |
+| **安全與語言一致性** | 已落地 | Chat 速率／成本護欄、最新提問語言一致、風險分類、真人交接、timeout 與安全降級 |
+| **全公司公開知識庫** | 已落地 | `knowledge_sources`／`knowledge_chunks`／`knowledge_sync_jobs`、CMS 與 PDF 擷取、頁碼來源、耐久同步工作 |
+| **可信檢索與回答** | 已落地核心 | 結構化／關鍵字檢索、來源契約、引用與 unsupported-claim 防護；向量供應與真實資料品質依環境驗證 |
+| **資格蒐集與 RFQ** | 已落地 | 多語 qualification slots、server-side RFQ draft、買家確認、handoff、品質分數與 SLA 串接 |
 
 驗收門檻（正式上線標準）：公司事實 grounded accuracy ≥95%、關鍵 unsupported claim = 0、內部資料洩漏 = 0、高風險 handoff recall = 100%、語言一致率 ≥98%、p95 回覆 <12 秒。
 
@@ -202,7 +216,7 @@ ForgeBase 內建串接真實 CRM 資料的 Telegram 對話 AI，讓業務主管�
 
 ### Admin 浮動 AI 聊天視窗
 
-後台所有頁面右下角提供 `CopilotFloatingWidget` 浮動視窗：歷史訊息載入、suggestion chips、Markdown 渲染、清除記錄，頂部顯示 7 天 KPI stats bar（total_runs / tool_hit_rate / error_rate / avg_duration）。
+後台 AI 業務助理使用 `/dashboard/copilot` 專屬頁面；重複且未接入 bundle 的浮動元件已依安全退場稽核移除。
 
 ### 初始設定
 
@@ -216,22 +230,11 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ---
 
-## SaaS 方案分層
+## 單一產品與能力治理
 
-### Starter 入門（$149/月）— 數位型錄 + 詢價入口
+ForgeBase 不再區分 Starter／Professional，也不以兩階段方案切割產品。產品以同一條北極星流程交付：匿名訪客 → 行為追蹤 → 意圖評分 → 公司與窗口候選 → 個人化外聯 → 回覆 → 真人業務接手 → RFQ／成交。
 
-| 漏斗階段 | 功能 |
-|----------|------|
-| 曝光 | 前台官網（英文）、SEO 基礎、SEO Redirect 管理 |
-| 互動 | 基礎追蹤（page_view） |
-| 留資 | RFQ 詢價表單、聯絡表單 |
-| 限制 | 產品 50 筆、管理員帳號 2 組 |
-
-### Professional 專業（$699/月）— 意圖識別 + AI 導購 + 業務跟進全閉環
-
-含 Starter 全部，加上：人工維護的雙語內容、完整行為追蹤、意圖評分引擎、意圖儀表板、Dynamic CTA、GeoIP、AI 業務顧問、Chat → RFQ handoff、即時通知、逾時催辦；產品與管理員帳號無上限。
-
-方案由 feature flag 真正驅動前後台行為：Admin 側欄依方案裁切、`PlanGate` 路由層阻擋、inline upgrade UX、後端 `RequireFeature` 同步檢查。代表性 flags：`full_tracking`、`intent_scoring`、`chat_handoff`、`seo_redirects`、`multilingual`、`dynamic_cta`。
+固定核心能力對所有租戶開啟；仍在建置、試行、等待第三方資源或退場觀察的能力，則由平台營運方透過 capability override 管理。Admin 使用 `CapabilityProvider`／`CapabilityGate` 對齊後端 `RequireFeature`，此機制是營運安全與成熟度治理，不是付費分級或升級牆。
 
 ### 平台營運層（ForgeBase 營運方專用）
 
@@ -246,11 +249,11 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ```
 ForgeBase/
-├── api/                      # 後端 API (Python 3.13 + FastAPI)
+├── api/                      # 後端 API (Python 3.12 + FastAPI)
 │   ├── Dockerfile            # 生產映像（uvicorn）
 │   ├── app/
 │   │   ├── api/v1/           # REST endpoints（chat、copilot、content、tracking…）
-│   │   ├── db/migrations/    # Alembic migrations（head = 0060）
+│   │   ├── db/migrations/    # Alembic migrations（head = 0089）
 │   │   ├── models/           # SQLModel 資料模型（多租戶 tenant_id）
 │   │   ├── schemas/          # Pydantic 輸入/輸出 schema
 │   │   └── services/         # 業務服務（chat_service、copilot/、rfq_quality、sla…）
@@ -265,8 +268,8 @@ ForgeBase/
 ├── admin/                    # 管理後台 (Next.js 15，standalone 輸出)
 │   ├── Dockerfile
 │   └── src/
-│       ├── app/(dashboard)/dashboard/           # 26 個後台頁面：內容 CRUD（products/categories/applications/comparisons/capabilities/certifications/faqs/pages）、成長營運（rfqs/intent/ml-scoring/segments/nurture/outcomes/tasks/content-performance）、AI 營運（chats/copilot/agent-runs/intent-rules）、系統（assets/ctas/redirects/integrations/notifications/users）
-│       └── components/copilot/CopilotFloatingWidget.tsx
+│       ├── app/(dashboard)/dashboard/           # 租戶後台：內容、RFQ、成效、AI 顧問與受 feature gate 控制的觀察中功能
+│       └── app/(dashboard)/dashboard/copilot/page.tsx
 ├── deploy/                   # 生產部署資產
 │   ├── Caddyfile             # 網域模式（自動 HTTPS）
 │   ├── Caddyfile.ip          # IP-only HTTP 模式
@@ -322,9 +325,10 @@ ForgeBase/
 
 | 項目 | 值 |
 |------|----|
-| **前台** | https://172.233.64.5/（Let's Encrypt IP 憑證）|
-| **後台** | https://172.233.64.5/backend/login |
-| **API** | https://172.233.64.5/api/v1/ |
+| **ForgeBase 官網** | https://pcbrm.tw/ |
+| **NorthForge 參考站** | https://pcbrm.tw/northforge-tools/ |
+| **後台** | https://pcbrm.tw/backend/login |
+| **API** | https://pcbrm.tw/api/v1/ |
 | **伺服器** | Linode Ubuntu 24.04，IP `172.233.64.5` |
 | **部署目錄** | `/opt/forgebase` |
 | **SSH** | `ssh -i ~/.ssh/mitselect_linode_ed25519 root@172.233.64.5` |
@@ -371,7 +375,7 @@ docker compose -f docker-compose.prod.yml ps    # web 應顯示 healthy
 
 ### 環境需求
 
-- Python 3.13+
+- Python 3.12（與 Docker／CI 一致）
 - Node.js 20+
 - PostgreSQL 16+（本地直接安裝或透過 Docker）
 
@@ -388,7 +392,7 @@ cp .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head           # 0001 → 0060
+alembic upgrade head           # 套用至目前單一 head
 uvicorn app.main:app --reload --port 8000
 
 # 2. 前台網站
@@ -402,9 +406,18 @@ cd admin && cp .env.local.example .env.local && npm install && npm run dev
 
 ```bash
 cd api && source .venv/bin/activate
-python -m pytest tests/test_chat.py -q        # AI 客服
-python -m pytest tests/test_copilot.py -q     # AI 行銷專員
-cd ../web && npm run type-check
+python -m pytest -q
+python scripts/verify_schema_contract.py
+cd ../admin && npm run type-check && npm run lint && npm run build
+cd ../web && npm run type-check && npm run lint && npm run build
+```
+
+可選的 authenticated Admin UI 文案掃描需另裝 Playwright，不會污染 API runtime image：
+
+```bash
+pip install -r scripts/requirements-ui-scan.txt
+playwright install chromium
+FORGEBASE_ADMIN_EMAIL=... FORGEBASE_ADMIN_PASSWORD=... python scripts/scan_admin_ui_copy.py
 ```
 
 ### Demo 資料注入（選用）
@@ -449,9 +462,9 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 | [FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md](FORGEBASE_SPRINT_TICKETS_PHASE4_OUTCOMES.md) | Phase 4 票級紀錄（成果與閉環）|
 | [FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md](FORGEBASE_SPRINT_TICKETS_PHASE5_DEEPENING.md) | Phase 5 票級紀錄（歸因＋E2E）|
 | [MULTILINGUAL_PRODUCT_VISION.md](MULTILINGUAL_PRODUCT_VISION.md) | 已封存的多語自動化構想；不代表現行產品能力 |
-| [ForgeBase_產品規格文件.md](ForgeBase_產品規格文件.md) | 完整產品功能規格 |
-| [ForgeBase_部署與維運注意事項.md](ForgeBase_部署與維運注意事項.md) | production 部署、standalone 資產檢查與維運紅線 |
-| [ForgeBase_Demo指導文件.md](ForgeBase_Demo指導文件.md) | Demo 流程與話術指引 |
+| [FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md](FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md) | 單一產品北極星核心缺口、取捨與實作規格 |
+| [deploy/README.md](deploy/README.md) | production 部署、standalone 資產檢查與維運紅線 |
+| [FORGEBASE_CLOSED_TEST_PROTOCOL_2026-08-15.md](FORGEBASE_CLOSED_TEST_PROTOCOL_2026-08-15.md) | 封閉測試流程、驗收門檻與回報規範 |
 
 ---
 
@@ -469,7 +482,7 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 
 | 類別 | 變更 |
 |------|------|
-| **同步** | 新增 `locale_sync`：存 EN 後自動翻譯／更新 `zh-tw`，狀態跟來源直接上線；需 Professional `multilingual` |
+| **同步** | 新增 `locale_sync`：存來源語系後產生其他語系草稿；需啟用 `multilingual` capability，確認後才公開 |
 | **防呆** | `content_field_locks`：繁中手改欄位下次自動同步跳過；無待審／核准 UI |
 | **資料** | migrations `0059`（locks／FAQ `variant_key`／`model_number` 含 locale）+ `0060`（拿掉全域 slug UNIQUE，改 per-locale）|
 | **FK** | 產品分類／分類父子／Page `entity_id` 跨語系重映射到目標語對應列 |
@@ -510,7 +523,7 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 
 以 `deploy/test-chat.sh` 對生產環境完成五段驗證：首頁跨品類採購問題（正確引用 FAQ + 結構化需求抽取 + 反問 MOQ）、模糊需求追問、handoff 需求摘要、產品頁規格接地回答（40–220 Nm／ISO 9001，未確認項目誠實標示）、繁體中文問答。後端回覆 3–9 秒，DB 稽核軌跡完整。v2 升級工程計畫已定案（見專章與計畫文件）。
 
-**已知待辦**：Chat 端點速率限制；zh-TW greeting／suggestions 本地化；NULL-tenant handoff 通知 gate。目前正式站沒有綁定網域，以可信任的 IP HTTPS 憑證在 `https://172.233.64.5` 提供服務。
+**當時待辦（歷史紀錄）**：Chat 速率限制、zh-TW 固定文案與 tenant handoff gate 已在後續可靠性批次處理；正式環境狀態應以部署健康檢查與交付紀錄為準，不以這段歷史版本說明判定。
 
 ---
 
@@ -582,15 +595,15 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 |------|------|
 | **DB Model** | 新增 `CopilotRunLog` 可觀測性資料表（migration `0040`）|
 | **API** | `GET /copilot/stats`：7 天 total_runs / tool_hit_rate / error_rate / avg_duration_ms / top_tools |
-| **Admin** | `CopilotFloatingWidget` 右下角浮動聊天視窗，取代側欄全頁面路由 |
+| **Admin** | `/dashboard/copilot` 專屬 AI 業務助理頁面（依 feature entitlement 顯示） |
 | **CI** | api workflow 補 `alembic upgrade head`，`@requires_db` 測試不再 skip |
 
-### v0.20–0.22 — 多租戶 SaaS、方案驅動、AI 行銷專員（2026-04）
+### v0.20–0.22 — 多租戶、能力治理、AI 行銷專員（2026-04）
 
 | 版本 | 重點 |
 |------|------|
 | **v0.20** | 全 content tables 補 `tenant_id`；slug 複合唯一；前台 runtime 白標（`runtimeSiteConfig.ts`）；52 passed + smoke test 13 passed |
-| **v0.21** | `PlanProvider`／`PlanGate`／`RequireFeature`；方案真正驅動前後台功能裁切 |
+| **v0.21** | 最初導入前後端 feature entitlement；其方案語意已於 migration `0088` 改為單一產品的 capability governance |
 | **v0.22** | AI Marketing Copilot：Telegram 通知系統 + LLM 對話引擎 + 10 個 tenant-scoped 工具（migration `0038`）|
 
 ### v0.18 — 成長網站強化改造（2026-03-15）

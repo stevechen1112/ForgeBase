@@ -5,9 +5,8 @@ Revises: 0041_ai_generation_log_audit_fields
 Create Date: 2026-04-26 09:40:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '0042_add_rfq_agent_run_id'

@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class Visitor(SQLModel, table=True):
@@ -25,8 +27,8 @@ class Visitor(SQLModel, table=True):
     total_page_views: int = Field(default=0)
 
     # Intent scoring (spec 12.6.3)
-    intent_score: int = Field(default=0)
-    intent_stage: str = Field(default="cold", max_length=20)    # "cold" | "warm" | "hot" | "sales_ready"
+    intent_score: int = Field(default=0, index=True)
+    intent_stage: str = Field(default="cold", max_length=20, index=True)    # "cold" | "warm" | "hot" | "sales_ready"
 
     # Intent Score 2.0 — 採購 facets（實效計畫 §4.1）
     facet_product_interest: int = Field(default=0, index=True)
@@ -42,7 +44,17 @@ class Visitor(SQLModel, table=True):
     # ISO 3166-1 alpha-2
 
     # Identity: linked contact after form submission
-    contact_id: Optional[uuid.UUID] = Field(default=None, foreign_key="contacts.id")
+    contact_id: Optional[uuid.UUID] = Field(
+        default=None,
+        foreign_key="contacts.id",
+        ondelete="SET NULL",
+        index=True,
+    )
+
+    # Analytics consent lifecycle. Detailed audit uses a keyed hash rather
+    # than retaining the raw anonymous browser identifier.
+    analytics_consent_status: str = Field(default="unknown", max_length=20, index=True)
+    consent_updated_at: Optional[datetime] = Field(default=None)
 
     # Stage change alert flags
     stage_alert_sent: bool = Field(default=False)
@@ -52,6 +64,9 @@ class Visitor(SQLModel, table=True):
     ml_intent_score: Optional[float] = Field(default=None)
     # 0.0 – 1.0 probability; None until ML model has been run
     ml_score_updated_at: Optional[datetime] = Field(default=None)
+
+    is_test_data: bool = Field(default=False, index=True)
+    test_run_id: Optional[str] = Field(default=None, max_length=100)
 
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

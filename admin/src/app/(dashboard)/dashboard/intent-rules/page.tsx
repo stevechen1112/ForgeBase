@@ -113,7 +113,7 @@ export default function IntentRulesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">關注度規則</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -142,7 +142,7 @@ export default function IntentRulesPage() {
       {draft && (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* 行為評分規則 */}
-          <Card className="lg:col-span-2">
+          <Card className="min-w-0 overflow-hidden lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Zap className="h-4 w-4 text-yellow-500" />行為評分規則
@@ -151,8 +151,8 @@ export default function IntentRulesPage() {
                 每個訪客行為觸發時的加分值。數字越高，該行為對意圖分數的貢獻越大。
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <table className="w-full text-sm">
+            <CardContent className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">事件</th>
@@ -201,7 +201,7 @@ export default function IntentRulesPage() {
           </Card>
 
           {/* Intent Stage 門檻 */}
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-4 w-4 text-primary" />買家熱度門檻
@@ -250,15 +250,15 @@ export default function IntentRulesPage() {
           </Card>
 
           {/* 衰減規則（唯讀） */}
-          <Card>
+          <Card className="min-w-0 overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <RefreshCcw className="h-4 w-4 text-muted-foreground" />分數衰減規則
               </CardTitle>
               <CardDescription>閒置時間越長，意圖分數自動衰減（每日批次，固定規則）</CardDescription>
             </CardHeader>
-            <CardContent>
-              <table className="w-full text-sm">
+            <CardContent className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[460px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">閒置時間</th>

@@ -1,4 +1,5 @@
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -15,6 +16,7 @@ class SiteProfileRead(BaseModel):
     contact_phone: Optional[str] = None
     site_url: str
     default_locale: str
+    translation_glossary_json: Optional[str] = None
     asset_base: Optional[str] = None
     demo_company_folder: Optional[str] = None
     header_nav_json: Optional[str] = None
@@ -27,6 +29,7 @@ class SiteProfileRead(BaseModel):
     footer_cta_label: Optional[str] = None
     footer_cta_href: Optional[str] = None
     asset_manifest_json: Optional[str] = None
+    site_copy_json: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -44,6 +47,7 @@ class SiteProfileUpdate(BaseModel):
     contact_phone: Optional[str] = Field(default=None, max_length=50)
     site_url: Optional[str] = Field(default=None, max_length=500)
     default_locale: Optional[str] = Field(default=None, max_length=5)
+    translation_glossary_json: Optional[str] = None
     asset_base: Optional[str] = Field(default=None, max_length=500)
     demo_company_folder: Optional[str] = Field(default=None, max_length=120)
     header_nav_json: Optional[str] = None
@@ -56,3 +60,4 @@ class SiteProfileUpdate(BaseModel):
     footer_cta_label: Optional[str] = Field(default=None, max_length=120)
     footer_cta_href: Optional[str] = Field(default=None, max_length=500)
     asset_manifest_json: Optional[str] = None
+    site_copy_json: Optional[str] = None

@@ -1,0 +1,13 @@
+"use client";
+
+import { FormEvent,useState } from "react";
+import { ArrowRight,CheckCircle2,FlaskConical } from "lucide-react";
+import type { TemplateCTA,TemplateProduct } from "@/contracts/forgebase";
+import styles from "./Materials.module.css";
+
+export function SampleBrief({products,submitCTA}:{products:TemplateProduct[];submitCTA:TemplateCTA}){
+  const [submitted,setSubmitted]=useState(false);
+  function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setSubmitted(true)}
+  if(submitted)return <section className={styles.sampleSuccess} aria-live="polite"><CheckCircle2/><span>DEMO SAMPLE BRIEF</span><h2>The context remained on this page.</h2><p>No sample, lead, contact record or email was created. A production site would submit only approved fields to the governed ForgeBase workflow.</p><button type="button" onClick={()=>setSubmitted(false)}>Revise brief</button></section>;
+  return <form className={styles.sampleForm} onSubmit={submit}><aside><FlaskConical/><span>SAMPLE LOGIC</span><h2>A useful sample begins with the environment.</h2><p>Describe the decision the specimen has to support. The Demo retains grade, supply form and conditions in one technical handoff.</p><ol><li>01 / Application context</li><li>02 / Candidate grade</li><li>03 / Validation conditions</li></ol></aside><div><label>Candidate grade<select required name="grade"><option value="">Select a Demo grade</option>{products.map(product=><option key={product.id}>{product.name}</option>)}</select></label><label>Application<input required name="application" placeholder="Example: electrically isolated wear guide"/></label><div className={styles.formPair}><label>Environment<select required name="environment"><option>Elevated temperature</option><option>Wear / motion</option><option>Electrical isolation</option><option>Chemical exposure</option></select></label><label>Supply form<select required name="form"><option>Test coupon / sample</option><option>Rod / plate</option><option>Sheet / extrusion</option><option>Machined component</option></select></label></div><div className={styles.formPair}><label>Name<input required name="name" placeholder="Your name"/></label><label>Work email<input required type="email" name="email" placeholder="name@company.com"/></label></div><label>Known conditions<textarea required name="conditions" placeholder="Temperature, load, counterface, exposure and validation timing"/></label><button type="submit" data-cta-id={submitCTA.id} data-cta-intent={submitCTA.intent}>{submitCTA.label}<ArrowRight/></button><small>Static Demo: submission is intercepted locally.</small></div></form>
+}

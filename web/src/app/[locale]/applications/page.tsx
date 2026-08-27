@@ -4,11 +4,12 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ApplicationCard } from "@/components/ui/ApplicationCard";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
 type CommonMessages = {
   home: string;
@@ -29,8 +30,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  resolveLocale(locale);
-  return getMessageNamespace<ApplicationsPageMessages>("applications").then((copy) => copy.metadata);
+  const resolvedLocale = resolveLocale(locale);
+  const [{ siteConfig }, copy] = await Promise.all([getRuntimeSiteContext(), getMessageNamespace<ApplicationsPageMessages>("applications")]);
+  return buildLocalizedMetadata(copy.metadata, "/applications", resolvedLocale, siteConfig);
 }
 
 export default async function ApplicationsPage({ params }: Props) {

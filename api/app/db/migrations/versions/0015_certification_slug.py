@@ -2,11 +2,11 @@
 
 - certifications: add slug, backfill existing rows, enforce unique index
 """
-from alembic import op
-import sqlalchemy as sa
 import re
 import unicodedata
 
+import sqlalchemy as sa
+from alembic import op
 
 revision = "0015_certification_slug"
 down_revision = "0014_phase3_ml_scoring"

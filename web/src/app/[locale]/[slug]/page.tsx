@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
 import { getPublishedPageBySlug } from "@/lib/api";
+import { withBasePath } from "@/lib/basePath";
 import { resolveLocale } from "@/lib/siteCopy";
 
 type Props = {
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: page.seo_description ?? page.subtitle ?? undefined,
     alternates: page.canonical_url ? { canonical: page.canonical_url } : undefined,
     robots: page.noindex ? { index: false, follow: false } : undefined,
-    openGraph: page.og_image_url ? { images: [page.og_image_url] } : undefined,
+    openGraph: page.og_image_url ? { images: [withBasePath(page.og_image_url)] } : undefined,
   };
 }
 

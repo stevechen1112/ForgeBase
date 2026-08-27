@@ -22,30 +22,27 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import get_current_user, require_content_editor
 from app.db.session import get_session
+from app.models.application import Application
 from app.models.associations import (
+    AlternativePartLink,
+    ApplicationFAQLink,
+    ApplicationRelatedLink,
     ProductApplicationLink,
     ProductCertificationLink,
     ProductFAQLink,
-    ApplicationFAQLink,
-    AlternativePartLink,
-    ApplicationRelatedLink,
 )
-from app.models.application import Application
 from app.models.certification import Certification
 from app.models.faq_item import FAQItem
 from app.models.product import Product
 from app.models.user import User
 
-
 router = APIRouter(tags=["Entity Relations"])
 
 
 def _tenant_visible(entity, tenant_id: uuid.UUID | None) -> bool:
-    """Match content CRUD visibility, including editable legacy NULL-tenant rows."""
+    """Only expose relationship records owned by the active tenant."""
     entity_tenant_id = getattr(entity, "tenant_id", None)
-    if tenant_id is None:
-        return entity_tenant_id is None
-    return entity_tenant_id is None or entity_tenant_id == tenant_id
+    return entity_tenant_id == tenant_id
 
 
 def _ensure_tenant_match(entity, tenant_id: uuid.UUID | None, detail: str = "Not found"):
@@ -363,7 +360,7 @@ async def list_product_alternatives(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    product = await _get_product(product_id, session, current_user.tenant_id)
+    await _get_product(product_id, session, current_user.tenant_id)
     # Query both directions of the self-M2M
     links_a = (await session.exec(
         select(AlternativePartLink).where(AlternativePartLink.product_id == product_id)

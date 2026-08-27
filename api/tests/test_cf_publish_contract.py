@@ -16,7 +16,13 @@ import pytest
 from tests.conftest import requires_db
 
 from app.services.html_sanitize import sanitize_html
-from app.services.revalidate import page_paths, revalidate_paths
+from app.services.revalidate import (
+    TENANT_COPY_LAYOUT_PATHS,
+    page_paths,
+    revalidate_endpoints,
+    revalidate_paths,
+    revalidate_tenant_copy,
+)
 
 
 # ── Sanitizer 單元測試（免 DB）─────────────────────────────────────────────
@@ -78,7 +84,52 @@ def test_page_paths_other_locale():
 async def test_revalidate_skipped_when_url_unset(monkeypatch):
     from app.core.config import settings
     monkeypatch.setattr(settings, "WEB_REVALIDATE_URL", "")
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_URLS", "")
     assert await revalidate_paths(["/blog/x"]) is False
+    assert await revalidate_tenant_copy() is False
+
+
+def test_revalidate_endpoints_split_urls(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_URL", "http://web/a")
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_URLS", "http://web/a, http://web-b/b")
+    assert revalidate_endpoints() == ["http://web/a", "http://web-b/b"]
+
+
+@pytest.mark.asyncio
+async def test_revalidate_posts_to_every_frontend(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_URL", "http://web/a")
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_URLS", "http://web/a,http://web-b/b")
+    monkeypatch.setattr(settings, "WEB_REVALIDATE_SECRET", "secret")
+    seen: list[str] = []
+
+    class FakeResp:
+        status_code = 200
+        text = "ok"
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None, headers=None):
+            seen.append(url)
+            return FakeResp()
+
+    monkeypatch.setattr("app.services.revalidate.httpx.AsyncClient", FakeClient)
+    assert await revalidate_paths(["/products"], ["/products"]) is True
+    assert seen == ["http://web/a", "http://web-b/b"]
+
+
+def test_tenant_copy_revalidate_covers_product_layouts():
+    assert "/products" in TENANT_COPY_LAYOUT_PATHS
+    assert "/zh-TW/products" in TENANT_COPY_LAYOUT_PATHS
 
 
 # ── DB 整合測試 ─────────────────────────────────────────────────────────────

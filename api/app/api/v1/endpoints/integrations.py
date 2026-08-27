@@ -19,7 +19,11 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_admin, require_content_editor, require_user_tenant_id
+from app.api.v1.deps import (
+    require_admin,
+    require_content_editor,
+    require_user_tenant_id,
+)
 from app.core.encryption import decrypt, encrypt
 from app.db.session import get_session
 from app.models.integration_credential import IntegrationCredential
@@ -102,8 +106,8 @@ async def _get_credential(db: AsyncSession, service: str, key: str,
         IntegrationCredential.credential_key == key,
         IntegrationCredential.tenant_id == tenant_id,
     )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await db.exec(stmt)
+    return result.one_or_none()
 
 
 def _masked(value: str, keep: int = 6) -> str:
@@ -133,7 +137,7 @@ async def list_service_credentials(
         IntegrationCredential.service == service,
         IntegrationCredential.tenant_id == tenant_id,
     )
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = (await db.exec(stmt)).all()
     return [
         {
             "key": row.credential_key,

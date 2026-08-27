@@ -10,20 +10,18 @@ Public API:
     await run_daily_digest()
 """
 import logging
-import os
 import uuid
 from datetime import timedelta
 
-from sqlmodel import select, func, col
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
+from app.models.notification_preference import NotificationPreference
 from app.models.rfq_request import RFQRequest
 from app.models.visitor import Visitor
-from app.models.tracking_session import TrackingSession
-from app.models.notification_preference import NotificationPreference
 from app.services.notification_router import send_notification
 
 logger = logging.getLogger(__name__)
@@ -42,7 +40,12 @@ async def _get_tenant_ids_with_active_digest(session: AsyncSession) -> list[uuid
     return list(result.all())
 
 
-async def _collect_stats(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
+async def _collect_stats(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    *,
+    include_growth: bool,
+) -> dict:
     """Gather 24h stats for a specific tenant."""
     now = utcnow_naive()
     yesterday = now - timedelta(hours=24)
@@ -73,22 +76,24 @@ async def _collect_stats(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
     )
     overdue_rfqs = overdue_result.one() or 0
 
-    # Unique visitors today
-    visitor_result = await session.exec(
-        select(func.count(Visitor.visitor_id))
-        .where(Visitor.tenant_id == tenant_id)
-        .where(Visitor.last_activity_at >= yesterday)
-    )
-    active_visitors = visitor_result.one() or 0
+    active_visitors = 0
+    hot_visitors = 0
+    if include_growth:
+        # Visitor and intent metrics belong to the second-stage growth scope.
+        visitor_result = await session.exec(
+            select(func.count(Visitor.visitor_id))
+            .where(Visitor.tenant_id == tenant_id)
+            .where(Visitor.last_activity_at >= yesterday)
+        )
+        active_visitors = visitor_result.one() or 0
 
-    # Hot/sales_ready visitors
-    hot_result = await session.exec(
-        select(func.count(Visitor.visitor_id))
-        .where(Visitor.tenant_id == tenant_id)
-        .where(Visitor.intent_stage.in_(["hot", "sales_ready"]))
-        .where(Visitor.last_activity_at >= yesterday)
-    )
-    hot_visitors = hot_result.one() or 0
+        hot_result = await session.exec(
+            select(func.count(Visitor.visitor_id))
+            .where(Visitor.tenant_id == tenant_id)
+            .where(Visitor.intent_stage.in_(["hot", "sales_ready"]))
+            .where(Visitor.last_activity_at >= yesterday)
+        )
+        hot_visitors = hot_result.one() or 0
 
     return {
         "new_rfqs": new_rfqs,
@@ -99,7 +104,7 @@ async def _collect_stats(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
     }
 
 
-def _format_digest(stats: dict, date_str: str) -> str:
+def _format_digest(stats: dict, date_str: str, *, include_growth: bool) -> str:
     """Format a daily digest message."""
     new_rfqs = stats["new_rfqs"]
     urgent_rfqs = stats["urgent_rfqs"]
@@ -111,9 +116,9 @@ def _format_digest(stats: dict, date_str: str) -> str:
     suggestions = []
     if overdue_rfqs > 0:
         suggestions.append(f"⚠️ {overdue_rfqs} 筆 RFQ 超過 24h 未回覆，建議立即處理")
-    if hot_visitors > 0:
+    if include_growth and hot_visitors > 0:
         suggestions.append(f"🔥 {hot_visitors} 位高關注訪客活躍中，建議主動接觸")
-    if new_rfqs == 0 and active_visitors < 5:
+    if include_growth and new_rfqs == 0 and active_visitors < 5:
         suggestions.append("💡 今日流量偏低，考慮發送 nurture email 喚回潛在客戶")
 
     suggestion_block = ""
@@ -126,10 +131,12 @@ def _format_digest(stats: dict, date_str: str) -> str:
     if overdue_rfqs > 0:
         rfq_line += f"（{overdue_rfqs} 筆超時未回 🚨）"
 
+    growth_lines = ""
+    if include_growth:
+        growth_lines = f"訪客：{active_visitors} 人\n高關注訪客：{hot_visitors} 人\n"
     return (
         f"📊 <b>每日營運摘要 — {date_str}</b>\n\n"
-        f"訪客：{active_visitors} 人\n"
-        f"高關注訪客：{hot_visitors} 人\n"
+        f"{growth_lines}"
         f"新 RFQ：{rfq_line}\n"
         f"{suggestion_block}"
     )
@@ -149,9 +156,20 @@ async def run_daily_digest() -> dict:
     for tenant_id in tenant_ids:
         try:
             async with get_session_ctx() as session:
-                stats = await _collect_stats(session, tenant_id)
+                from app.models.tenant import Tenant
+                from app.services.capability_access import tenant_has_feature
 
-            message = _format_digest(stats, date_str)
+                tenant = await session.get(Tenant, tenant_id)
+                if not tenant or not tenant_has_feature(tenant, "notifications"):
+                    continue
+                include_growth = tenant_has_feature(tenant, "full_tracking")
+                stats = await _collect_stats(
+                    session,
+                    tenant_id,
+                    include_growth=include_growth,
+                )
+
+            message = _format_digest(stats, date_str, include_growth=include_growth)
             buttons = [
                 {"label": "開啟後台", "url": f"{_ADMIN_URL}/backend/overview"},
             ]

@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { RFQForm } from "@/components/forms/RFQForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";

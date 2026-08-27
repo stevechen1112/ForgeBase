@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class Segment(SQLModel, table=True):
@@ -14,6 +16,9 @@ class Segment(SQLModel, table=True):
     __tablename__ = "segments"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
     name: str = Field(max_length=100, index=True)
     description: str = Field(default="", max_length=300)
 
@@ -26,6 +31,8 @@ class Segment(SQLModel, table=True):
     # "AND" | "OR"
     combinator: str = Field(default="AND", max_length=3)
 
-    created_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    created_by: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

@@ -9,6 +9,7 @@ from app.models.product import Product
 from app.schemas.chat import ChatMessageCreate, ChatSessionCreate
 from app.services.chat_orchestrator import finalize_generated_chat_response
 from app.services.chat_service import (
+    ChatService,
     _format_product_snapshot,
     _infer_clarifying_question,
     _merge_reply_and_clarifying_question,
@@ -39,6 +40,32 @@ def test_chat_message_create_rejects_empty_content():
 def test_chat_intent_scoring_defaults():
     assert calculate_score_delta("chat_start", {}) == 8
     assert calculate_score_delta("chat_rfq_handoff", {}) == 20
+
+
+@pytest.mark.asyncio
+async def test_chat_llm_failure_uses_requested_chinese_locale(monkeypatch):
+    def unavailable_client():
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr("app.services.chat_service.get_openai_client", unavailable_client)
+
+    payload = await ChatService(SimpleNamespace())._generate_reply(
+        context_page="/zh-TW/products/torque-wrenches/industrial-torque-wrench",
+        context_entity_type="product",
+        entity_summary="",
+        faq_summary="",
+        cert_summary="",
+        recent_messages=[],
+        user_question="你好，請問最低訂購量是多少？",
+        locale="zh-TW",
+    )
+
+    assert payload["ai_available"] is False
+    assert payload["reply"] == (
+        "目前沒有足夠且已確認的資料可以直接回答。"
+        "最快的下一步是送出詢價，讓業務依您的需求確認。"
+    )
+    assert "I don't" not in payload["reply"]
 
 def test_strip_html_removes_tags_and_collapses_whitespace():
     assert _strip_html("<p>Hello <strong>world</strong></p>\n<div> test</div>") == "Hello world test"
@@ -150,3 +177,4 @@ async def test_chat_session_create_auto_bootstraps_tracking_context(http_client)
     assert body["data"]["chat_session_id"]
     assert body["data"]["greeting"]
     assert len(body["data"]["suggestions"]) == 3
+    assert body["data"]["response_locale"] == "en"

@@ -1,0 +1,390 @@
+// Archived ForgeBase homepage before the positioning-v2 replacement on 2026-08-17.
+import Link from "next/link";
+import {
+  ArrowRight,
+  Check,
+  ClipboardList,
+  Factory,
+  FileText,
+  Gauge,
+  Globe2,
+  LayoutDashboard,
+  MessageSquareText,
+  PackageSearch,
+  Search,
+  Settings,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
+
+const localPreview = process.env.NODE_ENV === "development";
+const templateBaseUrl = process.env.NEXT_PUBLIC_TEMPLATE_BASE_URL || (localPreview ? "http://localhost:3011" : "");
+const northForgeUrl = process.env.NEXT_PUBLIC_NORTHFORGE_URL || (localPreview ? "https://pcbrm.tw/northforge-tools/" : "/northforge-tools/");
+const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || (localPreview ? "https://pcbrm.tw/backend" : "/backend");
+const northForgeAssetBase = localPreview
+  ? "https://pcbrm.tw/northforge-tools/demo/handtool-company/assets/generated"
+  : "/northforge-tools/demo/handtool-company/assets/generated";
+
+const painPoints = [
+  {
+    number: "01",
+    title: "產品放上網了，客戶還是看不懂",
+    text: "型號、用途、規格與證明文件分散各處，客戶找不到適合的產品，只能再寄信詢問。",
+  },
+  {
+    number: "02",
+    title: "改一項資料，還要請網站公司處理",
+    text: "新品、圖片、展會消息或證書有異動，內部無法自己更新，網站很快就變成舊資料。",
+  },
+  {
+    number: "03",
+    title: "收到詢問，資料卻不夠報價",
+    text: "一般聯絡表單只有姓名、信箱與一段留言，業務還要來回追問產品、數量、用途與時程。",
+  },
+  {
+    number: "04",
+    title: "網站有人看，業務卻不知道他在看什麼",
+    text: "一般流量報表只有人數與瀏覽量，很難知道對方在意哪項產品、是否正在準備詢價。",
+  },
+];
+
+const comparisonRows = [
+  ["網站的工作", "介紹公司、產品、消息與聯絡方式", "除了介紹，也幫客戶找產品、填寫需求、送出詢價"],
+  ["客戶看產品", "逐頁瀏覽產品，或下載型錄查看", "可從分類、用途與規格逐步找到適合品項"],
+  ["公司改資料", "通常交由網站公司修改", "公司人員可從後台更新產品、圖片、用途與證書"],
+  ["客戶來詢問", "填寫聯絡表單或直接寄信", "先選產品，再填數量、用途、時程等報價所需資料"],
+  ["業務接手後", "從通知信開始人工整理", "在後台查看完整內容、分派負責人並記錄進度"],
+];
+
+const workflow = [
+  {
+    number: "01",
+    label: "準備資料",
+    title: "先確認哪些資料可以對外使用",
+    text: "公司提供並確認產品、用途、規格、證書、常見問題與聯絡資料。舊網站內容不會直接照搬，也不讓 AI 自己決定。",
+    icon: FileText,
+  },
+  {
+    number: "02",
+    label: "製作網站",
+    title: "選擇產業範本，再依公司需要調整",
+    text: "先確認設計與頁面安排，再接上 ForgeBase 後台。網站上線後，公司可自行更新產品、圖片、用途、證書與常見問題；版型與頁面結構由 ForgeBase 團隊調整。",
+    icon: Globe2,
+  },
+  {
+    number: "03",
+    label: "接待訪客",
+    title: "讓不同時區的客戶先自己看懂產品",
+    text: "客戶可依產品、用途、規格、證書與常見問題自行查找。測試開放時，AI 也能依公司確認過的資料協助找產品。",
+    icon: Search,
+  },
+  {
+    number: "04",
+    label: "業務接手",
+    title: "把比較完整的詢價交給對的人",
+    text: "客戶送出產品、數量、用途與時程後，公司可在後台查看、分派負責人並記錄處理進度。",
+    icon: ClipboardList,
+  },
+];
+
+const coreModules = [
+  {
+    tag: "對外網站",
+    title: "完整的外銷產品網站",
+    text: "呈現公司、產品、用途、生產能力、證書、常見問題與詢價方式，可規劃英文及繁體中文內容。",
+    icon: Factory,
+    status: "現在可用",
+  },
+  {
+    tag: "日常更新",
+    title: "公司自己更新網站資料",
+    text: "內部人員可管理產品、圖片、用途、證書與常見問題；版型與頁面結構由 ForgeBase 團隊處理。",
+    icon: Settings,
+    status: "現在可用",
+  },
+  {
+    tag: "詢價管理",
+    title: "把詢價資料集中收好",
+    text: "保存客戶需求、產品、數量、負責人與處理狀態，避免重要詢價只留在某位業務的信箱。",
+    icon: LayoutDashboard,
+    status: "現在可用",
+  },
+  {
+    tag: "訪客線索",
+    title: "看出訪客在意哪些產品",
+    text: "依瀏覽與點擊紀錄整理產品興趣；若串接第三方服務，也可嘗試推測來訪公司，但不是每位訪客都能辨識。",
+    icon: Gauge,
+    status: "依測試範圍開放",
+  },
+  {
+    tag: "線上接待",
+    title: "AI 協助訪客找產品",
+    text: "AI 只能依公司確認並已發布的資料回答、追問用途並引導詢價；不能自行承諾價格、交期或認證。",
+    icon: MessageSquareText,
+    status: "依測試範圍開放",
+  },
+  {
+    tag: "業務管理",
+    title: "掌握每筆詢價處理到哪裡",
+    text: "查看詢價、負責人、回覆與目前狀態，協助主管發現遺漏；是否成交仍由公司實際結果判斷。",
+    icon: PackageSearch,
+    status: "持續測試中",
+  },
+];
+
+const templates = [
+  { code: "01", industry: "精密加工", name: "AxisForm", image: "/templates/precision-machining/hero-cnc-facility.png", href: "/templates/precision-machining/" },
+  { code: "02", industry: "工業機械", name: "Vantera", image: "/templates/industrial-machinery/hero-servo-forming-line.png", href: "/templates/industrial-machinery/" },
+  { code: "03", industry: "電子零組件", name: "Veltrix", image: "/templates/electronic-components/component-family-hero.png", href: "/templates/electronic-components/" },
+  { code: "04", industry: "工業自動化", name: "Kinetra", image: "/templates/industrial-automation/connected-robotic-line.png", href: "/templates/industrial-automation/" },
+  { code: "05", industry: "工程材料", name: "Matera", image: "/templates/engineering-materials/material-archive-hero.png", href: "/templates/engineering-materials/" },
+  { code: "06", industry: "客製包裝", name: "Tuckform", image: "/templates/custom-packaging/packaging-system-hero.png", href: "/templates/custom-packaging/" },
+];
+
+function BrandMark() {
+  return <span className="brand-mark" aria-hidden="true">FB</span>;
+}
+
+export default function HomePage() {
+  return (
+    <main>
+      <header className="site-header">
+        <Link href="/" className="wordmark" aria-label="ForgeBase 首頁">
+          <BrandMark />
+          <span className="wordmark-copy"><strong>ForgeBase</strong><small>MANUFACTURING WEB SYSTEM</small></span>
+        </Link>
+        <nav aria-label="主要導覽">
+          <a href="#problems">常見問題</a>
+          <a href="#difference">產品差異</a>
+          <a href="#workflow">運作方式</a>
+          <a href="#templates">產業範本</a>
+        </nav>
+        <div className="header-actions">
+          <a href={`${backendBaseUrl}/login`} className="login-link">後台登入</a>
+          <Link href="/apply" className="header-cta">申請導入評估 <ArrowRight size={15} /></Link>
+        </div>
+      </header>
+
+      <section className="hero">
+        <div className="hero-copy section-shell">
+          <div className="industrial-kicker"><span>FOR EXPORT MANUFACTURERS</span><b>外銷製造業網站與詢價管理工具</b></div>
+          <h1>把外銷網站，變成<br /><em>24 小時不停歇的<br />多工業務。</em></h1>
+          <p className="hero-lead">
+            客戶不論在哪個時區進站，都能自己看產品、找用途、確認基本資料並提出詢價；公司則從後台更新內容、接收需求並交給業務處理。
+          </p>
+          <div className="hero-actions">
+            <a href={northForgeUrl} className="button button-primary">查看完整測試網站 <ArrowRight size={17} /></a>
+            <a href="#difference" className="button button-secondary">了解與一般網站的差別</a>
+          </div>
+          <div className="hero-notice">
+            <ShieldCheck size={18} />
+            <p>
+              <strong>目前為產品測試階段。</strong>
+              <span>網站、後台與詢價流程可以實際操作；</span>
+              <span>訪客辨識與 AI 等進階功能依測試範圍開放。</span>
+            </p>
+          </div>
+        </div>
+        <div className="hero-media">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${northForgeAssetBase}/about-factory-hero-northforge.png`} alt="NorthForge Tools 手工具品檢與包裝作業參考畫面" />
+          <div className="hero-case-label">
+            <span>完整測試網站 / 01</span>
+            <strong>NorthForge Tools</strong>
+            <small>從看產品、送出詢價到後台收件的完整測試</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="fact-strip" aria-label="ForgeBase 目前涵蓋範圍">
+        <div><b>01</b><strong>幫忙介紹產品</strong><span>讓客戶較快找到適合品項</span></div>
+        <div><b>02</b><strong>公司自己更新</strong><span>產品與日常資料可直接維護</span></div>
+        <div><b>03</b><strong>先把需求問清楚</strong><span>收下產品、數量、用途與時程</span></div>
+        <div><b>04</b><strong>交給業務跟進</strong><span>集中查看、分派與記錄進度</span></div>
+      </section>
+
+      <section id="problems" className="problems section-shell">
+        <div className="section-heading">
+          <div><span className="section-code">01 / 常見問題</span><h2>網站上線了，<br />業務的工作卻沒有變輕鬆。</h2></div>
+          <p>一般網站把公司與產品放上網就完成了。但客戶找產品、問規格、填詢價與公司後續處理，往往還是靠信件和人工整理。</p>
+        </div>
+        <div className="pain-grid">
+          {painPoints.map((item) => (
+            <article key={item.number}>
+              <span>{item.number}</span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="difference" className="comparison-section">
+        <div className="section-shell">
+          <div className="section-heading light-heading">
+            <div><span className="section-code">02 / 產品差異</span><h2>一般網站負責介紹公司，<br />ForgeBase 再幫忙接住詢價。</h2></div>
+            <p>一般形象網站通常包含公司介紹、產品展示、最新消息與聯絡表單，適合當企業門面。ForgeBase 多做的是：幫客戶找產品、把需求填完整，再讓業務接手。</p>
+          </div>
+          <div className="comparison-table" role="table" aria-label="一般形象網站與 ForgeBase 比較">
+            <div className="comparison-row comparison-head" role="row">
+              <div role="columnheader">比較項目</div><div role="columnheader">一般形象網站</div><div role="columnheader">ForgeBase</div>
+            </div>
+            {comparisonRows.map(([label, normal, forge]) => (
+              <div className="comparison-row" role="row" key={label}>
+                <div role="cell"><strong>{label}</strong></div>
+                <div role="cell">{normal}</div>
+                <div role="cell"><Check size={17} />{forge}</div>
+              </div>
+            ))}
+          </div>
+          <p className="comparison-note">這裡比較的是目前可實際操作的網站、後台與詢價功能；訪客辨識與 AI 另列為進階測試功能，不混在基本網站承諾中。</p>
+        </div>
+      </section>
+
+      <section id="workflow" className="workflow-section section-shell">
+        <div className="section-heading">
+          <div><span className="section-code">03 / 怎麼使用</span><h2>從準備產品資料，<br />到業務收到一筆完整詢價。</h2></div>
+          <p>ForgeBase 目前不是讓公司從空白頁自行拖拉設計。做法是先選產業範本，再依公司需求調整並接上後台，讓範圍與交付內容更清楚。</p>
+        </div>
+        <div className="workflow-grid">
+          {workflow.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article key={item.number}>
+                <div className="workflow-top"><span>{item.number}</span><Icon size={23} /></div>
+                <small>{item.label}</small>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            );
+          })}
+        </div>
+        <div className="process-line" aria-label="ForgeBase 使用流程">
+          <div><FileText size={20} /><span>公司確認資料</span></div><b>→</b>
+          <div><Globe2 size={20} /><span>網站介紹產品</span></div><b>→</b>
+          <div><Search size={20} /><span>客戶自行查找</span></div><b>→</b>
+          <div><ClipboardList size={20} /><span>填寫詢價需求</span></div><b>→</b>
+          <div><LayoutDashboard size={20} /><span>業務接手處理</span></div>
+        </div>
+      </section>
+
+      <section className="modules-section">
+        <div className="section-shell">
+          <div className="section-heading">
+            <div><span className="section-code">04 / 兩個階段</span><h2>先讓網站真的能幫忙，<br />有流量後再加強找商機。</h2></div>
+            <p>網站上線不等於自然會有客戶。ForgeBase 把事情分開：第一階段做好網站與詢價；第二階段才加入辨識、內容與後續跟進工具。</p>
+          </div>
+          <div className="layer-split">
+            <article>
+              <span>第一階段 / 網站與詢價</span>
+              <h3>先讓網站能介紹、能更新、能收詢價</h3>
+              <p>適合需要重做外銷網站，或現有網站不方便維護的公司。它能減少客戶查找與業務整理資料的時間，但不保證網站上線後自然會有流量或訂單。</p>
+              <ul>
+                <li><Check size={16} />選產業範本，再依公司需求調整</li>
+                <li><Check size={16} />公司自己更新產品、圖片、用途、證書與常見問題</li>
+                <li><Check size={16} />英文與繁體中文內容由人員確認</li>
+                <li><Check size={16} />收集詢價資料並在後台查看處理進度</li>
+              </ul>
+            </article>
+            <article className="growth-layer">
+              <span>第二階段 / 找出較有機會的訪客</span>
+              <h3>有流量後，再判斷哪些訪客值得跟進</h3>
+              <p>適合網站已經有人瀏覽，並希望更了解訪客興趣的公司。部分功能需要另接第三方服務，辨識結果是業務線索，不代表對方已經提出需求。</p>
+              <ul>
+                <li><Check size={16} />了解訪客看過哪些產品與內容</li>
+                <li><Check size={16} />嘗試推測來訪公司，並清楚標示可信程度</li>
+                <li><Check size={16} />由 AI 依確認過的資料協助找產品</li>
+                <li><Check size={16} />提醒業務跟進，並記錄詢價後續結果</li>
+              </ul>
+            </article>
+          </div>
+          <div className="layer-rule"><strong>要增加搜尋曝光時</strong><span>ContentFlow／SearchOps 可另外串接，負責內容與被搜尋到</span><b>→</b><span>ForgeBase 負責客戶進站後看懂產品、提出詢價與後續處理</span></div>
+          <div className="module-grid">
+            {coreModules.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article key={item.title}>
+                  <div className="module-head"><Icon size={24} /><span>{item.status}</span></div>
+                  <small>{item.tag}</small>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="case-section section-shell">
+        <div className="case-image">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${northForgeAssetBase}/capability-quality-inspection.png`} alt="NorthForge Tools 品質檢驗情境" />
+          <div className="case-stamp">完整網站<br />測試案例</div>
+        </div>
+        <div className="case-copy">
+          <span className="section-code">05 / 完整測試網站</span>
+          <h2>NorthForge Tools<br />可以從看產品一路操作到送出詢價。</h2>
+          <p>這是一個實際接上 ForgeBase 後台的手工具網站，用來測試客戶找產品、看用途與證書、詢問 AI、送出詢價，以及公司從後台收件的完整過程。網站內的公司、產品、規格與圖片都是測試情境，不代表真實製造商或供貨能力。</p>
+          <ul>
+            <li><Check size={16} />產品與頁面資料由 ForgeBase 後台提供</li>
+            <li><Check size={16} />產品、用途、公司能力與證書頁可實際瀏覽</li>
+            <li><Check size={16} />詢價送出與後台收件流程可實際測試</li>
+            <li><Check size={16} />這是功能測試網站，不是真實客戶或成交案例</li>
+          </ul>
+          <a href={northForgeUrl} className="text-cta">查看 NorthForge Tools 完整網站 <ArrowRight size={17} /></a>
+        </div>
+      </section>
+
+      <section id="templates" className="templates-section">
+        <div className="section-shell">
+          <div className="section-heading light-heading">
+            <div><span className="section-code">06 / 產業範本</span><h2>不同產業的客戶，<br />找產品的方法也不一樣。</h2></div>
+            <p>六套範本不只是換照片與顏色，頁面安排也會依產品與採購方式調整。公司先確認喜歡的方向，再換成自己的內容並接上 ForgeBase 後台。</p>
+          </div>
+          <div className="template-grid">
+            {templates.map((item) => (
+              <a href={`${templateBaseUrl}${item.href}`} className="template-card" key={item.code}>
+                <div className="template-image">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${templateBaseUrl}${item.image}`} alt={`${item.industry}網站範本`} />
+                  <span>{item.code}</span>
+                </div>
+                <div className="template-meta"><div><small>{item.industry}</small><strong>{item.name}</strong></div><ArrowRight size={19} /></div>
+              </a>
+            ))}
+          </div>
+          <div className="demo-disclosure"><ShieldCheck size={18} /><p>範本中的公司、設備、規格、證書與產能皆為示意資料；每套頁面均有測試範本告知，不代表真實公司或製造能力。</p></div>
+        </div>
+      </section>
+
+      <section className="boundaries section-shell">
+        <div className="boundary-title"><Wrench size={28} /><span className="section-code">07 / 哪些事仍由人確認</span><h2>對外資料與承諾，不能全部交給 AI。</h2></div>
+        <div className="boundary-list">
+          <div><b>01</b><p><strong>舊網站資料不直接整批搬入。</strong> 公司先確認內容是否正確，再依新網站重新整理。</p></div>
+          <div><b>02</b><p><strong>AI 不會自己寫完就發布。</strong> 產品、規格、翻譯與所有對外文字都要由人員確認。</p></div>
+          <div><b>03</b><p><strong>AI 不能替公司報價或答應交期。</strong> 證書是否適用，也必須交由真人確認。</p></div>
+          <div><b>04</b><p><strong>看過網站的人不等於詢價客戶。</strong> 對方主動留下需求，才是一筆可以交給業務處理的詢價。</p></div>
+        </div>
+      </section>
+
+      <section className="final-cta">
+        <div className="section-shell">
+          <span>FORGEBASE PRODUCT TEST</span>
+          <h2>先實際走一次，<br />看網站能不能替你的業務多做一些事。</h2>
+          <p>目前 ForgeBase 開放產品測試與導入評估，尚未對外正式銷售。網站不會憑空帶來流量，也不承諾未經驗證的詢價或成交成果。</p>
+          <div>
+            <a href={northForgeUrl} className="button button-light">查看 NorthForge 案例 <ArrowRight size={17} /></a>
+            <Link href="/apply" className="button button-outline-light">申請導入評估</Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="site-footer">
+        <Link href="/" className="wordmark"><BrandMark /><span className="wordmark-copy"><strong>ForgeBase</strong><small>MANUFACTURING WEB SYSTEM</small></span></Link>
+        <p>外銷製造業網站、產品介紹與詢價管理工具</p>
+        <div><a href="#difference">產品差異</a><a href="#workflow">運作方式</a><a href="#templates">產業範本</a><Link href="/apply">申請導入</Link><Link href="/privacy">資料使用</Link><Link href="/terms">產品測試說明</Link><a href={`${backendBaseUrl}/login`}>後台登入</a></div>
+        <small>© 2026 ForgeBase. Controlled product test.</small>
+      </footer>
+    </main>
+  );
+}

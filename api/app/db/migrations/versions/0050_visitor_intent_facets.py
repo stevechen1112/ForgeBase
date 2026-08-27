@@ -6,9 +6,8 @@ Create Date: 2026-08-03
 
 visitors 新增四個採購 facet 欄位（可排序／篩選）與「為何 Hot」解釋字串。
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0050_visitor_intent_facets"
 down_revision = "0049_idempotency_keys"

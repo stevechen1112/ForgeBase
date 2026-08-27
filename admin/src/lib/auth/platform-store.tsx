@@ -5,6 +5,7 @@
  */
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from "react";
 import type { UserRead, TokenResponse } from "@/lib/api/auth";
+import { clearAuthStorage } from "@/lib/auth/storage";
 import {
   clearPlatformAuthStorage,
   readPlatformAuthStorage,
@@ -82,6 +83,7 @@ export function PlatformAuthProvider({ children }: { children: ReactNode }) {
     if (!tokenResponse.user?.is_superuser) {
       throw new Error("此帳號不具備平台管理員權限");
     }
+    clearAuthStorage();
     writePlatformAuthStorage(JSON.stringify(tokenResponse));
     dispatch({ type: "SET_AUTH", payload: tokenResponse });
   };

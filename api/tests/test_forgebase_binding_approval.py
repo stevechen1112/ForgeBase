@@ -40,9 +40,12 @@ from unittest.mock import patch
 import httpx
 import pytest
 from httpx import AsyncClient
+from sqlmodel import select
 
 from app.core.config import settings
 from app.models.rfq_request import RFQRequest
+from app.models.operational_job import OperationalJob
+from app.services.operational_outbox import _execute
 from tests.conftest import _make_engine
 
 pytestmark: list = []  # individual tests carry their own marks
@@ -90,6 +93,9 @@ async def _service_test_session_ctx():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio(loop_scope="function")
+@pytest.mark.skip(
+    reason="AgentOS automatic binding is locked off during retirement observation"
+)
 async def test_forgebase_binding(http_client: AsyncClient):
     """
     條件二：雙向綁定驗證
@@ -163,6 +169,14 @@ async def test_forgebase_binding(http_client: AsyncClient):
         rfq_id = rfq_response.json().get("rfq_id")
         assert rfq_id, "RFQ response 缺少 rfq_id"
         rfq_id_uuid = uuid.UUID(rfq_id)
+
+        eng, factory = _make_engine()
+        async with factory() as db:
+            job = (await db.exec(select(OperationalJob).where(
+                OperationalJob.idempotency_key == f"rfq:{rfq_id_uuid}:agentos"
+            ))).one()
+        await eng.dispose()
+        await _execute(job)
 
         # ── 2. 查詢 AgentOS API：GET /runs/{run_id}，驗 task.idempotency_key ──
         async with httpx.AsyncClient() as agentos_client:

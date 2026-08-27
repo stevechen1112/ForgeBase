@@ -1,268 +1,263 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/store";
-import { Button } from "@/components/ui/button";
+import { Download, RefreshCw, Search } from "lucide-react";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
-import { QualityBadge, SlaCountdown } from "@/components/rfq/quality-sla";
+import { authApi, type TeamMember } from "@/lib/api/auth";
+import { useAuth } from "@/lib/auth/store";
 
 type RFQ = {
   id: string;
   rfq_number: string;
-  contact_id: string | null;
   status: string;
   priority: string;
-  intent_score_at_submit: number;
-  quality_score: number;
-  sla_due_at: string | null;
-  sla_breached: boolean;
   assigned_to: string | null;
+  assigned_to_name: string | null;
+  next_follow_up_at: string | null;
+  source_page: string | null;
   created_at: string;
+  sla_breached: boolean;
+  is_spam: boolean;
+  merged_into_rfq_id: string | null;
+  contact: {
+    full_name: string;
+    company_name: string | null;
+    email: string;
+    country: string | null;
+  } | null;
 };
 
 type RfqStats = {
-  total_rfqs: number;
-  avg_first_response_hours: number | null;
-  sla_achievement_rate: number | null;
-  sla_breached: number;
-  avg_quality_score: number | null;
-  unquoted?: number;
-  unassigned?: number;
-};
-
-const STATUS_VARIANT: Record<string, string> = {
-  new: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-  assigned: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  in_progress: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-  quoted: "bg-purple-100 text-purple-800 hover:bg-purple-100",
-  negotiation: "bg-indigo-100 text-indigo-800 hover:bg-indigo-100",
-  won: "bg-green-100 text-green-800 hover:bg-green-100",
-  lost: "bg-muted text-muted-foreground hover:bg-muted",
-  expired: "bg-red-100 text-red-700 hover:bg-red-100",
+  unquoted: number;
+  unassigned: number;
+  overdue_follow_ups: number;
+  due_today: number;
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  new: "新進",
-  assigned: "已指派",
-  in_progress: "處理中",
-  quoted: "已報價",
-  negotiation: "談判中",
-  won: "成交",
-  lost: "流失",
-  expired: "過期",
+  new: "待處理",
+  assigned: "待處理（已分派）",
+  in_progress: "聯繫中",
+  quoted: "報價／樣品",
+  negotiation: "洽談中",
+  won: "已成交",
+  lost: "未成交",
+  expired: "已結案",
 };
 
-const PRIORITY_LABEL: Record<string, string> = {
-  normal: "一般",
-  high: "高",
-  urgent: "緊急",
+const STATUS_STYLE: Record<string, string> = {
+  new: "bg-blue-100 text-blue-800",
+  assigned: "bg-sky-100 text-sky-800",
+  in_progress: "bg-amber-100 text-amber-800",
+  quoted: "bg-violet-100 text-violet-800",
+  negotiation: "bg-indigo-100 text-indigo-800",
+  won: "bg-emerald-100 text-emerald-800",
+  lost: "bg-muted text-muted-foreground",
+  expired: "bg-slate-100 text-slate-700",
 };
 
-const PRIORITY_CLS: Record<string, string> = {
-  normal: "text-muted-foreground",
-  high: "text-orange-600 font-semibold",
-  urgent: "text-red-600 font-bold",
-};
+const SELECT_CLS = "h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const CLOSED = new Set(["won", "lost", "expired"]);
 
-const SELECT_CLS = "rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
+function formatDate(value: string | null, withTime = false) {
+  if (!value) return "尚未設定";
+  return new Date(value).toLocaleString("zh-TW", withTime
+    ? { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }
+    : { year: "numeric", month: "numeric", day: "numeric" });
+}
 
 export default function RFQsListPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const user = state.status === "authenticated" ? state.user : null;
+  const isManager = user?.role === "owner" || user?.role === "admin";
 
   const [rows, setRows] = useState<RFQ[]>([]);
   const [stats, setStats] = useState<RfqStats | null>(null);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [slaFilter, setSlaFilter] = useState("");
-  const [sort, setSort] = useState("quality"); // T11：預設「品質 × SLA」
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [followUpFilter, setFollowUpFilter] = useState("");
+  const [view, setView] = useState("active");
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 25;
+  const pageSize = 25;
 
-  const load = useCallback(() => {
-    setLoading(true); setError(null);
-    const params = new URLSearchParams({
-      limit: String(PAGE_SIZE),
-      offset: String((page - 1) * PAGE_SIZE),
-    });
-    if (statusFilter) params.set("status", statusFilter);
-    if (priorityFilter) params.set("priority", priorityFilter);
-    if (slaFilter) params.set("sla", slaFilter);
-    if (sort) params.set("sort", sort);
-
-    fetch(`${API_BASE}/tracking/rfqs?${params}`, {
-      headers: buildApiHeaders(token),
-    })
-      .then(async (r) => {
-        const data = await r.json().catch(() => null);
-        if (!r.ok) {
-          throw new Error(
-            (data && (data.detail || data.error)) || `HTTP ${r.status}`
-          );
-        }
-        setRows(Array.isArray(data) ? data : []);
-      })
-      .catch((e) => { setError(e instanceof Error ? e.message : "Load failed"); setRows([]); })
-      .finally(() => setLoading(false));
-  }, [token, page, statusFilter, priorityFilter, slaFilter, sort]);
-
-  // T8：首回時間與 SLA 達成率摘要
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!token) return;
-    fetch(`${API_BASE}/tracking/rfqs/stats?days=30`, { headers: buildApiHeaders(token) })
-      .then(async (r) => {
-        const data = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        setStats(data && typeof data === "object" ? data : null);
-      })
-      .catch(() => setStats(null));
-  }, [token]);
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({
+      limit: String(pageSize),
+      offset: String((page - 1) * pageSize),
+      view,
+    });
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter) params.set("status", statusFilter);
+    if (ownerFilter && isManager) params.set("assigned_to", ownerFilter);
+    if (followUpFilter === "response_overdue") params.set("sla", "breached");
+    else if (followUpFilter) params.set("follow_up", followUpFilter);
+    try {
+      const response = await fetch(`${API_BASE}/tracking/rfqs?${params}`, { headers: buildApiHeaders(token) });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.detail || `HTTP ${response.status}`);
+      setRows(Array.isArray(data) ? data : []);
+    } catch (cause) {
+      setRows([]);
+      setError(cause instanceof Error ? cause.message : "詢價案件載入失敗");
+    } finally {
+      setLoading(false);
+    }
+  }, [followUpFilter, isManager, ownerFilter, page, search, statusFilter, token, view]);
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkedFollowUp = params.get("follow_up");
+    const linkedSla = params.get("sla");
+    if (linkedFollowUp && ["due", "overdue", "today", "upcoming"].includes(linkedFollowUp)) setFollowUpFilter(linkedFollowUp);
+    if (linkedSla === "breached") setFollowUpFilter("response_overdue");
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/tracking/rfqs/stats?days=30`, { headers: buildApiHeaders(token) })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then(setStats)
+      .catch(() => setStats(null));
+    if (isManager) {
+      authApi.listTeam(token)
+        .then((members) => setTeam(members.filter((member) => member.is_active && ["sales", "admin", "owner"].includes(member.role))))
+        .catch(() => setTeam([]));
+    }
+  }, [isManager, token]);
+
+  async function downloadCsv() {
+    setExporting(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      const response = await fetch(`${API_BASE}/tracking/rfqs/export.csv?${params}`, { headers: buildApiHeaders(token) });
+      if (!response.ok) throw new Error("匯出失敗");
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = `forgebase-rfqs-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(href);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "匯出失敗");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">全部 RFQ</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">管理所有進來的詢價單，依狀態與負責業務篩選、追蹤進度</p>
+          <h1 className="text-2xl font-bold tracking-tight">詢價案件</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isManager ? "掌握新詢價、負責業務與下一步。" : "只顯示分派給您的詢價與今天要跟進的案件。"}
+          </p>
         </div>
+        {isManager && (
+          <Button variant="outline" size="sm" onClick={downloadCsv} disabled={exporting}>
+            <Download className="mr-2 h-4 w-4" />{exporting ? "匯出中…" : "匯出 CSV"}
+          </Button>
+        )}
       </div>
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {/* T8：首回速度摘要卡（近 30 天）＋ 待處理追蹤（原詢價單追蹤頁，併入） */}
-      {stats && (
-        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">未報價</div>
-            <div className={`mt-1 text-xl font-bold ${(stats.unquoted ?? 0) > 0 ? "text-orange-600" : ""}`}>
-              {stats.unquoted ?? "—"}
-            </div>
-            <div className="text-xs text-muted-foreground">待處理</div>
-          </div>
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">未指派</div>
-            <div className={`mt-1 text-xl font-bold ${(stats.unassigned ?? 0) > 0 ? "text-red-600" : ""}`}>
-              {stats.unassigned ?? "—"}
-            </div>
-            <div className="text-xs text-muted-foreground">需指派負責人</div>
-          </div>
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">平均首回時間</div>
-            <div className="mt-1 text-xl font-bold">
-              {stats.avg_first_response_hours != null ? `${stats.avg_first_response_hours}h` : "—"}
-            </div>
-          </div>
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">SLA 達成率</div>
-            <div className={`mt-1 text-xl font-bold ${stats.sla_achievement_rate != null && stats.sla_achievement_rate < 0.8 ? "text-red-600" : ""}`}>
-              {stats.sla_achievement_rate != null ? `${Math.round(stats.sla_achievement_rate * 100)}%` : "—"}
-            </div>
-          </div>
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">SLA 逾期單</div>
-            <div className={`mt-1 text-xl font-bold ${stats.sla_breached > 0 ? "text-red-600" : ""}`}>
-              {stats.sla_breached}
-            </div>
-          </div>
-          <div className="rounded-lg border bg-card p-3">
-            <div className="text-xs text-muted-foreground">平均品質分</div>
-            <div className="mt-1 text-xl font-bold">
-              {stats.avg_quality_score != null ? stats.avg_quality_score : "—"}
-            </div>
-          </div>
-        </div>
-      )}
+      <div className={`mb-5 grid gap-3 ${isManager ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">待處理案件</p><p className="mt-1 text-2xl font-bold">{stats?.unquoted ?? "—"}</p></CardContent></Card>
+        {isManager && <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">尚未分派</p><p className={`mt-1 text-2xl font-bold ${(stats?.unassigned ?? 0) > 0 ? "text-red-600" : ""}`}>{stats?.unassigned ?? "—"}</p></CardContent></Card>}
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">24 小時內要跟進</p><p className="mt-1 text-2xl font-bold">{stats?.due_today ?? "—"}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">跟進已逾期</p><p className={`mt-1 text-2xl font-bold ${(stats?.overdue_follow_ups ?? 0) > 0 ? "text-red-600" : ""}`}>{stats?.overdue_follow_ups ?? "—"}</p></CardContent></Card>
+      </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        <select className={SELECT_CLS} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-          <option value="">全部狀態</option>
-          {["new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"].map((s) => (
-            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
-          ))}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <div className="relative min-w-56 flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-9" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜尋公司、姓名、Email 或案件編號" />
+        </div>
+        <select className={SELECT_CLS} aria-label="案件階段" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}>
+          <option value="">全部階段</option>
+          {Object.entries(STATUS_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
-        <select className={SELECT_CLS} value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}>
-          <option value="">全部優先級</option>
-          {["normal", "high", "urgent"].map((p) => (
-            <option key={p} value={p}>{PRIORITY_LABEL[p] ?? p}</option>
-          ))}
+        {isManager && (
+          <select className={SELECT_CLS} aria-label="負責業務" value={ownerFilter} onChange={(event) => { setOwnerFilter(event.target.value); setPage(1); }}>
+            <option value="">全部負責人</option>
+            {team.map((member) => <option key={member.id} value={member.id}>{member.full_name}</option>)}
+          </select>
+        )}
+        <select className={SELECT_CLS} aria-label="跟進期限" value={followUpFilter} onChange={(event) => { setFollowUpFilter(event.target.value); setPage(1); }}>
+          <option value="">全部跟進期限</option>
+          <option value="due">已到期或 24 小時內</option>
+          <option value="overdue">已逾期</option>
+          <option value="today">24 小時內</option>
+          <option value="upcoming">即將到期</option>
+          <option value="response_overdue">尚未回覆且已逾期</option>
         </select>
-        <select className={SELECT_CLS} value={slaFilter} onChange={(e) => { setSlaFilter(e.target.value); setPage(1); }}>
-          <option value="">全部 SLA</option>
-          <option value="due_soon">SLA 即將逾期</option>
-          <option value="breached">回覆已逾期</option>
+        <select className={SELECT_CLS} aria-label="案件資料夾" value={view} onChange={(event) => { setView(event.target.value); setPage(1); }}>
+          <option value="active">一般案件</option>
+          <option value="spam">垃圾隔離區</option>
+          {isManager && <option value="merged">已合併案件</option>}
         </select>
-        <select className={SELECT_CLS} value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>
-          <option value="quality">品質 × SLA（預設）</option>
-          <option value="">最新優先</option>
-        </select>
-        <Button variant="outline" size="sm" onClick={load} className="ml-auto">
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />重新整理
+        <Button variant="outline" size="sm" className="h-10" onClick={load} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="overflow-x-auto rounded-lg border bg-card">
         {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">載入中…</div>
+          <div className="py-14 text-center text-sm text-muted-foreground">載入詢價案件…</div>
         ) : rows.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">沒有符合條件的 RFQ</div>
+          <div className="py-14 text-center text-sm text-muted-foreground">目前沒有符合條件的詢價案件</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b">
-              <tr>
-                {["RFQ 編號", "狀態", "優先級", "品質", "SLA", "意圖", "提交時間", "操作"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
-                ))}
-              </tr>
+          <table className="w-full min-w-[920px] text-sm">
+            <thead className="border-b bg-muted/50">
+              <tr>{["買家與公司", "需求案件", "階段", "負責業務", "下一步", "收到時間", ""].map((heading) => <th key={heading} className="px-4 py-3 text-left font-medium text-muted-foreground">{heading}</th>)}</tr>
             </thead>
             <tbody className="divide-y">
-              {rows.map((rfq) => (
-                <tr key={rfq.id} className={`hover:bg-muted/30 transition-colors ${rfq.sla_breached ? "bg-red-50/50" : ""}`}>
-                  <td className="px-4 py-3 font-mono font-medium text-primary">
-                    <Link href={`/dashboard/rfqs/${rfq.id}`} className="hover:underline">
-                      {rfq.rfq_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_VARIANT[rfq.status] ?? "bg-muted text-muted-foreground"}`}>
-                      {STATUS_LABEL[rfq.status] ?? rfq.status}
-                    </span>
-                  </td>
-                  <td className={`px-4 py-3 ${PRIORITY_CLS[rfq.priority] ?? ""}`}>{PRIORITY_LABEL[rfq.priority] ?? rfq.priority}</td>
-                  <td className="px-4 py-3"><QualityBadge score={rfq.quality_score ?? 0} /></td>
-                  <td className="px-4 py-3">
-                    <SlaCountdown slaDueAt={rfq.sla_due_at} slaBreached={rfq.sla_breached} status={rfq.status} />
-                  </td>
-                  <td className="px-4 py-3">{rfq.intent_score_at_submit}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(rfq.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/dashboard/rfqs/${rfq.id}`}>檢視 →</Link>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((rfq) => {
+                const overdue = Boolean(rfq.next_follow_up_at && new Date(rfq.next_follow_up_at) < new Date() && !CLOSED.has(rfq.status));
+                return (
+                  <tr key={rfq.id} className={overdue || rfq.sla_breached ? "bg-red-50/50" : "hover:bg-muted/30"}>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{rfq.contact?.company_name || "未填公司"}</p>
+                      <p className="text-xs text-muted-foreground">{rfq.contact?.full_name || "未填姓名"}{rfq.contact?.country ? ` · ${rfq.contact.country}` : ""}</p>
+                    </td>
+                    <td className="px-4 py-3"><Link href={`/dashboard/rfqs/${rfq.id}`} className="font-mono text-xs font-semibold text-primary hover:underline">{rfq.rfq_number}</Link>{rfq.priority === "urgent" && <span className="ml-2 text-xs font-semibold text-red-600">緊急</span>}</td>
+                    <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLE[rfq.status] ?? "bg-muted"}`}>{STATUS_LABEL[rfq.status] ?? rfq.status}</span></td>
+                    <td className="px-4 py-3">{rfq.assigned_to_name || <span className="text-red-600">尚未分派</span>}</td>
+                    <td className="px-4 py-3"><p className={overdue ? "font-semibold text-red-600" : ""}>{formatDate(rfq.next_follow_up_at, true)}</p>{overdue && <p className="text-xs text-red-600">已逾期</p>}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatDate(rfq.created_at)}</td>
+                    <td className="px-4 py-3"><Button asChild variant="ghost" size="sm"><Link href={`/dashboard/rfqs/${rfq.id}`}>處理案件 →</Link></Button></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* Pagination */}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-        <span>{rows.length} 筆結果</span>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>上一頁</Button>
-          <Button variant="outline" size="sm" disabled={rows.length < PAGE_SIZE} onClick={() => setPage((p) => p + 1)}>下一頁</Button>
-        </div>
+        <span>第 {page} 頁 · 本頁 {rows.length} 件</span>
+        <div className="flex gap-2"><Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>上一頁</Button><Button variant="outline" size="sm" disabled={rows.length < pageSize} onClick={() => setPage((value) => value + 1)}>下一頁</Button></div>
       </div>
     </div>
   );

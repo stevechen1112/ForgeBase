@@ -7,8 +7,8 @@ Also add slug column to tenants for future domain mapping.
 Revision ID: 0027_add_tenant_id_to_core_models
 Revises: 0026_tenants_and_user_tenant_id
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision = "0027_add_tenant_id_to_core_models"

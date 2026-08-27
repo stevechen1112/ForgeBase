@@ -5,8 +5,8 @@ Create table for per-site brand / theme configuration.
 Revision ID: 0026_site_profile
 Revises: 0025_legacy_site_intake
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0026_site_profile"
 down_revision = "0025_legacy_site_intake"

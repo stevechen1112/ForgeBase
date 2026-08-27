@@ -65,7 +65,7 @@ export default function NurturePage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">跟進郵件</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">依買家關注程度排程跟進郵件；須經核准後始可寄出（如第 0／3／7 天）。</p>
@@ -100,14 +100,14 @@ export default function NurturePage() {
         </CardContent></Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 2xl:grid-cols-2">
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Mail className="h-4 w-4 text-primary" />跟進流程
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             {loading ? (
               <p className="py-10 text-center text-sm text-muted-foreground">載入中…</p>
             ) : sequences.length === 0 ? (
@@ -116,7 +116,7 @@ export default function NurturePage() {
                 <p className="text-sm text-muted-foreground">尚未建立任何跟進流程</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[680px] table-fixed text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">名稱</th>
@@ -129,18 +129,24 @@ export default function NurturePage() {
                 <tbody className="divide-y">
                   {sequences.map(s => (
                     <tr key={s.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => router.push(`/dashboard/nurture/${s.id}`)}>
-                      <td className="px-4 py-2 font-medium text-primary hover:underline">{s.name}</td>
-                      <td className="px-4 py-2 text-muted-foreground text-xs">{s.trigger_type ?? "manual"}{s.trigger_value ? ` · ${s.trigger_value}` : ""}</td>
+                      <td className="px-4 py-2 font-medium text-primary hover:underline">
+                        <span className="line-clamp-2 break-words">{s.name}</span>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                        <span className="line-clamp-2 break-all">{s.trigger_type ?? "manual"}{s.trigger_value ? ` · ${s.trigger_value}` : ""}</span>
+                      </td>
                       <td className="px-4 py-2 text-center">{s.step_count ?? 0}</td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-4 py-2 text-center align-middle">
+                        <div className="flex flex-wrap justify-center gap-1">
                         <Badge className={s.is_active !== false ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}>
                           {s.is_active !== false ? "啟用" : "停用"}
                         </Badge>
                         {s.is_approved ? (
-                          <Badge className="ml-1 bg-blue-100 text-blue-700">已核准</Badge>
+                          <Badge className="bg-blue-100 text-blue-700">已核准</Badge>
                         ) : (
-                          <Badge variant="outline" className="ml-1 text-amber-600 border-amber-300">待核准</Badge>
+                          <Badge variant="outline" className="border-amber-300 text-amber-600">待核准</Badge>
                         )}
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-muted-foreground">{fmt(s.created_at)}</td>
                     </tr>
@@ -151,20 +157,20 @@ export default function NurturePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <ListChecks className="h-4 w-4 text-muted-foreground" />最近加入
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             {enrollments.length === 0 ? (
               <div className="py-12 text-center">
                 <ListChecks className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">尚無加入紀錄</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[520px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">聯絡人 ID</th>

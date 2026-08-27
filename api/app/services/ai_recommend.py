@@ -9,7 +9,7 @@ import logging
 from typing import Any
 
 from app.core.config import settings
-from app.core.tracing import get_openai_client, chat_completion_kwargs, WorkflowType, observe_workflow, attach_trace_metadata
+from app.core.tracing import chat_completion_kwargs, get_openai_client
 
 logger = logging.getLogger(__name__)
 client = get_openai_client()

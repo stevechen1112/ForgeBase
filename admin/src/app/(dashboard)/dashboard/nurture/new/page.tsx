@@ -65,7 +65,7 @@ export default function NewSequencePage() {
               <Label>說明</Label>
               <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} maxLength={500} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>觸發類型</Label>
                 <select className={SELECT_CLS} value={form.trigger_type} onChange={(e) => setForm((f) => ({ ...f, trigger_type: e.target.value }))}>

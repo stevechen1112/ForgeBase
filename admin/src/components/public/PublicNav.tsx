@@ -21,8 +21,8 @@ export function PublicNav() {
           <a href="#features" className="hover:text-slate-900 transition-colors">
             功能
           </a>
-          <a href="#pricing" className="hover:text-slate-900 transition-colors">
-            方案
+          <a href="https://pcbrm.tw/apply" className="hover:text-slate-900 transition-colors">
+            導入評估
           </a>
           <a
             href="/"
@@ -40,9 +40,9 @@ export function PublicNav() {
             <Link href="/login">登入</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/register">
-              免費試用 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </Link>
+            <a href="https://pcbrm.tw/apply">
+              申請導入 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </a>
           </Button>
         </div>
       </div>

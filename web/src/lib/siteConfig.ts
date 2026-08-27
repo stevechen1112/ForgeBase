@@ -9,14 +9,14 @@
  */
 
 // ── Theme key ──────────────────────────────────────────────────────
-export type ThemeKey = "cobalt" | "forest" | "slate" | "warm" | "industrial";
+export type ThemeKey = "cobalt" | "forest" | "slate" | "warm" | "industrial" | "precision";
 
 /**
  * Layout variant driven by the active theme.
  * - "classic"     — rounded cards, centered headings, light hero
  * - "industrial"  — angular cards, left-aligned headings, dark header, bold typography
  */
-export type LayoutVariant = "classic" | "industrial";
+export type LayoutVariant = "classic" | "industrial" | "precision";
 
 export type LocalizedText = string | Partial<Record<string, string>>;
 
@@ -57,12 +57,21 @@ export type SiteAssetManifest = {
   applicationBySlug?: Record<string, string>;
   productByKey?: Record<string, string>;
 };
-const LAYOUT_VARIANTS: LayoutVariant[] = ["classic", "industrial"];
-const THEME_KEYS: ThemeKey[] = ["cobalt", "forest", "slate", "warm", "industrial"];
+const LAYOUT_VARIANTS: LayoutVariant[] = ["classic", "industrial", "precision"];
+const THEME_KEYS: ThemeKey[] = ["cobalt", "forest", "slate", "warm", "industrial", "precision"];
+
+export type HiddenContentBlocks = {
+  productInspection?: boolean;
+  productPackaging?: boolean;
+  productReadiness?: boolean;
+  productSpecControl?: boolean;
+  productContext?: boolean;
+};
 
 export interface SiteConfig {
   brandName: string;
   logoMark: string;
+  logoUrl?: string;
   siteUrl: string;
   contactEmail: string;
   careersEmail: string;
@@ -78,6 +87,8 @@ export interface SiteConfig {
   socialLinks?: SiteSocialLink[];
   footerCta?: SiteFooterCta | null;
   assetManifest?: SiteAssetManifest;
+  siteCopy?: Record<string, unknown>;
+  hiddenBlocks?: HiddenContentBlocks;
 }
 
 export function resolveLocalizedText(value: LocalizedText | undefined, locale: string, fallback = ""): string {
@@ -118,6 +129,7 @@ const LAYOUT_MAP: Record<ThemeKey, LayoutVariant> = {
   slate: "classic",
   warm: "classic",
   industrial: "industrial",
+  precision: "precision",
 };
 
 export function normalizeLayoutVariant(raw?: string | null, theme: ThemeKey = getThemeKey()): LayoutVariant {
@@ -138,6 +150,7 @@ export const siteConfig: SiteConfig = {
 
   /** Short logo mark shown inside the header/footer icon */
   logoMark: process.env.NEXT_PUBLIC_LOGO_MARK || "FB",
+  logoUrl: undefined,
 
   /** Canonical site URL without trailing slash */
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, ""),
@@ -170,6 +183,8 @@ export const siteConfig: SiteConfig = {
   footerBadges: undefined,
   socialLinks: undefined,
   footerCta: undefined,
+  siteCopy: undefined,
+  hiddenBlocks: {},
 
   /** Default asset manifest keeps the existing demo experience as a legacy fallback. */
   assetManifest: {

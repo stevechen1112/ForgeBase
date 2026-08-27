@@ -5,7 +5,8 @@ import { CertificationBadge } from "@/components/ui/CertificationBadge";
 import { StructuredData, buildBreadcrumbSchema, buildOrganizationSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getAboutHeroImage } from "@/lib/demoAssets";
-import { getMessageNamespace } from "@/lib/messages";
+import { withBasePath } from "@/lib/basePath";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
@@ -421,7 +422,7 @@ export default async function AboutPage({ params }: Props) {
                 >
                   {cap.icon_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={cap.icon_url} alt="" className="mb-3 h-10 w-10 object-contain" aria-hidden="true" />
+                    <img src={withBasePath(cap.icon_url)} alt="" className="mb-3 h-10 w-10 object-contain" aria-hidden="true" />
                   ) : (
                     <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-base font-bold text-blue-700">
                       {cap.capability_name.charAt(0)}

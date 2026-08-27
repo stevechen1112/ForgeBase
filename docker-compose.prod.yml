@@ -1,17 +1,22 @@
 name: forgebase
 
 # 生產部署：單一網域 + Caddy 自動 HTTPS
-# 路由：/ → web ｜ /backend → admin ｜ /api/v1、/uploads、/health → api ｜ /api/revalidate → web
+# 路由：/ → ForgeBase 官網 ｜ /northforge-tools → 真實案例 ｜ /templates → 範本 ｜ /backend → admin ｜ /api → api
 # 變數來源：repo 根目錄 .env（參考 deploy/compose.env.example）
 
 # api 與 migrate 共用的環境變數（anchor，避免 migrate 因缺 URL 設定被 production 驗證擋下）
 x-api-env: &api-env
   DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-forgebase}
   APP_URL: ${PROTOCOL:-https}://${DOMAIN:?missing DOMAIN in .env}
-  FRONTEND_URL: ${PROTOCOL:-https}://${DOMAIN}
+  FRONTEND_URL: ${PROTOCOL:-https}://${DOMAIN}/northforge-tools
   ADMIN_URL: ${PROTOCOL:-https}://${DOMAIN}/backend
-  ALLOWED_ORIGINS: ${PROTOCOL:-https}://${DOMAIN}
-  WEB_REVALIDATE_URL: ${PROTOCOL:-https}://${DOMAIN}/api/revalidate
+  ALLOWED_ORIGINS: ${PROTOCOL:-https}://${DOMAIN},https://axisform.172-233-64-5.sslip.io
+  WEB_REVALIDATE_URL: http://web:3000/northforge-tools/api/revalidate
+  WEB_REVALIDATE_URLS: http://web:3000/northforge-tools/api/revalidate,http://web_precision:3000/api/revalidate
+  # AgentOS is optional. Empty must override the application development
+  # default; otherwise production calls its own API at localhost:8000/tasks.
+  AGENTOSS_URL: ${AGENTOSS_URL:-}
+  TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
 
 services:
   db:
@@ -30,39 +35,68 @@ services:
       retries: 10
 
   migrate:
+    # Keep migrations and the API on the exact same immutable application image.
+    # Without this explicit image name Compose creates a separate
+    # forgebase-migrate image, which can silently lag behind forgebase-api.
+    image: forgebase-api
     build: ./api
     depends_on:
       db:
         condition: service_healthy
-    env_file: ./deploy/api.env
+    env_file: ${API_ENV_FILE:-./deploy/api.env}
     environment: *api-env
     command: alembic upgrade head
     restart: "no"
 
   api:
+    image: forgebase-api
     build: ./api
     restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
-    env_file: ./deploy/api.env
+    env_file: ${API_ENV_FILE:-./deploy/api.env}
     environment: *api-env
     volumes:
       - uploads_data:/app/uploads
     # APScheduler runs inside the API lifespan, so production intentionally uses
     # one worker to guarantee each scheduled job executes exactly once.
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)\""]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
 
   admin:
+    image: forgebase-admin
     build:
       context: ./admin
       args:
         NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+  marketing:
+    image: forgebase-marketing
+    build:
+      context: ./forgebase-site
+      args:
+        NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+    restart: unless-stopped
+
+  templates:
+    image: forgebase-templates
+    build:
+      context: ./template-demos
+    restart: unless-stopped
 
   web:
+    image: forgebase-web
     build:
       context: ./web
       args:
@@ -70,13 +104,17 @@ services:
         # 留空＝不送 X-Tenant-ID，對應 seed 內容的 tenant_id IS NULL；
         # 只有在內容確實歸屬某租戶時才填該租戶 slug，否則前台會查不到任何內容
         NEXT_PUBLIC_TENANT_SLUG: ${NEXT_PUBLIC_TENANT_SLUG:-}
-        NEXT_PUBLIC_SITE_URL: ${PROTOCOL:-https}://${DOMAIN}
+        NEXT_PUBLIC_SITE_URL: ${PROTOCOL:-https}://${DOMAIN}/northforge-tools
         NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-NorthForge Tools}
+        NEXT_PUBLIC_BASE_PATH: /northforge-tools
+        NEXT_PUBLIC_ASSET_BASE: /northforge-tools/demo/handtool-company/assets
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     environment:
       # web/src/lib/api.ts 讀的是 API_INTERNAL_URL；少了它 SSR 會繞公開網域打自己
       API_INTERNAL_URL: http://api:8000
       INTERNAL_API_URL: http://api:8000
       NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+      NEXT_PUBLIC_BASE_PATH: /northforge-tools
       # 與 deploy/api.env 的 WEB_REVALIDATE_SECRET 必須一致
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:?missing REVALIDATE_SECRET in .env}
     volumes:
@@ -86,6 +124,43 @@ services:
     # 不必等到有人看見破圖才發現（細節見 /api/health/assets 回應）
     healthcheck:
       # 用 127.0.0.1 而非 localhost：Next.js standalone 只綁 IPv4，localhost 在 alpine 會先試 ::1
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/northforge-tools/api/health/assets"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Second fully connected tenant. A separate build is intentional: public
+  # tenant identity, canonical URL and basePath are compile-time Next values.
+  web_precision:
+    image: forgebase-web-precision
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+        NEXT_PUBLIC_TENANT_SLUG: axisform-precision
+        NEXT_PUBLIC_SITE_URL: https://axisform.172-233-64-5.sslip.io
+        NEXT_PUBLIC_SITE_NAME: AxisForm Precision
+        NEXT_PUBLIC_BASE_PATH: ""
+        NEXT_PUBLIC_ASSET_BASE: /demo/precision-machining/assets
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      INTERNAL_API_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
+      NEXT_PUBLIC_TENANT_SLUG: axisform-precision
+      NEXT_PUBLIC_SITE_URL: https://axisform.172-233-64-5.sslip.io
+      NEXT_PUBLIC_SITE_NAME: AxisForm Precision
+      NEXT_PUBLIC_BASE_PATH: ""
+      NEXT_PUBLIC_ASSET_BASE: /demo/precision-machining/assets
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?missing REVALIDATE_SECRET in .env}
+    volumes:
+      - ./demo:/demo:ro
+    healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health/assets"]
       interval: 60s
       timeout: 10s
@@ -93,7 +168,8 @@ services:
       start_period: 30s
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   caddy:
     image: caddy:2-alpine
@@ -109,9 +185,18 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - api
-      - admin
-      - web
+      api:
+        condition: service_healthy
+      admin:
+        condition: service_started
+      web:
+        condition: service_healthy
+      web_precision:
+        condition: service_healthy
+      marketing:
+        condition: service_started
+      templates:
+        condition: service_started
 
 volumes:
   postgres_data:

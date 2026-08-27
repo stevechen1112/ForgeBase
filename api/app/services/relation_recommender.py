@@ -18,7 +18,7 @@ from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
-from app.core.tracing import get_openai_client, chat_completion_kwargs, WorkflowType, observe_workflow, attach_trace_metadata
+from app.core.tracing import chat_completion_kwargs, get_openai_client
 
 logger = logging.getLogger(__name__)
 client = get_openai_client()
@@ -82,7 +82,9 @@ async def _fetch_cooccurrence(
             LIMIT :limit
         """)
 
-    result = await session.execute(sql, {"entity_id": entity_id, "limit": limit})
+    result = await session.exec(
+        sql, params={"entity_id": entity_id, "limit": limit}
+    )
     return [dict(r) for r in result.mappings().all()]
 
 

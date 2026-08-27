@@ -12,7 +12,6 @@ queries match them with `tenant_id IS NULL`.
 """
 from alembic import op
 
-
 revision = "0045_contacts_tenant_scoped_email"
 down_revision = "0044_add_page_brief_agent_fields"
 branch_labels = None

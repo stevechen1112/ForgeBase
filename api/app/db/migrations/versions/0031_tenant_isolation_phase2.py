@@ -13,8 +13,8 @@ Also fixes the redirects.from_path uniqueness:
 Revision ID: 0031_tenant_isolation_phase2
 Revises: 0030_rfq_events
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision = "0031_tenant_isolation_phase2"

@@ -7,6 +7,7 @@ import { Menu, X, Globe, ArrowRight } from "lucide-react";
 import { useMessageNamespace } from "@/lib/messages";
 import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/ui/BrandMark";
 
 type HeaderMessages = {
   rfq: string;
@@ -65,6 +66,7 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const siteName = siteConfig.brandName;
+  const isTestScenario = Boolean(siteConfig.demoCompanyFolder);
   const navItems = siteConfig.headerNav?.length ? siteConfig.headerNav : getDefaultNav(copy);
   const actions = siteConfig.headerActions?.length ? siteConfig.headerActions : getDefaultActions(copy);
   const primaryAction = actions[0];
@@ -74,11 +76,20 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
       {/* ─── Top utility bar ─── */}
       <div className="bg-gray-950 text-gray-400 text-xs">
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <span>{siteConfig.contactEmail} &nbsp;|&nbsp; {siteConfig.contactPhone}</span>
+          <span>{isTestScenario ? (locale === "zh-TW" ? "ForgeBase 功能測試網站・不提供業務聯繫" : "ForgeBase functional test site · no sales contact") : `${siteConfig.contactEmail} | ${siteConfig.contactPhone}`}</span>
           <NextLink
             href={localeSwitchHref}
             hrefLang={locale === "en" ? "zh-TW" : "en"}
             className="flex items-center gap-1 hover:text-white transition-colors"
+            onClick={(event) => {
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+              }
+              // Keep the root-level next-intl provider in sync when changing locale.
+              // NextLink supplies basePath; a full navigation rebuilds the root layout.
+              event.preventDefault();
+              window.location.assign(event.currentTarget.href);
+            }}
           >
             <Globe className="h-3 w-3" />
             {copy.langSwitch}
@@ -98,15 +109,13 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* ─── Logo ─── */}
           <Link href="/" className="group flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center bg-primary text-sm font-black text-primary-foreground skew-x-[-3deg]">
-              {siteConfig.logoMark}
-            </div>
+            <BrandMark name={siteName} mark={siteConfig.logoMark} logoUrl={siteConfig.logoUrl} className="h-9 w-9 text-sm font-black skew-x-[-3deg]" imageClassName="h-9" />
             <div className="flex flex-col leading-none">
               <span className="text-sm font-black uppercase tracking-[0.15em] text-white">
                 {siteName}
               </span>
               <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-gray-500">
-                {locale === "zh-TW" ? "專業製造" : "Manufacturing"}
+                {isTestScenario ? (locale === "zh-TW" ? "功能測試情境" : "Functional test") : (locale === "zh-TW" ? "專業製造" : "Manufacturing")}
               </span>
             </div>
           </Link>

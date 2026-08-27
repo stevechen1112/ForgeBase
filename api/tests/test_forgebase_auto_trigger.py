@@ -19,9 +19,7 @@ Run:
     pytest tests/test_forgebase_auto_trigger.py -v
 """
 
-import json
 import uuid
-import asyncio
 from contextlib import asynccontextmanager
 from unittest.mock import patch
 import httpx
@@ -29,10 +27,11 @@ import httpx
 import pytest
 from httpx import AsyncClient, ConnectError
 from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.models.rfq_request import RFQRequest
+from app.models.operational_job import OperationalJob
+from app.services.operational_outbox import _execute
 from tests.conftest import _make_engine
 
 pytestmark = pytest.mark.asyncio
@@ -85,9 +84,11 @@ async def _service_test_session_ctx():
 # Tests
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def test_forgebase_auto_trigger(http_client: AsyncClient):
+async def test_forgebase_agentos_is_disabled_during_retirement_observation(
+    http_client: AsyncClient,
+):
     """
-    正向驗證：RFQ 建立 → AgentOS 自動觸發 → run_id 存入 RFQ
+    RFQ 建立仍成功，但 locked-off AgentOS 不得被自動觸發。
     """
     agentOS_task_url = f"{settings.AGENTOSS_URL}/tasks"
     original_post = httpx.AsyncClient.post
@@ -124,6 +125,16 @@ async def test_forgebase_auto_trigger(http_client: AsyncClient):
         assert rfq_id, "RFQ creation response missing rfq_id"
         rfq_id_uuid = uuid.UUID(rfq_id)
 
+        # RFQ submission commits a durable outbox job and returns immediately;
+        # the worker owns the external AgentOS call.
+        eng, factory = _make_engine()
+        async with factory() as db:
+            job = (await db.exec(select(OperationalJob).where(
+                OperationalJob.idempotency_key == f"rfq:{rfq_id_uuid}:agentos"
+            ))).one()
+        await eng.dispose()
+        await _execute(job)
+
     # 2. 從資料庫查詢 RFQ
     eng, factory = _make_engine()
     async with factory() as db:
@@ -131,21 +142,12 @@ async def test_forgebase_auto_trigger(http_client: AsyncClient):
         assert rfq, f"RFQ {rfq_id} not found in database"
     await eng.dispose()
 
-    # 3. 檢查 agent_run_id 被成功設定
+    # 3. 退場觀察期間不得建立外部 run 綁定。
     assert hasattr(rfq, "agent_run_id"), (
         "RFQRequest model missing 'agent_run_id' attribute"
     )
-    assert rfq.agent_run_id == FAKE_AGENTOSS_RUN_ID, (
-        f"agent_run_id mismatch. Expected {FAKE_AGENTOSS_RUN_ID!r}, got {rfq.agent_run_id!r}"
-    )
-
-    # 4. 驗證建立端點有經過 trigger_agentOS_rfq（以 AgentOS URL 呼叫為證）
-    assert len(agentOS_calls) == 1, (
-        "Expected exactly one AgentOS /tasks call during RFQ creation, "
-        f"got {len(agentOS_calls)}"
-    )
-    assert agentOS_calls[0]["url"] == agentOS_task_url
-    assert agentOS_calls[0]["json"].get("workflow_input", {}).get("source_id") == str(rfq_id_uuid)
+    assert rfq.agent_run_id is None
+    assert agentOS_calls == []
 
 
 async def test_forgebase_auto_trigger_agentOS_unavailable(http_client: AsyncClient):
@@ -184,6 +186,14 @@ async def test_forgebase_auto_trigger_agentOS_unavailable(http_client: AsyncClie
         assert rfq_id, "RFQ creation response missing rfq_id"
         rfq_id_uuid = uuid.UUID(rfq_id)
 
+        eng, factory = _make_engine()
+        async with factory() as db:
+            job = (await db.exec(select(OperationalJob).where(
+                OperationalJob.idempotency_key == f"rfq:{rfq_id_uuid}:agentos"
+            ))).one()
+        await eng.dispose()
+        await _execute(job)
+
     # 2. 從資料庫查詢 RFQ
     eng, factory = _make_engine()
     async with factory() as db:
@@ -197,8 +207,5 @@ async def test_forgebase_auto_trigger_agentOS_unavailable(http_client: AsyncClie
         f"When trigger fails, agent_run_id should be null, got {rfq.agent_run_id!r}"
     )
 
-    # 4. 驗證端點確實有嘗試呼叫 AgentOS
-    assert len(agentOS_calls) == 1, (
-        "Expected one AgentOS /tasks call even when unavailable, "
-        f"got {len(agentOS_calls)}"
-    )
+    # 4. Locked-off runtime 不會嘗試連線，因此 provider outage 不影響 RFQ。
+    assert agentOS_calls == []

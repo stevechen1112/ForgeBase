@@ -79,6 +79,7 @@ export type Product = {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  gallery_images?: ProductGalleryImage[];
 };
 
 export type Application = {
@@ -185,7 +186,6 @@ export type Page = {
   noindex: boolean;
   entity_type: string | null;
   entity_id: string | null;
-  brief_id: string | null;
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -254,6 +254,54 @@ export const previewApi = {
 };
 
 // ── Publish / Unpublish ───────────────────────────────────────────────────────
+export const localeDraftApi = {
+  create: (token: string, entity: string, id: string, targetLocale?: string) =>
+    apiClient.post<{
+      action: string;
+      entity: string;
+      source_id: string;
+      target_id: string;
+      source_locale: string;
+      target_locale: string;
+      status: string;
+    }>(`${BASE}/${entity}/${id}/locale-draft`, { target_locale: targetLocale ?? null }, token),
+  createBatch: (token: string, entity: string, sourceIds: string[], targetLocale: string) =>
+    apiClient.post<{
+      entity: string;
+      target_locale: string;
+      requested: number;
+      created_or_updated: number;
+      failed: number;
+      failures: Array<{ source_id: string; status_code: number; message: string }>;
+      published: number;
+    }>(`${BASE}/locale-drafts/batch`, {
+      entity,
+      source_ids: sourceIds,
+      target_locale: targetLocale,
+    }, token),
+};
+
+export const localeCoverageApi = {
+  get: (token: string, targetLocale?: string) =>
+    apiClient.get<{
+      source_locale: string;
+      target_locale: string;
+      overall_coverage_pct: number;
+      missing: number;
+      draft: number;
+      stale: number;
+      entities: Array<{ entity: string; missing_keys: string[]; missing_ids: string[]; missing_count: number; draft: number; stale: number; source_total: number; translated: number; published: number; coverage_pct: number; published_pct: number }>;
+      policy: string;
+    }>(`${BASE}/locale-coverage${targetLocale ? `?target_locale=${encodeURIComponent(targetLocale)}` : ""}`, token),
+  settings: (token: string) =>
+    apiClient.get<{
+      source_locale: string;
+      content_locales: Array<{ content_locale: string; route_locale: string; label: string; native_label: string; public_shell_ready: boolean }>;
+      public_shell_locales: string[];
+      policy: string;
+    }>(`${BASE}/locale-settings`, token),
+};
+
 export const publishApi = {
   publish: (token: string, entity: string, id: string) =>
     apiClient.post<{ detail: string; id: string }>(`${BASE}/${entity}/${id}/publish`, {}, token),
@@ -299,16 +347,25 @@ export type ContentAsset = {
   public_url: string;
   mime_type: string;
   file_size_bytes: number;
-  asset_type: "image" | "pdf" | "cad" | "other";
+  asset_type: "image" | "pdf" | "cad" | "document" | "other";
   alt_text: string | null;
   title: string | null;
   is_indexable: boolean;
+  index_status?: "not_indexed" | "not_applicable" | "pending" | "indexed" | "needs_ocr" | "withdrawn";
+  index_error?: string | null;
   seo_title: string | null;
-  entity_type: string | null;
-  entity_id: string | null;
-  locale: string;
+  product_id: string | null;
+  page_id: string | null;
+  display_order: number;
   uploaded_by: string;
   created_at: string;
+};
+
+export type ProductGalleryImage = {
+  id: string;
+  public_url: string;
+  alt_text: string | null;
+  display_order: number;
 };
 
 export const assetsApi = {
@@ -320,6 +377,13 @@ export const assetsApi = {
     apiClient.postForm<ContentAsset>(`${BASE}/assets`, formData, token),
   delete: (token: string, id: string) =>
     apiClient.del<void>(`${BASE}/assets/${id}`, token),
+  update: (token: string, id: string, payload: Partial<Pick<ContentAsset, "alt_text" | "display_order" | "product_id" | "is_indexable" | "title">>) =>
+    apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, payload, token),
   updateAlt: (token: string, id: string, altText: string) =>
     apiClient.patch<ContentAsset>(`${BASE}/assets/${id}`, { alt_text: altText }, token),
+};
+
+export const productGalleryApi = {
+  reorder: (token: string, productId: string, items: Array<{ id: string; display_order: number }>) =>
+    apiClient.put<APIItemResponse<Product>>(`${BASE}/products/${productId}/gallery`, { items }, token),
 };

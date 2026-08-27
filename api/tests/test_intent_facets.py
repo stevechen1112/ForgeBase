@@ -17,6 +17,7 @@ import pytest
 
 from tests.conftest import requires_db
 
+from app.core.datetime import utcnow_naive
 from app.services.intent_facets import (
     FACET_PROCUREMENT_READINESS,
     FACET_PRODUCT_INTEREST,
@@ -64,7 +65,7 @@ def test_apply_event_to_visitor_accumulates():
 
 
 def test_explanation_phrases():
-    now = datetime.utcnow()
+    now = utcnow_naive()
     events = [
         SimpleNamespace(event_name="certification_view", page_type=None, created_at=now - timedelta(hours=2)),
         SimpleNamespace(event_name="certification_view", page_type=None, created_at=now - timedelta(hours=5)),
@@ -79,7 +80,7 @@ def test_explanation_phrases():
 
 
 def test_explanation_rfq_submitted():
-    now = datetime.utcnow()
+    now = utcnow_naive()
     events = [
         SimpleNamespace(event_name="rfq_start", page_type=None, created_at=now),
         SimpleNamespace(event_name="rfq_submit", page_type=None, created_at=now),
@@ -91,7 +92,7 @@ def test_explanation_rfq_submitted():
 
 def test_explanation_has_rfq_record_without_submit_event():
     """表單建 RFQ 無 rfq_submit 事件時，仍應顯示已送出（與 has_rfq 一致）。"""
-    now = datetime.utcnow()
+    now = utcnow_naive()
     events = [
         SimpleNamespace(event_name="rfq_start", page_type=None, created_at=now),
         SimpleNamespace(event_name="spec_download", page_type=None, created_at=now),
@@ -234,6 +235,7 @@ async def _send_event(client, tenant_id, visitor_id, event_name, page_type=None,
         "session_id": str(session_id or uuid.uuid4()),
         "page_url": "https://www.test.com/x",
         "page_type": page_type,
+        "analytics_consent": True,
     }
     resp = await client.post("/api/v1/tracking/events", json=payload, headers={"X-Tenant-ID": str(tenant_id)})
     assert resp.status_code in (200, 201, 202), resp.text

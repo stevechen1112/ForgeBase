@@ -36,9 +36,17 @@ def fetch_token() -> dict:
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
-# 38 sidebar routes (with basePath prefix in href)
+# Daily workspaces plus retained deep routes (with basePath prefix in href).
+# This intentionally exceeds the compact sidebar: deep routes remain reachable
+# from their workspace hubs and still need user-facing copy QA.
 SIDEBAR_ROUTES = [
     "/dashboard",
+    "/dashboard/buyers",
+    "/dashboard/content",
+    "/dashboard/content/locales",
+    "/dashboard/growth",
+    "/dashboard/replies",
+    "/dashboard/support",
     "/dashboard/tasks",
     "/dashboard/outcomes",
     "/dashboard/rfqs/my",
@@ -69,7 +77,6 @@ SIDEBAR_ROUTES = [
     "/dashboard/users",
     "/dashboard/settings/site-profile",
     "/dashboard/integrations",
-    "/dashboard/settings/billing",
 ]
 
 STATIC_SUB_ROUTES = [
@@ -118,10 +125,13 @@ JARGON_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("編輯摘要", re.compile(r"編輯摘要")),
     ("intent_stage", re.compile(r"Intent Stage|intent stage", re.I)),
     ("cta_key_en", re.compile(r"CTA Key", re.I)),
+    ("legacy_starter", re.compile(r"\bStarter\b", re.I)),
+    ("legacy_professional", re.compile(r"\bProfessional\b", re.I)),
+    ("legacy_billing", re.compile(r"\bBilling\b", re.I)),
+    ("legacy_phase", re.compile(r"\bPhase\s*[12]\b", re.I)),
 ]
 
 ALLOWLIST_SUBSTRINGS = [
-    "Professional",  # plan name
     "RFQ",
     "English",
     "Deutsch",

@@ -5,13 +5,15 @@
 | 服務 | 說明 | 對外路徑 |
 |---|---|---|
 | `caddy` | 反向代理＋自動 Let's Encrypt HTTPS | 80 / 443 |
-| `web` | Next.js 前台 | `https://172.233.64.5/` |
-| `admin` | Next.js 後台（basePath=/backend） | `https://172.233.64.5/backend` |
-| `api` | FastAPI（uvicorn ×2 workers） | `https://172.233.64.5/api/v1`、`/uploads`、`/health` |
+| `marketing` | ForgeBase 產品官網 | `https://pcbrm.tw/` |
+| `web` | NorthForge 參考站 | `https://pcbrm.tw/northforge-tools/` |
+| `templates` | 產業範本展示站 | `https://pcbrm.tw/templates/` |
+| `admin` | Next.js 後台（basePath=/backend） | `https://pcbrm.tw/backend` |
+| `api` | FastAPI（單 worker，避免內建排程重複執行） | `https://pcbrm.tw/api/v1`、`/uploads`、`/health` |
 | `db` | PostgreSQL 16（僅容器內網，不對外開 port） | — |
 | `migrate` | 一次性 alembic upgrade head（api 啟動前自動跑） | — |
 
-> 正式環境目前沒有網域，以 `https://172.233.64.5` 提供服務。`deploy/Caddyfile` 會透過 Let's Encrypt shortlived profile 自動申請及更新公開 IP 憑證；公開 HTTP 會永久導向 HTTPS，僅保留主機內部的 HTTP 健康檢查入口。
+> 正式網域為 `https://pcbrm.tw`；`deploy/Caddyfile` 由 Caddy 自動申請及更新憑證。公開 HTTP 會永久導向 HTTPS，僅保留主機內部的 HTTP 健康檢查入口。
 
 ---
 
@@ -52,8 +54,8 @@ nano .env
 | 變數 | 填法 |
 |---|---|
 | `PROTOCOL` | `https` |
-| `DOMAIN` | 正式伺服器 IP，例如 `172.233.64.5` |
-| `APEX_DOMAIN` | IP 模式填與 `DOMAIN` 相同的值 |
+| `DOMAIN` | `pcbrm.tw` |
+| `APEX_DOMAIN` | `pcbrm.tw` |
 | `POSTGRES_PASSWORD` | 強密碼 |
 | `REVALIDATE_SECRET` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `NEXT_PUBLIC_TENANT_SLUG` | **預設留空**，見下方說明 |
@@ -101,13 +103,22 @@ docker compose -f docker-compose.prod.yml run --rm --no-deps \
 
 ## 6.（選填）匯入 demo 內容
 
-`demo/handtool-company/seed/import_demo_content.py` 是給本機開發用的（寫死 localhost API 與另一組密碼），要在正式機跑需先改腳本內的 `API_BASE`、`LOGIN_PASSWORD`，或在後台手動建立內容。
+`demo/handtool-company/seed/import_demo_content.py` 預設連到本機 API，但不再內含管理員密碼。執行前必須透過環境變數提供密碼；若要連到其他環境，再一併覆寫 API URL 與帳號：
+
+```bash
+FORGEBASE_API_BASE='http://localhost:8000/api/v1' \
+FORGEBASE_DEMO_IMPORT_EMAIL='admin@forgebase.com' \
+FORGEBASE_DEMO_IMPORT_PASSWORD='<至少 16 字元的密碼>' \
+python demo/handtool-company/seed/import_demo_content.py
+```
 
 ## 7. 驗證清單
 
-- [ ] `https://172.233.64.5/health` → `{"status":"ok"}` 且憑證可信任
-- [ ] `https://172.233.64.5/` 前台首頁正常
-- [ ] `https://172.233.64.5/backend` 後台登入頁正常，能登入
+- [ ] `https://pcbrm.tw/health/ready` → `{"status":"ready"}` 且憑證可信任
+- [ ] `https://pcbrm.tw/` ForgeBase 產品官網正常
+- [ ] `https://pcbrm.tw/northforge-tools/` NorthForge 參考站正常
+- [ ] `https://pcbrm.tw/templates/` 範本入口正常
+- [ ] `https://pcbrm.tw/backend/login` 後台登入頁正常，能登入
 - [ ] 後台商品／分類列表有資料（或為空但無錯誤）
 - [ ] 發布一篇內容 → 60 秒內前台更新（revalidate 生效）
 - [ ] AI 起草可用（OpenAI key 生效）
@@ -165,6 +176,26 @@ docker compose -f docker-compose.prod.yml run --rm migrate
 docker compose -f docker-compose.prod.yml exec db \
   pg_dump -U forgebase forgebase | gzip > backup-$(date +%F).sql.gz
 ```
+
+### 建議的安全部署流程
+
+正式更新改用下列腳本。它會先備份 PostgreSQL 與目前映像，再自動找出 `api`、`admin`、`web`、所有 `web_*` 租戶前台、`marketing` 與 `templates`，建置、執行 migration、啟動並逐一確認容器狀態，最後檢查 `/health/ready`：
+
+```bash
+bash deploy/safe-deploy.sh
+```
+
+推送到 `main` 後的 GitHub Actions production workflow 也必須呼叫同一支腳本；同步程式碼時會排除主機上的 `backups/`，避免 `rsync --delete` 刪除資料庫備份與映像 rollback manifest。
+
+若健康檢查未通過，腳本會保留 rollback manifest。先查看 API 與 migration logs，再使用輸出的 manifest 回復應用程式映像：
+
+```bash
+bash deploy/rollback.sh /absolute/path/to/backups/images-TIMESTAMP.manifest
+```
+
+rollback 不會自動倒回資料庫，避免未經確認覆寫正式資料。只有確認 migration 不向前相容時，才人工審核並使用同一時間戳的資料庫備份。
+
+背景工作可透過 `/api/v1/ops/operational-jobs/summary` 檢查，失敗工作可由租戶管理員或平台超級管理員使用 `/api/v1/ops/operational-jobs/{id}/retry` 重送。若設定 `OPS_ALERT_WEBHOOK_URL`，每五分鐘監控會在 failed/stale 工作超標時送出告警。
 
 ## 9. 注意事項
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
@@ -49,7 +49,9 @@ export default async function NewsPage({ params }: Props) {
         />
         <section className="py-16">
           <div className="mx-auto max-w-6xl px-6 space-y-4">
-            {copy.items.map((item) => (
+            {(copy.items ?? []).length === 0 ? (
+              <p className="border border-gray-300 bg-gray-50 p-6 text-sm text-gray-600">No published updates yet.</p>
+            ) : copy.items.map((item) => (
               <article key={item.title} className="border border-gray-300 bg-white p-6 transition-colors hover:border-primary/50 hover:bg-primary/5">
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">{item.date}</p>
                 <h2 className="mt-3 text-2xl font-black uppercase tracking-tight text-gray-900">{item.title}</h2>
@@ -77,7 +79,9 @@ export default async function NewsPage({ params }: Props) {
       </section>
       <section className="py-14">
         <div className="mx-auto max-w-5xl px-6 space-y-6">
-          {copy.items.map((item) => (
+          {(copy.items ?? []).length === 0 ? (
+            <p className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">尚無發布的消息。</p>
+          ) : copy.items.map((item) => (
             <article key={item.title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">{item.date}</p>
               <h2 className="mt-2 text-xl font-semibold text-gray-900">{item.title}</h2>

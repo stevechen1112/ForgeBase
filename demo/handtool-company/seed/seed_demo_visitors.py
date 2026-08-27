@@ -9,7 +9,8 @@ ForgeBase Demo — NorthForge Tools 訪客行為 Seed
   2. 先執行 import_demo_content.py
 
 執行：
-  python demo/handtool-company/seed/seed_demo_visitors.py
+  FORGEBASE_ADMIN_PASSWORD='<至少 16 字元的密碼>' \
+    python demo/handtool-company/seed/seed_demo_visitors.py
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ from datetime import datetime, timedelta, timezone
 
 API_BASE = os.getenv("FORGEBASE_API_BASE", "http://localhost:8000/api/v1")
 LOGIN_EMAIL = os.getenv("FORGEBASE_ADMIN_EMAIL", "admin@forgebase.com")
-LOGIN_PASSWORD = os.getenv("FORGEBASE_ADMIN_PASSWORD", "ForgeBase_Admin_2026!")
+LOGIN_PASSWORD = os.getenv("FORGEBASE_ADMIN_PASSWORD", "")
 # Public content list endpoints filter by X-Tenant-ID (JWT alone is not enough)
 TENANT_ID = os.getenv("FORGEBASE_TENANT_ID", "d3dad494-2b93-4993-a55b-6ca847450b9b")
 
@@ -272,6 +273,9 @@ def extract_items(resp):
 
 
 def main():
+    if not LOGIN_PASSWORD:
+        raise RuntimeError("Set FORGEBASE_ADMIN_PASSWORD before seeding demo visitors")
+
     print("=" * 60)
     print("NorthForge Tools — Demo Visitor Seed")
     print("=" * 60)

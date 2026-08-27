@@ -5,21 +5,22 @@
   GET /api/v1/tracking/funnel     — 流量→成交漏斗（§6.3）
   GET /api/v1/ops/task-queue      — 顧問「今日必處理」（§7.1）
 """
+import json
 import uuid
 from datetime import timedelta
 from typing import Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends
-from sqlmodel import select, col, func
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user
-from app.core.datetime import utcnow_naive
+from app.api.v1.deps import get_current_user, require_admin
+from app.core.datetime import isoformat_utc, utcnow_naive
 from app.db.session import get_session
+from app.models.operational_job import OperationalJob
 from app.models.page import Page
 from app.models.rfq_request import RFQRequest
-from app.models.tracking_session import TrackingSession
 from app.models.user import User
 from app.models.visitor import Visitor
 
@@ -56,6 +57,8 @@ _FACET_ACTIONS = {
 
 def _build_facet_tasks(feedback: dict) -> list[dict]:
     """把 outcome-feedback 中 lift >= 1.5 的 facet 轉成可執行任務。"""
+    if not feedback.get("statistically_actionable"):
+        return []
     tasks = []
     for f in feedback.get("facets") or []:
         lift = f.get("won_lift")
@@ -109,6 +112,7 @@ async def get_outcomes(
     tid = _.tenant_id
 
     def _scoped(q):
+        q = q.where(RFQRequest.is_test_data.is_(False))
         return q.where(RFQRequest.tenant_id == tid) if tid else q
 
     # 1. 本月 Qualified RFQ（與上月比較）
@@ -205,49 +209,74 @@ async def get_funnel(
     since = utcnow_naive() - timedelta(days=days)
     tid = _.tenant_id
 
-    sessions_q = select(TrackingSession).where(TrackingSession.start_time >= since)
+    # Use one acquisition cohort consistently: visitors first seen in-period.
+    # Counting sessions here would mix returning visitors into the denominator
+    # while the high-intent layer used first_seen, producing a non-cohort funnel.
+    sessions_q = select(Visitor.visitor_id).where(
+        Visitor.first_seen >= since,
+        Visitor.is_test_data.is_(False),
+    )
     if tid:
-        sessions_q = sessions_q.where(TrackingSession.tenant_id == tid)
+        sessions_q = sessions_q.where(Visitor.tenant_id == tid)
     traffic = await _count(db, sessions_q)
 
     hi_q = select(Visitor).where(
-        Visitor.last_seen >= since,
+        Visitor.first_seen >= since,
         Visitor.intent_stage.in_(["hot", "sales_ready"]),
+        Visitor.is_test_data.is_(False),
     )
     if tid:
         hi_q = hi_q.where(Visitor.tenant_id == tid)
     high_intent = await _count(db, hi_q)
 
     def _rfq_q(*conds):
-        q = select(RFQRequest).where(*conds)
+        q = select(RFQRequest).where(*conds, RFQRequest.is_test_data.is_(False))
         return q.where(RFQRequest.tenant_id == tid) if tid else q
 
     rfq_total = await _count(db, _rfq_q(RFQRequest.created_at >= since))
     qualified = await _count(db, _rfq_q(
         RFQRequest.created_at >= since, RFQRequest.quality_score >= QUALIFIED_THRESHOLD,
     ))
+    # The RFQ lifecycle is a separate cohort from anonymous visitors.  Keep its
+    # stages cumulative and nested so the displayed percentages cannot exceed
+    # 100% simply because a record has moved beyond a previous current status.
     quoted = await _count(db, _rfq_q(
-        RFQRequest.quote_sent_at.is_not(None), RFQRequest.quote_sent_at >= since,
+        RFQRequest.created_at >= since,
+        RFQRequest.quote_sent_at.is_not(None),
     ))
     negotiation = await _count(db, _rfq_q(
-        RFQRequest.status == "negotiation",
-        RFQRequest.updated_at >= since,
+        RFQRequest.created_at >= since,
+        RFQRequest.quote_sent_at.is_not(None),
+        RFQRequest.status.in_(["negotiation", "won"]),
     ))
     won = await _count(db, _rfq_q(
-        RFQRequest.status == "won", RFQRequest.closed_at >= since,
+        RFQRequest.created_at >= since,
+        RFQRequest.quote_sent_at.is_not(None),
+        RFQRequest.status == "won",
     ))
 
     layers = [
-        {"layer": "traffic", "label": "流量（瀏覽次數）", "count": traffic},
-        {"layer": "high_intent", "label": "高關注訪客", "count": high_intent},
-        {"layer": "rfq", "label": "詢價單", "count": rfq_total},
-        {"layer": "qualified_rfq", "label": "合格詢價", "count": qualified},
-        {"layer": "quoted", "label": "報價送出", "count": quoted},
-        {"layer": "negotiation", "label": "進入談判", "count": negotiation},
-        {"layer": "won", "label": "成交", "count": won},
+        {"layer": "traffic", "label": "流量（不重複訪客）", "count": traffic, "cohort": "visitor"},
+        {"layer": "high_intent", "label": "高關注訪客", "count": high_intent, "cohort": "visitor"},
+        {"layer": "rfq", "label": "詢價單", "count": rfq_total, "cohort": "rfq"},
+        {"layer": "qualified_rfq", "label": "合格詢價", "count": qualified, "cohort": "rfq"},
+        {"layer": "quoted", "label": "報價送出", "count": quoted, "cohort": "rfq"},
+        {"layer": "negotiation", "label": "談判或成交", "count": negotiation, "cohort": "rfq"},
+        {"layer": "won", "label": "成交", "count": won, "cohort": "rfq"},
     ]
     for i, layer in enumerate(layers):
-        prev = layers[i - 1]["count"] if i else None
+        previous = layers[i - 1] if i else None
+        # Only divide stages that are genuine nested sets.  Qualified RFQ is a
+        # quality branch, not the parent of quote-sent, so that transition is
+        # intentionally left blank as well.
+        comparable_transitions = {
+            ("traffic", "high_intent"),
+            ("rfq", "qualified_rfq"),
+            ("quoted", "negotiation"),
+            ("negotiation", "won"),
+        }
+        pair = (previous["layer"], layer["layer"]) if previous else None
+        prev = previous["count"] if pair in comparable_transitions else None
         layer["conversion_from_prev_pct"] = (
             round(layer["count"] / prev * 100, 1) if prev else None
         )
@@ -257,7 +286,13 @@ async def get_funnel(
     if rates:
         bottleneck = min(rates, key=lambda x: x[1])[0]
 
-    return {"days": days, "layers": layers, "bottleneck_layer": bottleneck}
+    return {
+        "days": days,
+        "cohort_start": since.isoformat(),
+        "methodology": "Traffic/high-intent use the visitor acquisition cohort first seen in period. RFQ and sales stages use a separate RFQ cohort created in period, so visitor-to-RFQ conversion is intentionally not calculated. Qualified RFQ is a quality branch; quote, negotiation and won are cumulative lifecycle stages based on quote_sent_at and current advanced status.",
+        "layers": layers,
+        "bottleneck_layer": bottleneck,
+    }
 
 
 # ── §7.1 顧問「今日必處理」任務佇列 ──────────────────────────────────────────
@@ -268,11 +303,29 @@ async def get_task_queue(
     _: User = Depends(get_current_user),
 ):
     tid = _.tenant_id
+    if not tid:
+        raise HTTPException(status_code=403, detail="Tenant context required")
     now = utcnow_naive()
 
     def _rfq_q(*conds):
-        q = select(RFQRequest).where(*conds)
-        return q.where(RFQRequest.tenant_id == tid) if tid else q
+        q = select(RFQRequest).where(
+            *conds,
+            RFQRequest.tenant_id == tid,
+            RFQRequest.is_spam.is_(False),
+            RFQRequest.merged_into_rfq_id.is_(None),
+            RFQRequest.is_test_data.is_(False),
+        )
+        if _.role == "sales":
+            q = q.where(RFQRequest.assigned_to == _.id)
+        return q
+
+    # 使用者真正要處理的下次跟進，而不是技術 SLA 名詞。
+    follow_up_rows = (await db.exec(_rfq_q(
+        RFQRequest.next_follow_up_at.is_not(None),
+        col(RFQRequest.next_follow_up_at) < now + timedelta(days=1),
+        RFQRequest.status.not_in(_CLOSED),
+    ).order_by(col(RFQRequest.next_follow_up_at).asc()).limit(10))).all()
+    overdue_follow_ups = [r for r in follow_up_rows if r.next_follow_up_at and r.next_follow_up_at < now]
 
     # SLA 逾期 RFQ（未結案）
     sla_rows = (await db.exec(_rfq_q(
@@ -308,12 +361,16 @@ async def get_task_queue(
     low_q_count = await _count(db, _rfq_q(
         RFQRequest.status == "new", RFQRequest.quality_score < 40,
     ))
+    low_q_rows = (await db.exec(_rfq_q(
+        RFQRequest.status == "new", RFQRequest.quality_score < 40,
+    ).order_by(col(RFQRequest.created_at).asc()).limit(5))).all()
 
     # 待核准內容（草稿頁；CF 串接後為主要核准來源）
     drafts_q = select(Page).where(Page.status == "draft")
     if tid:
         drafts_q = drafts_q.where(Page.tenant_id == tid)
     draft_count = await _count(db, drafts_q)
+    draft_rows = (await db.exec(drafts_q.order_by(col(Page.updated_at).asc()).limit(5))).all()
 
     # 成交迴路觀察：高 lift facet 自動產生行動任務（閉環）
     facet_tasks: list[dict] = []
@@ -325,8 +382,24 @@ async def get_task_queue(
 
     tasks = [
         {
+            "type": "rfq_follow_up_due",
+            "title": "24 小時內要跟進的詢價",
+            "count": len(follow_up_rows),
+            "severity": "high" if overdue_follow_ups else "medium" if follow_up_rows else "none",
+            "items": [
+                {
+                    "id": str(r.id),
+                    "rfq_number": r.rfq_number,
+                    "next_follow_up_at": isoformat_utc(r.next_follow_up_at),
+                    "overdue": bool(r.next_follow_up_at and r.next_follow_up_at < now),
+                }
+                for r in follow_up_rows
+            ],
+            "link": "/dashboard/rfqs?follow_up=due",
+        },
+        {
             "type": "sla_breached_rfq",
-            "title": "SLA 逾期 RFQ",
+            "title": "尚未回覆且已逾期",
             "count": len(sla_rows),
             "severity": "high" if sla_rows else "none",
             "items": [
@@ -361,7 +434,15 @@ async def get_task_queue(
             "title": "低品質 RFQ 待過濾",
             "count": low_q_count,
             "severity": "low" if low_q_count else "none",
-            "items": [],
+            "items": [
+                {
+                    "id": str(r.id),
+                    "rfq_number": r.rfq_number,
+                    "quality_score": r.quality_score,
+                    "sla_due_at": r.sla_due_at.isoformat() if r.sla_due_at else None,
+                }
+                for r in low_q_rows
+            ],
             "link": "/dashboard/rfqs",
         },
         {
@@ -369,7 +450,15 @@ async def get_task_queue(
             "title": "待核准內容（草稿）",
             "count": draft_count,
             "severity": "low" if draft_count else "none",
-            "items": [],
+            "items": [
+                {
+                    "id": str(page.id),
+                    "page_title": page.title,
+                    "slug": page.slug,
+                    "updated_at": page.updated_at.isoformat(),
+                }
+                for page in draft_rows
+            ],
             "link": "/dashboard/pages",
         },
         {
@@ -378,17 +467,19 @@ async def get_task_queue(
             "count": 0,
             "severity": "none",
             "available": False,
-            "reason": "需 ContentFlow 串接（Roadmap Phase 2 CF 端）後提供",
+            "reason": "需完成 ContentFlow 線上驗證資料串接後提供",
             "items": [],
             "link": None,
         },
         *facet_tasks,
     ]
+    if _.role == "sales":
+        tasks = [task for task in tasks if task["type"] in {"rfq_follow_up_due", "sla_breached_rfq", "low_quality_rfq"}]
     total_open = sum(t["count"] for t in tasks)
     return {"generated_at": now.isoformat(), "total_open": total_open, "tasks": tasks}
 
 
-# ── Phase 5：內容→成交歸因深化（串接 Phase 3–4，回答「哪種內容帶來會成交的單」）──
+# ── 內容→成交歸因（回答「哪種內容帶來會成交的單」）──
 
 def _source_path_segments(source_page: str) -> list[str]:
     """正規化 source_page 為 path segments，供精確 slug 比對（避免子字串誤命中）。"""
@@ -409,9 +500,8 @@ def match_source_to_page(
         return None
     best: Optional[dict] = None
     for slug, title, page_type in pages:
-        if slug and slug in segs:
-            if best is None or len(slug) > len(best["slug"]):
-                best = {"slug": slug, "title": title, "page_type": page_type}
+        if slug and slug in segs and (best is None or len(slug) > len(best["slug"])):
+            best = {"slug": slug, "title": title, "page_type": page_type}
     return best
 
 
@@ -429,6 +519,7 @@ async def get_content_attribution(
     rfq_q = select(RFQRequest).where(
         RFQRequest.created_at >= since,
         RFQRequest.source_page.is_not(None),
+        RFQRequest.is_test_data.is_(False),
     )
     if tid:
         rfq_q = rfq_q.where(RFQRequest.tenant_id == tid)
@@ -477,6 +568,84 @@ async def get_content_attribution(
     }
 
 
+@ops_router.get("/operational-jobs")
+async def list_operational_jobs(
+    status: str = "failed",
+    limit: int = 50,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
+):
+    """Operational visibility for durable RFQ/Chat side effects and retries."""
+    limit = min(max(limit, 1), 200)
+    query = (
+        select(OperationalJob)
+        .where(OperationalJob.status == status)
+        .order_by(col(OperationalJob.updated_at).desc())
+        .limit(limit)
+    )
+    if current_user.tenant_id:
+        query = query.where(OperationalJob.tenant_id == current_user.tenant_id)
+    jobs = (await db.exec(query)).all()
+    return {
+        "status": status,
+        "items": [
+            {
+                "id": str(job.id),
+                "job_type": job.job_type,
+                "attempts": job.attempts,
+                "max_attempts": job.max_attempts,
+                "available_at": job.available_at.isoformat(),
+                "last_error": job.last_error,
+                "updated_at": job.updated_at.isoformat(),
+            }
+            for job in jobs
+        ],
+    }
+
+
+@ops_router.get("/operational-jobs/summary")
+async def operational_jobs_summary(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
+):
+    now = utcnow_naive()
+    query = select(OperationalJob.status, func.count(OperationalJob.id)).group_by(OperationalJob.status)
+    if current_user.tenant_id:
+        query = query.where(OperationalJob.tenant_id == current_user.tenant_id)
+    counts = {str(status): int(count) for status, count in (await db.exec(query)).all()}
+    stale_query = select(func.count()).select_from(OperationalJob).where(
+        OperationalJob.status == "processing",
+        OperationalJob.locked_at <= now - timedelta(minutes=15),
+    )
+    if current_user.tenant_id:
+        stale_query = stale_query.where(OperationalJob.tenant_id == current_user.tenant_id)
+    stale = int((await db.exec(stale_query)).one())
+    return {"counts": counts, "stale_processing": stale, "healthy": counts.get("failed", 0) == 0 and stale == 0}
+
+
+@ops_router.post("/operational-jobs/{job_id}/retry")
+async def retry_operational_job(
+    job_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
+):
+    job = await db.get(OperationalJob, job_id)
+    if not job or (current_user.tenant_id and job.tenant_id != current_user.tenant_id):
+        raise HTTPException(status_code=404, detail="Operational job not found")
+    if job.status not in {"failed", "retry"}:
+        raise HTTPException(status_code=409, detail="Only failed or retrying jobs can be retried")
+    job.status = "retry"
+    job.attempts = 0
+    job.available_at = utcnow_naive()
+    job.locked_at = None
+    job.completed_at = None
+    job.last_error = None
+    job.updated_at = utcnow_naive()
+    db.add(job)
+    await db.commit()
+    return {"id": str(job.id), "status": job.status, "available_at": job.available_at.isoformat()}
+
+
 # ── Phase 5：成交原因回寫 intent（§8.3，observational — 只觀察、不自動改權重）──
 
 _FACET_FIELDS = (
@@ -495,38 +664,49 @@ async def get_intent_outcome_feedback(
     ⚠️ observational：僅呈現相對 lift，不自動修改評分權重（§8.3 長期迴路的第一步）。
     """
     tid = _.tenant_id
-    rfq_q = select(RFQRequest).where(RFQRequest.visitor_id.is_not(None))
+    rfq_q = select(RFQRequest).where(
+        RFQRequest.visitor_id.is_not(None),
+        RFQRequest.is_test_data.is_(False),
+    )
     if tid:
         rfq_q = rfq_q.where(RFQRequest.tenant_id == tid)
     rfqs = (await db.exec(rfq_q)).all()
     if not rfqs:
-        return {"sample": 0, "facets": [], "note": "尚無連結訪客的 RFQ，無法計算"}
+        return {
+            "sample": {"rfq_with_snapshot": 0, "won": 0, "legacy_without_snapshot": 0},
+            "statistically_actionable": False,
+            "minimum_sample": {"rfq": 10, "won": 3},
+            "facets": [],
+            "note": "尚無連結訪客的 RFQ，無法計算",
+        }
 
-    visitor_ids = list({r.visitor_id for r in rfqs})
-    v_q = select(Visitor).where(Visitor.visitor_id.in_(visitor_ids))
-    if tid:
-        v_q = v_q.where(Visitor.tenant_id == tid)
-    visitors = {v.visitor_id: v for v in (await db.exec(v_q)).all()}
-
-    won_visitors: list[Visitor] = []
-    all_visitors: list[Visitor] = []
+    won_snapshots: list[dict] = []
+    all_snapshots: list[dict] = []
+    legacy_without_snapshot = 0
     for r in rfqs:
-        v = visitors.get(r.visitor_id)
-        if v is None:
+        if not r.intent_snapshot_json:
+            legacy_without_snapshot += 1
             continue
-        all_visitors.append(v)
+        try:
+            snapshot = json.loads(r.intent_snapshot_json)
+            facets_snapshot = snapshot.get("facets") or {}
+        except (TypeError, json.JSONDecodeError):
+            legacy_without_snapshot += 1
+            continue
+        all_snapshots.append(facets_snapshot)
         if r.status == "won":
-            won_visitors.append(v)
+            won_snapshots.append(facets_snapshot)
 
-    def _avg(group: list[Visitor], field: str) -> float:
+    def _avg(group: list[dict], field: str) -> float:
         if not group:
             return 0.0
-        return sum(getattr(v, field, 0) or 0 for v in group) / len(group)
+        key = field.replace("facet_", "")
+        return sum(float(v.get(key, 0) or 0) for v in group) / len(group)
 
     facets = []
     for field in _FACET_FIELDS:
-        base = _avg(all_visitors, field)
-        won_avg = _avg(won_visitors, field)
+        base = _avg(all_snapshots, field)
+        won_avg = _avg(won_snapshots, field)
         lift = round(won_avg / base, 2) if base > 0 else None
         facets.append({
             "facet": field.replace("facet_", ""),
@@ -540,7 +720,9 @@ async def get_intent_outcome_feedback(
         })
 
     return {
-        "sample": {"rfq_with_visitor": len(all_visitors), "won": len(won_visitors)},
+        "sample": {"rfq_with_snapshot": len(all_snapshots), "won": len(won_snapshots), "legacy_without_snapshot": legacy_without_snapshot},
+        "statistically_actionable": len(all_snapshots) >= 10 and len(won_snapshots) >= 3,
+        "minimum_sample": {"rfq": 10, "won": 3},
         "facets": facets,
         "note": "觀察性數據（observational）：未自動調整評分權重；調整需經人工確認並記錄於評分規則。",
     }

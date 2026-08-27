@@ -1,10 +1,13 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 class ProductCreate(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     product_name: str = Field(max_length=100)
     slug: str = Field(max_length=100, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     model_number: str = Field(max_length=50)
@@ -24,6 +27,8 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     product_name: Optional[str] = Field(default=None, max_length=100)
     slug: Optional[str] = Field(default=None, max_length=100, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     model_number: Optional[str] = Field(default=None, max_length=50)
@@ -41,6 +46,13 @@ class ProductUpdate(BaseModel):
     published_at: Optional[datetime] = None
     is_featured: Optional[bool] = None
     display_priority: Optional[int] = None
+
+
+class ProductGalleryImage(BaseModel):
+    id: uuid.UUID
+    public_url: str
+    alt_text: Optional[str] = None
+    display_order: int = 0
 
 
 class ProductRead(BaseModel):
@@ -64,5 +76,15 @@ class ProductRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     published_at: Optional[datetime]
+    gallery_images: list[ProductGalleryImage] = Field(default_factory=list)
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "protected_namespaces": ()}
+
+
+class ProductGalleryReorderItem(BaseModel):
+    id: uuid.UUID
+    display_order: int = Field(ge=0, le=1000)
+
+
+class ProductGalleryReorder(BaseModel):
+    items: list[ProductGalleryReorderItem] = Field(default_factory=list, max_length=40)

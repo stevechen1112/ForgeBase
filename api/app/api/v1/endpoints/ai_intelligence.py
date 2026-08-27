@@ -8,8 +8,9 @@ Phase 3 AI Intelligence Endpoints
 3.3.2  GET  /content/products/{product_id}/recommend-relations
        GET  /content/applications/{app_id}/recommend-relations
 """
-import uuid
 import json
+import uuid
+from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,20 +18,24 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_content_editor, resolve_tenant_id
+from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
+from app.core.datetime import utcnow_naive
+from app.core.locale import normalize_locale, to_content_locale
 from app.db.session import get_session
 from app.models.application import Application
 from app.models.associations import ProductApplicationLink
 from app.models.cta import CTA
 from app.models.product import Product
 from app.models.rfq_request import RFQProductLink, RFQRequest
+from app.models.tenant import Tenant
 from app.models.tracking_event import TrackingEvent
 from app.models.user import User
 from app.models.visitor import Visitor
-from app.services.ai_rfq import analyze_rfq, generate_rfq_reply_draft
 from app.services.ai_recommend import recommend_cta_for_visitor
+from app.services.ai_rfq import analyze_rfq, generate_rfq_reply_draft
 from app.services.dynamic_cta import select_dynamic_cta
 from app.services.relation_recommender import recommend_relations
+from app.services.retirement_observability import record_retirement_usage
 
 # ── Routers (paths already include full prefix segment) ───────────────────────
 # Mounted directly on api_router so full path = /api/v1/<route defined here>
@@ -183,6 +188,7 @@ async def recommend_cta_endpoint(
     visitor_id: uuid.UUID,
     page_type: Optional[str] = Query(None),
     entity_id: Optional[str] = Query(None),
+    _feature: User = Depends(RequireFeature("dynamic_cta")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -254,6 +260,7 @@ async def dynamic_cta_endpoint(
     page_type: Optional[str] = Query(None),
     entity_id: Optional[str] = Query(None),
     entity_name: Optional[str] = Query(None),
+    locale: str = Query("en"),
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
 ):
@@ -261,6 +268,12 @@ async def dynamic_cta_endpoint(
     Return the optimal CTA for a visitor in the current page context.
     Public endpoint (no auth) — used by the frontend.
     """
+    if tenant_id is not None:
+        from app.services.capability_access import tenant_has_feature
+
+        tenant = await session.get(Tenant, tenant_id)
+        if not tenant or not tenant_has_feature(tenant, "dynamic_cta"):
+            raise HTTPException(status_code=403, detail="Dynamic CTA is not enabled for this tenant")
     intent_stage = "cold"
     intent_score = 0
     top_products: list[str] = []
@@ -303,6 +316,29 @@ async def dynamic_cta_endpoint(
         except Exception:
             pass
 
+    normalized_locale = normalize_locale(locale)
+    capped_cta_ids: set[str] = set()
+    if visitor_id:
+        try:
+            impressions = (
+                await session.exec(
+                    select(TrackingEvent.properties).where(
+                        TrackingEvent.visitor_id == uuid.UUID(visitor_id),
+                        TrackingEvent.tenant_id == tenant_id,
+                        TrackingEvent.event_name == "cta_impression",
+                        TrackingEvent.timestamp >= utcnow_naive() - timedelta(hours=24),
+                    )
+                )
+            ).all()
+            counts: dict[str, int] = {}
+            for raw in impressions:
+                cta_id = _parse_properties(raw).get("cta_id")
+                if cta_id:
+                    counts[str(cta_id)] = counts.get(str(cta_id), 0) + 1
+            capped_cta_ids = {cta_id for cta_id, count in counts.items() if count >= 3}
+        except (ValueError, TypeError):
+            pass
+
     ctas = [
         _cta_payload(cta)
         for cta in (
@@ -311,14 +347,20 @@ async def dynamic_cta_endpoint(
                 .where(
                     CTA.tenant_id == tenant_id,
                     CTA.status.in_(["active", "published"]),
+                    CTA.locale == to_content_locale(normalized_locale),
                 )
                 .limit(15)
             )
         ).all()
     ]
 
+    eligible_ctas = [cta for cta in ctas if cta["id"] not in capped_cta_ids]
     page_context = {"page_type": page_type, "entity_name": entity_name, "entity_id": entity_id}
-    return select_dynamic_cta(intent_stage, intent_score, ctas, page_context, top_products, facets=visitor_facets)
+    result = select_dynamic_cta(intent_stage, intent_score, eligible_ctas, page_context, top_products, facets=visitor_facets, locale=normalized_locale)
+    result["decision_id"] = str(uuid.uuid4())
+    result["locale"] = normalized_locale
+    result["frequency_capped_cta_ids"] = sorted(capped_cta_ids)
+    return result
 
 
 # ── 3.3.3  Relation Recommendations ──────────────────────────────────────────
@@ -326,6 +368,7 @@ async def dynamic_cta_endpoint(
 @content_ai_router.get("/content/products/{product_id}/recommend-relations")
 async def recommend_product_relations(
     product_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("ai_relation_recommendations")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -364,7 +407,7 @@ async def recommend_product_relations(
         ).all()
     ]
 
-    return await recommend_relations(
+    result = await recommend_relations(
         session,
         entity_type="product",
         entity_id=str(product_id),
@@ -373,11 +416,19 @@ async def recommend_product_relations(
         existing_relations=existing,
         candidate_info=candidates,
     )
+    await record_retirement_usage(
+        session,
+        candidate_key="relation_recommender",
+        event_name="recommend_product_relations",
+        tenant_id=current_user.tenant_id,
+    )
+    return result
 
 
 @content_ai_router.get("/content/applications/{app_id}/recommend-relations")
 async def recommend_application_relations(
     app_id: uuid.UUID,
+    _feature: User = Depends(RequireFeature("ai_relation_recommendations")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -416,7 +467,7 @@ async def recommend_application_relations(
         ).all()
     ]
 
-    return await recommend_relations(
+    result = await recommend_relations(
         session,
         entity_type="application",
         entity_id=str(app_id),
@@ -425,3 +476,10 @@ async def recommend_application_relations(
         existing_relations=existing,
         candidate_info=candidates,
     )
+    await record_retirement_usage(
+        session,
+        candidate_key="relation_recommender",
+        event_name="recommend_application_relations",
+        tenant_id=current_user.tenant_id,
+    )
+    return result

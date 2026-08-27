@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getPublishedComparisons } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";

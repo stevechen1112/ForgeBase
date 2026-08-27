@@ -8,10 +8,11 @@ import { FacetedFilterBar } from "@/components/ui/FacetedFilterBar";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { getCategoryHeroImage } from "@/lib/demoAssets";
-import { getMessageNamespace } from "@/lib/messages";
+import { withBasePath } from "@/lib/basePath";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
-import { buildTwitterMeta } from "@/lib/seo";
+import { buildCanonicalUrl, buildCoreLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
 
@@ -52,7 +53,7 @@ function isFaceted(filters: Record<string, string | string[] | undefined> | null
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { siteUrl: SITE_URL, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const { siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
   const { locale, categorySlug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const filters = (await searchParams) ?? {};
@@ -62,25 +63,26 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const faceted = isFaceted(filters);
   const title = category.seo_title ?? category.category_name;
   const description = category.seo_description ?? category.description ?? undefined;
-  const ogImage =
-    category.og_image_url ??
-    getCategoryHeroImage(category.slug, category.image_url, runtimeSiteConfig) ??
-    undefined;
+  const ogImage = category.og_image_url
+    ? withBasePath(category.og_image_url)
+    : getCategoryHeroImage(category.slug, category.image_url, runtimeSiteConfig) ?? undefined;
+  const actualLocale = category.locale || "en";
+  const canonical = buildCanonicalUrl(`/products/${category.slug}`, actualLocale, runtimeSiteConfig);
 
   return {
     title,
     description,
     // Canonical always points to the clean base URL — strips all filter/pagination params
-    alternates: { canonical: `${SITE_URL}/products/${category.slug}` },
+    alternates: { canonical, languages: buildCoreLocaleAlternates(`/products/${category.slug}`, runtimeSiteConfig) },
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}/products/${category.slug}`,
+      url: canonical,
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: title }] : undefined,
     },
     twitter: buildTwitterMeta({ title, description, imageUrl: ogImage ?? null }),
     // Faceted pages must not be indexed to avoid duplicate content (2.3.1)
-    robots: faceted ? { index: false, follow: true } : undefined,
+    robots: faceted || resolveLocale(actualLocale) !== resolvedLocale ? { index: false, follow: true } : undefined,
   };
 }
 

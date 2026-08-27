@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMessageNamespace } from "@/lib/messages";
 import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/ui/BrandMark";
 
 type HeaderMessages = {
   rfq: string;
@@ -85,9 +86,7 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* ─── Logo ─── */}
         <Link href="/" className="group flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-[11px] font-bold text-primary-foreground transition-all group-hover:scale-105 group-hover:shadow-md">
-            {siteConfig.logoMark}
-          </div>
+          <BrandMark name={siteName} mark={siteConfig.logoMark} logoUrl={siteConfig.logoUrl} className="transition-all group-hover:scale-105" />
           <div className="flex items-baseline gap-1.5">
             <span className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
               {siteName}
@@ -126,7 +125,21 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
         <div className="hidden items-center gap-2 md:flex">
           {/* Language switcher */}
           <Button variant="ghost" size="sm" asChild className="gap-1 text-muted-foreground hover:text-foreground px-2">
-            <NextLink href={localeSwitchHref} hrefLang={locale === "en" ? "zh-TW" : "en"}>
+            <NextLink
+              href={localeSwitchHref}
+              hrefLang={locale === "en" ? "zh-TW" : "en"}
+              onClick={(event) => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                  return;
+                }
+                // The locale provider lives in the root layout. A client-side locale
+                // transition would preserve that layout and leave its messages stale.
+                // Force a document navigation so the server rebuilds the provider for
+                // the destination locale (while NextLink still applies basePath).
+                event.preventDefault();
+                window.location.assign(event.currentTarget.href);
+              }}
+            >
               <Globe className="h-3.5 w-3.5" />
               {copy.langSwitch}
             </NextLink>
@@ -161,9 +174,7 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="right" className="w-[300px] p-0">
           <SheetHeader className="flex flex-row items-center gap-3 border-b px-5 py-4">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
-              {siteConfig.logoMark}
-            </div>
+            <BrandMark name={siteName} mark={siteConfig.logoMark} logoUrl={siteConfig.logoUrl} className="h-7 w-7 text-[10px]" imageClassName="h-7" />
             <SheetTitle className="text-sm font-semibold">{siteName}</SheetTitle>
           </SheetHeader>
 

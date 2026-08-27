@@ -12,9 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { PageBlocksEditor } from "@/components/content/PageBlocksEditor";
 import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
+const MANAGED_DELIVERY_MODE = process.env.NEXT_PUBLIC_MANAGED_DELIVERY_MODE !== "0";
 
 type Props = { initial?: Partial<Page>; id?: string; aiDraft?: boolean };
 
@@ -22,6 +24,7 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
   const router = useRouter();
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const canManagePageStructure = state.status === "authenticated" && ["admin", "owner"].includes(state.user.role) && !MANAGED_DELIVERY_MODE;
 
   const [form, setForm] = useState({
     page_type: initial?.page_type ?? "landing",
@@ -35,7 +38,7 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
     og_image_url: initial?.og_image_url ?? "",
     canonical_url: initial?.canonical_url ?? "",
     structured_data: initial?.structured_data ?? "",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     status: initial?.status ?? "draft",
     noindex: initial?.noindex ?? false,
   });
@@ -88,8 +91,17 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
     e.preventDefault(); setSaving(true); setError(null);
     try {
       if (id) {
-        await pagesApi.update(token, id, form);
-        if (form.slug && initialSlug.current && form.slug !== initialSlug.current) {
+        const updatePayload = canManagePageStructure
+          ? form
+          : {
+              title: form.title,
+              subtitle: form.subtitle,
+              body: form.body,
+              hero_image_url: form.hero_image_url,
+              status: form.status,
+            };
+        await pagesApi.update(token, id, updatePayload);
+        if (canManagePageStructure && form.slug && initialSlug.current && form.slug !== initialSlug.current) {
           try {
             await redirectsApi.create(token, {
               from_path: `/${initialSlug.current}`,
@@ -101,7 +113,10 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
             setRedirectCreated(true);
           } catch { /* non-critical */ }
         }
-      } else { await pagesApi.create(token, form); }
+      } else {
+        if (!canManagePageStructure) throw new Error("只有帳號擁有者或管理員可以新增頁面");
+        await pagesApi.create(token, form);
+      }
       router.push("/dashboard/pages");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
     finally { setSaving(false); }
@@ -112,26 +127,34 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       {redirectCreated && <Alert><AlertDescription>✓ 網址已更新，已自動建立永久轉址</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="page"
+          basePath="/dashboard/pages"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: v.updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">頁面設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>頁面類型</Label>
-              <select className={SELECT_CLS} {...f("page_type")}>
-                <option value="home">首頁</option>
-                <option value="about">關於我們</option>
-                <option value="contact">聯絡我們</option>
-                <option value="landing">活動頁</option>
-                <option value="campaign">行銷活動</option>
-                <option value="custom">自訂</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>網址路徑 *</Label>
-              <Input className="font-mono" {...f("slug")} required maxLength={200} />
-            </div>
-          </div>
+          {canManagePageStructure ? <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5"><Label>頁面類型</Label><select className={SELECT_CLS} {...f("page_type")}><option value="home">首頁</option><option value="about">關於我們</option><option value="contact">聯絡我們</option><option value="landing">活動頁</option><option value="campaign">行銷活動</option><option value="custom">自訂</option></select></div>
+              <div className="space-y-1.5"><Label>網址路徑 *</Label><Input className="font-mono" {...f("slug")} required maxLength={200} /></div>
+            </div> : <p className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">你可以更新這個既有頁面的文字、圖片與上架狀態；網址、語系及搜尋設定由 ForgeBase 團隊維護。</p>}
           <div className="space-y-1.5">
             <Label>頁面標題 *</Label>
             <Input value={form.title} onChange={(e) => handleTitleChange(e.target.value)} required maxLength={200} />
@@ -146,20 +169,23 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label>頁面內容</Label>
-            <Textarea
-              {...f("body")}
-              rows={14}
-              className="font-mono text-xs"
-              placeholder={'[{"type":"hero","eyebrow":"Industrial Components","title":"Precision Parts for Mission-Critical Programs","description":"Support different manufacturing verticals without rewriting the frontend.","primaryCta":{"label":"Start RFQ","href":"/rfq"}},{"type":"feature-grid","title":"Why Buyers Work With Us","items":[{"title":"Engineering Review","description":"Quote and specification alignment for custom builds."},{"title":"Production Control","description":"Repeat-order consistency across revisions."}]},{"type":"contact-form","title":"Talk to Sales","description":"Use the built-in ForgeBase contact flow."}]'}
-            />
-            <p className="text-xs text-muted-foreground">建議以區塊內容編輯首頁、關於我們、聯絡我們與落地頁。若填入純 HTML，前台也會正常顯示。</p>
+            <PageBlocksEditor value={form.body} onChange={(body) => setForm((current) => ({ ...current, body }))} />
           </div>
+          {!canManagePageStructure && <div className="space-y-1.5">
+            <Label>內容狀態</Label>
+            <select className={SELECT_CLS} {...f("status")}>
+              <option value="draft">草稿</option>
+              <option value="published">已上架</option>
+              <option value="archived">已封存</option>
+            </select>
+          </div>}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+      {canManagePageStructure && <details className="rounded-xl border bg-card shadow-sm">
+        <summary className="cursor-pointer px-6 py-5 text-base font-semibold">搜尋與發布設定</summary>
+        <div className="border-t px-6 py-5">
+          <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>搜尋標題</Label>
             <Input {...f("seo_title")} maxLength={70} />
@@ -176,17 +202,7 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
             <Label>標準網址</Label>
             <Input {...f("canonical_url")} type="url" />
           </div>
-          <div className="space-y-1.5">
-            <Label>結構化資料</Label>
-            <Textarea
-              value={form.structured_data}
-              onChange={(e) => setForm((prev) => ({ ...prev, structured_data: e.target.value }))}
-              rows={8}
-              className="font-mono text-xs"
-              placeholder='{"@context":"https://schema.org","@type":"WebPage"}'
-            />
-            <p className="text-xs text-muted-foreground">貼上結構化資料（JSON 格式），供搜尋引擎理解頁面內容。適用於活動頁、常見問題、文章或自訂頁面。</p>
-          </div>
+          {form.structured_data && <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">此頁已有由 ForgeBase 維護的搜尋引擎結構資料；一般內容修改不會覆蓋它。</p>}
           <div className="flex items-start justify-between rounded-lg border bg-muted/20 px-4 py-3">
             <div className="space-y-1 pr-4">
               <Label htmlFor="page-noindex">不索引</Label>
@@ -198,7 +214,7 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
               onCheckedChange={(checked) => setForm((prev) => ({ ...prev, noindex: checked }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
@@ -216,27 +232,9 @@ export default function PageContentForm({ initial, id, aiDraft }: Props) {
               </select>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {id && (
-        <LocaleSwitcher
-          entityType="page"
-          basePath="/dashboard/pages"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
+          </div>
+        </div>
+      </details>}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

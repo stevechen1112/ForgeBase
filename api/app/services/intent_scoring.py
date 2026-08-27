@@ -19,6 +19,7 @@ DEFAULT_BASE_SCORES: dict[str, int] = {
     "spec_download": 8,
     "certification_view": 3,
     "cta_click": 4,          # secondary default; primary handled below
+    "cta_impression": 0,
     "form_start": 5,
     "form_submit": 8,
     "rfq_start": 15,

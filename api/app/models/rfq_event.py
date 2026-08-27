@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
 from app.core.datetime import utcnow_naive
 
 
@@ -13,7 +15,9 @@ class RFQEvent(SQLModel, table=True):
     __tablename__ = "rfq_events"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    rfq_id: uuid.UUID = Field(foreign_key="rfq_requests.id", index=True)
+    rfq_id: uuid.UUID = Field(
+        foreign_key="rfq_requests.id", ondelete="CASCADE", index=True
+    )
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id")
 
     # Who performed the action (None = system/auto)

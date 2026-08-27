@@ -7,9 +7,8 @@ migration — every products query would 500 on a fresh DB.
 Revision ID: 0057_products_image_url
 Revises: 0056_translation_glossary
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0057_products_image_url"
 down_revision = "0056_translation_glossary"

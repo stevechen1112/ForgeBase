@@ -5,7 +5,7 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { StructuredData, buildBreadcrumbSchema, buildFAQSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";

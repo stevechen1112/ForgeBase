@@ -145,8 +145,16 @@ async def test_auto_reply_respects_tenant_toggle(http_client, two_tenants):
     sent_emails = []
 
     async def _fake_send(to, subject, html_body=None, text_body=None, from_name=None, **kw):
+        from app.services.email_service import EmailDeliveryResult
+
         sent_emails.append({"to": to, "subject": subject})
-        return True
+        return EmailDeliveryResult(
+            success=True,
+            delivered=True,
+            dry_run=False,
+            provider="test",
+            message_id="test-message",
+        )
 
     from app.services import rfq_auto_reply as auto_mod
     real_maybe = auto_mod.maybe_auto_reply
@@ -167,11 +175,21 @@ async def test_auto_reply_respects_tenant_toggle(http_client, two_tenants):
         assert r.status_code == 201, r.text
         rfq_b = r.json()["rfq_id"]
 
-    # endpoint 對兩個 tenant 都嘗試觸發（gate 在函式內）
-    assert endpoint_trigger.await_count == 2
+    # Endpoint now writes a durable outbox job for each tenant instead of a
+    # fire-and-forget coroutine; the per-tenant gate remains inside the worker.
+    assert endpoint_trigger.await_count == 0
+    async with factory() as session:
+        queued = (await session.exec(
+            sa_text(
+                "SELECT count(*) FROM operational_jobs "
+                "WHERE job_type = 'rfq_auto_reply' AND idempotency_key IN (:a, :b)"
+            ),
+            params={"a": f"rfq:{rfq_a}:auto-reply", "b": f"rfq:{rfq_b}:auto-reply"},
+        )).scalar()
+        assert queued == 2
 
     # 2) 真實函式直接驗證
-    with patch("app.services.email_service.send_email", new=AsyncMock(side_effect=_fake_send)):
+    with patch("app.services.email_service.send_email_result", new=AsyncMock(side_effect=_fake_send)):
         # tenant_a（未開啟）→ 不發
         assert await real_maybe(uuid.UUID(rfq_a), tenant_a.id) is False
         assert sent_emails == []
@@ -187,14 +205,14 @@ async def test_auto_reply_respects_tenant_toggle(http_client, two_tenants):
 
     # 事件與首回時間有記錄
     async with factory() as session:
-        rows = (await session.execute(
+        rows = (await session.exec(
             sa_text("SELECT event_type FROM rfq_events WHERE rfq_id = :rid"),
-            {"rid": rfq_b},
+            params={"rid": rfq_b},
         )).all()
         assert any(r[0] == "auto_reply_sent" for r in rows)
-        frt = (await session.execute(
+        frt = (await session.exec(
             sa_text("SELECT first_response_at FROM rfq_requests WHERE id = :rid"),
-            {"rid": rfq_b},
+            params={"rid": rfq_b},
         )).scalar()
         assert frt is not None
 

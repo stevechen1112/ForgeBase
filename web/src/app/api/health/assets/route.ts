@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getMissingAssets, readDemoAsset } from "@/lib/demoAssetRoute";
-import { getAllPublishedProducts, getPublishedCategories } from "@/lib/api";
-import { getProductImage } from "@/lib/demoAssets";
+import { getAllPublishedProducts, getPublishedApplications, getPublishedCategories } from "@/lib/api";
+import {
+  getApplicationImage,
+  getCategoryCardImage,
+  getHomeHeroImage,
+  getProductImage,
+} from "@/lib/demoAssets";
+import { basePath } from "@/lib/basePath";
 import { getRuntimeSiteConfig } from "@/lib/runtimeSiteConfig";
 
 export const dynamic = "force-dynamic";
@@ -38,20 +44,42 @@ export async function GET() {
   }
 
   // 2. 內容探針：查不到任何分類，多半是 NEXT_PUBLIC_TENANT_SLUG 與內容歸屬不符
-  const categories = await getPublishedCategories("en");
+  const [categories, applications] = await Promise.all([
+    getPublishedCategories("en"),
+    getPublishedApplications("en"),
+  ]);
   if (categories.length === 0) {
     problems.push(
       "API 回傳 0 筆已發布分類；若後台確實有內容，請檢查 NEXT_PUBLIC_TENANT_SLUG 是否與內容的 tenant 一致",
     );
   }
 
-  // 3. 執行期間實際發生過的缺檔
+  // 3. Public URL scope probe: a file may exist on disk while the browser URL
+  //    accidentally points at the domain root. Under a Next.js basePath that
+  //    request is handled by a different service and becomes a visible 404.
+  const publicAssetUrls = [
+    getHomeHeroImage(runtimeSiteConfig),
+    ...categories.map((category) => getCategoryCardImage(category, runtimeSiteConfig)),
+    ...applications.data.map((application) => getApplicationImage(application, runtimeSiteConfig)),
+  ].filter((url): url is string => Boolean(url));
+  const incorrectlyScopedAssets = basePath
+    ? publicAssetUrls.filter(
+        (url) => url.startsWith("/") && url !== basePath && !url.startsWith(`${basePath}/`),
+      )
+    : [];
+  if (incorrectlyScopedAssets.length > 0) {
+    problems.push(
+      `${incorrectlyScopedAssets.length} 個公開素材網址缺少 basePath ${basePath}`,
+    );
+  }
+
+  // 4. 執行期間實際發生過的缺檔
   const missingAssets = getMissingAssets();
   if (missingAssets.length > 0) {
     problems.push(`執行期間有 ${missingAssets.length} 個素材找不到實體檔`);
   }
 
-  // 4. 產品圖仍靠 assetManifest.productByKey 以型號對照，新增或改型號的產品會沒有圖。
+  // 5. 產品圖仍靠 assetManifest.productByKey 以型號對照，新增或改型號的產品會沒有圖。
   //    這屬於內容缺口而非系統故障，列為 warning，不讓容器變 unhealthy。
   const warnings: string[] = [];
   const products = await getAllPublishedProducts("en");
@@ -70,8 +98,10 @@ export async function GET() {
       status: healthy ? (warnings.length ? "ok-with-warnings" : "ok") : "degraded",
       assetsMounted,
       publishedCategories: categories.length,
+      publishedApplications: applications.data.length,
       publishedProducts: products.data.length,
       missingAssets,
+      incorrectlyScopedAssets,
       productsWithoutImage,
       problems,
       warnings,

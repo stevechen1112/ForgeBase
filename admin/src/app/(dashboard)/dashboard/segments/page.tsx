@@ -109,7 +109,7 @@ export default function SegmentsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">買家分群</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">依瀏覽行為定義買家分群，供後續跟進或廣告投放使用</p>
@@ -136,7 +136,7 @@ export default function SegmentsPage() {
             <Users className="h-4 w-4 text-primary" />分群列表（{segments.length}）
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="max-w-full overflow-x-auto p-0">
           {loading ? (
             <p className="py-10 text-center text-sm text-muted-foreground">載入中…</p>
           ) : segments.length === 0 ? (
@@ -146,7 +146,7 @@ export default function SegmentsPage() {
               <p className="mt-1 text-xs text-muted-foreground">透過 API 或後台設定建立分群規則，訪客將自動歸分</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">名稱</th>

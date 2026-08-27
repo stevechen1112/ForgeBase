@@ -1,7 +1,10 @@
 import uuid
 from datetime import datetime
+
+from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
+
 from app.core.datetime import utcnow_naive
-from sqlmodel import SQLModel, Field
 
 
 class AudienceTag(SQLModel, table=True):
@@ -10,9 +13,10 @@ class AudienceTag(SQLModel, table=True):
     e.g. "hydraulic-seal-interest", "high-intent-visitor"
     """
     __tablename__ = "audience_tags"
+    __table_args__ = (UniqueConstraint("name", name="uq_audience_tags_name"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(max_length=80, unique=True, index=True)
+    name: str = Field(max_length=80)
     description: str = Field(default="", max_length=200)
     # Rule type: manual vs automatic
     rule_type: str = Field(default="manual", max_length=20)
@@ -26,10 +30,10 @@ class VisitorTagLink(SQLModel, table=True):
     """M2M: Visitor ↔ AudienceTag"""
     __tablename__ = "visitor_tag_links"
     visitor_id: uuid.UUID = Field(
-        foreign_key="visitors.visitor_id", primary_key=True
+        foreign_key="visitors.visitor_id", ondelete="CASCADE", primary_key=True
     )
     tag_id: uuid.UUID = Field(
-        foreign_key="audience_tags.id", primary_key=True
+        foreign_key="audience_tags.id", ondelete="CASCADE", primary_key=True
     )
     tagged_at: datetime = Field(default_factory=utcnow_naive)
     tagged_by: str = Field(default="manual", max_length=20)

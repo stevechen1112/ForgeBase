@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class SiteProfile(SQLModel, table=True):
@@ -34,7 +36,7 @@ class SiteProfile(SQLModel, table=True):
 
     # ── SEO / URL ──
     site_url: str = Field(max_length=500, default="https://example.com")
-    default_locale: str = Field(max_length=5, default="en")
+    default_locale: str = Field(max_length=5, default="zh-TW")
 
     # ── Asset base ──
     asset_base: Optional[str] = Field(default=None, max_length=500)
@@ -51,6 +53,10 @@ class SiteProfile(SQLModel, table=True):
     footer_cta_label: Optional[str] = Field(default=None, max_length=120)
     footer_cta_href: Optional[str] = Field(default=None, max_length=500)
     asset_manifest_json: Optional[str] = Field(default=None)
+    # Per-tenant message tree merged over the frontend locale catalogue.
+    # This keeps a connected template genuinely white-label instead of only
+    # swapping its logo and colours while leaking NorthForge copy.
+    site_copy_json: Optional[str] = Field(default=None)
     # ── Intent Scoring Config (per-tenant overrides) ──
     intent_scoring_config_json: Optional[str] = Field(default=None)
     # ── Ops Config (per-tenant): sla_response_hours / auto_reply_* ──

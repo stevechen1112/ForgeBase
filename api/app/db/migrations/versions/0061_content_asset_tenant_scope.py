@@ -3,9 +3,8 @@
 Revision ID: 0061_content_asset_tenant_scope
 Revises: 0060_drop_global_slug_unique_indexes
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0061_content_asset_tenant_scope"
 down_revision = "0060_drop_global_slug_unique_indexes"

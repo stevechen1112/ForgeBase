@@ -4,8 +4,8 @@ Revision ID: 0030_rfq_events
 Revises: 0029_chat_admin_fields
 Create Date: 2026-04-11
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0030_rfq_events"
 down_revision = "0029_chat_admin_fields"

@@ -3,11 +3,12 @@ import { getPublishedCapabilities } from "@/lib/api";
 import { StructuredData, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
 type CommonMessages = {
   home: string;
@@ -32,8 +33,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  resolveLocale(locale);
-  return getMessageNamespace<CapabilitiesPageMessages>("capabilities").then((copy) => copy.metadata);
+  const resolvedLocale = resolveLocale(locale);
+  const [{ siteConfig }, copy] = await Promise.all([getRuntimeSiteContext(), getMessageNamespace<CapabilitiesPageMessages>("capabilities")]);
+  return buildLocalizedMetadata(copy.metadata, "/capabilities", resolvedLocale, siteConfig);
 }
 
 export default async function CapabilitiesPage({ params }: Props) {

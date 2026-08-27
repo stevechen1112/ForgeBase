@@ -47,7 +47,6 @@ export type RegisterRequest = {
   password: string;
   full_name: string;
   company_name: string;
-  plan: string;
   registration_key?: string;
 };
 
@@ -56,23 +55,9 @@ export type RegisterResponse = TokenResponse & {
   tenant_slug: string;
 };
 
-export type CheckoutResult = {
-  subscription_id: string;
-  approve_url: string;
-};
-
-export type CurrentPlanResponse = {
-  plan: string;
-  display_name: string;
+export type CapabilityAccessResponse = {
+  product: "forgebase";
   features: Record<string, boolean>;
-  limits: {
-    max_products: number | null;
-    max_admins: number | null;
-  };
-  usage: {
-    products: number;
-    admins: number;
-  };
 };
 
 export const authApi = {
@@ -95,16 +80,7 @@ export const authApi = {
     apiClient.patch<TeamMember>(`/auth/team/${userId}`, payload, token),
 };
 
-export const subscriptionApi = {
-  getPlans: (token: string) =>
-    apiClient.get<Record<string, unknown>[]>("/subscription/plans", token),
-
+export const capabilityApi = {
   getCurrent: (token: string) =>
-    apiClient.get<CurrentPlanResponse>("/subscription/current", token),
-
-  checkout: (plan: string, token: string) =>
-    apiClient.post<CheckoutResult>("/subscription/checkout", { plan }, token),
-
-  cancel: (token: string) =>
-    apiClient.post<{ status: string }>("/subscription/cancel", {}, token),
+    apiClient.get<CapabilityAccessResponse>("/capabilities/access", token),
 };

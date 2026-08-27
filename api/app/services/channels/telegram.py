@@ -9,7 +9,6 @@ Usage:
     channel = TelegramChannel()
     await channel.send({"chat_id": "123456"}, "Hello!")
 """
-import hashlib
 import hmac
 import logging
 import os

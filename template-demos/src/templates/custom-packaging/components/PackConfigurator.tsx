@@ -1,0 +1,18 @@
+"use client";
+import { FormEvent,useMemo,useState } from "react";
+import { ArrowRight,CheckCircle2,PackageOpen,RotateCcw } from "lucide-react";
+import type { TemplateCTA } from "@/contracts/forgebase";
+import styles from "./Packaging.module.css";
+
+const stylesList=["Corrugated mailer","Folding carton","Rigid box"] as const;
+const materials=["Kraft corrugated","White paperboard","Wrapped rigid board"] as const;
+const prints=["Structural only","2 spot colors","CMYK exterior","Inside + outside"] as const;
+const quantities=["1,000","2,500","5,000","10,000+"] as const;
+export function PackConfigurator({submitCTA,compact=false}:{submitCTA:TemplateCTA;compact?:boolean}){
+ const [style,setStyle]=useState<(typeof stylesList)[number]>(stylesList[0]);const [material,setMaterial]=useState<(typeof materials)[number]>(materials[0]);const [print,setPrint]=useState<(typeof prints)[number]>(prints[1]);const [quantity,setQuantity]=useState<(typeof quantities)[number]>(quantities[1]);const [submitted,setSubmitted]=useState(false);
+ const sample=useMemo(()=>style==="Rigid box"?"White structure + printed wrap":print==="Structural only"?"Digital-cut white sample":"Printed color prototype",[style,print]);
+ function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setSubmitted(true)}
+ if(submitted)return <section className={styles.configSuccess} aria-live="polite"><CheckCircle2/><span>DEMO PACKAGING BRIEF</span><h2>The configuration stayed in this browser.</h2><p>No quote, sample, lead, contact record or email was created. A production site would submit approved fields into the governed ForgeBase workflow.</p><button type="button" onClick={()=>setSubmitted(false)}>Revise configuration</button></section>;
+ return <form className={compact?styles.configCompact:styles.configurator} onSubmit={submit}><header><div><span>PACK BUILDER / DEMO</span><h2>Build the decision, not just the box.</h2></div><button type="button" onClick={()=>{setStyle(stylesList[0]);setMaterial(materials[0]);setPrint(prints[1]);setQuantity(quantities[1])}}><RotateCcw/>Reset</button></header><div className={styles.configBody}><section className={styles.configControls}><Choice label="01 / Structure" options={stylesList} value={style} setValue={setStyle}/><Choice label="02 / Material" options={materials} value={material} setValue={setMaterial}/><Choice label="03 / Print" options={prints} value={print} setValue={setPrint}/><Choice label="04 / Volume" options={quantities} value={quantity} setValue={setQuantity}/></section><aside className={styles.packBrief}><PackageOpen/><span>LIVE PACKAGING BRIEF</span><h3>{style}</h3><dl><div><dt>Material</dt><dd>{material}</dd></div><div><dt>Print</dt><dd>{print}</dd></div><div><dt>Initial volume</dt><dd>{quantity} units</dd></div><div><dt>Suggested Demo sample</dt><dd>{sample}</dd></div></dl>{!compact&&<><label>Internal dimensions<input required name="dimensions" placeholder="L × W × H mm"/></label><label>Work email<input required type="email" name="email" placeholder="name@company.com"/></label><label>Product & pack-out<textarea required name="context" placeholder="Weight, fragility, components and distribution path"/></label></>}<button type="submit" data-cta-id={submitCTA.id} data-cta-intent={submitCTA.intent}>{submitCTA.label}<ArrowRight/></button><small>Illustrative configuration. No price or production feasibility is calculated.</small></aside></div></form>
+}
+function Choice<T extends string>({label,options,value,setValue}:{label:string;options:readonly T[];value:T;setValue:(value:T)=>void}){return <fieldset><legend>{label}</legend><div>{options.map(option=><button key={option} type="button" aria-pressed={value===option} onClick={()=>setValue(option)}>{option}</button>)}</div></fieldset>}

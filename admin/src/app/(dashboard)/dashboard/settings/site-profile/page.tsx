@@ -1,377 +1,171 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Save, RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw, Save, Upload } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
+import { assetsApi } from "@/lib/api/content";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { OpsConfigCard } from "@/components/settings/ops-config-card";
 
-type SiteProfileForm = {
+type SiteProfile = {
   brand_name: string;
   logo_mark: string;
+  logo_url: string;
   contact_email: string;
   contact_phone: string;
   site_url: string;
   default_locale: string;
-  theme_key: string;
-  layout_key: string;
-  asset_base: string;
-  demo_company_folder: string;
-  header_nav_json: string;
-  header_actions_json: string;
-  footer_sections_json: string;
-  footer_badges_json: string;
-  social_links_json: string;
-  footer_cta_title: string;
-  footer_cta_description: string;
-  footer_cta_label: string;
-  footer_cta_href: string;
-  asset_manifest_json: string;
 };
 
-const EMPTY_FORM: SiteProfileForm = {
+const EMPTY_PROFILE: SiteProfile = {
   brand_name: "",
   logo_mark: "",
+  logo_url: "",
   contact_email: "",
   contact_phone: "",
   site_url: "",
-  default_locale: "en",
-  theme_key: "cobalt",
-  layout_key: "classic",
-  asset_base: "",
-  demo_company_folder: "",
-  header_nav_json: "",
-  header_actions_json: "",
-  footer_sections_json: "",
-  footer_badges_json: "",
-  social_links_json: "",
-  footer_cta_title: "",
-  footer_cta_description: "",
-  footer_cta_label: "",
-  footer_cta_href: "",
-  asset_manifest_json: "",
+  default_locale: "zh-TW",
 };
 
-function normalizeForm(payload: Partial<Record<keyof SiteProfileForm, string | null | undefined>>): SiteProfileForm {
+function normalizeProfile(payload: Partial<SiteProfile>): SiteProfile {
   return {
     brand_name: payload.brand_name ?? "",
     logo_mark: payload.logo_mark ?? "",
+    logo_url: payload.logo_url ?? "",
     contact_email: payload.contact_email ?? "",
     contact_phone: payload.contact_phone ?? "",
     site_url: payload.site_url ?? "",
-    default_locale: payload.default_locale ?? "en",
-    theme_key: payload.theme_key ?? "cobalt",
-    layout_key: payload.layout_key ?? "classic",
-    asset_base: payload.asset_base ?? "",
-    demo_company_folder: payload.demo_company_folder ?? "",
-    header_nav_json: payload.header_nav_json ?? "",
-    header_actions_json: payload.header_actions_json ?? "",
-    footer_sections_json: payload.footer_sections_json ?? "",
-    footer_badges_json: payload.footer_badges_json ?? "",
-    social_links_json: payload.social_links_json ?? "",
-    footer_cta_title: payload.footer_cta_title ?? "",
-    footer_cta_description: payload.footer_cta_description ?? "",
-    footer_cta_label: payload.footer_cta_label ?? "",
-    footer_cta_href: payload.footer_cta_href ?? "",
-    asset_manifest_json: payload.asset_manifest_json ?? "",
+    default_locale: payload.default_locale ?? "zh-TW",
   };
-}
-
-function isValidJson(value: string): boolean {
-  if (!value.trim()) {
-    return true;
-  }
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-const JSON_FIELD_LABELS: Record<string, string> = {
-  header_nav_json: "Header 導覽",
-  header_actions_json: "頁首行動按鈕",
-  footer_sections_json: "Footer 區塊",
-  footer_badges_json: "Footer 標章",
-  social_links_json: "社群連結",
-  asset_manifest_json: "圖片資產設定",
-};
-
-/** 即時格式提示：非空且格式錯誤時顯示紅字，正確時顯示綠勾 */
-function JsonHint({ value }: { value: string }) {
-  if (!value.trim()) return null;
-  return isValidJson(value) ? (
-    <p className="text-xs text-green-600">JSON 格式正確 ✓</p>
-  ) : (
-    <p className="text-xs text-red-600">JSON 格式有誤：請檢查括號、引號與逗號（可多行貼上後再檢查）</p>
-  );
 }
 
 export default function SiteProfileSettingsPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
-  const [form, setForm] = useState<SiteProfileForm>(EMPTY_FORM);
+  const [profile, setProfile] = useState<SiteProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    if (!token) return;
+    setLoading(true); setError(null); setSuccess(null);
     try {
-      const response = await fetch(`${API_BASE}/site-profile`, {
-        headers: buildApiHeaders(token),
-      });
-      if (!response.ok) {
-        throw new Error(`載入失敗 (${response.status})`);
-      }
-      const data = (await response.json()) as Partial<Record<keyof SiteProfileForm, string | null>>;
-      setForm(normalizeForm(data));
-    } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : "載入網站設定失敗");
-    } finally {
-      setLoading(false);
-    }
+      const response = await fetch(`${API_BASE}/site-profile`, { headers: buildApiHeaders(token) });
+      if (!response.ok) throw new Error(`載入失敗 (${response.status})`);
+      setProfile(normalizeProfile(await response.json()));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "載入公司與網站資料失敗");
+    } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  function updateField<K extends keyof SiteProfileForm>(key: K, value: SiteProfileForm[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
-  async function handleSave() {
-    const jsonFields: Array<keyof SiteProfileForm> = [
-      "header_nav_json",
-      "header_actions_json",
-      "footer_sections_json",
-      "footer_badges_json",
-      "social_links_json",
-      "asset_manifest_json",
-    ];
-
-    const invalidField = jsonFields.find((field) => !isValidJson(form[field]));
-    if (invalidField) {
-      setError(`「${JSON_FIELD_LABELS[invalidField] ?? invalidField}」不是有效的 JSON 格式，請檢查括號、引號與逗號後再儲存。`);
-      setSuccess(null);
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
+  async function save() {
+    setSaving(true); setError(null); setSuccess(null);
     try {
       const response = await fetch(`${API_BASE}/site-profile`, {
         method: "PUT",
         headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          brand_name: profile.brand_name,
+          logo_mark: profile.logo_mark,
+          logo_url: profile.logo_url || null,
+          contact_email: profile.contact_email,
+          contact_phone: profile.contact_phone || null,
+          default_locale: profile.default_locale,
+        }),
       });
-      if (!response.ok) {
-        throw new Error(`儲存失敗 (${response.status})`);
-      }
-      const data = (await response.json()) as Partial<Record<keyof SiteProfileForm, string | null>>;
-      setForm(normalizeForm(data));
-      setSuccess("網站設定已更新。前台將在下一次 request / revalidate 後讀到新設定。\n");
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "儲存網站設定失敗");
-    } finally {
-      setSaving(false);
-    }
+      if (!response.ok) throw new Error(`儲存失敗 (${response.status})`);
+      setProfile(normalizeProfile(await response.json()));
+      setSuccess("公司與網站基本資料已更新。");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "儲存失敗");
+    } finally { setSaving(false); }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">網站外觀設定</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            管理品牌名稱、頁首／頁尾選單，以及產品與應用頁的圖示設定。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading || saving}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
-          </Button>
-          <Button size="sm" onClick={() => void handleSave()} disabled={loading || saving || !token}>
-            <Save className={`mr-2 h-4 w-4 ${saving ? "animate-pulse" : ""}`} />儲存設定
-          </Button>
-        </div>
+        <div><h1 className="text-2xl font-bold tracking-tight">公司與網站資料</h1><p className="mt-0.5 text-sm text-muted-foreground">維護客戶在網站上看到的品牌與聯絡資訊；版型、網域及技術整合由 ForgeBase 團隊管理。</p></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => void load()} disabled={loading || saving}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理</Button><Button size="sm" onClick={() => void save()} disabled={loading || saving || !token}><Save className="h-4 w-4" />{saving ? "儲存中…" : "儲存資料"}</Button></div>
       </div>
 
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {success ? (
-        <Alert>
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      ) : null}
+      {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+      {success && <Alert><AlertDescription>{success}</AlertDescription></Alert>}
 
       <Card>
-        <CardHeader>
-          <CardTitle>基礎品牌</CardTitle>
-          <CardDescription>這些欄位會直接影響前台品牌名稱、主題、聯絡資訊與資產基底路徑。</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle>公司基本資料</CardTitle><CardDescription>品牌名稱與聯絡方式會顯示於網站頁首、頁尾或聯絡區域。</CardDescription></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="brand_name">品牌名稱</Label>
-            <Input id="brand_name" value={form.brand_name} onChange={(e) => updateField("brand_name", e.target.value)} />
+          <div className="space-y-2"><Label htmlFor="brand_name">品牌名稱</Label><Input id="brand_name" value={profile.brand_name} onChange={(event) => setProfile((current) => ({ ...current, brand_name: event.target.value }))} maxLength={120} /></div>
+          <div className="space-y-2"><Label htmlFor="logo_mark">品牌縮寫</Label><Input id="logo_mark" value={profile.logo_mark} onChange={(event) => setProfile((current) => ({ ...current, logo_mark: event.target.value }))} maxLength={10} /></div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Logo 圖片</Label>
+            {profile.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.logo_url} alt={profile.brand_name || "Logo"} className="mb-2 h-16 w-auto rounded-md border bg-muted/30 object-contain p-1" />
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <Input value={profile.logo_url} onChange={(event) => setProfile((current) => ({ ...current, logo_url: event.target.value }))} placeholder="上傳後自動填入，或貼上圖片網址" />
+              <label className={`inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm ${uploadingLogo ? "pointer-events-none opacity-50" : ""}`}>
+                <Upload className="h-4 w-4" />{uploadingLogo ? "上傳中…" : "上傳 Logo"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  disabled={uploadingLogo}
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file || !token) return;
+                    setUploadingLogo(true); setError(null);
+                    try {
+                      const form = new FormData();
+                      form.append("file", file);
+                      const asset = await assetsApi.upload(token, form);
+                      setProfile((current) => ({ ...current, logo_url: asset.public_url }));
+                    } catch (cause) {
+                      setError(cause instanceof Error ? cause.message : "Logo 上傳失敗");
+                    } finally {
+                      setUploadingLogo(false);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">有 Logo 圖時，前台頁首會顯示圖片；沒有圖則繼續顯示縮寫。</p>
           </div>
+          <div className="space-y-2"><Label htmlFor="contact_email">聯絡 Email</Label><Input id="contact_email" type="email" value={profile.contact_email} onChange={(event) => setProfile((current) => ({ ...current, contact_email: event.target.value }))} /></div>
+          <div className="space-y-2"><Label htmlFor="contact_phone">聯絡電話</Label><Input id="contact_phone" value={profile.contact_phone} onChange={(event) => setProfile((current) => ({ ...current, contact_phone: event.target.value }))} /></div>
           <div className="space-y-2">
-            <Label htmlFor="logo_mark">Logo 縮寫</Label>
-            <Input id="logo_mark" value={form.logo_mark} onChange={(e) => updateField("logo_mark", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact_email">聯絡 Email</Label>
-            <Input id="contact_email" value={form.contact_email} onChange={(e) => updateField("contact_email", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact_phone">聯絡電話</Label>
-            <Input id="contact_phone" value={form.contact_phone} onChange={(e) => updateField("contact_phone", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="site_url">網站網址</Label>
-            <Input id="site_url" value={form.site_url} onChange={(e) => updateField("site_url", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="asset_base">資產基底路徑</Label>
-            <Input id="asset_base" value={form.asset_base} onChange={(e) => updateField("asset_base", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="default_locale">預設語系</Label>
+            <Label htmlFor="default_locale">內容來源語系</Label>
             <select
               id="default_locale"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={form.default_locale}
-              onChange={(e) => updateField("default_locale", e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+              value={profile.default_locale === "zh-tw" ? "zh-TW" : profile.default_locale}
+              onChange={(event) => setProfile((current) => ({ ...current, default_locale: event.target.value }))}
             >
-              <option value="en">en</option>
-              <option value="zh-TW">zh-TW</option>
+              <option value="zh-TW">繁體中文（日常維護正本）</option>
+              <option value="en">English</option>
             </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="theme_key">主題</Label>
-            <select
-              id="theme_key"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={form.theme_key}
-              onChange={(e) => updateField("theme_key", e.target.value)}
-            >
-              <option value="cobalt">鈷藍</option>
-              <option value="forest">森林綠</option>
-              <option value="slate">灰藍</option>
-              <option value="warm">暖色</option>
-              <option value="industrial">工業風</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="layout_key">版型</Label>
-            <select
-              id="layout_key"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={form.layout_key}
-              onChange={(e) => updateField("layout_key", e.target.value)}
-            >
-              <option value="classic">classic</option>
-              <option value="industrial">industrial</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="demo_company_folder">Demo 資產資料夾</Label>
-            <Input id="demo_company_folder" value={form.demo_company_folder} onChange={(e) => updateField("demo_company_folder", e.target.value)} />
+            <p className="text-xs text-muted-foreground">改了只影響之後的複製與起草，不會重跑全站已上架內容。</p>
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Header / Footer 結構</CardTitle>
-          <CardDescription>
-            以 JSON 定義導覽與頁尾。文字欄位使用多語物件格式 {'{"en":"English","zh-TW":"繁體中文"}'}；
-            每個欄位下方都有範例，留白時前台會回退到系統預設資訊架構。
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="header_nav_json">Header 導覽 JSON</Label>
-            <Textarea id="header_nav_json" rows={6} value={form.header_nav_json} onChange={(e) => updateField("header_nav_json", e.target.value)} placeholder='[{"href":"/products","label":{"en":"Products","zh-TW":"產品"}}]' />
-            <JsonHint value={form.header_nav_json} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="header_actions_json">頁首行動按鈕（JSON）</Label>
-            <Textarea id="header_actions_json" rows={5} value={form.header_actions_json} onChange={(e) => updateField("header_actions_json", e.target.value)} placeholder='[{"href":"/rfq","label":{"en":"Request Quote","zh-TW":"立即詢價"}}]' />
-            <JsonHint value={form.header_actions_json} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="footer_sections_json">Footer 區塊 JSON</Label>
-            <Textarea id="footer_sections_json" rows={8} value={form.footer_sections_json} onChange={(e) => updateField("footer_sections_json", e.target.value)} placeholder='[{"heading":{"en":"Products","zh-TW":"產品"},"items":[{"href":"/products","label":{"en":"Catalogue","zh-TW":"產品型錄"}}]}]' />
-            <JsonHint value={form.footer_sections_json} />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="footer_badges_json">Footer 標章 JSON</Label>
-              <Textarea id="footer_badges_json" rows={5} value={form.footer_badges_json} onChange={(e) => updateField("footer_badges_json", e.target.value)} placeholder='[{"en":"ISO 9001","zh-TW":"ISO 9001"}]' />
-              <JsonHint value={form.footer_badges_json} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="social_links_json">社群連結 JSON</Label>
-              <Textarea id="social_links_json" rows={5} value={form.social_links_json} onChange={(e) => updateField("social_links_json", e.target.value)} placeholder='[{"href":"https://linkedin.com/company/example","label":{"en":"LinkedIn","zh-TW":"LinkedIn"}}]' />
-              <JsonHint value={form.social_links_json} />
-            </div>
-          </div>
+        <CardHeader><CardTitle>目前網站</CardTitle><CardDescription>正式網址與公開語系由 ForgeBase 交付流程管理。如需修改，請使用「網站修改與支援」。</CardDescription></CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <div><p className="text-sm font-medium">{profile.site_url || "尚未設定正式網址"}</p></div>
+          {profile.site_url && <Button asChild variant="outline"><a href={profile.site_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />查看公開網站</a></Button>}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>頁尾行動按鈕與圖片資產</CardTitle>
-          <CardDescription>圖片資產設定會覆蓋首頁主圖、產品分類、應用頁與產品圖片等預設素材。</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="footer_cta_title">頁尾行動區標題</Label>
-              <Input id="footer_cta_title" value={form.footer_cta_title} onChange={(e) => updateField("footer_cta_title", e.target.value)} placeholder='{"en":"Ready to start?","zh-TW":"準備開始了嗎？"}' />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="footer_cta_label">頁尾按鈕文案</Label>
-              <Input id="footer_cta_label" value={form.footer_cta_label} onChange={(e) => updateField("footer_cta_label", e.target.value)} placeholder='{"en":"Talk to Sales","zh-TW":"聯絡業務"}' />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="footer_cta_description">頁尾行動區說明</Label>
-              <Input id="footer_cta_description" value={form.footer_cta_description} onChange={(e) => updateField("footer_cta_description", e.target.value)} placeholder='{"en":"Get a tailored response within 1 business day.","zh-TW":"1 個工作天內取得回覆。"}' />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="footer_cta_href">頁尾按鈕連結</Label>
-              <Input id="footer_cta_href" value={form.footer_cta_href} onChange={(e) => updateField("footer_cta_href", e.target.value)} placeholder="/contact" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="asset_manifest_json">圖片資產設定（JSON）</Label>
-            <Textarea id="asset_manifest_json" rows={12} value={form.asset_manifest_json} onChange={(e) => updateField("asset_manifest_json", e.target.value)} placeholder='{"homeHero":"/uploads/tenant-a/home-hero.jpg","categoryBySlug":{"precision-casting":"/uploads/tenant-a/categories/casting.jpg"},"applicationBySlug":{"medical-components":"/uploads/tenant-a/apps/medical.jpg"},"productByKey":{"MC-1001":"/uploads/tenant-a/products/mc-1001.jpg"}}' />
-            <JsonHint value={form.asset_manifest_json} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <OpsConfigCard />
     </div>
   );
 }

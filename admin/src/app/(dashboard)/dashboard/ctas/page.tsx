@@ -42,7 +42,7 @@ export default function CTAsListPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">行動按鈕</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理「詢價」「下載」等按鈕，依買家關注程度顯示合適入口</p>

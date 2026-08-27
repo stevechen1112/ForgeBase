@@ -119,7 +119,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">團隊成員管理</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">管理團隊帳號、角色權限與存取設定</p>

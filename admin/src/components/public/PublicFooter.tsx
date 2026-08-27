@@ -16,9 +16,9 @@ export function PublicFooter() {
               <span className="font-semibold text-slate-800">ForgeBase</span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
-              專為外銷製造商設計的 RFQ Growth OS。
+              外銷製造業網站、產品介紹與詢價管理工具。
               <br />
-              讓官網不只好看，還能幫你接單。
+              目前採由團隊協助製作、交付後維護的方式。
             </p>
           </div>
 
@@ -29,8 +29,8 @@ export function PublicFooter() {
               <a href="#features" className="text-slate-400 hover:text-slate-600 transition-colors">
                 核心功能
               </a>
-              <a href="#pricing" className="text-slate-400 hover:text-slate-600 transition-colors">
-                方案定價
+              <a href="https://pcbrm.tw/apply" className="text-slate-400 hover:text-slate-600 transition-colors">
+                申請導入評估
               </a>
               <a
                 href="/"
@@ -42,20 +42,18 @@ export function PublicFooter() {
               </a>
             </div>
             <div className="flex flex-col gap-3">
-              <p className="font-semibold text-slate-800 mb-1">公司</p>
-              <a href="mailto:steve@bace.ai" className="text-slate-400 hover:text-slate-600 transition-colors">
-                聯絡我們
-              </a>
-              <span className="text-slate-400">八策數位 AI</span>
+              <p className="font-semibold text-slate-800 mb-1">說明</p>
+              <a href="https://pcbrm.tw/privacy" className="text-slate-400 hover:text-slate-600 transition-colors">資料使用說明</a>
+              <a href="https://pcbrm.tw/terms" className="text-slate-400 hover:text-slate-600 transition-colors">產品測試說明</a>
             </div>
             <div className="flex flex-col gap-3">
               <p className="font-semibold text-slate-800 mb-1">帳戶</p>
               <Link href="/login" className="text-slate-400 hover:text-slate-600 transition-colors">
                 登入
               </Link>
-              <Link href="/register" className="text-slate-400 hover:text-slate-600 transition-colors">
-                免費試用
-              </Link>
+              <a href="https://pcbrm.tw/apply" className="text-slate-400 hover:text-slate-600 transition-colors">
+                申請導入
+              </a>
             </div>
           </div>
         </div>
@@ -63,7 +61,7 @@ export function PublicFooter() {
         {/* Bottom row */}
         <div className="border-t border-slate-100 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-400">
-            © 2026 ForgeBase by 八策數位 AI. All rights reserved.
+            © 2026 ForgeBase. All rights reserved.
           </p>
           <div className="flex items-center gap-1.5 text-sm text-slate-400">
             <Shield className="h-3 w-3" />

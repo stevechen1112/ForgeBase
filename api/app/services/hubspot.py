@@ -102,8 +102,10 @@ async def sync_contact_to_hubspot(contact_id: uuid.UUID) -> str | None:
                 return str(hs_id)
     except httpx.RequestError:
         logger.exception("sync_contact_to_hubspot request failed contact_id=%s", contact_id)
+        raise
     except Exception:
         logger.exception("sync_contact_to_hubspot unexpected error contact_id=%s", contact_id)
+        raise
     return None
 
 
@@ -122,6 +124,8 @@ async def sync_rfq_to_hubspot(rfq_id: uuid.UUID) -> str | None:
             rfq = await db.get(RFQRequest, rfq_id)
             if not rfq:
                 return None
+            if rfq.hubspot_deal_id:
+                return rfq.hubspot_deal_id
 
             # Ensure contact is synced first
             hs_contact_id: str | None = None
@@ -177,6 +181,8 @@ async def sync_rfq_to_hubspot(rfq_id: uuid.UUID) -> str | None:
                 return str(hs_deal_id)
     except httpx.RequestError:
         logger.exception("sync_rfq_to_hubspot request failed rfq_id=%s", rfq_id)
+        raise
     except Exception:
         logger.exception("sync_rfq_to_hubspot unexpected error rfq_id=%s", rfq_id)
+        raise
     return None

@@ -221,7 +221,7 @@ export default function SequenceDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{seq.name}</h1>
           <p className="text-sm text-muted-foreground">建立於 {fmt(seq.created_at)}</p>
@@ -309,8 +309,8 @@ export default function SequenceDetailPage() {
 
             <div className="rounded-lg border border-dashed p-4 space-y-3">
               <p className="text-sm font-medium">新增步驟</p>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="col-span-3 space-y-1">
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="space-y-1 sm:col-span-3">
                   <Label className="text-xs">主旨</Label>
                   <Input value={newStepSubject} onChange={(e) => setNewStepSubject(e.target.value)} placeholder="郵件主旨" />
                 </div>
@@ -358,11 +358,11 @@ export default function SequenceDetailPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="max-w-full overflow-x-auto p-0">
           {enrollments.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">此流程尚無買家加入</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">聯絡人 ID</th>

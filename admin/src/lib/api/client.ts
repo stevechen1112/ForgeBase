@@ -68,6 +68,28 @@ type RequestOptions = {
   token?: string;
 };
 
+export class ApiError extends Error {
+  status: number;
+  targetId?: string;
+
+  constructor(message: string, status: number, targetId?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.targetId = targetId;
+  }
+}
+
+function extractTargetId(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const detail = (payload as Record<string, unknown>).detail;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const targetId = (detail as Record<string, unknown>).target_id;
+    if (typeof targetId === "string" && targetId) return targetId;
+  }
+  return undefined;
+}
+
 function formatApiError(payload: unknown, fallback: string): string {
   if (typeof payload === "string" && payload.trim()) return payload;
   if (!payload || typeof payload !== "object") return fallback;
@@ -75,6 +97,10 @@ function formatApiError(payload: unknown, fallback: string): string {
   const record = payload as Record<string, unknown>;
   const detail = record.detail ?? record.error ?? record.message;
   if (typeof detail === "string" && detail.trim()) return detail;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const nested = detail as Record<string, unknown>;
+    if (typeof nested.message === "string" && nested.message.trim()) return nested.message;
+  }
   if (Array.isArray(detail)) {
     const messages = detail
       .map((item) => {
@@ -124,7 +150,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
     const err = await res.json().catch(() => null);
-    throw new Error(formatApiError(err, `操作失敗（HTTP ${res.status}）`));
+    throw new ApiError(
+      formatApiError(err, `操作失敗（HTTP ${res.status}）`),
+      res.status,
+      extractTargetId(err),
+    );
   }
 
   if (res.status === 204 || res.status === 205) {

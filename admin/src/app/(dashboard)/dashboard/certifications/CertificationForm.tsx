@@ -36,7 +36,7 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
     description: initial?.description ?? "",
     badge_image_url: initial?.badge_image_url ?? "",
     document_url: initial?.document_url ?? "",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     status: initial?.status ?? "draft",
   });
   const [saving, setSaving] = useState(false);
@@ -96,6 +96,27 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="certification"
+          basePath="/dashboard/certifications"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: (v as { updated_at?: string }).updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">認證基本資訊</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -107,7 +128,7 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
             <Label>網址路徑 *</Label>
             <Input className="font-mono" {...f("slug")} required maxLength={120} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>頒發機構</Label>
               <Input {...f("issuer")} maxLength={200} />
@@ -117,7 +138,7 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
               <Input className="font-mono" {...f("cert_number")} maxLength={100} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>頒發日期</Label>
               <Input type="date" {...f("issued_at")} />
@@ -139,7 +160,7 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
             <Label>文件網址</Label>
             <Input {...f("document_url")} type="url" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
@@ -159,25 +180,6 @@ export default function CertificationForm({ initial, id, aiDraft }: Props) {
           </div>
         </CardContent>
       </Card>
-
-      {id && (
-        <LocaleSwitcher
-          entityType="certification"
-          basePath="/dashboard/certifications"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

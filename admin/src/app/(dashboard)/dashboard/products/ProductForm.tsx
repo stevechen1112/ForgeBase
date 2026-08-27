@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RelationsPanel } from "@/components/ui/RelationsPanel";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { SpecRowsEditor } from "@/components/ui/SpecRowsEditor";
+import { ProductGalleryEditor } from "@/components/content/ProductGalleryEditor";
 import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
@@ -38,7 +39,8 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
     og_image_url: initial?.og_image_url ?? "",
     image_alt: initial?.image_alt ?? "",
     status: initial?.status ?? "draft",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
+    display_priority: String(initial?.display_priority ?? 0),
     publish_at: initial?.published_at
       ? new Date(initial.published_at as string).toISOString().slice(0, 16)
       : "",
@@ -151,8 +153,11 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
     }
     setSaving(true); setError(null);
     try {
-      const { publish_at, ...rest } = form;
-      const payload: Record<string, unknown> = { ...rest };
+      const { publish_at, display_priority, ...rest } = form;
+      const payload: Record<string, unknown> = {
+        ...rest,
+        display_priority: Number.parseInt(display_priority, 10) || 0,
+      };
       if (form.status === "scheduled" && publish_at) {
         payload.published_at = new Date(publish_at).toISOString();
       }
@@ -181,10 +186,31 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       {redirectCreated && <Alert><AlertDescription>✓ 網址已更新，已自動建立永久轉址</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="product"
+          basePath="/dashboard/products"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: v.updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過品名與說明後再上架。型號、規格數字與圖片已對齊，不會被翻譯改掉。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">產品資訊</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>商品名稱 *</Label>
               <Input value={form.product_name} onChange={(e) => handleNameChange(e.target.value)} required maxLength={120} />
@@ -237,7 +263,7 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
               </p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>狀態</Label>
               <select className={SELECT_CLS} {...f("status")}>
@@ -254,6 +280,11 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}
               </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>列表排序</Label>
+              <Input type="number" {...f("display_priority")} min={0} max={9999} />
+              <p className="text-xs text-muted-foreground">數字越大越前面。與「主推」可並用。</p>
             </div>
           </div>
 
@@ -314,27 +345,18 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
             <Label>分享預覽圖網址（可選）</Label>
             <Input {...f("og_image_url")} type="url" placeholder="空白則沿用主圖" />
           </div>
+          {id ? (
+            <ProductGalleryEditor
+              token={token}
+              productId={id}
+              mainImageUrl={form.image_url}
+              onMainImageChange={(url) => setForm((prev) => ({ ...prev, image_url: url, og_image_url: prev.og_image_url || url }))}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">儲存商品後即可上傳多張圖庫圖片。</p>
+          )}
         </CardContent>
       </Card>
-
-      {id && (
-        <LocaleSwitcher
-          entityType="product"
-          basePath="/dashboard/products"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞與規格後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Card>
         <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>

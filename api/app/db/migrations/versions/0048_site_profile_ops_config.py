@@ -12,9 +12,8 @@ Create Date: 2026-08-03
     "auto_reply_from_name": "..."     // T6 寄件人顯示名稱
   }
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0048_site_profile_ops_config"
 down_revision = "0047_rfq_sla_fields"

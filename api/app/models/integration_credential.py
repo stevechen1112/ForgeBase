@@ -13,11 +13,20 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
 class IntegrationCredential(SQLModel, table=True):
     __tablename__ = "integration_credentials"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "service",
+            "credential_key",
+            name="uq_integration_credential",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 

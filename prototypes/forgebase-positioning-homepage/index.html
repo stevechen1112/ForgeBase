@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ForgeBase 協助外銷製造業讓海外買主看懂產品、留下完整需求，再把較完整的詢價交給業務處理。" />
+  <title>ForgeBase｜製造業的海外客戶接待與詢價平台</title>
+  <style>
+    :root {
+      --ink: #122032;
+      --ink-2: #27364a;
+      --muted: #667386;
+      --paper: #f4f1ea;
+      --paper-2: #ebe6dc;
+      --white: #fff;
+      --line: rgba(18, 32, 50, .14);
+      --navy: #0d1c2f;
+      --blue: #1f6177;
+      --blue-soft: #dce9eb;
+      --orange: #d8692d;
+      --orange-soft: #f5dfd1;
+      --green: #23705c;
+      --green-soft: #dcece5;
+      --radius: 22px;
+      --shadow: 0 24px 70px rgba(16, 31, 50, .13);
+      --max: 1220px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.menu-open { overflow: hidden; }
+    img { display: block; width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .shell { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; }
+    .section { padding: 112px 0; }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 18px;
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 34px; height: 2px; background: currentColor; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { line-height: 1.18; letter-spacing: -.035em; }
+    h1 { margin-bottom: 26px; font-size: clamp(46px, 4.9vw, 72px); font-weight: 850; }
+    h2 { margin-bottom: 22px; font-size: clamp(34px, 4vw, 58px); }
+    h3 { font-size: 22px; }
+    .lead { max-width: 720px; color: var(--ink-2); font-size: clamp(18px, 1.7vw, 23px); }
+    .section-head { display: grid; grid-template-columns: 1.08fr .92fr; gap: 80px; align-items: end; margin-bottom: 58px; }
+    .section-head h2 { margin-bottom: 0; }
+    .section-head > p { margin: 0; color: var(--muted); font-size: 18px; }
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 52px;
+      padding: 0 23px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-weight: 800;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button-primary { color: #fff; background: var(--orange); }
+    .button-primary:hover { background: #bd5420; }
+    .button-secondary { color: var(--ink); border-color: rgba(18, 32, 50, .24); background: rgba(255,255,255,.65); }
+    .button-dark { color: #fff; background: var(--navy); }
+    .text-link { display: inline-flex; gap: 8px; align-items: center; color: var(--blue); font-weight: 800; }
+    .text-link::after { content: "→"; transition: transform .2s ease; }
+    .text-link:hover::after { transform: translateX(4px); }
+
+    .site-header {
+      position: fixed;
+      z-index: 50;
+      top: 0;
+      left: 0;
+      width: 100%;
+      border-bottom: 1px solid rgba(255,255,255,.13);
+      color: #fff;
+      background: rgba(10, 24, 40, .86);
+      backdrop-filter: blur(16px);
+    }
+    .nav { display: flex; min-height: 76px; justify-content: space-between; align-items: center; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 225px; }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 8px;
+      color: #fff;
+      background: var(--orange);
+      font-family: Georgia, serif;
+      font-weight: 900;
+    }
+    .brand-copy { line-height: 1.05; }
+    .brand-copy strong { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 19px; }
+    .brand-copy small { display: block; margin-top: 5px; color: rgba(255,255,255,.6); font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+    .nav-links { display: flex; align-items: center; gap: 30px; font-size: 14px; font-weight: 700; }
+    .nav-links a:not(.button) { color: rgba(255,255,255,.76); }
+    .nav-links a:not(.button):hover { color: #fff; }
+    .nav-toggle { display: none; width: 44px; height: 44px; border: 1px solid rgba(255,255,255,.24); border-radius: 8px; color: #fff; background: transparent; }
+
+    .hero {
+      position: relative;
+      display: flex;
+      min-height: 820px;
+      align-items: center;
+      overflow: hidden;
+      color: #fff;
+      background: var(--navy);
+    }
+    .hero::before {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background:
+        linear-gradient(90deg, rgba(8, 20, 34, .98) 0%, rgba(8, 20, 34, .88) 42%, rgba(8, 20, 34, .26) 72%, rgba(8, 20, 34, .15) 100%),
+        linear-gradient(0deg, rgba(8, 20, 34, .8), transparent 45%),
+        url("../../demo/precision-machining/assets/generated/home-hero-cnc-facility.png") center / cover no-repeat;
+    }
+    .hero::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      opacity: .06;
+      background-image: linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: linear-gradient(90deg, #000, transparent 70%);
+    }
+    .hero-inner { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 920px); align-items: center; padding: 140px 0 86px; }
+    .hero-copy { max-width: 920px; }
+    .hero h1 { font-size: clamp(58px, 6.2vw, 88px); }
+    .mobile-break { display: none; }
+    .hero h1 em { color: #f0a26d; font-family: Georgia, "Times New Roman", "Noto Serif TC", serif; font-style: normal; font-weight: 600; }
+    .hero .lead { max-width: 680px; color: rgba(255,255,255,.78); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero .button-secondary { color: #fff; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.06); }
+    .hero-notes { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 30px 0 0; padding: 0; list-style: none; color: rgba(255,255,255,.68); font-size: 13px; font-weight: 700; }
+    .hero-notes li::before { content: "✓"; margin-right: 7px; color: #f0a26d; }
+    .handoff-board {
+      position: relative;
+      align-self: end;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,.21);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(12, 28, 46, .84);
+      box-shadow: 0 40px 90px rgba(0,0,0,.32);
+      backdrop-filter: blur(18px);
+    }
+    .board-top { display: flex; justify-content: space-between; align-items: center; padding: 17px 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
+    .board-dots { display: flex; gap: 6px; }
+    .board-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.28); }
+    .board-top span { color: rgba(255,255,255,.58); font-size: 11px; letter-spacing: .1em; }
+    .board-body { padding: 20px; }
+    .board-kicker { margin-bottom: 15px; color: rgba(255,255,255,.54); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+    .journey-stack { display: grid; gap: 11px; }
+    .journey-card { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid rgba(255,255,255,.11); border-radius: 10px; background: rgba(255,255,255,.055); }
+    .journey-card.active { border-color: rgba(240,162,109,.5); background: rgba(216,105,45,.13); }
+    .journey-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 8px; color: #fff; background: rgba(255,255,255,.11); font-size: 12px; font-weight: 900; }
+    .journey-card strong { display: block; color: #fff; font-size: 14px; }
+    .journey-card small { display: block; color: rgba(255,255,255,.58); font-size: 11px; }
+    .journey-status { color: #f2b38b; font-size: 11px; font-weight: 800; }
+    .board-result { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.64); font-size: 12px; }
+    .board-result strong { color: #fff; font-size: 15px; }
+
+    .role-strip { position: relative; z-index: 3; margin-top: -38px; }
+    .role-panel { display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); border-radius: 14px; overflow: hidden; color: #fff; background: #fff; box-shadow: var(--shadow); }
+    .role-main { padding: 28px 30px; background: var(--orange); }
+    .role-main small { display: block; margin-bottom: 5px; opacity: .75; font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+    .role-main strong { font-size: 20px; line-height: 1.3; }
+    .role-item { padding: 26px 25px; border-right: 1px solid var(--line); color: var(--ink); }
+    .role-item:last-child { border: 0; }
+    .role-item b { display: block; margin-bottom: 5px; color: var(--orange); font-family: Georgia, serif; font-size: 24px; }
+    .role-item span { color: var(--muted); font-size: 13px; }
+
+    .problem-grid { display: grid; grid-template-columns: 1.02fr .98fr; gap: 44px; }
+    .problem-photo { position: relative; min-height: 660px; border-radius: var(--radius); overflow: hidden; }
+    .problem-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .problem-quote { position: absolute; right: 22px; bottom: 22px; left: 22px; padding: 27px; border-radius: 14px; color: #fff; background: rgba(11, 27, 45, .91); backdrop-filter: blur(12px); }
+    .problem-quote strong { display: block; margin-bottom: 8px; font-family: Georgia, "Times New Roman", serif; font-size: 25px; line-height: 1.3; }
+    .problem-quote span { color: rgba(255,255,255,.68); font-size: 14px; }
+    .problem-list { display: grid; align-content: center; }
+    .problem-item { display: grid; grid-template-columns: 56px 1fr; gap: 22px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+    .problem-item:first-child { padding-top: 0; }
+    .problem-item:last-child { border-bottom: 0; }
+    .problem-no { display: grid; width: 50px; height: 50px; place-items: center; border: 1px solid rgba(216,105,45,.35); border-radius: 50%; color: var(--orange); font-family: Georgia, serif; font-size: 18px; }
+    .problem-item h3 { margin-bottom: 9px; }
+    .problem-item p { margin: 0; color: var(--muted); }
+
+    .journey-section { position: relative; overflow: hidden; color: #fff; background: var(--navy); }
+    .journey-section::after { position: absolute; top: -200px; right: -200px; width: 560px; height: 560px; border: 1px solid rgba(255,255,255,.08); border-radius: 50%; content: ""; box-shadow: 0 0 0 90px rgba(255,255,255,.025), 0 0 0 180px rgba(255,255,255,.018); }
+    .journey-section .section-head { position: relative; z-index: 2; }
+    .journey-section .section-head > p { color: rgba(255,255,255,.65); }
+    .journey-map { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid rgba(255,255,255,.15); border-radius: 18px; overflow: hidden; }
+    .map-step { position: relative; min-height: 270px; padding: 28px 22px; border-right: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.025); }
+    .map-step:last-child { border-right: 0; }
+    .map-step:not(.outside) { background: rgba(255,255,255,.055); }
+    .map-step:not(.outside)::before { position: absolute; top: 0; right: 0; left: 0; height: 4px; content: ""; background: var(--orange); }
+    .map-step b { display: block; margin-bottom: 55px; color: rgba(255,255,255,.35); font-family: Georgia, serif; font-size: 18px; }
+    .map-step strong { display: block; margin-bottom: 12px; font-size: 17px; }
+    .map-step p { margin: 0; color: rgba(255,255,255,.58); font-size: 13px; }
+    .map-step.outside { background: rgba(255,255,255,.015); }
+    .map-step.outside strong, .map-step.outside p { opacity: .58; }
+    .forge-range { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 24px; margin: 24px 0 0 calc(16.666% + 8px); padding: 17px 20px; border-left: 3px solid var(--orange); color: rgba(255,255,255,.7); background: rgba(255,255,255,.055); font-size: 14px; }
+    .forge-range strong { color: #fff; }
+
+    .two-sides { background: #fff; }
+    .features-section { background: #fff; }
+    .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .feature-card { position: relative; min-height: 250px; padding: 28px 26px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(216,105,45,.38); box-shadow: 0 18px 40px rgba(18,32,50,.08); }
+    .feature-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 46px; }
+    .feature-no { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 8px; color: #fff; background: var(--navy); font-family: Georgia, serif; font-size: 13px; }
+    .feature-status { padding: 5px 8px; border-radius: 4px; color: var(--green); background: var(--green-soft); font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+    .feature-status.test { color: #a74f23; background: var(--orange-soft); }
+    .feature-card h3 { margin-bottom: 12px; font-size: 20px; }
+    .feature-card p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .templates-showcase { color: #fff; background: #152438; }
+    .templates-showcase .section-head > p { color: rgba(255,255,255,.65); }
+    .templates-showcase .template-grid { margin-top: 0; }
+    .templates-showcase .template-card { min-height: 330px; border: 1px solid rgba(255,255,255,.12); background: #0d1b2d; }
+    .template-index { position: absolute; z-index: 3; top: 16px; left: 16px; display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; color: #fff; background: rgba(13,28,47,.82); font-family: Georgia, serif; font-size: 12px; backdrop-filter: blur(8px); }
+    .template-caption span { display: block; margin-top: 5px; color: rgba(255,255,255,.58); font-size: 11px; }
+    .templates-note { display: flex; gap: 12px; align-items: flex-start; margin-top: 26px; padding: 18px 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; color: rgba(255,255,255,.58); font-size: 12px; }
+    .templates-note b { flex: 0 0 auto; color: #f0a26d; }
+    .two-side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .side-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--paper); }
+    .side-copy { padding: 38px 40px 18px; }
+    .side-label { display: inline-flex; margin-bottom: 18px; padding: 6px 10px; border-radius: 4px; color: var(--blue); background: var(--blue-soft); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+    .side-copy p { color: var(--muted); }
+    .interface { min-height: 340px; margin: 12px 26px 26px; border: 1px solid rgba(18,32,50,.15); border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 18px 45px rgba(18,32,50,.09); }
+    .interface-bar { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-bottom: 1px solid var(--line); background: #f4f6f7; }
+    .interface-bar i { width: 7px; height: 7px; border-radius: 50%; background: #b8c0c6; }
+    .catalog-ui { display: grid; grid-template-columns: 110px 1fr; min-height: 305px; }
+    .catalog-nav { padding: 18px 13px; color: #fff; background: var(--navy); font-size: 10px; }
+    .catalog-nav strong { display: block; margin-bottom: 19px; font-size: 12px; }
+    .catalog-nav span { display: block; margin: 12px 0; color: rgba(255,255,255,.55); }
+    .catalog-nav span.active { color: #fff; }
+    .catalog-main { padding: 18px; }
+    .catalog-main h4 { margin: 0 0 6px; font-size: 14px; }
+    .catalog-main > p { margin-bottom: 16px; color: var(--muted); font-size: 9px; }
+    .product-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .mini-product { padding: 8px; border: 1px solid var(--line); border-radius: 7px; }
+    .mini-photo { height: 66px; border-radius: 4px; background: linear-gradient(145deg, #dce2e3, #f7f8f8); }
+    .mini-product b { display: block; margin: 8px 0 4px; font-size: 8px; }
+    .mini-product small { display: block; color: var(--muted); font-size: 7px; }
+    .advisor-bubble { margin-top: 14px; padding: 10px 12px; border-radius: 7px; color: #fff; background: var(--blue); font-size: 8px; }
+    .rfq-ui { display: grid; grid-template-columns: 92px 1fr; min-height: 305px; }
+    .rfq-nav { padding: 16px 12px; background: #101c2d; }
+    .rfq-nav strong { display: block; margin-bottom: 18px; color: #fff; font-size: 11px; }
+    .rfq-nav i { display: block; height: 8px; margin: 12px 0; border-radius: 3px; background: rgba(255,255,255,.14); }
+    .rfq-nav i:nth-child(3) { background: var(--orange); }
+    .rfq-main { padding: 18px; }
+    .rfq-head { display: flex; justify-content: space-between; margin-bottom: 14px; }
+    .rfq-head b { font-size: 13px; }
+    .rfq-head span { padding: 4px 7px; border-radius: 9px; color: var(--green); background: var(--green-soft); font-size: 7px; font-weight: 800; }
+    .rfq-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .info-cell { padding: 9px; border: 1px solid var(--line); border-radius: 6px; }
+    .info-cell small { display: block; color: var(--muted); font-size: 7px; }
+    .info-cell strong { font-size: 9px; }
+    .timeline { margin-top: 13px; padding: 11px; border-radius: 7px; background: #f5f6f6; }
+    .timeline span { display: flex; gap: 8px; margin: 8px 0; color: var(--muted); font-size: 8px; }
+    .timeline span::before { content: ""; flex: 0 0 6px; width: 6px; height: 6px; margin-top: 3px; border-radius: 50%; background: var(--orange); }
+
+    .capability-section { background: var(--paper-2); }
+    .capability-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .capability-card { position: relative; padding: 46px; border-radius: var(--radius); background: #fff; }
+    .capability-card.advanced { color: #fff; background: var(--blue); }
+    .capability-card .tag { display: inline-flex; margin-bottom: 30px; padding: 7px 11px; border-radius: 4px; color: var(--green); background: var(--green-soft); font-size: 11px; font-weight: 900; letter-spacing: .1em; }
+    .capability-card.advanced .tag { color: #f5dfd1; background: rgba(255,255,255,.13); }
+    .capability-card h3 { max-width: 440px; font-size: 30px; }
+    .capability-card > p { color: var(--muted); }
+    .capability-card.advanced > p { color: rgba(255,255,255,.66); }
+    .capability-list { display: grid; gap: 0; margin: 28px 0 0; padding: 0; list-style: none; }
+    .capability-list li { display: grid; grid-template-columns: 33px 1fr; gap: 13px; padding: 17px 0; border-top: 1px solid var(--line); }
+    .advanced .capability-list li { border-color: rgba(255,255,255,.15); }
+    .capability-list b { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 50%; color: var(--orange); background: var(--orange-soft); font-size: 11px; }
+    .advanced .capability-list b { color: #fff; background: rgba(255,255,255,.14); }
+    .capability-list strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    .capability-list span { display: block; color: var(--muted); font-size: 13px; }
+    .advanced .capability-list span { color: rgba(255,255,255,.62); }
+    .capability-note { margin-top: 28px; padding: 14px 16px; border-left: 3px solid var(--orange); color: var(--muted); background: var(--paper); font-size: 13px; }
+    .advanced .capability-note { color: rgba(255,255,255,.68); background: rgba(255,255,255,.07); }
+
+    .delivery-layout { display: grid; grid-template-columns: .82fr 1.18fr; gap: 80px; align-items: start; }
+    .delivery-sticky { position: sticky; top: 110px; }
+    .delivery-sticky p { color: var(--muted); font-size: 18px; }
+    .delivery-list { counter-reset: steps; }
+    .delivery-item { position: relative; padding: 0 0 50px 86px; counter-increment: steps; }
+    .delivery-item:not(:last-child)::before { position: absolute; top: 58px; bottom: 6px; left: 27px; width: 1px; content: ""; background: var(--line); }
+    .delivery-item::after { position: absolute; top: 0; left: 0; display: grid; width: 56px; height: 56px; place-items: center; border: 1px solid var(--line); border-radius: 50%; content: "0" counter(steps); color: var(--orange); background: #fff; font-family: Georgia, serif; font-size: 15px; }
+    .delivery-item h3 { margin-bottom: 8px; }
+    .delivery-item p { margin: 0; color: var(--muted); }
+
+    .demo-section { color: #fff; background: #152438; }
+    .demo-feature { display: grid; grid-template-columns: 1.2fr .8fr; min-height: 570px; border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius); overflow: hidden; background: #0e1a2b; }
+    .demo-image { position: relative; min-height: 480px; }
+    .demo-image img { width: 100%; height: 100%; object-fit: cover; }
+    .demo-image::after { position: absolute; inset: 0; content: ""; background: linear-gradient(90deg, transparent 55%, #0e1a2b 100%); }
+    .demo-copy { display: flex; flex-direction: column; justify-content: center; padding: 52px; }
+    .demo-copy .eyebrow { margin-bottom: 28px; }
+    .demo-copy h3 { margin-bottom: 18px; font-size: 36px; }
+    .demo-copy p { color: rgba(255,255,255,.65); }
+    .demo-checks { margin: 20px 0 30px; padding: 0; list-style: none; }
+    .demo-checks li { margin: 10px 0; color: rgba(255,255,255,.78); font-size: 14px; }
+    .demo-checks li::before { content: "✓"; margin-right: 9px; color: #f0a26d; }
+    .demo-copy .demo-disclaimer { margin: -4px 0 24px; color: rgba(255,255,255,.48); font-size: 11px; line-height: 1.6; }
+    .template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 26px; }
+    .template-card { position: relative; min-height: 290px; border-radius: 14px; overflow: hidden; }
+    .template-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+    .template-card:hover img { transform: scale(1.035); }
+    .template-card::after { position: absolute; inset: 0; content: ""; background: linear-gradient(0deg, rgba(7,17,29,.92), transparent 68%); }
+    .template-caption { position: absolute; z-index: 2; right: 22px; bottom: 20px; left: 22px; }
+    .template-caption small { color: #f0a26d; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
+    .template-caption strong { display: block; margin-top: 4px; font-size: 19px; }
+
+    .principles { background: #fff; }
+    .principle-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .principle { padding: 34px 28px; border-right: 1px solid var(--line); }
+    .principle:last-child { border-right: 0; }
+    .principle b { display: block; margin-bottom: 35px; color: var(--orange); font-family: Georgia, serif; font-size: 22px; }
+    .principle strong { display: block; margin-bottom: 10px; font-size: 17px; }
+    .principle p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .final-cta { position: relative; overflow: hidden; padding: 100px 0; color: #fff; background: var(--orange); }
+    .final-cta::before { position: absolute; right: -80px; bottom: -200px; width: 600px; height: 600px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; content: ""; box-shadow: 0 0 0 80px rgba(255,255,255,.07), 0 0 0 160px rgba(255,255,255,.04); }
+    .cta-layout { position: relative; z-index: 2; display: grid; grid-template-columns: 1.25fr .75fr; gap: 60px; align-items: end; }
+    .final-cta h2 { margin-bottom: 16px; max-width: 790px; }
+    .final-cta p { max-width: 690px; margin-bottom: 0; color: rgba(255,255,255,.78); font-size: 18px; }
+    .cta-actions { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+    .final-cta .button-secondary { color: #fff; border-color: rgba(255,255,255,.5); background: transparent; }
+    .cta-note { margin-top: 14px; color: rgba(255,255,255,.66); font-size: 11px; text-align: center; }
+
+    footer { padding: 55px 0; color: rgba(255,255,255,.64); background: #091523; }
+    .footer-grid { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: end; }
+    footer .brand { color: #fff; }
+    .footer-copy p { margin: 16px 0 0; font-size: 13px; }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 20px; font-size: 12px; }
+    .footer-bottom { display: flex; justify-content: space-between; gap: 24px; margin-top: 35px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; }
+
+    @media (max-width: 1050px) {
+      .nav-links { gap: 18px; }
+      .nav-links a:nth-child(3), .nav-links a:nth-child(4) { display: none; }
+      .hero { min-height: auto; }
+      .hero-inner { grid-template-columns: 1fr; padding-top: 160px; }
+      .hero-copy { max-width: 780px; }
+      .handoff-board { width: min(100%, 620px); justify-self: end; }
+      .role-panel { grid-template-columns: 1fr 1fr; }
+      .journey-map { grid-template-columns: repeat(3, 1fr); }
+      .map-step { min-height: 230px; border-bottom: 1px solid rgba(255,255,255,.12); }
+      .forge-range { margin-left: 0; }
+      .problem-grid, .delivery-layout { gap: 45px; }
+      .demo-feature { grid-template-columns: 1fr; }
+      .demo-image::after { background: linear-gradient(0deg, #0e1a2b, transparent 42%); }
+    }
+
+    @media (max-width: 780px) {
+      .shell { width: min(calc(100% - 30px), var(--max)); }
+      .section { padding: 76px 0; }
+      .section-head, .problem-grid, .two-side-grid, .capability-grid, .delivery-layout, .cta-layout, .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .section-head { margin-bottom: 38px; }
+      h1 { font-size: clamp(42px, 12vw, 64px); }
+      .hero h1 { font-size: clamp(42px, 12vw, 56px); }
+      .mobile-break { display: block; }
+      h2 { font-size: clamp(32px, 9vw, 48px); }
+      .nav-toggle { display: block; }
+      .nav-links {
+        position: fixed;
+        top: 76px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 25px 20px;
+        background: rgba(9,21,35,.98);
+      }
+      .menu-open .nav-links { display: flex; }
+      .nav-links a, .nav-links a:nth-child(3), .nav-links a:nth-child(4) { display: block; padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,.1); }
+      .nav-links .button { margin-top: 14px; }
+      .hero::before { background: linear-gradient(90deg, rgba(8,20,34,.98), rgba(8,20,34,.72)), url("../../demo/precision-machining/assets/generated/home-hero-cnc-facility.png") 62% center / cover no-repeat; }
+      .hero-inner { padding-top: 135px; gap: 45px; }
+      .hero-actions .button { width: 100%; }
+      .handoff-board { width: 100%; }
+      .role-strip { margin-top: -18px; }
+      .role-panel { grid-template-columns: 1fr; }
+      .role-main, .role-item { padding: 22px; }
+      .problem-photo { min-height: 500px; }
+      .problem-item { grid-template-columns: 46px 1fr; gap: 15px; }
+      .problem-no { width: 44px; height: 44px; }
+      .journey-map { grid-template-columns: 1fr 1fr; }
+      .map-step { min-height: 225px; }
+      .catalog-ui, .rfq-ui { grid-template-columns: 78px 1fr; }
+      .capability-card { padding: 32px 25px; }
+      .delivery-sticky { position: static; }
+      .demo-copy { padding: 35px 25px 45px; }
+      .template-grid { grid-template-columns: 1fr; }
+      .template-card { min-height: 240px; }
+      .principle-grid { grid-template-columns: 1fr 1fr; }
+      .principle:nth-child(2) { border-right: 0; }
+      .principle:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .footer-links { justify-content: flex-start; }
+      .footer-bottom { flex-direction: column; }
+    }
+
+    @media (max-width: 480px) {
+      .brand-copy small { display: none; }
+      .journey-card { grid-template-columns: 36px 1fr; }
+      .journey-status { grid-column: 2; }
+      .journey-map, .principle-grid { grid-template-columns: 1fr; }
+      .map-step, .principle { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+      .principle { border-color: var(--line); }
+      .principle:last-child { border-bottom: 0; }
+      .product-row { grid-template-columns: 1fr 1fr; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .mini-product:last-child { display: none; }
+      .rfq-info { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="ForgeBase 首頁">
+        <span class="brand-mark">FB</span>
+        <span class="brand-copy"><strong>ForgeBase</strong><small>EXPORT CUSTOMER &amp; RFQ SYSTEM</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="開啟選單" aria-expanded="false">選單</button>
+      <nav class="nav-links" aria-label="主要導覽">
+        <a href="#why">為什麼需要</a>
+        <a href="#journey">如何接住需求</a>
+        <a href="#features">產品功能</a>
+        <a href="#templates">版型範本</a>
+        <a href="#demo">測試案例</a>
+        <a class="button button-primary" href="#contact">申請導入評估</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Your always-on export sales desk</p>
+          <h1>24 小時<br class="mobile-break" />全年無休的<br /><em>線上全能業務。</em></h1>
+          <p class="lead">從介紹產品、協助查找、回答基本問題，到收集詢價條件；ForgeBase 先完成前置接待，再把較完整的需求交給真人業務。</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#journey">看看完整接待流程</a>
+            <a class="button button-secondary" href="#demo">查看實際測試案例</a>
+          </div>
+          <ul class="hero-notes">
+            <li>團隊協助導入</li>
+            <li>交付後自行維護內容</li>
+            <li>目前開放產品測試</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="role-strip">
+      <div class="shell role-panel">
+        <div class="role-main"><small>FORGEBASE 的角色</small><strong>網站是入口，目標是把較完整的詢價交給業務。</strong></div>
+        <div class="role-item"><b>01</b><strong>讓買主看懂</strong><br /><span>找到產品與必要資料</span></div>
+        <div class="role-item"><b>02</b><strong>協助填清需求</strong><br /><span>產品、數量、用途、時程</span></div>
+        <div class="role-item"><b>03</b><strong>交給業務處理</strong><br /><span>分派、追蹤、留下紀錄</span></div>
+      </div>
+    </div>
+
+    <section class="section" id="why">
+      <div class="shell">
+        <div class="section-head">
+          <div><p class="eyebrow">The missing middle</p><h2>買主有興趣，卻還沒走到詢價。</h2></div>
+          <p>當產品不好找、資料不完整、表單問得太少，機會常在業務收到消息前就中斷。</p>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-photo">
+            <img src="../../assets/sales-page/generated/sales-manufacturer-office.jpg" alt="製造業外銷人員正在檢視公司產品網站" />
+            <div class="problem-quote"><strong>「網站有人看，不代表需求有被接回來。」</strong><span>ForgeBase 接住業務介入前的前置過程。</span></div>
+          </div>
+          <div class="problem-list">
+            <article class="problem-item"><span class="problem-no">01</span><div><h3>產品很多，買主不知道怎麼選</h3><p>用途、規格與認證分散，只能等待業務解釋。</p></div></article>
+            <article class="problem-item"><span class="problem-no">02</span><div><h3>收到詢問，資料仍不夠報價</h3><p>業務還要重新追問產品、數量、應用與時程。</p></div></article>
+            <article class="problem-item"><span class="problem-no">03</span><div><h3>詢價進來，後續卻散在個人信箱</h3><p>負責人、回覆與處理結果沒有共同紀錄。</p></div></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section journey-section" id="journey">
+      <div class="shell">
+        <div class="section-head">
+          <div><p class="eyebrow">One connected journey</p><h2>從進站到接手，不要斷在半路。</h2></div>
+          <p>ForgeBase 不取代業務，而是協助買主完成產品查找與需求填寫。</p>
+        </div>
+        <div class="journey-map">
+          <article class="map-step outside"><b>01</b><strong>先被看見</strong><p>展會、搜尋、轉介紹或推廣。</p></article>
+          <article class="map-step"><b>02</b><strong>看懂產品</strong><p>了解用途、能力與適用方向。</p></article>
+          <article class="map-step"><b>03</b><strong>找到品項</strong><p>查看規格、證書與常見問題。</p></article>
+          <article class="map-step"><b>04</b><strong>提出需求</strong><p>填寫數量、用途、時程與附件。</p></article>
+          <article class="map-step"><b>05</b><strong>業務接手</strong><p>分派負責人並設定下一步。</p></article>
+          <article class="map-step"><b>06</b><strong>留下結果</strong><p>記錄報價、成交或失單。</p></article>
+        </div>
+        <div class="forge-range"><span><strong>ForgeBase：</strong>接起買主進站後，到業務接手前的流程。</span><span>曝光與流量另行規劃</span></div>
+      </div>
+    </section>
+
+    <section class="section features-section" id="features">
+      <div class="shell">
+        <div class="section-head">
+          <div><p class="eyebrow">What ForgeBase does</p><h2>不只介紹公司，也把產品、詢價與業務處理接起來。</h2></div>
+          <p>從客戶進站、查找產品、提出需求，到公司接手處理，ForgeBase 提供一套完整功能。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">01</span><span class="feature-status">目前可用</span></div><h3>產品、分類與規格管理</h3><p>管理產品圖片、規格、下載文件、分類與多層產品資料。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">02</span><span class="feature-status">目前可用</span></div><h3>用途、能力與證書內容</h3><p>讓買主從應用情境、製造能力與品質資料了解公司。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">03</span><span class="feature-status">目前可用</span></div><h3>多語網站與內容維護</h3><p>依語系管理已確認的網站內容，交付後由公司自行更新。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">04</span><span class="feature-status">目前可用</span></div><h3>結構化 RFQ 詢價</h3><p>收集產品、數量、用途、時程、客製需求與附件。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">05</span><span class="feature-status">目前可用</span></div><h3>詢價工作台</h3><p>指派負責人、建立待辦、留下備註並追蹤處理進度。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">06</span><span class="feature-status test">進階測試</span></div><h3>訪客行為與關注意圖</h3><p>整理瀏覽、下載、互動與詢價前行為，協助判斷關注程度。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">07</span><span class="feature-status test">進階測試</span></div><h3>AI 產品顧問</h3><p>依已確認資料回答問題、協助找產品並引導完成詢價。</p></article>
+          <article class="feature-card"><div class="feature-top"><span class="feature-no">08</span><span class="feature-status test">進階測試</span></div><h3>商機與結果追蹤</h3><p>連結來源、詢價、報價、洽談、成交與失單結果。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section templates-showcase" id="templates">
+      <div class="shell">
+        <div class="section-head">
+          <div><p class="eyebrow">Six industry directions</p><h2>不同產業、不同產品，都有適合的網站表達方式。</h2></div>
+          <p>六套範本不只是更換照片與顏色，版面、產品查找與詢價動線也各自不同。先選接近的方向，再換成公司的內容並接上 ForgeBase。</p>
+        </div>
+        <div class="template-grid">
+          <a class="template-card" href="https://pcbrm.tw/templates/precision-machining/" target="_blank" rel="noreferrer"><span class="template-index">01</span><img src="../../template-demos/public/templates/precision-machining/hero-cnc-facility.png" alt="精密加工網站範本 AxisForm" /><div class="template-caption"><small>PRECISION MACHINING</small><strong>AxisForm</strong><span>精密加工｜能力與零件案例導向</span></div></a>
+          <a class="template-card" href="https://pcbrm.tw/templates/industrial-machinery/" target="_blank" rel="noreferrer"><span class="template-index">02</span><img src="../../template-demos/public/templates/industrial-machinery/hero-servo-forming-line.png" alt="工業機械網站範本 Vantera" /><div class="template-caption"><small>INDUSTRIAL MACHINERY</small><strong>Vantera</strong><span>工業機械｜設備系列與服務導向</span></div></a>
+          <a class="template-card" href="https://pcbrm.tw/templates/electronic-components/" target="_blank" rel="noreferrer"><span class="template-index">03</span><img src="../../template-demos/public/templates/electronic-components/component-family-hero.png" alt="電子零組件網站範本 Veltrix" /><div class="template-caption"><small>ELECTRONIC COMPONENTS</small><strong>Veltrix</strong><span>電子零組件｜料號與規格查找導向</span></div></a>
+          <a class="template-card" href="https://pcbrm.tw/templates/industrial-automation/" target="_blank" rel="noreferrer"><span class="template-index">04</span><img src="../../template-demos/public/templates/industrial-automation/connected-robotic-line.png" alt="工業自動化網站範本 Kinetra" /><div class="template-caption"><small>INDUSTRIAL AUTOMATION</small><strong>Kinetra</strong><span>工業自動化｜產線與解決方案導向</span></div></a>
+          <a class="template-card" href="https://pcbrm.tw/templates/engineering-materials/" target="_blank" rel="noreferrer"><span class="template-index">05</span><img src="../../template-demos/public/templates/engineering-materials/material-archive-hero.png" alt="工程材料網站範本 Matera" /><div class="template-caption"><small>ENGINEERING MATERIALS</small><strong>Matera</strong><span>工程材料｜材料與性能資料導向</span></div></a>
+          <a class="template-card" href="https://pcbrm.tw/templates/custom-packaging/" target="_blank" rel="noreferrer"><span class="template-index">06</span><img src="../../template-demos/public/templates/custom-packaging/packaging-system-hero.png" alt="客製包裝網站範本 Tuckform" /><div class="template-caption"><small>CUSTOM PACKAGING</small><strong>Tuckform</strong><span>客製包裝｜包裝形式與需求導向</span></div></a>
+        </div>
+        <div class="templates-note"><b>範本說明</b><span>範本中的公司、設備、規格、證書與產能皆為示意資料，不代表真實公司或製造能力。實際導入時會依公司產品與需求調整內容。</span></div>
+      </div>
+    </section>
+
+    <section class="section demo-section" id="demo">
+      <div class="shell">
+        <div class="section-head">
+          <div><p class="eyebrow">See how it works</p><h2>看完整流程，不只看首頁。</h2></div>
+          <p style="color:rgba(255,255,255,.65)">從找產品、送詢價，一路測試到後台接手。</p>
+        </div>
+        <div class="demo-feature">
+          <div class="demo-image"><img src="../../demo/handtool-company/assets/generated/about-factory-hero-northforge.png" alt="NorthForge Tools 手工具測試網站的工廠情境" /></div>
+          <div class="demo-copy"><p class="eyebrow">完整功能測試 / NorthForge Tools</p><h3>從找產品，到業務收到詢價。</h3><p>一個實際串起前台、詢價與後台的測試情境。</p><ul class="demo-checks"><li>產品與應用查找</li><li>AI 接待與結構化詢價</li><li>後台分派與處理紀錄</li></ul><p class="demo-disclaimer">NorthForge Tools 為功能測試情境，不代表真實製造商、供貨能力或成交案例。</p><a class="button button-primary" href="#" onclick="return false">查看完整測試網站</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" id="contact">
+      <div class="shell cta-layout">
+        <div><p class="eyebrow" style="color:#fff">ForgeBase product test</p><h2>先走一次完整流程，再判斷是否適合你的產品與詢價方式。</h2><p>目前開放產品測試與導入評估。我們會先了解產品資料、現有網站與詢價流程，再確認適合的導入範圍。</p></div>
+        <div class="cta-actions"><a class="button button-dark" href="#" onclick="return false">申請導入評估</a><a class="button button-secondary" href="#demo">先看完整測試案例</a><span class="cta-note">送出評估不代表受理、報價或交付承諾</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <div class="footer-grid">
+        <div class="footer-copy"><a class="brand" href="#top"><span class="brand-mark">FB</span><span class="brand-copy"><strong>ForgeBase</strong><small>EXPORT CUSTOMER &amp; RFQ SYSTEM</small></span></a><p>製造業的海外客戶接待與詢價管理平台</p></div>
+        <nav class="footer-links" aria-label="頁尾導覽"><a href="#why">為什麼需要</a><a href="#journey">接待流程</a><a href="#features">產品功能</a><a href="#templates">版型範本</a><a href="#demo">測試案例</a></nav>
+      </div>
+      <div class="footer-bottom"><span>© 2026 ForgeBase. Concept homepage for positioning review.</span><span>本頁為獨立視覺與文案概念稿，未串接正式後端。</span></div>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    toggle.addEventListener('click', () => {
+      const open = document.body.classList.toggle('menu-open');
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.textContent = open ? '關閉' : '選單';
+    });
+    navLinks.forEach((link) => link.addEventListener('click', () => {
+      document.body.classList.remove('menu-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.textContent = '選單';
+    }));
+  </script>
+</body>
+</html>

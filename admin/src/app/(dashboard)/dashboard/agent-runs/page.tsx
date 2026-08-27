@@ -46,7 +46,7 @@ function ApprovalRow({
 
   return (
     <div className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/10 px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground">{approval.checkpoint}</p>
           <p className="text-xs text-muted-foreground mt-0.5">

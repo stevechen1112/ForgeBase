@@ -1,6 +1,8 @@
 import re
 from typing import Optional
 
+from app.services.chat_locale import clarification_prefix
+
 
 def contains_any(text: str, terms: list[str]) -> bool:
     lowered = text.lower()
@@ -20,8 +22,24 @@ def has_quantity_signal(text: str) -> bool:
         "trial order",
         "pilot order",
         "starter order",
+        "數量",
+        "最低訂購量",
+        "試單",
+        "件",
+        "組",
+        "個",
+        "最低発注数量",
+        "数量",
+        "ロット",
+        "개",
+        "수량",
+        "최소 주문 수량",
+        "menge",
+        "mindestbestellmenge",
     ]
-    return contains_any(lowered, quantity_terms) or bool(re.search(r"\b\d+[kKmM]?\b", lowered))
+    return contains_any(lowered, quantity_terms) or bool(
+        re.search(r"\d+[kKmM萬千]?", lowered)
+    )
 
 
 def normalize_question(value: Optional[str]) -> Optional[str]:
@@ -30,7 +48,7 @@ def normalize_question(value: Optional[str]) -> Optional[str]:
     question = value.strip()
     if not question:
         return None
-    if question[-1] not in {"?", ".", "!"}:
+    if question[-1] not in {"?", ".", "!", "？", "。", "！"}:
         question += "?"
     return question
 
@@ -38,6 +56,7 @@ def normalize_question(value: Optional[str]) -> Optional[str]:
 def merge_reply_and_clarifying_question(
     reply: str,
     clarifying_question: Optional[str],
+    locale: str = "en",
 ) -> tuple[str, bool, Optional[str]]:
     normalized_question = normalize_question(clarifying_question)
     if not normalized_question:
@@ -46,8 +65,6 @@ def merge_reply_and_clarifying_question(
     if normalized_question.lower() in reply.lower():
         return reply, True, normalized_question
 
-    merged_reply = (
-        f"{reply.rstrip()}\n\n"
-        f"One key question before I narrow this further: {normalized_question}"
-    )
+    prefix = clarification_prefix(locale)
+    merged_reply = f"{reply.rstrip()}\n\n{prefix} {normalized_question}"
     return merged_reply, True, normalized_question

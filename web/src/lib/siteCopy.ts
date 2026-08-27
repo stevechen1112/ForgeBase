@@ -264,7 +264,7 @@ function buildFooterSections(messages: MessageBundle): FooterSection[] {
         { label: messages.footer.sections.products.catalog, href: "/products" },
         { label: messages.footer.sections.products.applications, href: "/applications" },
         { label: messages.footer.sections.products.rfq, href: "/rfq" },
-        { label: messages.footer.sections.products.custom, href: "/contact" },
+        { label: messages.footer.sections.products.custom, href: "/oem-odm" },
       ],
     },
     {
@@ -343,7 +343,7 @@ function toSiteCopy(messages: MessageBundle): SiteCopy {
 }
 
 export function resolveLocale(locale?: string): Locale {
-  return locale === "zh-TW" ? "zh-TW" : "en";
+  return locale?.toLowerCase() === "zh-tw" ? "zh-TW" : "en";
 }
 
 export function getSiteCopy(locale?: string): SiteCopy {

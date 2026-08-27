@@ -8,8 +8,8 @@ Add 3 tables for AI Marketing Copilot:
 Revision ID: 0038_copilot_notifications
 Revises: 0037_superuser
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0038_copilot_notifications"
 down_revision = "0037_superuser"

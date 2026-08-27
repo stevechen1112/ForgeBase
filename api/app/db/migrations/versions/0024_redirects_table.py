@@ -5,8 +5,8 @@ Create redirects table for SEO 301/302 slug-change management.
 Revision ID: 0024_redirects_table
 Revises: 0023_seo_og_image_alt_fields
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0024_redirects_table"
 down_revision = "0023_seo_og_image_alt_fields"

@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
 from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
+
 from app.core.datetime import utcnow_naive
 
 
@@ -18,6 +20,7 @@ class Redirect(SQLModel, table=True):
     """
     __tablename__ = "redirects"
     __table_args__ = (
+        UniqueConstraint("from_path", name="uq_redirects_from_path"),
         UniqueConstraint("from_path", "tenant_id", name="uq_redirects_from_path_tenant"),
     )
 

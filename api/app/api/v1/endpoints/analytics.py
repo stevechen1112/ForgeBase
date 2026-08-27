@@ -7,7 +7,7 @@ GET /tracking/analytics/applications   — 2.5.2 Application-level performance
 GET /tracking/analytics/strategy-map   — 2.5.3 Content strategy map overlay
 """
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -32,7 +32,7 @@ def _build_filter_sql(
     page_type: str | None = None,
     tenant_column: str = "te.tenant_id",
 ) -> tuple[str, dict[str, Any]]:
-    clauses: list[str] = []
+    clauses: list[str] = ["AND te.is_test_data = FALSE"]
     params: dict[str, Any] = {}
 
     if page_type:
@@ -50,8 +50,8 @@ def _build_filter_sql(
 
 def _build_visitor_filter_sql(tenant_id: uuid.UUID | None = None) -> tuple[str, dict[str, Any]]:
     if not tenant_id:
-        return "", {}
-    return "\n          AND tenant_id = :tenant_id", {"tenant_id": str(tenant_id)}
+        return "\n          AND is_test_data = FALSE", {}
+    return "\n          AND is_test_data = FALSE\n          AND tenant_id = :tenant_id", {"tenant_id": str(tenant_id)}
 
 
 # ── 2.5.1  Page-level analytics ───────────────────────────────────────────────
@@ -84,8 +84,8 @@ async def page_analytics(
             COUNT(DISTINCT r.id)                                          AS rfq_count,
             ROUND(AVG(v.intent_score)::numeric, 1)                       AS avg_intent_score
         FROM tracking_events te
-        LEFT JOIN visitors v ON v.visitor_id = te.visitor_id
-        LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id
+        LEFT JOIN visitors v ON v.visitor_id = te.visitor_id AND v.is_test_data = FALSE
+        LEFT JOIN rfq_requests r ON r.visitor_id = te.visitor_id AND r.is_test_data = FALSE
         LEFT JOIN products p ON p.id = te.page_id AND te.page_type = 'product'
         LEFT JOIN applications app ON app.id = te.page_id AND te.page_type = 'application'
         LEFT JOIN pages pg ON pg.id = te.page_id AND te.page_type = 'page'
@@ -100,7 +100,7 @@ async def page_analytics(
 
     params: dict[str, Any] = {"days": days, "limit": limit} | filter_params
 
-    result = await session.execute(sql, params)
+    result = await session.exec(sql, params=params)
     rows = result.mappings().all()
 
     # Summary totals
@@ -114,7 +114,7 @@ async def page_analytics(
           AND te.timestamp >= NOW() - make_interval(days => :days)
           """ + filter_sql + """
     """)
-    totals_row = (await session.execute(totals_sql, params)).mappings().one()
+    totals_row = (await session.exec(totals_sql, params=params)).mappings().one()
 
     return {
         "period_days": days,
@@ -162,7 +162,7 @@ async def product_analytics(
         """.replace("__FILTERS__", filter_sql)
     )
     params: dict[str, Any] = {"days": days, "limit": limit} | filter_params
-    result = await session.execute(sql, params)
+    result = await session.exec(sql, params=params)
     rows = result.mappings().all()
 
     return {
@@ -206,7 +206,9 @@ async def application_analytics(
         LIMIT :limit
         """.replace("__FILTERS__", filter_sql)
     )
-    result = await session.execute(sql, {"days": days, "limit": limit} | filter_params)
+    result = await session.exec(
+        sql, params={"days": days, "limit": limit} | filter_params
+    )
     rows = result.mappings().all()
 
     return {
@@ -284,7 +286,7 @@ async def strategy_map_analytics(
         """.replace("__FILTERS__", filter_sql)
     )
 
-    result = await session.execute(sql, {"days": days} | filter_params)
+    result = await session.exec(sql, params={"days": days} | filter_params)
     rows = result.mappings().all()
 
     # Aggregate tier counts
@@ -335,7 +337,7 @@ async def funnel_analytics(
         """.replace("__FILTERS__", visitor_filter_sql)
     )
     params = {"since": since} | visitor_params
-    stage_result = await session.execute(stage_sql, params)
+    stage_result = await session.exec(stage_sql, params=params)
     stage_rows = {r["stage"]: r["count"] for r in stage_result.mappings().all()}
 
     # RFQ counts by status
@@ -349,7 +351,7 @@ async def funnel_analytics(
         ORDER BY count DESC
         """.replace("__FILTERS__", visitor_filter_sql)
     )
-    rfq_result = await session.execute(rfq_sql, params)
+    rfq_result = await session.exec(rfq_sql, params=params)
     rfq_rows = {r["status"]: r["count"] for r in rfq_result.mappings().all()}
 
     # Totals for conversion rates
@@ -375,6 +377,8 @@ async def funnel_analytics(
         "period_days": days,
         "generated_at": _iso(datetime.now(timezone.utc)),
         "funnel_stages": funnel_stages,
+        "cohort_start": _iso(since),
+        "methodology": "Visitors and RFQs are both acquisition cohorts created in the selected period. RFQ-to-won uses the current outcome of that same RFQ cohort; intent-stage counts are current stage snapshots.",
         "rfq_by_status": rfq_rows,
         "totals": {
             "visitors": total_visitors,

@@ -37,6 +37,7 @@ interface CreateSessionResponse {
     chat_session_id: string;
     greeting: string;
     suggestions: string[];
+    response_locale: string;
   };
 }
 
@@ -44,11 +45,14 @@ interface MessageResponse {
   data: {
     reply: string;
     sources: ChatMessageSource[];
+    response_locale: string;
     suggested_action: "none" | "rfq" | "contact";
     handoff_ready: boolean;
     handoff_prefill: Record<string, unknown>;
     needs_clarification?: boolean;
     clarifying_question?: string | null;
+    grounding_status: "grounded" | "limited" | "blocked";
+    claim_warnings: string[];
   };
 }
 
@@ -71,6 +75,13 @@ function getApiBase(): string {
   return window.location.origin;
 }
 
+function getVisitorLanguage(): string {
+  if (typeof navigator !== "undefined") {
+    return navigator.languages?.[0] || navigator.language || document.documentElement.lang || "en";
+  }
+  return "en";
+}
+
 export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: ChatWidgetProps) {
   const copy = useMessageNamespace<ChatWidgetMessages>("chat");
   const [isOpen, setIsOpen] = useState(false);
@@ -80,6 +91,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
   const [handoffPrefill, setHandoffPrefill] = useState<Record<string, unknown> | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
+  const [responseLocale, setResponseLocale] = useState(() => getVisitorLanguage());
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
@@ -109,19 +121,21 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
           context_page: contextPage,
           context_entity_type: contextEntityType,
           context_entity_id: contextEntityId,
-          locale: document.documentElement.lang || "en",
+          locale: getVisitorLanguage(),
         }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = (await response.json()) as CreateSessionResponse;
       setChatSessionId(payload.data.chat_session_id);
+      setResponseLocale(payload.data.response_locale);
       setSuggestions(payload.data.suggestions);
       setMessages([
         {
           id: `${payload.data.chat_session_id}-greeting`,
           role: "assistant",
           content: payload.data.greeting,
+          locale: payload.data.response_locale,
         },
       ]);
       return payload.data.chat_session_id;
@@ -158,24 +172,30 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
         body: JSON.stringify({
           visitor_id: getVisitorId(),
           content,
-          locale: document.documentElement.lang || "en",
+          locale: getVisitorLanguage(),
         }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const payload = (await response.json()) as MessageResponse;
+      setResponseLocale(payload.data.response_locale);
       setMessages((current) => [
         ...current,
         {
           id: `${Date.now()}-assistant`,
           role: "assistant",
           content: payload.data.reply,
+          locale: payload.data.response_locale,
           sources: payload.data.sources,
+          groundingStatus: payload.data.grounding_status,
+          claimWarnings: payload.data.claim_warnings,
         },
       ]);
 
       if (payload.data.handoff_ready || payload.data.suggested_action === "rfq") {
         setHandoffPrefill(payload.data.handoff_prefill);
+      } else {
+        setHandoffPrefill(null);
       }
     } catch {
       setError(copy.requestFailed);
@@ -224,6 +244,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
             <div className="flex-1 min-h-0">
               <ChatPanel
                 messages={messages}
+                responseLocale={responseLocale}
                 suggestions={suggestions}
                 isBusy={isBusy}
                 error={error}
@@ -257,6 +278,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
             <div className="h-[calc(78vh-57px)] max-h-[663px]">
               <ChatPanel
                 messages={messages}
+                responseLocale={responseLocale}
                 suggestions={suggestions}
                 isBusy={isBusy}
                 error={error}

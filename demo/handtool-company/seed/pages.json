@@ -38,7 +38,7 @@
     "subtitle": "Support for branded tool programs, mixed-SKU kits, packaging development, and export execution.",
     "body": "<section><h2>OEM / ODM Support</h2><p>NorthForge supports buyers who need standard products, modified assortments, or full private-label toolkit programs with packaging, labeling, and documentation alignment.</p></section>",
     "hero_image_url": "/demo/handtool-company/assets/generated/capability-custom-packaging-oem.png",
-    "seo_title": "OEM and Private Label Hand Tool Manufacturing | NorthForge Tools",
+    "seo_title": "OEM and Private Label Hand Tool Manufacturing",
     "seo_description": "Private-label packaging, toolkit assembly, and OEM hand tool manufacturing support for distributors and tool brands.",
     "og_image_url": "/demo/handtool-company/assets/generated/capability-custom-packaging-oem.png",
     "canonical_url": "https://www.northforgetools.com/oem-odm",
@@ -50,17 +50,17 @@
   {
     "page_type": "contact",
     "slug": "contact",
-    "title": "Talk to NorthForge Tools",
-    "subtitle": "Contact our sales and OEM team for product selection, private-label projects, and sourcing discussions.",
-    "body": "<section><h2>Contact Information</h2><p>Main line: +886-4-2358-7716<br/>Sales: sales@northforgetools.com<br/>RFQ desk: rfq@northforgetools.com</p><p>Headquarters: 12F., No. 218, Wenxin Rd., Xitun Dist., Taichung City 40758, Taiwan</p></section>",
+    "title": "NorthForge Test Contact Form",
+    "subtitle": "A ForgeBase functional-test contact page, not a real sales or manufacturer contact channel.",
+    "body": "<section><h2>Test Site Notice</h2><p>NorthForge is a fictional ForgeBase demonstration scenario. Do not submit confidential information, purchase commitments, or real sourcing enquiries.</p></section>",
     "hero_image_url": "/demo/handtool-company/assets/page-contact-hero.jpg",
-    "seo_title": "Contact NorthForge Tools | Hand Tool OEM Manufacturer",
-    "seo_description": "Contact NorthForge Tools for OEM hand tool sourcing, private-label programs, RFQ support, and product inquiries.",
+    "seo_title": "NorthForge Test Contact Form | ForgeBase",
+    "seo_description": "ForgeBase functional-test contact workflow; NorthForge is not a real manufacturer or sales contact channel.",
     "og_image_url": "/demo/handtool-company/assets/page-contact-og.jpg",
-    "canonical_url": "https://www.northforgetools.com/contact",
+    "canonical_url": "https://pcbrm.tw/northforge-tools/contact",
     "structured_data": null,
     "locale": "en",
     "status": "published",
-    "noindex": false
+    "noindex": true
   }
 ]

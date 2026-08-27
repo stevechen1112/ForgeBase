@@ -5,11 +5,12 @@ import { buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { getCategoryCardImage, getProductsHeroImage } from "@/lib/demoAssets";
 import { Link } from "@/i18n/navigation";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
 type CommonMessages = {
   home: string;
@@ -39,8 +40,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  resolveLocale(locale);
-  return getMessageNamespace<ProductsPageMessages>("products").then((copy) => copy.metadata);
+  const resolvedLocale = resolveLocale(locale);
+  const [{ siteConfig }, copy] = await Promise.all([getRuntimeSiteContext(), getMessageNamespace<ProductsPageMessages>("products")]);
+  return buildLocalizedMetadata(copy.metadata, "/products", resolvedLocale, siteConfig);
 }
 
 export default async function ProductsPage({ params }: Props) {

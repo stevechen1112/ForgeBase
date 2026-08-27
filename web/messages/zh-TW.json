@@ -33,8 +33,8 @@
     "submitRfq": "送出詢價單",
     "contact": "聯絡我們",
     "openMenu": "開啟選單",
-    "partnerTitle": "全球製造合作夥伴",
-    "partnerDescription": "服務 40+ 國家，提供一站式 B2B 採購支援。",
+    "partnerTitle": "ForgeBase 功能測試網站",
+    "partnerDescription": "用於測試網站瀏覽、詢價收件與後台流程；不代表實際供貨或製造能力。",
     "langSwitch": "EN",
     "nav": {
       "products": "產品",
@@ -45,14 +45,14 @@
     }
   },
   "footer": {
-    "description": "深受 40+ 國家工業買家信賴的精密製造方案。通過 ISO 9001，擁有 20+ 年出口與專案執行經驗。",
-    "builtWithPrecision": "以精準製造為本，為成長型通路而設計",
+    "description": "這是 ForgeBase 的功能測試情境；公司、產品、認證與營運資訊均為虛構展示，非真實供貨資訊。",
+    "builtWithPrecision": "用於驗證 B2B 網站、詢價與後台工作流程",
     "allRightsReserved": "版權所有。",
-    "certifications": ["ISO 9001:2015", "CE 認證", "RoHS 符合", "SGS 稽核"],
+    "certifications": ["測試情境資料", "非真實認證", "不提供證書", "不提供供貨"],
     "footerCta": {
-      "title": "準備好開始你的合作計畫了嗎？",
-      "description": "合格詢價案件，24 小時內回覆報價。",
-      "requestQuote": "立即詢價"
+      "title": "想體驗詢價與收件流程？",
+      "description": "送出的資料只會進入 ForgeBase 測試系統，不會由 NorthForge 銷售人員回覆。",
+      "requestQuote": "送出測試詢價"
     },
     "sections": {
       "products": {
@@ -117,6 +117,8 @@
       "submit": "送出詢問",
       "submitFailed": "送出失敗，請稍後再試。",
       "unexpectedError": "發生未預期錯誤。",
+      "validationFailed": "請檢查表單欄位後再送出。",
+      "challengeRefreshed": "頁面驗證已更新，請再送出一次。",
       "labels": {
         "fullName": "姓名",
         "email": "Email",
@@ -172,10 +174,10 @@
       "tradeSectionTitle": "貿易條件（選填，有助於更快報價）",
       "successTitle": "RFQ 已成功送出",
       "referenceNumber": "您的參考編號：",
-      "successDescription": "我們會審查需求內容，若規格資訊完整，將於 1 個工作天內回覆。",
+      "successDescription": "資料已送入 ForgeBase 測試系統；NorthForge 為虛構情境，不會提供報價、供貨或業務回覆。",
       "submitting": "送出中...",
       "submit": "提交 RFQ",
-      "footerNote": "送出表單即代表你同意我們的隱私政策。我們不會將你的資料提供給第三方。",
+      "footerNote": "送出表單即代表你同意本測試網站的隱私說明。資料僅用於 ForgeBase 功能測試與安全檢查。",
       "submitFailed": "送出失敗，請稍後再試。",
       "unexpectedError": "發生未預期錯誤。",
       "labels": {
@@ -207,57 +209,56 @@
   },
   "contactPage": {
     "metadata": {
-      "title": "聯絡 NorthForge Tools",
-      "description": "聯絡 NorthForge Tools 討論採購規劃、自有品牌包裝、工具組專案或出口導向手工具需求。"
+      "title": "NorthForge 功能測試聯絡表單",
+      "description": "此為 ForgeBase 的表單與後台流程測試，不是實際製造商聯絡管道。"
     },
     "breadcrumb": "聯絡我們",
-    "title": "聯絡 NorthForge Tools",
-    "description": "此管道適合用於採購討論、產品釐清、自有品牌規劃與工具組專案洽詢。符合條件的詢問將在 1 個工作天內審閱回覆。",
-    "reasonsTitle": "最適合聯絡 NorthForge 的情境",
+    "title": "NorthForge 功能測試聯絡表單",
+    "description": "此頁用於測試一般聯絡表單、資料收件與後台處理流程。NorthForge 是虛構公司，不會提供採購、報價或供貨回覆。",
+    "reasonsTitle": "可測試的網站流程",
     "reasons": [
-      { "label": "目錄品或持續供貨", "desc": "價格、MOQ、交期與補單規劃" },
-      { "label": "OEM / 自有品牌", "desc": "Logo、包裝、條碼、工具盒與組套方案" },
-      { "label": "技術規格確認", "desc": "扭力、絕緣、材質、表面處理與使用情境討論" },
-      { "label": "工具組專案規劃", "desc": "混 SKU 套組、抽屜系統與出口型組套需求" }
+      { "label": "一般聯絡表單", "desc": "驗證欄位、驗證碼與收件紀錄" },
+      { "label": "RFQ 詢價表單", "desc": "驗證案件建立、分流與後台工作流程" },
+      { "label": "多語內容呈現", "desc": "驗證繁中與英文的內容及介面切換" },
+      { "label": "訪客事件紀錄", "desc": "驗證可同意的網站行為資料蒐集" }
     ],
-    "officesTitle": "聯絡窗口",
+    "officesTitle": "測試網站說明",
     "offices": [
-      { "city": "台中製造協調窗口", "address": "台中，台灣", "phone": "+886-4-3700-2218", "hours": "週一至週五 09:00-18:00 CST" },
-      { "city": "台北出口業務窗口", "address": "台北，台灣", "phone": "+886-2-7709-8891", "hours": "週一至週五 09:00-18:00 CST" }
+      { "city": "ForgeBase 功能測試", "address": "NorthForge 為虛構展示情境，沒有實體辦公室或製造據點。", "phone": "不提供電話服務", "hours": "不提供業務回覆" }
     ],
-    "responseTitle": "讓我們更快回覆的資訊",
-    "responseDescription": "請盡量提供工具品類、預估數量、目標市場，以及是否需要 OEM 包裝或合規文件。需求越清楚，越能更快正確分流。",
-    "formTitle": "送出詢問",
-    "formDescription": "一般商務洽詢可使用此表單；若已具備數量、規格或包裝需求，建議直接走 RFQ 流程。",
+    "responseTitle": "資料如何使用",
+    "responseDescription": "資料僅作為 ForgeBase 外部測試的收件、分流與安全驗證樣本；請勿提供機密、採購承諾或真實供貨需求。",
+    "formTitle": "送出測試詢問",
+    "formDescription": "送出後會建立測試資料，不會由 NorthForge 人員對外聯繫或回信。",
     "quickLinksPrompt": "想找更明確的入口？",
     "quickLinks": {
       "products": "瀏覽產品",
-      "certifications": "查看認證",
-      "rfq": "立即詢價"
+      "certifications": "查看測試認證頁",
+      "rfq": "測試詢價流程"
     }
   },
   "rfqPage": {
     "metadata": {
-      "title": "提交詢價",
-      "description": "提交扭力工具、絕緣工具、工坊工具或自有品牌工具組 RFQ，於 1 個工作天內獲得合格回覆。"
+      "title": "測試 RFQ 詢價流程",
+      "description": "提交資料以驗證 ForgeBase 收件與業務工作流程；不會獲得報價、供貨或商務回覆。"
     },
-    "title": "提交工具專案詢價",
-    "description": "分享你的產品範圍、包裝需求與採購時程。我們會審查內容，並在 1 個工作天內回覆合適的下一步。",
-    "builtForTitle": "這份 RFQ 適用情境",
+    "title": "測試 RFQ 詢價流程",
+    "description": "可提交非機密的測試資料，驗證表單、案件建立、分流與後台處理。NorthForge 為虛構情境，不提供報價或供貨。",
+    "builtForTitle": "這份測試 RFQ 可驗證的流程",
     "builtForItems": [
-      "標準工具採購與持續型經銷供貨",
-      "自有品牌包裝、條碼與模塑盒專案",
-      "混 SKU 工具組與抽屜套組方案",
-      "扭力、絕緣、材質與表面處理規格檢討",
-      "出口與合規敏感訂單所需的文件支援",
-      "保密 OEM 討論所需的 NDA 流程"
+      "RFQ 必填欄位、格式與防濫用驗證",
+      "案件建立、狀態與負責人處理流程",
+      "來源頁面、訪客歷程與意圖資訊呈現",
+      "多語內容與表單體驗",
+      "資料留存、刪除與外部測試安全規則",
+      "不包含實際採購、報價、樣品或 NDA 流程"
     ],
-    "helpTitle": "需要協助？",
-    "helpDescription": "如果你目前只確定應用情境與目標市場，NorthForge 可協助收斂合適的工具家族與包裝方向。",
-    "helpCta": "聯絡工程與業務窗口 →",
-    "responseWindowLabel": "一般報價分流時窗",
-    "responseWindowTime": "24-48h",
-    "responseWindowHours": "週一至週五 9:00-18:00 CST"
+    "helpTitle": "測試前請留意",
+    "helpDescription": "請不要提交個人敏感資料、真實採購承諾、圖面或其他機密資料；此頁僅為 ForgeBase 功能測試。",
+    "helpCta": "查看測試聯絡表單 →",
+    "responseWindowLabel": "測試收件狀態",
+    "responseWindowTime": "不提供業務回覆",
+    "responseWindowHours": "資料不會進入真實報價或供貨流程"
   },
   "faqPage": {
     "metadata": {
@@ -327,23 +328,23 @@
   },
   "legal": {
     "privacy": {
-      "metadata": { "title": "隱私政策", "description": "NorthForge Tools 網站洽詢與文件申請相關的隱私政策。" },
+      "metadata": { "title": "測試網站隱私說明", "description": "ForgeBase NorthForge 功能測試網站的資料處理說明。" },
       "breadcrumb": "隱私政策",
       "title": "隱私政策",
       "paragraphs": [
-        "NorthForge Tools 僅為了商務回覆、業務追蹤與客戶支援目的，蒐集詢問內容、報價需求與文件申請資訊。",
-        "提交資料可能包含姓名、公司、Email、電話、國家與產品興趣。我們不會將個人資料出售給第三方。",
-        "資料僅會在商務溝通、合規與留存管理所需期間內保存。你可來信 sales@northforgetools.com 要求更正或刪除。"
+        "NorthForge 是 ForgeBase 的功能測試情境，不是實際製造商或供貨網站。表單資料僅用於驗證收件、分流、安全與後台工作流程。",
+        "提交資料可能包含姓名、公司、Email、電話、國家與測試內容。請勿提交敏感資料、採購承諾、圖面或其他機密資料；我們不會將個人資料出售給第三方。",
+        "測試資料依 ForgeBase 的外部測試留存規則保存，並可由系統管理者依測試需要刪除。此測試網站不提供 NorthForge 銷售聯繫或回覆。"
       ]
     },
     "terms": {
-      "metadata": { "title": "服務條款", "description": "NorthForge Tools 網站與商務洽詢管道的使用條款。" },
+      "metadata": { "title": "測試網站使用說明", "description": "ForgeBase NorthForge 功能測試網站的使用說明。" },
       "breadcrumb": "服務條款",
       "title": "服務條款",
       "paragraphs": [
-        "本網站用於展示產品、接收商務洽詢、RFQ 與技術文件申請，內容均與 NorthForge Tools 相關。",
-        "網站所示規格、供應狀態、交期與價格僅供參考，除非已於正式報價或銷售協議中另行確認。",
-        "使用本網站本身不構成供貨合約。最終條件仍以正式報價、採購單與雙方確認的商務條款為準。"
+        "本網站用於展示 ForgeBase 的 B2B 網站、詢價收件與後台工作流程；NorthForge Tools、產品、認證與公司資訊均為虛構測試資料。",
+        "網站所示規格、供應、交期、價格、文件與聯絡資訊均不得作為採購、驗證或商務決策依據。",
+        "使用本網站不會建立供貨、報價、僱用、代理或其他商務關係；送出的測試資料不會收到 NorthForge 對外回信。"
       ]
     },
     "cookies": {
@@ -357,39 +358,39 @@
       ]
     },
     "dealers": {
-      "metadata": { "title": "經銷據點", "description": "NorthForge Tools 的區域經銷商與代理支援資訊。" },
+      "metadata": { "title": "測試經銷據點頁", "description": "ForgeBase NorthForge 功能測試情境的展示頁，非真實經銷資訊。" },
       "breadcrumb": "經銷據點",
-      "title": "經銷據點",
-      "intro": "NorthForge 與多個區域的進口商、經銷商與自有品牌夥伴合作，依產品類別、通路型態與市場範圍進行分流。",
-      "regionTitle": "支援區域",
+      "title": "測試經銷據點頁",
+      "intro": "此頁僅用於驗證經銷資訊版型與導覽，不代表 NorthForge 有真實合作夥伴或供貨範圍。",
+      "regionTitle": "展示用區域",
       "regions": [
         "東亞與東南亞",
         "歐洲經銷合作夥伴",
         "澳洲與大洋洲",
         "北美自有品牌進口專案"
       ],
-      "asideTitle": "需要區域聯絡窗口？",
-      "asideDescription": "請將國家、市場通路與產品類別寄至 sales@northforgetools.com，我們會協助轉交對應的業務或經銷支援窗口。"
+      "asideTitle": "測試網站提醒",
+      "asideDescription": "本網站不提供區域業務、經銷轉介或供貨聯繫；請勿寄送採購或機密資料。"
     }
   },
   "home": {
     "metadata": {
-      "title": "NorthForge Tools | 台灣 OEM 手工具製造商",
-      "description": "台灣 OEM/ODM 手工具製造商，專注於扭力工具、絕緣工具、工坊工具與客製工具組方案，服務經銷商與工具品牌。"
+      "title": "NorthForge Tools｜ForgeBase B2B 網站功能測試",
+      "description": "ForgeBase 的 B2B 網站、產品瀏覽、表單與後台流程測試情境；不代表真實製造商、產品供應或認證。"
     },
     "hero": {
-      "eyebrow": "專為專業工具專案打造的出口製造夥伴",
-      "titleLine1": "為品牌商、經銷商與工業買家打造",
-      "titleLine2": "高一致性的專業手工具方案",
-      "description": "NorthForge Tools 協助進口商、自有品牌與工業通路採購扭力工具、絕緣工具、工坊工具與客製工具組，以更穩定的品質控管與更乾淨的出口流程推進專案。",
-      "primaryCta": "立即詢價",
+      "eyebrow": "ForgeBase B2B 網站功能測試情境",
+      "titleLine1": "測試客戶如何瀏覽產品、",
+      "titleLine2": "留下較完整的詢價需求",
+      "description": "NorthForge Tools 是虛構的手工具網站情境，用來驗證產品內容、多語頁面、詢價收件與後台流程；不代表實際製造商或供貨能力。",
+      "primaryCta": "測試詢價流程",
       "secondaryCta": "瀏覽產品 →"
     },
     "stats": [
-      { "value": "20+", "label": "年出口經驗" },
+      { "value": "TEST", "label": "虛構公司情境" },
       { "value": "30+", "label": "核心示範 SKU" },
-      { "value": "40+", "label": "服務國家數" },
-      { "value": "98%", "label": "出貨就緒 KPI" }
+      { "value": "2", "label": "主要語系測試" },
+      { "value": "RFQ", "label": "收件流程測試" }
     ],
     "featured": {
       "eyebrow": "精選系列",
@@ -445,7 +446,7 @@
       "description": "不論你需要持續型目錄供貨、自有品牌包裝，或客製化工具組方案，NorthForge 都能協助你為目標市場建立更合適的採購模式。",
       "primaryCta": "立即詢價",
       "secondaryCta": "聯絡業務",
-      "note": "合格詢問可於 1 個工作天內回覆"
+      "note": "測試資料不會收到報價、供貨或業務回覆"
     }
   },
   "products": {

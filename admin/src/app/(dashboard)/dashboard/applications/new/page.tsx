@@ -1,5 +1,5 @@
 import ApplicationForm from "../ApplicationForm";
-export const metadata = { title: "新增應用場景 — NorthForge Admin" };
+export const metadata = { title: "新增應用場景 — ForgeBase 管理後台" };
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

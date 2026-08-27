@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class TrackingEvent(SQLModel, table=True):
@@ -25,10 +27,16 @@ class TrackingEvent(SQLModel, table=True):
 
     # Session & visitor context
     session_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="tracking_sessions.session_id", index=True
+        default=None,
+        foreign_key="tracking_sessions.session_id",
+        ondelete="SET NULL",
+        index=True,
     )
     visitor_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="visitors.visitor_id", index=True
+        default=None,
+        foreign_key="visitors.visitor_id",
+        ondelete="SET NULL",
+        index=True,
     )
 
     # Page context
@@ -54,3 +62,6 @@ class TrackingEvent(SQLModel, table=True):
 
     # Intent score delta applied by this event (for audit trail)
     score_delta: int = Field(default=0)
+
+    is_test_data: bool = Field(default=False, index=True)
+    test_run_id: Optional[str] = Field(default=None, max_length=100)

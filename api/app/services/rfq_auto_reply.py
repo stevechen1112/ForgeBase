@@ -4,11 +4,9 @@
 買家同時評估多家供應商，先給出專業確認者先進 shortlist。
 Per-tenant 開關（ops_config.auto_reply_enabled，預設關）；
 低品質／垃圾單不發（門檻 AUTO_REPLY_MIN_QUALITY）。
-發送時間對齊買家上班時段：非工作時間送進來的單，延後到買家
-下一個上班時段開頭寄出（v1 以 asyncio.sleep 實現，重啟會遺失
-待發信件——已在文件註記，正式環境可換成排程掃表）。
+發送時間對齊買家上班時段：非工作時間送進來的單，由 durable
+operational outbox 延後到可寄送時間，不阻塞 worker，也不因重啟遺失。
 """
-import asyncio
 import html
 import json
 import logging
@@ -24,6 +22,14 @@ logger = logging.getLogger(__name__)
 
 AUTO_REPLY_MIN_QUALITY = 30
 _MAX_DEFER_SECONDS = 12 * 3600  # 最多延後 12 小時
+
+
+class AutoReplyDeferred(Exception):
+    """Signal the durable worker to reschedule without blocking its event loop."""
+
+    def __init__(self, delay_seconds: float):
+        self.delay_seconds = max(1.0, delay_seconds)
+        super().__init__(f"Auto reply deferred for {self.delay_seconds:.0f} seconds")
 
 
 def _esc(value: Optional[str]) -> str:
@@ -111,10 +117,11 @@ def seconds_until_business_open(tz_name: str, now: Optional[datetime] = None) ->
 async def maybe_auto_reply(rfq_id: uuid.UUID, tenant_id: Optional[uuid.UUID]) -> bool:
     """RFQ 建立後由 submit_rfq 非同步觸發。回傳是否實際寄出。"""
     from sqlmodel import select
-    from app.models.rfq_request import RFQRequest
-    from app.models.rfq_event import RFQEvent
+
     from app.models.contact import Contact
-    from app.services.email_service import send_email
+    from app.models.rfq_event import RFQEvent
+    from app.models.rfq_request import RFQRequest
+    from app.services.email_service import send_email_result
     from app.services.ops_config import load_ops_config
 
     async with get_session_ctx() as db:
@@ -163,22 +170,27 @@ async def maybe_auto_reply(rfq_id: uuid.UUID, tenant_id: Optional[uuid.UUID]) ->
             company_display=company_display,
         )
 
-    # 對齊買家上班時段（DB session 外等待）
+    # 對齊買家上班時段。交由 durable outbox 重排時間，不能在單一
+    # worker 內 sleep 數小時，否則後續 RFQ 工作全部被阻塞。
     delay = min(seconds_until_business_open(tz_name), _MAX_DEFER_SECONDS)
-    if delay > 0:
-        logger.info("auto-reply for %s deferred %.0fs to buyer business hours", rfq.rfq_number, delay)
-        await asyncio.sleep(delay)
+    if delay > 1:
+        raise AutoReplyDeferred(delay)
 
-    sent = await send_email(
+    delivery = await send_email_result(
         to=recipient,
         subject=subject,
         html_body=body,
         text_body=None,
         from_name=from_name,
+        idempotency_key=f"rfq-auto-reply-{rfq_id}",
+        recipient_kind="external",
     )
-    if not sent:
-        logger.warning("auto-reply send failed for %s", rfq.rfq_number)
+    if delivery.dry_run:
+        logger.info("auto-reply simulated but not sent for %s", rfq.rfq_number)
         return False
+    if not delivery.delivered:
+        logger.warning("auto-reply send failed for %s", rfq.rfq_number)
+        raise RuntimeError(f"Auto-reply delivery failed for {rfq.rfq_number}")
 
     async with get_session_ctx() as db:
         db.add(RFQEvent(
@@ -186,7 +198,12 @@ async def maybe_auto_reply(rfq_id: uuid.UUID, tenant_id: Optional[uuid.UUID]) ->
             event_type="auto_reply_sent",
             summary=f"Auto-acknowledge email sent to {recipient}",
             tenant_id=tenant_id,
-            detail=json.dumps({"quality_score": rfq.quality_score, "tz": tz_name}),
+            detail=json.dumps({
+                "quality_score": rfq.quality_score,
+                "tz": tz_name,
+                "provider": delivery.provider,
+                "provider_message_id": delivery.message_id,
+            }),
         ))
         # 自動確認信也算首回（速度紅利）
         rfq_row = await db.get(RFQRequest, rfq_id)

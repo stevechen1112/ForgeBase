@@ -22,16 +22,23 @@ async def main():
         print(f"  {c['column_name']:25s} {c['data_type']:20s} nullable={c['is_nullable']}")
 
     # 1. List existing tenants
-    tenants = await conn.fetch("SELECT id, name, plan FROM tenants LIMIT 10")
+    tenants = await conn.fetch(
+        "SELECT id, name, slug, is_active FROM tenants ORDER BY created_at LIMIT 10"
+    )
     print("\n=== TENANTS ===")
     for t in tenants:
-        print(f"  id={t['id']}  name={t['name']}  plan={t['plan']}")
+        print(
+            f"  id={t['id']}  name={t['name']}  slug={t['slug']} "
+            f"active={t['is_active']}"
+        )
     if not tenants:
         print("  (no tenants found, creating default)")
         tenant_id = uuid.uuid4()
         await conn.execute(
-            "INSERT INTO tenants (id, name, plan, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
-            tenant_id, "ContentFlow Publisher", "pro", datetime.now(timezone.utc), datetime.now(timezone.utc),
+            "INSERT INTO tenants (id, name, slug) VALUES ($1, $2, $3)",
+            tenant_id,
+            "ContentFlow Publisher",
+            "contentflow-publisher",
         )
         print(f"  Created tenant: {tenant_id}")
     else:

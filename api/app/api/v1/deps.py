@@ -1,16 +1,17 @@
 from typing import Optional
-from uuid import UUID
 from urllib.parse import urlparse
+from uuid import UUID
 
 from fastapi import Depends, Header, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import select
-from app.db.session import get_session
-from app.core.security import decode_token
-from app.models.user import User
-from app.models.tenant import Tenant
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.core.config import settings
+from app.core.security import decode_token
+from app.db.session import get_session
+from app.models.tenant import Tenant
+from app.models.user import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -52,6 +53,10 @@ async def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Service account user not found or inactive",
             )
+        if user.tenant_id and not getattr(user, "is_superuser", False):
+            tenant = await session.get(Tenant, user.tenant_id)
+            if not tenant or not tenant.is_active:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant is inactive")
         return user
 
     # --- Fallback to JWT bearer token ---
@@ -79,6 +84,11 @@ async def get_current_user(
             detail="User not found or inactive",
         )
 
+    if user.tenant_id and not getattr(user, "is_superuser", False):
+        tenant = await session.get(Tenant, user.tenant_id)
+        if not tenant or not tenant.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant is inactive")
+
     return user
 
 
@@ -99,7 +109,7 @@ async def optional_current_user(
 
 
 async def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role not in ("admin", "owner"):
+    if not current_user.is_superuser and current_user.role not in ("admin", "owner"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
@@ -137,6 +147,31 @@ async def require_content_editor(current_user: User = Depends(get_current_user))
     return current_user
 
 
+async def require_rfq_operator(current_user: User = Depends(get_current_user)) -> User:
+    """Allow the people who actually operate sales cases.
+
+    Marketing users retain read-only visibility for attribution, while sales
+    users can update RFQs assigned to them. Endpoint-level ownership checks
+    still enforce the latter boundary.
+    """
+    if current_user.role not in ("admin", "owner", "sales"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="RFQ operator access required",
+        )
+    return current_user
+
+
+async def require_rfq_manager(current_user: User = Depends(get_current_user)) -> User:
+    """Restrict assignment, merging and exports to tenant managers."""
+    if current_user.role not in ("admin", "owner"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="RFQ manager access required",
+        )
+    return current_user
+
+
 def require_user_tenant_id(current_user: User) -> UUID:
     """Return the authenticated tenant boundary or reject tenantless access.
 
@@ -153,7 +188,7 @@ def require_user_tenant_id(current_user: User) -> UUID:
 
 
 class RequireFeature:
-    """FastAPI dependency that blocks access when tenant plan lacks a feature."""
+    """Block access when a tenant capability is not operationally enabled."""
 
     def __init__(self, feature: str):
         self.feature = feature
@@ -164,8 +199,6 @@ class RequireFeature:
         current_user: User = Depends(get_current_user),
     ) -> User:
         if not current_user.tenant_id:
-            if current_user.role in ("admin", "owner"):
-                return current_user
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Tenant context required",
@@ -178,63 +211,19 @@ class RequireFeature:
                 detail="Tenant not found",
             )
 
-        from app.services.subscription import get_plan_feature
+        from app.services.capability_access import tenant_has_feature
 
-        if not get_plan_feature(tenant.plan, self.feature):
+        if not tenant_has_feature(tenant, self.feature):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
                     "error": "feature_not_available",
                     "feature": self.feature,
-                    "message": f"Feature '{self.feature}' requires a higher plan.",
+                    "message": f"Feature '{self.feature}' is not enabled for this tenant.",
                 },
             )
 
         return current_user
-
-
-class QuotaEnforcer:
-    """FastAPI dependency that checks tenant resource quota before proceeding.
-
-    Usage::
-
-        @router.post("/products")
-        async def create(
-            ...,
-            _quota=Depends(QuotaEnforcer("product")),
-        ):
-    """
-
-    def __init__(self, resource: str):
-        self.resource = resource
-
-    async def __call__(
-        self,
-        session: AsyncSession = Depends(get_session),
-        current_user: User = Depends(get_current_user),
-    ):
-        if not current_user.tenant_id:
-            if current_user.role in ("admin", "owner"):
-                return
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Tenant context required",
-            )
-
-        from app.services.subscription import check_quota
-
-        result = await check_quota(session, current_user.tenant_id, self.resource)
-        if not result.get("allowed", True):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={
-                    "error": "quota_exceeded",
-                    "message": result["message"],
-                    "resource": self.resource,
-                    "current": result.get("current"),
-                    "limit": result.get("limit"),
-                },
-            )
 
 
 async def resolve_tenant_id(
@@ -250,11 +239,11 @@ async def resolve_tenant_id(
     """
     async def _resolve_identifier(identifier: str) -> Optional[UUID]:
         try:
-            return UUID(identifier)
+            tenant_id = UUID(identifier)
+            tenant = await session.get(Tenant, tenant_id)
+            return tenant.id if tenant and tenant.is_active else None
         except ValueError:
-            from app.models.tenant import Tenant
-
-            result = await session.exec(select(Tenant).where(Tenant.slug == identifier))
+            result = await session.exec(select(Tenant).where(Tenant.slug == identifier, Tenant.is_active.is_(True)))
             tenant = result.first()
             if tenant:
                 return tenant.id
@@ -295,12 +284,13 @@ async def resolve_tenant_id(
                 return tenant_id
 
     from app.models.site_profile import SiteProfile
-    from app.models.tenant import Tenant
 
     tenant_column = getattr(SiteProfile, "tenant_id", None)
     profiles = (
         await session.exec(
-            select(SiteProfile.site_url, SiteProfile.tenant_id).where(tenant_column.is_not(None))
+            select(SiteProfile.site_url, SiteProfile.tenant_id)
+            .join(Tenant, Tenant.id == SiteProfile.tenant_id)
+            .where(tenant_column.is_not(None), Tenant.is_active.is_(True))
         )
     ).all()
 
@@ -320,7 +310,7 @@ async def resolve_tenant_id(
         subdomain = host.split(".", 1)[0]
         if subdomain and subdomain not in {"www", "app", "api", "localhost"}:
             tenant = (
-                await session.exec(select(Tenant).where(Tenant.slug == subdomain))
+                await session.exec(select(Tenant).where(Tenant.slug == subdomain, Tenant.is_active.is_(True)))
             ).first()
             if tenant:
                 _TENANT_HOST_CACHE[host] = (tenant.id, now)
@@ -333,6 +323,10 @@ async def resolve_tenant_id(
 
 
 # ── Process-level TTL cache for host→tenant_id ──────────────────────────────
-import time as _time_mod
 _TENANT_HOST_CACHE: dict[str, tuple[Optional[UUID], float]] = {}
 _TENANT_HOST_CACHE_TTL = 120.0  # seconds
+
+
+def clear_tenant_host_cache() -> None:
+    """Invalidate host resolution after platform or site-profile changes."""
+    _TENANT_HOST_CACHE.clear()

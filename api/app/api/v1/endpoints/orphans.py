@@ -12,18 +12,17 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlmodel import select, func, col
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import get_current_user
 from app.db.session import get_session
-from app.models.associations import (
-    ProductApplicationLink,
-    ProductCertificationLink,
-    ProductFAQLink,
-    ApplicationFAQLink,
-)
 from app.models.application import Application
+from app.models.associations import (
+    ApplicationFAQLink,
+    ProductApplicationLink,
+    ProductFAQLink,
+)
 from app.models.faq_item import FAQItem
 from app.models.product import Product
 from app.models.user import User

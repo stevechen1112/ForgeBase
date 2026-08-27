@@ -1,6 +1,6 @@
 "use client";
-import { PlanGate } from "@/components/plan/PlanGate";
+import { CapabilityGate } from "@/components/capabilities/CapabilityGate";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <PlanGate feature="full_tracking">{children}</PlanGate>;
+  return <CapabilityGate feature="audience_segments">{children}</CapabilityGate>;
 }

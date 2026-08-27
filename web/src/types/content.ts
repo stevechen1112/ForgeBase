@@ -33,6 +33,12 @@ export type Product = {
   is_featured: boolean;
   display_priority: number;
   published_at: string | null;
+  gallery_images?: Array<{
+    id: string;
+    public_url: string;
+    alt_text: string | null;
+    display_order: number;
+  }>;
 };
 
 export type Application = {
@@ -109,7 +115,6 @@ export type Page = {
   noindex: boolean;
   entity_type: string | null;
   entity_id: string | null;
-  brief_id: string | null;
   created_at?: string;
   updated_at?: string;
   published_at?: string | null;

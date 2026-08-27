@@ -1,15 +1,23 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlalchemy import Column, Numeric, UniqueConstraint
+from sqlmodel import Field, SQLModel
+
 from app.core.datetime import utcnow_naive
 
 
 class RFQProductLink(SQLModel, table=True):
     """M2M: RFQRequest ↔ Product (products_of_interest)"""
     __tablename__ = "rfq_product_links"
-    rfq_id: uuid.UUID = Field(foreign_key="rfq_requests.id", primary_key=True)
-    product_id: uuid.UUID = Field(foreign_key="products.id", primary_key=True)
+    rfq_id: uuid.UUID = Field(
+        foreign_key="rfq_requests.id", ondelete="CASCADE", primary_key=True
+    )
+    product_id: uuid.UUID = Field(
+        foreign_key="products.id", ondelete="CASCADE", primary_key=True
+    )
 
 
 class RFQRequest(SQLModel, table=True):
@@ -19,23 +27,28 @@ class RFQRequest(SQLModel, table=True):
     Spec: 12.7.4, 12.7.5, 1b.4.5
     """
     __tablename__ = "rfq_requests"
+    __table_args__ = (
+        UniqueConstraint("rfq_number", name="uq_rfq_number"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    rfq_number: str = Field(max_length=30, unique=True, index=True)
+    rfq_number: str = Field(max_length=30, index=True)
     # Format: RFQ-YYYYMMDD-NNN, e.g. RFQ-20260314-001
 
     # Requester  
     contact_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="contacts.id", index=True
+        default=None, foreign_key="contacts.id", ondelete="SET NULL", index=True
     )
     visitor_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="visitors.visitor_id", index=True
+        default=None,
+        foreign_key="visitors.visitor_id",
+        ondelete="SET NULL",
     )
 
     # Products of interest stored in rfq_product_links; also keep raw JSON
     application_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="applications.id"
+        default=None, foreign_key="applications.id", ondelete="SET NULL"
     )
 
     # Form data (full JSON snapshot of what was submitted)
@@ -45,13 +58,28 @@ class RFQRequest(SQLModel, table=True):
 
     # Intent at time of submission
     intent_score_at_submit: int = Field(default=0)
+    intent_snapshot_json: Optional[str] = Field(default=None)
+    attribution_json: Optional[str] = Field(default=None)
+
+    # Durable Chat -> RFQ provenance
+    source_chat_session_id: Optional[uuid.UUID] = Field(
+        default=None,
+        foreign_key="chat_sessions.id",
+        ondelete="SET NULL",
+        index=True,
+    )
+    source_draft_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="rfq_drafts.id", ondelete="SET NULL", index=True
+    )
 
     # Status machine (spec 12.7.4)
     status: str = Field(default="new", max_length=20, index=True)
     # "new" | "assigned" | "in_progress" | "quoted" | "won" | "lost" | "expired"
 
     # Routing & assignment
-    assigned_to: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    assigned_to: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL", index=True
+    )
     priority: str = Field(default="normal", max_length=10)
     # "normal" | "high" | "urgent"
 
@@ -78,8 +106,32 @@ class RFQRequest(SQLModel, table=True):
     # Sales follow-up timestamps
     first_response_at: Optional[datetime] = Field(default=None)
     quote_sent_at: Optional[datetime] = Field(default=None)
+    next_follow_up_at: Optional[datetime] = Field(default=None, index=True)
     lost_reason: Optional[str] = Field(default=None, max_length=500)
     won_reason: Optional[str] = Field(default=None, max_length=500)   # §6.3 成交原因（必填於 won）
+    deal_amount: Optional[Decimal] = Field(
+        default=None,
+        sa_column=Column(Numeric(14, 2), nullable=True),
+    )
+    deal_currency: str = Field(default="USD", max_length=3)
+
+    # Operational triage. Spam and merged records remain auditable and are
+    # hidden from the default work queue instead of being deleted.
+    is_spam: bool = Field(default=False, index=True)
+    spam_reason: Optional[str] = Field(default=None, max_length=500)
+    spam_marked_at: Optional[datetime] = Field(default=None)
+    spam_marked_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    merged_into_rfq_id: Optional[uuid.UUID] = Field(
+        default=None,
+        foreign_key="rfq_requests.id",
+        index=True,
+    )
+    merged_at: Optional[datetime] = Field(default=None)
+
+    # Operational smoke-test records are retained for audit but excluded from
+    # customer-facing metrics and the default sales queue.
+    is_test_data: bool = Field(default=False, index=True)
+    test_run_id: Optional[str] = Field(default=None, max_length=100)
 
     # Timezone-aware first-response SLA (T7)
     buyer_timezone: Optional[str] = Field(default=None, max_length=50)

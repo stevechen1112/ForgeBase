@@ -11,10 +11,15 @@ import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import select, func
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import get_current_user, require_admin, require_content_editor, resolve_tenant_id, optional_current_user
+from app.api.v1.deps import (
+    optional_current_user,
+    require_admin,
+    require_content_editor,
+    resolve_tenant_id,
+)
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.product_category import ProductCategory
@@ -26,6 +31,7 @@ from app.schemas.product_category import (
     ProductCategoryTree,
     ProductCategoryUpdate,
 )
+from app.services.knowledge_sync import sync_knowledge_now
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -52,6 +58,7 @@ async def list_categories(
     status: str | None = Query(None),
     slug: str | None = Query(None),
     locale: str = Query("en"),
+    pair_status: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID | None = Depends(resolve_tenant_id),
     auth_user=Depends(optional_current_user),
@@ -72,19 +79,29 @@ async def list_categories(
             )
         base_q = base_q.where(ProductCategory.locale == normalized_locale)
     if tenant_id:
-        if auth_user is not None and getattr(auth_user, "tenant_id", None):
-            base_q = base_q.where(
-                (ProductCategory.tenant_id == tenant_id)
-                | (ProductCategory.tenant_id.is_(None))
-            )
-        else:
-            base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
+        base_q = base_q.where(ProductCategory.tenant_id == tenant_id)
     else:
         base_q = base_q.where(ProductCategory.tenant_id.is_(None))
     if status:
         base_q = base_q.where(ProductCategory.status == status)
     if slug:
         base_q = base_q.where(ProductCategory.slug == slug)
+    if pair_status:
+        from app.services.locale_support import (
+            apply_pair_status_filter,
+            default_buyer_locale,
+            get_source_locale,
+        )
+        source_locale = await get_source_locale(session, tenant_id)
+        base_q = apply_pair_status_filter(
+            base_q,
+            ProductCategory,
+            tenant_id=tenant_id,
+            source_locale=source_locale,
+            target_locale=default_buyer_locale(source_locale),
+            pair_status=pair_status,
+            key_field="slug",
+        )
 
     total = await session.exec(select(func.count()).select_from(base_q.subquery()))
     total_count = total.one()
@@ -151,6 +168,8 @@ async def create_category(
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=cat)
+    await session.commit()
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 
@@ -167,9 +186,7 @@ async def get_category(
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if tenant_id is None and cat.tenant_id is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if tenant_id is not None and cat.tenant_id is not None and cat.tenant_id != tenant_id:
+    if cat.tenant_id != tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
@@ -186,7 +203,7 @@ async def update_category(
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if _user.tenant_id and cat.tenant_id is not None and cat.tenant_id != _user.tenant_id:
+    if not _user.is_superuser and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -213,6 +230,8 @@ async def update_category(
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=cat)
+    await session.commit()
     return APIResponse(data=ProductCategoryRead.model_validate(cat))
 
 
@@ -225,7 +244,8 @@ async def delete_category(
     cat = await session.get(ProductCategory, category_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
-    if _user.tenant_id and cat.tenant_id is not None and cat.tenant_id != _user.tenant_id:
+    if not _user.is_superuser and cat.tenant_id != _user.tenant_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Category not found")
+    await sync_knowledge_now(session, tenant_id=_user.tenant_id, item=cat, action="tombstone")
     await session.delete(cat)
     await session.commit()

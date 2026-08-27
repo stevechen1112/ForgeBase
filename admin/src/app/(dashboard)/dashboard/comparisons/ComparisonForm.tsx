@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
+import { ComparisonDimensionsEditor } from "@/components/content/ComparisonDimensionsEditor";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -31,7 +32,7 @@ export default function ComparisonForm({ initial, id, aiDraft }: Props) {
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
     status: initial?.status ?? "draft",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     sort_order: initial?.sort_order ?? 0,
   });
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,27 @@ export default function ComparisonForm({ initial, id, aiDraft }: Props) {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="comparison"
+          basePath="/dashboard/comparisons"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: v.updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">基本資訊</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -105,14 +127,14 @@ export default function ComparisonForm({ initial, id, aiDraft }: Props) {
             <Textarea {...f("summary")} rows={3} maxLength={500} />
           </div>
           <div className="space-y-1.5">
-            <Label>比較維度（JSON 陣列）</Label>
-            <Textarea {...f("dimensions")} rows={5} placeholder='[{"label":"重量","options":[{"name":"A","value":"10kg"},{"name":"B","value":"12kg"}]}]' className="font-mono text-xs" />
+            <Label>比較項目</Label>
+            <ComparisonDimensionsEditor value={form.dimensions} onChange={(dimensions) => setForm((current) => ({ ...current, dimensions }))} />
           </div>
           <div className="space-y-1.5">
             <Label>結論</Label>
             <Textarea {...f("conclusion")} rows={3} />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>排序</Label>
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />
@@ -150,25 +172,6 @@ export default function ComparisonForm({ initial, id, aiDraft }: Props) {
           </div>
         </CardContent>
       </Card>
-
-      {id && (
-        <LocaleSwitcher
-          entityType="comparison"
-          basePath="/dashboard/comparisons"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={saving}>

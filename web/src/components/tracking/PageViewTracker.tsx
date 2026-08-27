@@ -20,7 +20,7 @@
  *   }
  */
 import { useEffect, useRef } from "react";
-import { track, type EventName } from "@/lib/analytics";
+import { hasAnalyticsConsent, track, type EventName } from "@/lib/analytics";
 
 interface Props {
   pageType: string;
@@ -48,11 +48,16 @@ export function PageViewTracker({ pageType, pageId, eventName, extra = {} }: Pro
   const fired = useRef(false);
 
   useEffect(() => {
-    if (fired.current) return;
-    fired.current = true;
-
     const name: EventName = eventName ?? PAGE_TYPE_TO_EVENT[pageType] ?? "page_view";
-    track(name, { page_type: pageType, page_id: pageId, ...extra });
+    const send = () => {
+      if (fired.current || !hasAnalyticsConsent()) return;
+      fired.current = true;
+      void track(name, { page_type: pageType, page_id: pageId, ...extra });
+    };
+    const handleConsent = () => send();
+    send();
+    window.addEventListener("forgebase:analytics-consent", handleConsent);
+    return () => window.removeEventListener("forgebase:analytics-consent", handleConsent);
   }, [eventName, extra, pageId, pageType]);
 
   return null; // renders nothing

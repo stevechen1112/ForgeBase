@@ -5,8 +5,8 @@ Add flexible site-shell and asset-manifest fields to site_profiles.
 Revision ID: 0036_site_profile_flexible_shell
 Revises: 0035_drop_global_slug_indexes
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0036_site_profile_flexible_shell"
 down_revision = "0035_drop_global_slug_indexes"

@@ -9,19 +9,19 @@ PUT  /tracking/contacts/{id} — update contact notes/etc (admin)
 import logging
 import uuid
 from typing import Optional
+from uuid import UUID as _UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, field_validator
-from sqlmodel import select, col
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import get_current_user, require_content_editor, resolve_tenant_id
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.contact import Contact
-from app.models.visitor import Visitor
 from app.models.user import User
-from uuid import UUID as _UUID
+from app.models.visitor import Visitor
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +82,15 @@ async def submit_contact_form(
 
     # Determine intent score from visitor if known
     intent_score = 0
+    visitor: Optional[Visitor] = None
     if visitor_id_parsed:
-        v = await db.get(Visitor, visitor_id_parsed)
-        if v:
-            intent_score = v.intent_score
+        visitor = await db.get(Visitor, visitor_id_parsed)
+        if visitor and visitor.tenant_id != tenant_id:
+            raise HTTPException(status_code=422, detail="visitor_id does not belong to this site")
+        if visitor:
+            intent_score = visitor.intent_score
+        else:
+            visitor_id_parsed = None
 
     # Dedup by (tenant_id, email) — same email in another tenant is a
     # separate Contact (multi-tenant isolation).
@@ -110,8 +115,10 @@ async def submit_contact_form(
             contact.country = body.country
         if body.job_title:
             contact.job_title = body.job_title
-        if visitor_id_parsed and not contact.visitor_id:
-            contact.visitor_id = visitor_id_parsed
+        if visitor and visitor.contact_id is None:
+            visitor.contact_id = contact.id
+            visitor.updated_at = now
+            db.add(visitor)
         contact.updated_at = now
         db.add(contact)
         await db.commit()
@@ -124,7 +131,6 @@ async def submit_contact_form(
         phone=body.phone,
         country=body.country,
         job_title=body.job_title,
-        visitor_id=visitor_id_parsed,
         intent_score_at_creation=intent_score,
         how_did_you_find_us=body.how_did_you_find_us,
         source_page=body.source_page,
@@ -132,6 +138,11 @@ async def submit_contact_form(
         tenant_id=tenant_id,
     )
     db.add(contact)
+    await db.flush()
+    if visitor and visitor.contact_id is None:
+        visitor.contact_id = contact.id
+        visitor.updated_at = now
+        db.add(visitor)
     await db.commit()
     await db.refresh(contact)
 
@@ -180,7 +191,8 @@ async def list_contacts(
         q = q.where(Contact.country == country)
     q = q.offset(offset).limit(min(limit, 200))
     rows = (await db.exec(q)).all()
-    return [_contact_row(r) for r in rows]
+    visitor_map = await _visitor_ids_by_contact(db, [row.id for row in rows])
+    return [_contact_row(r, visitor_map.get(r.id, [])) for r in rows]
 
 
 @tracking_router.get("/contacts/{contact_id}")
@@ -194,7 +206,8 @@ async def get_contact(
         raise HTTPException(status_code=404, detail="Contact not found")
     if _.tenant_id and c.tenant_id != _.tenant_id:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return _contact_row(c, full=True)
+    visitor_map = await _visitor_ids_by_contact(db, [c.id])
+    return _contact_row(c, visitor_map.get(c.id, []), full=True)
 
 
 @tracking_router.put("/contacts/{contact_id}")
@@ -215,12 +228,37 @@ async def update_contact(
     db.add(c)
     await db.commit()
     await db.refresh(c)
-    return _contact_row(c, full=True)
+    visitor_map = await _visitor_ids_by_contact(db, [c.id])
+    return _contact_row(c, visitor_map.get(c.id, []), full=True)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-def _contact_row(c: Contact, full: bool = False) -> dict:
+async def _visitor_ids_by_contact(
+    db: AsyncSession,
+    contact_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, list[uuid.UUID]]:
+    if not contact_ids:
+        return {}
+    rows = (
+        await db.exec(
+            select(Visitor.contact_id, Visitor.visitor_id)
+            .where(Visitor.contact_id.in_(contact_ids))
+            .order_by(Visitor.first_seen.asc())
+        )
+    ).all()
+    result: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for contact_id, visitor_id in rows:
+        if contact_id is not None:
+            result.setdefault(contact_id, []).append(visitor_id)
+    return result
+
+
+def _contact_row(
+    c: Contact,
+    visitor_ids: list[uuid.UUID],
+    full: bool = False,
+) -> dict:
     base = {
         "id": str(c.id),
         "email": c.email,
@@ -229,7 +267,10 @@ def _contact_row(c: Contact, full: bool = False) -> dict:
         "country": c.country,
         "job_title": c.job_title,
         "intent_score_at_creation": c.intent_score_at_creation,
-        "visitor_id": str(c.visitor_id) if c.visitor_id else None,
+        # ``visitor_id`` is retained as a compatibility alias for the first
+        # linked identity. New clients should consume ``visitor_ids``.
+        "visitor_id": str(visitor_ids[0]) if visitor_ids else None,
+        "visitor_ids": [str(visitor_id) for visitor_id in visitor_ids],
         "hubspot_contact_id": c.hubspot_contact_id,
         "created_at": c.created_at.isoformat(),
     }

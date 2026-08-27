@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Certification } from "@/types/content";
 import { trackSpecDownload } from "@/lib/analytics";
+import { withBasePath } from "@/lib/basePath";
 import { siteConfig } from "@/lib/siteConfig";
 
 type Props = { certification: Certification; locale?: string };
@@ -22,10 +23,11 @@ function buildDetailHref(locale: string, slug: string) {
 
 export function CertificationBadge({ certification, locale }: Props) {
   const localeKey = resolveLocale(locale ?? certification.locale);
+  const isTestScenario = process.env.NEXT_PUBLIC_BASE_PATH === "/northforge-tools";
   const detailHref = buildDetailHref(localeKey, certification.slug);
   const isIndustrial = siteConfig.layout === "industrial";
   const badgeImageSrc = certification.badge_image_url
-    ? `${certification.badge_image_url}?v=${CERT_BADGE_VERSION}`
+    ? `${withBasePath(certification.badge_image_url)}?v=${CERT_BADGE_VERSION}`
     : null;
   const validUntilLabel = localeKey === "zh-TW" ? "有效至" : "Valid until";
   const expiredLabel = localeKey === "zh-TW" ? "已過期" : "Expired";
@@ -72,6 +74,11 @@ export function CertificationBadge({ certification, locale }: Props) {
       {certification.issuer && (
         <p className="mt-0.5 text-xs text-gray-500">{certification.issuer}</p>
       )}
+      {isTestScenario && (
+        <p className="mt-2 border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+          {localeKey === "zh-TW" ? "測試情境・非真實認證" : "Test scenario · not a real certification"}
+        </p>
+      )}
       {certification.expires_at && (
         <p className={`mt-1 text-xs ${isExpired ? "font-semibold text-red-600" : "text-gray-400"}`}>
           {isExpired ? expiredLabel : `${validUntilLabel} ${new Date(certification.expires_at).getFullYear()}`}
@@ -79,7 +86,7 @@ export function CertificationBadge({ certification, locale }: Props) {
       )}
       {certification.document_url && (
         <a
-          href={certification.document_url}
+          href={withBasePath(certification.document_url)}
           target="_blank"
           rel="noopener noreferrer"
           className={isIndustrial

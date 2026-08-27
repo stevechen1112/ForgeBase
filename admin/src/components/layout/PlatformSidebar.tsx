@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ShieldAlert, Building2, Users, Activity,
+  ShieldAlert, Building2, Users, Activity, ClipboardCheck, KanbanSquare, ScanSearch, ContactRound, MailCheck,
+  FileStack, ListChecks, ServerCog, BarChart3, ScrollText, ArchiveX,
   LogOut, ChevronUp, LayoutDashboard,
 } from "lucide-react";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
@@ -15,11 +16,43 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { label: "平台總覽", href: "/platform/overview", icon: LayoutDashboard },
-  { label: "租戶管理", href: "/platform/tenants", icon: Building2 },
-  { label: "平台用戶", href: "/platform/users", icon: Users },
-  { label: "系統健康", href: "/platform/health", icon: Activity },
+const NAV_GROUPS = [
+  {
+    label: "工作台",
+    items: [
+      { label: "平台總覽", href: "/platform/overview", icon: LayoutDashboard },
+      { label: "營運待辦", href: "/platform/workspace", icon: ListChecks },
+    ],
+  },
+  {
+    label: "導入與交付",
+    items: [
+      { label: "導入申請", href: "/platform/applications", icon: ClipboardCheck },
+      { label: "租戶管理", href: "/platform/tenants", icon: Building2 },
+      { label: "網站交付", href: "/platform/delivery", icon: KanbanSquare },
+      { label: "範本中心", href: "/platform/templates", icon: FileStack },
+    ],
+  },
+  {
+    label: "日常營運",
+    items: [
+      { label: "全平台詢價", href: "/platform/rfqs", icon: ClipboardCheck },
+      { label: "公司推測", href: "/platform/company-identification", icon: ScanSearch },
+      { label: "聯絡窗口候選", href: "/platform/contact-enrichment", icon: ContactRound },
+      { label: "外聯草稿審核", href: "/platform/outreach", icon: MailCheck },
+      { label: "系統健康", href: "/platform/health", icon: Activity },
+    ],
+  },
+  {
+    label: "資源與治理",
+    items: [
+      { label: "外部服務與資料", href: "/platform/resources", icon: ServerCog },
+      { label: "用量", href: "/platform/usage", icon: BarChart3 },
+      { label: "平台用戶", href: "/platform/users", icon: Users },
+      { label: "操作紀錄", href: "/platform/audit", icon: ScrollText },
+      { label: "功能退場稽核", href: "/platform/retirement", icon: ArchiveX },
+    ],
+  },
 ];
 
 function getInitials(email: string) {
@@ -52,39 +85,34 @@ export function PlatformSidebar() {
 
       {/* ─── Nav ─── */}
       <ScrollArea className="flex-1 px-2 py-4">
-        <nav>
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-red-400/50">
-            管理
-          </p>
-          <ul className="space-y-0.5">
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-              const active = isActive(href);
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
-                      active
-                        ? "bg-red-500/15 text-white"
-                        : "text-gray-400 hover:bg-red-500/10 hover:text-white",
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        active ? "text-red-400" : "text-gray-500",
-                      )}
-                    />
-                    <span className="truncate">{label}</span>
-                    {active && (
-                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-red-400" />
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        <nav className="space-y-5">
+          {NAV_GROUPS.map((group) => (
+            <section key={group.label}>
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-red-400/50">
+                {group.label}
+              </p>
+              <ul className="space-y-0.5">
+                {group.items.map(({ label, href, icon: Icon }) => {
+                  const active = isActive(href);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                          active ? "bg-red-500/15 text-white" : "text-gray-400 hover:bg-red-500/10 hover:text-white",
+                        )}
+                      >
+                        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-red-400" : "text-gray-500")} />
+                        <span className="truncate">{label}</span>
+                        {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-red-400" />}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
         </nav>
       </ScrollArea>
 

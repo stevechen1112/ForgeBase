@@ -9,7 +9,7 @@ import json as _json
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, field_validator
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -160,6 +160,8 @@ async def get_chat_session_detail(
                 "role": m.role,
                 "content": m.content,
                 "sources": _json.loads(m.sources) if m.sources else [],
+                "grounding_status": m.grounding_status,
+                "claim_warnings": _json.loads(m.claim_warnings) if m.claim_warnings else [],
                 "created_at": m.created_at.isoformat(),
             }
             for m in msgs

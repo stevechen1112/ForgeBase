@@ -123,7 +123,7 @@ export default function ContentPerformancePage() {
   return (
     <div>
       {/* ── 標題列 ─────────────────────────────────────────────────────────── */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">內容成效</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">各頁面、商品與應用場景的瀏覽量，以及帶來多少詢價</p>
@@ -180,7 +180,8 @@ export default function ContentPerformancePage() {
           ) : rows.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">尚無流量資料</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">#</th>
@@ -238,6 +239,7 @@ export default function ContentPerformancePage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

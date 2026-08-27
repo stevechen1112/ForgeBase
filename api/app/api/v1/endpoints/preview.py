@@ -5,7 +5,8 @@ Two endpoints:
   POST /content/pages/{page_id}/preview-token   → generates a short-lived (1h) signed JWT
   GET  /content/preview/{token}                 → validates token, returns page data (any status)
 
-The preview JWT uses type="preview" and page_id claim so it can't be used as a user access token.
+The preview JWT uses type="preview" plus page_id and tenant_id claims, so it
+cannot be used as a user access token or replayed against another tenant page.
 """
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -15,7 +16,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_content_editor
+from app.api.v1.deps import require_admin
 from app.core.config import settings
 from app.db.session import get_session
 from app.models.page import Page
@@ -53,19 +54,20 @@ class PagePreviewOut(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _create_preview_token(page_id: str) -> str:
+def _create_preview_token(page_id: str, tenant_id: str | None) -> str:
     """Return a 1-hour signed JWT for previewing a specific page."""
     expire = datetime.now(timezone.utc) + timedelta(hours=PREVIEW_TOKEN_TTL_HOURS)
     payload = {
         "type": "preview",
         "page_id": page_id,
+        "tenant_id": tenant_id,
         "exp": expire,
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
-def _decode_preview_token(token: str) -> str:
-    """Return page_id if the token is valid, else raise 401."""
+def _decode_preview_token(token: str) -> tuple[str, str | None]:
+    """Return the bound page and tenant IDs if the token is valid."""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError as exc:
@@ -78,7 +80,15 @@ def _decode_preview_token(token: str) -> str:
     if not page_id:
         raise HTTPException(status_code=401, detail="Malformed preview token")
 
-    return page_id
+    return page_id, payload.get("tenant_id")
+
+
+def _ensure_page_admin_access(page: Page, user: User) -> None:
+    """Only platform staff or an administrator of the owning tenant may preview."""
+    if user.is_superuser:
+        return
+    if page.tenant_id is None or user.tenant_id is None or page.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=404, detail="Page not found")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -93,13 +103,17 @@ def _decode_preview_token(token: str) -> str:
 async def create_preview_token(
     page_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_content_editor),
+    current_user: User = Depends(require_admin),
 ):
     page = await session.get(Page, page_id)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
+    _ensure_page_admin_access(page, current_user)
 
-    token = _create_preview_token(str(page_id))
+    token = _create_preview_token(
+        str(page_id),
+        str(page.tenant_id) if page.tenant_id is not None else None,
+    )
     web_url = settings.FRONTEND_URL
 
     return PreviewTokenOut(
@@ -122,7 +136,7 @@ async def get_preview_page(
     token: str,
     session: AsyncSession = Depends(get_session),
 ):
-    page_id_str = _decode_preview_token(token)
+    page_id_str, token_tenant_id = _decode_preview_token(token)
 
     try:
         resolved_id = uuid.UUID(page_id_str)
@@ -132,6 +146,9 @@ async def get_preview_page(
     page = await session.get(Page, resolved_id)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
+    page_tenant_id = str(page.tenant_id) if page.tenant_id is not None else None
+    if page_tenant_id != token_tenant_id:
+        raise HTTPException(status_code=401, detail="Preview token tenant mismatch")
 
     return PagePreviewOut(
         id=page.id,

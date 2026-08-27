@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
 
@@ -14,8 +15,12 @@ class CopilotConversation(SQLModel, table=True):
     __tablename__ = "copilot_conversations"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id", index=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
+    user_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL", index=True
+    )
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="SET NULL"
+    )
 
     # Channel identification
     channel: str = Field(max_length=20)           # 'telegram' | 'line' | 'in_app'

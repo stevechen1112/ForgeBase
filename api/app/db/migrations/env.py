@@ -1,20 +1,18 @@
-from logging.config import fileConfig
 import asyncio
 import os
 import sys
+from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
-
-from alembic import context
 
 # 讓 alembic 找到 app 模組
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 # 載入所有 models 以讓 autogenerate 能偵測（必須在 target_metadata 之前）
 import app.models  # noqa: F401 — side-effect import registers all tables
-
 from app.core.config import settings
 
 config = context.config
@@ -62,7 +60,13 @@ def do_run_migrations(connection):
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True,
+        # Historical migrations use PostgreSQL TEXT/timestamptz while SQLModel
+        # reports equivalent AutoString/DateTime abstractions. Treating those
+        # representational differences as schema changes hides real table,
+        # column, index and constraint drift in hundreds of false positives.
+        # Type changes remain explicit, reviewed migrations rather than an
+        # autogenerate gate.
+        compare_type=False,
     )
     with context.begin_transaction():
         context.run_migrations()

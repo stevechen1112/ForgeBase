@@ -176,7 +176,7 @@ export default function NewSegmentPage() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-base">條件規則</CardTitle>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">條件組合：</span>
@@ -189,11 +189,11 @@ export default function NewSegmentPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {conditions.map((cond, idx) => (
-              <div key={idx} className="flex items-end gap-2 rounded-lg border p-3">
+              <div key={idx} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-end">
                 {idx > 0 && (
                   <Badge variant="secondary" className="mb-1 text-xs shrink-0">{combinator}</Badge>
                 )}
-                <div className="flex-1 grid grid-cols-3 gap-2">
+                <div className="grid flex-1 gap-2 sm:grid-cols-3">
                   <div className="space-y-1">
                     <Label className="text-xs">欄位</Label>
                     <select className={SELECT_CLS} value={cond.field} onChange={(e) => updateCondition(idx, { field: e.target.value })}>
@@ -226,7 +226,7 @@ export default function NewSegmentPage() {
                   </div>
                 </div>
                 {cond.field === "event_count" && (
-                  <div className="grid grid-cols-2 gap-2 flex-1">
+                  <div className="grid flex-1 gap-2 sm:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="text-xs">事件名稱</Label>
                       <Input value={cond.event_name || ""} onChange={(e) => updateCondition(idx, { event_name: e.target.value })} placeholder="page_view" />

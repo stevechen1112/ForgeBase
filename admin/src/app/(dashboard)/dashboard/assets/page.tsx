@@ -10,7 +10,7 @@ import { assetsApi, type ContentAsset } from "@/lib/api/content";
 type Meta = { total: number; page: number; page_size: number; total_pages: number };
 
 function AssetIcon({ type }: { type: string }) {
-  if (type === "pdf") return <FileText className="h-5 w-5 text-red-500" />;
+  if (type === "pdf" || type === "document") return <FileText className="h-5 w-5 text-red-500" />;
   if (type === "image") return <ImageIcon className="h-5 w-5 text-blue-500" />;
   return <File className="h-5 w-5 text-muted-foreground" />;
 }
@@ -67,6 +67,27 @@ export default function AssetsPage() {
     }
   };
 
+  const canIndex = (asset: ContentAsset) =>
+    asset.asset_type === "pdf" || asset.asset_type === "document" || asset.mime_type.includes("pdf") || asset.mime_type.includes("wordprocessing");
+
+  const indexLabel: Record<string, string> = {
+    not_indexed: "未索引",
+    not_applicable: "不適用",
+    pending: "處理中",
+    indexed: "已索引",
+    needs_ocr: "抽字失敗",
+    withdrawn: "已撤回",
+  };
+
+  const handleToggleIndex = async (asset: ContentAsset, next: boolean) => {
+    try {
+      await assetsApi.update(token, asset.id, { is_indexable: next });
+      await load(page, typeFilter);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "更新索引設定失敗");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("確定刪除此檔案？")) return;
     try {
@@ -82,10 +103,10 @@ export default function AssetsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">圖片與檔案</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">上傳產品圖、PDF 規格書；也可在商品編輯頁直接上傳主圖</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">上傳產品圖、PDF／DOCX。預設不進公開客服；勾選「允許公開索引」後，抽得出文字的檔才會給官網 AI 顧問使用</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
@@ -98,7 +119,7 @@ export default function AssetsPage() {
             {uploading ? "上傳中…" : "上傳檔案"}
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
               className="hidden"
               disabled={uploading}
               onChange={(e) => {
@@ -120,6 +141,7 @@ export default function AssetsPage() {
           <option value="">全部類型</option>
           <option value="image">圖片</option>
           <option value="pdf">PDF</option>
+          <option value="document">文件</option>
           <option value="other">其他</option>
         </select>
         {meta && <span className="self-center text-sm text-muted-foreground">共 {meta.total} 筆檔案</span>}
@@ -134,13 +156,14 @@ export default function AssetsPage() {
           <p className="mt-1 text-sm">點右上角「上傳檔案」，或到商品編輯頁上傳主圖</p>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <table className="w-full text-sm">
+        <div className="max-w-full overflow-x-auto rounded-lg border">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-left text-muted-foreground">
                 <th className="px-4 py-2 font-medium">檔案</th>
                 <th className="px-4 py-2 font-medium">類型</th>
                 <th className="px-4 py-2 font-medium">大小</th>
+                <th className="px-4 py-2 font-medium">公開索引</th>
                 <th className="px-4 py-2 font-medium">網址</th>
                 <th className="px-4 py-2 font-medium w-24">操作</th>
               </tr>
@@ -156,6 +179,23 @@ export default function AssetsPage() {
                   </td>
                   <td className="px-4 py-3"><Badge variant="secondary">{a.asset_type}</Badge></td>
                   <td className="px-4 py-3 text-muted-foreground">{fmtSize(a.file_size_bytes)}</td>
+                  <td className="px-4 py-3">
+                    {canIndex(a) ? (
+                      <label className="flex flex-col gap-1 text-xs">
+                        <span className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={a.is_indexable}
+                            onChange={(e) => void handleToggleIndex(a, e.target.checked)}
+                          />
+                          允許公開索引
+                        </span>
+                        <span className="text-muted-foreground">{indexLabel[a.index_status ?? "not_indexed"] ?? a.index_status}</span>
+                      </label>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">網站素材</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <a href={a.public_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
                       開啟 <ExternalLink className="h-3 w-3" />

@@ -35,7 +35,7 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
     seo_title: initial?.seo_title ?? "",
     seo_description: initial?.seo_description ?? "",
     status: initial?.status ?? "draft",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     sort_order: initial?.sort_order ?? 0,
   });
   const [saving, setSaving] = useState(false);
@@ -98,10 +98,31 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
+      {id && (
+        <LocaleSwitcher
+          entityType="application"
+          basePath="/dashboard/applications"
+          id={id}
+          slug={form.slug}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale, status: v.status, updated_at: v.updated_at }))}
+        />
+      )}
+
+      {draftNotice && (
+        <Alert className="border-violet-200 bg-violet-50">
+          <AlertDescription className="text-violet-800">
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">應用場景資訊</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>應用場景名稱 *</Label>
               <Input value={form.application_name} onChange={(e) => handleNameChange(e.target.value)} required maxLength={120} />
@@ -131,7 +152,7 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
             <Label>主圖網址</Label>
             <Input {...f("hero_image_url")} type="url" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>排序</Label>
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />
@@ -155,26 +176,6 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Locale Variants Panel – edit mode only */}
-      {id && (
-        <LocaleSwitcher
-          entityType="application"
-          basePath="/dashboard/applications"
-          id={id}
-          slug={form.slug}
-          currentLocale={form.locale}
-          variants={localeVariants.map((v) => ({ id: v.id, locale: v.locale }))}
-        />
-      )}
-
-      {draftNotice && (
-        <Alert className="border-violet-200 bg-violet-50">
-          <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Card>
         <CardHeader><CardTitle className="text-base">搜尋標題設定</CardTitle></CardHeader>

@@ -5,20 +5,17 @@ import { SendHorizonal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useMessageNamespace } from "@/lib/messages";
-
-type ChatInputMessages = {
-  placeholder: string;
-  sendMessage: string;
-};
+import { chatDirection, getChatUiCopy } from "@/components/chat/chat-ui-copy";
 
 interface ChatInputProps {
   disabled?: boolean;
+  locale?: string;
   onSubmit: (value: string) => Promise<void>;
 }
 
-export function ChatInput({ disabled = false, onSubmit }: ChatInputProps) {
-  const copy = useMessageNamespace<ChatInputMessages>("chat");
+export function ChatInput({ disabled = false, locale, onSubmit }: ChatInputProps) {
+  const copy = getChatUiCopy(locale);
+  const direction = chatDirection(locale);
   const [value, setValue] = useState("");
 
   async function handleSubmit() {
@@ -32,6 +29,7 @@ export function ChatInput({ disabled = false, onSubmit }: ChatInputProps) {
     <div className="border-t border-slate-200 bg-white p-3">
       <div className="flex items-end gap-2">
         <Textarea
+          dir={direction}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={copy.placeholder}

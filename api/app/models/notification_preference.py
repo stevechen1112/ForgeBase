@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime, time
+from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field, Column
-import sqlalchemy as sa
+
+from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
 
@@ -15,8 +15,12 @@ class NotificationPreference(SQLModel, table=True):
     __tablename__ = "notification_preferences"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id", ondelete="CASCADE", index=True
+    )
+    tenant_id: uuid.UUID = Field(
+        foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
 
     # Channel: 'telegram' | 'line' | 'email' | 'in_app'
     channel: str = Field(max_length=20)

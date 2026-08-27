@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
 from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class Page(SQLModel, table=True):
@@ -29,11 +31,10 @@ class Page(SQLModel, table=True):
     locale: str = Field(default="en", max_length=5)
     status: str = Field(default="draft", max_length=20)
     noindex: bool = Field(default=False)   # True = add noindex meta tag; auto-set on unpublish
-    # Source entity and brief links (spec 12.2.9)
+    # Optional source entity link for structured content relationships.
     entity_type: Optional[str] = Field(default=None, max_length=40)
     # "product" | "application" | "certification" | "capability" | None
     entity_id: Optional[uuid.UUID] = Field(default=None)
-    brief_id: Optional[uuid.UUID] = Field(default=None, foreign_key="page_briefs.id")
     tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

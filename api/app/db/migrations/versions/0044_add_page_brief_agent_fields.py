@@ -8,8 +8,8 @@ Create Date: 2026-04-26
 revision/down_revision 使用短代號 "0044"/"0043" 導致斷鏈；
 遷入正式目錄並對齊完整 revision id。）
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0044_add_page_brief_agent_fields"
 down_revision = "0043_add_rfq_agent_draft_fields"

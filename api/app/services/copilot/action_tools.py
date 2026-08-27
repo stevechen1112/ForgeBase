@@ -17,7 +17,12 @@ from sqlmodel import select
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.contact import Contact
-from app.models.nurture import NurtureEnrollment, NurtureOutbox, NurtureSequence, NurtureStep
+from app.models.nurture import (
+    NurtureEnrollment,
+    NurtureOutbox,
+    NurtureSequence,
+    NurtureStep,
+)
 from app.models.rfq_event import RFQEvent
 from app.models.rfq_request import RFQRequest
 
@@ -250,7 +255,8 @@ async def assign_rfq_to_me(
             }
 
         rfq.assigned_to = user_id
-        rfq.status = "assigned"
+        if rfq.status == "new":
+            rfq.status = "assigned"
         rfq.assigned_notified_at = None
         rfq.updated_at = utcnow_naive()
         s.add(rfq)
@@ -269,8 +275,9 @@ async def assign_rfq_to_me(
         await s.commit()
 
         try:
-            from app.services.notifications import notify_rfq_assigned
             import asyncio
+
+            from app.services.notifications import notify_rfq_assigned
             asyncio.create_task(notify_rfq_assigned(rfq.id))
         except Exception:
             logger.warning("rfq assign notification failed", exc_info=True)

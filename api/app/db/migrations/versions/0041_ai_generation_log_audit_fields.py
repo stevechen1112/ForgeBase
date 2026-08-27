@@ -6,9 +6,8 @@ the live database schema used by AI content generation.
 Revision ID: 0041_ai_generation_log_audit_fields
 Revises: 0040_copilot_run_log
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0041_ai_generation_log_audit_fields"
 down_revision = "0040_copilot_run_log"

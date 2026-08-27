@@ -1,0 +1,2 @@
+# Optional authenticated Admin UI copy scan (not installed in the API runtime image).
+playwright>=1.49,<2

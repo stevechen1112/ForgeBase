@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { trackCTAClick, getVisitorId } from "@/lib/analytics";
+import { track, trackCTAClick, getAnalyticsVisitorId } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/siteConfig";
 import { withTenantHeaders } from "@/lib/tenant";
 
 type DynamicCTA = {
-  cta: { label?: string; action_type?: string; description?: string } | null;
+  cta: { id?: string; label?: string; action_type?: string; description?: string } | null;
   variant: string;
   personalization: { headline_prefix?: string; cta_label_override?: string };
   fallback_used: boolean;
+  decision_id?: string;
 };
 
 type Props = {
@@ -19,33 +21,50 @@ type Props = {
   productName: string;
   categorySlug: string;
   categoryName: string;
+  industrial?: boolean;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-export function ProductCTAButtons({ productId, productName, categorySlug, categoryName }: Props) {
+export function ProductCTAButtons({ productId, productName, categorySlug, categoryName, industrial }: Props) {
   const encodedProductName = encodeURIComponent(productName);
   const [dynamic, setDynamic] = useState<DynamicCTA | null>(null);
-  const isIndustrial = siteConfig.layout === "industrial";
+  const locale = useLocale();
+  const isIndustrial = industrial ?? siteConfig.layout === "industrial";
 
   useEffect(() => {
-    const vid = getVisitorId();
     const params = new URLSearchParams({
-      visitor_id: vid,
       page_type: "product",
       entity_id: productId,
       entity_name: productName,
+      locale,
     });
+    const vid = getAnalyticsVisitorId();
+    if (vid) params.set("visitor_id", vid);
     fetch(`${API_BASE}/api/v1/content/dynamic-cta?${params}`, {
       headers: withTenantHeaders(),
     })
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) setDynamic(data); })
+      .then((data: DynamicCTA | null) => {
+        if (!data) return;
+        setDynamic(data);
+        if (data.cta?.id) {
+          void track("cta_impression", {
+            cta_id: data.cta.id,
+            decision_id: data.decision_id,
+            page_type: "product",
+            page_id: productId,
+          });
+        }
+      })
       .catch(() => {});
-  }, [productId, productName]);
+  }, [locale, productId, productName]);
 
   // Determine primary CTA label based on dynamic result
-  const primaryLabel = dynamic?.personalization?.cta_label_override || "Request a Quote";
+  const zh = locale.toLowerCase().startsWith("zh");
+  const primaryLabel = dynamic?.personalization?.cta_label_override || dynamic?.cta?.label || (zh ? "立即詢價" : "Request a Quote");
+  const contactLabel = zh ? "聯絡我們" : "Contact Us";
+  const backLabel = zh ? `返回${categoryName}` : `Back to ${categoryName}`;
   const isUrgent = dynamic?.variant === "urgent";
 
   if (isIndustrial) {
@@ -67,16 +86,16 @@ export function ProductCTAButtons({ productId, productName, categorySlug, catego
         </Link>
         <Link
           href={`/contact?ref=product&product=${encodedProductName}`}
-          onClick={() => trackCTAClick("Contact Us", `/contact?ref=product&product=${encodedProductName}`)}
+          onClick={() => trackCTAClick(contactLabel, `/contact?ref=product&product=${encodedProductName}`)}
           className="flex items-center border-2 border-gray-300 px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-gray-800 skew-x-[-3deg] hover:border-primary hover:text-primary"
         >
-          <span className="skew-x-[3deg]">Contact Us</span>
+          <span className="skew-x-[3deg]">{contactLabel}</span>
         </Link>
         <Link
           href={`/products/${categorySlug}`}
           className="flex items-center border border-gray-300 px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-gray-500 skew-x-[-3deg] hover:border-gray-500 hover:text-gray-700"
         >
-          <span className="skew-x-[3deg]">Back to {categoryName}</span>
+          <span className="skew-x-[3deg]">{backLabel}</span>
         </Link>
       </div>
     );
@@ -100,14 +119,14 @@ export function ProductCTAButtons({ productId, productName, categorySlug, catego
       <Button asChild variant="outline" size="lg">
         <Link
           href={`/contact?ref=product&product=${encodedProductName}`}
-          onClick={() => trackCTAClick("Contact Us", `/contact?ref=product&product=${encodedProductName}`)}
+          onClick={() => trackCTAClick(contactLabel, `/contact?ref=product&product=${encodedProductName}`)}
         >
-          Contact Us
+          {contactLabel}
         </Link>
       </Button>
       <Button asChild variant="ghost" size="lg">
         <Link href={`/products/${categorySlug}`}>
-          ← Back to {categoryName}
+          {backLabel}
         </Link>
       </Button>
     </div>

@@ -6,9 +6,8 @@ LLM-assisted locale drafting).
 Revision ID: 0056_translation_glossary
 Revises: 0055_nurture_outbox_unique_pending
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0056_translation_glossary"
 down_revision = "0055_nurture_outbox_unique_pending"

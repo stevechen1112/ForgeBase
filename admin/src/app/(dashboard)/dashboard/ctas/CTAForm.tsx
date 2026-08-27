@@ -31,7 +31,7 @@ export default function CTAForm({ initial, id }: Props) {
     bg_color: initial?.bg_color ?? "",
     image_url: initial?.image_url ?? "",
     locale: initial?.locale ?? "en",
-    status: initial?.status ?? "draft",
+    status: initial?.status === "active" ? "published" : initial?.status ?? "draft",
     sort_order: initial?.sort_order ?? 0,
     target_intent_stage: initial?.target_intent_stage ?? "any",
   });
@@ -61,7 +61,7 @@ export default function CTAForm({ initial, id }: Props) {
       <Card>
         <CardHeader><CardTitle className="text-base">行動按鈕設定</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>按鈕代碼 *</Label>
               <Input className="font-mono" {...f("cta_key")} required maxLength={80} placeholder="例：home_rfq" />
@@ -84,7 +84,7 @@ export default function CTAForm({ initial, id }: Props) {
             <Label>副標題</Label>
             <Input {...f("subheadline")} maxLength={300} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>按鈕文字</Label>
               <Input {...f("button_label")} maxLength={80} />
@@ -102,7 +102,7 @@ export default function CTAForm({ initial, id }: Props) {
             <Label>按鈕連結</Label>
             <Input {...f("button_url")} maxLength={500} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>背景顏色</Label>
               <Input {...f("bg_color")} maxLength={20} placeholder="#1d4ed8" />
@@ -112,7 +112,7 @@ export default function CTAForm({ initial, id }: Props) {
               <Input {...f("image_url")} type="url" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>語言</Label>
               <select className={SELECT_CLS} {...f("locale")}>
@@ -129,7 +129,7 @@ export default function CTAForm({ initial, id }: Props) {
                 <option value="archived">已封存</option>
               </select>
             </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>目標關注程度</Label>
               <select className={SELECT_CLS} {...f("target_intent_stage")}>
@@ -137,6 +137,7 @@ export default function CTAForm({ initial, id }: Props) {
                 <option value="cold">初次瀏覽</option>
                 <option value="warm">多次互動</option>
                 <option value="hot">高度關注</option>
+                <option value="sales_ready">可交由業務跟進</option>
               </select>
             </div>
             <div className="space-y-1.5">

@@ -20,11 +20,11 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.redirect import Redirect
 from app.models.user import User
 from app.schemas.redirect import RedirectCreate, RedirectRead, RedirectUpdate
-from app.core.datetime import utcnow_naive
 
 router = APIRouter(prefix="/redirects", tags=["Redirects"])
 

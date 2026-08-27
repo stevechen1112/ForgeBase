@@ -16,26 +16,32 @@ PATCH  /tracking/segments/{id}         — update segment (admin)
 DELETE /tracking/segments/{id}         — delete segment (admin)
 POST   /tracking/segments/{id}/evaluate — evaluate segment → matching visitor count + sample
 """
+import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta
-from app.core.datetime import utcnow_naive
 from typing import Optional
-import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlmodel import select, col, func
+from pydantic import BaseModel, field_validator
+from pydantic import Field as PydanticField
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import RequireFeature, get_current_user, require_admin
+from app.api.v1.deps import (
+    RequireFeature,
+    get_current_user,
+    require_admin,
+    require_user_tenant_id,
+)
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session
-from app.models.segment import Segment
-from app.models.visitor import Visitor
-from app.models.tracking_event import TrackingEvent
 from app.models.audience_tag import VisitorTagLink
 from app.models.contact import Contact
+from app.models.segment import Segment
+from app.models.tracking_event import TrackingEvent
 from app.models.user import User
+from app.models.visitor import Visitor
 
 router = APIRouter(prefix="/tracking", tags=["Audience Segments"])
 
@@ -43,23 +49,38 @@ router = APIRouter(prefix="/tracking", tags=["Audience Segments"])
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class ConditionItem(BaseModel):
-    type: str
+    type: str = PydanticField(max_length=30)
     op: Optional[str] = None
     value: Optional[str | int | float] = None
-    event_name: Optional[str] = None
-    within_days: Optional[int] = None
-    tag_id: Optional[str] = None
+    event_name: Optional[str] = PydanticField(default=None, max_length=50)
+    within_days: Optional[int] = PydanticField(default=None, ge=1, le=365)
+    tag_id: Optional[uuid.UUID] = None
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, value: str) -> str:
+        if value not in {"intent_stage", "intent_score", "country", "tag", "event_count"}:
+            raise ValueError("Unsupported segment condition type")
+        return value
+
+    @field_validator("op")
+    @classmethod
+    def validate_op(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value not in {"eq", "gte", "lte", "in"}:
+            raise ValueError("Unsupported segment condition operator")
+        return value
 
 
 class SegmentCreate(BaseModel):
-    name: str
-    description: str = ""
-    conditions: list[ConditionItem]
+    name: str = PydanticField(min_length=1, max_length=100)
+    description: str = PydanticField(default="", max_length=300)
+    conditions: list[ConditionItem] = PydanticField(max_length=20)
     combinator: str = "AND"
 
 
 class SegmentRead(BaseModel):
     id: uuid.UUID
+    tenant_id: uuid.UUID
     name: str
     description: str
     conditions: list[dict]
@@ -73,9 +94,9 @@ class SegmentRead(BaseModel):
 
 
 class SegmentUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    conditions: Optional[list[ConditionItem]] = None
+    name: Optional[str] = PydanticField(default=None, min_length=1, max_length=100)
+    description: Optional[str] = PydanticField(default=None, max_length=300)
+    conditions: Optional[list[ConditionItem]] = PydanticField(default=None, max_length=20)
     combinator: Optional[str] = None
 
 
@@ -162,6 +183,7 @@ async def _count_segment_matches(
 def _to_segment_read(s: Segment, member_count: Optional[int] = None) -> SegmentRead:
     return SegmentRead(
         id=s.id,
+        tenant_id=s.tenant_id,
         name=s.name,
         description=s.description,
         conditions=json.loads(s.conditions),
@@ -173,18 +195,42 @@ def _to_segment_read(s: Segment, member_count: Optional[int] = None) -> SegmentR
     )
 
 
+async def _get_owned_segment(
+    db: AsyncSession, segment_id: uuid.UUID, current_user: User
+) -> Segment:
+    tenant_id = require_user_tenant_id(current_user)
+    segment = (
+        await db.exec(
+            select(Segment).where(
+                Segment.id == segment_id,
+                Segment.tenant_id == tenant_id,
+            )
+        )
+    ).first()
+    if not segment:
+        raise HTTPException(status_code=404, detail="Segment not found")
+    return segment
+
+
 @router.get("/segments", response_model=list[SegmentRead])
 async def list_segments(
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    rows = (await db.exec(select(Segment).order_by(Segment.created_at.desc()))).all()
+    tenant_id = require_user_tenant_id(_)
+    rows = (
+        await db.exec(
+            select(Segment)
+            .where(Segment.tenant_id == tenant_id)
+            .order_by(Segment.created_at.desc())
+        )
+    ).all()
     result: list[SegmentRead] = []
     for s in rows:
         conditions = json.loads(s.conditions)
         member_count = await _count_segment_matches(
-            db, conditions, s.combinator, _.tenant_id
+            db, conditions, s.combinator, tenant_id
         )
         result.append(_to_segment_read(s, member_count=member_count))
     return result
@@ -193,16 +239,17 @@ async def list_segments(
 @router.post("/segments", response_model=SegmentRead, status_code=status.HTTP_201_CREATED)
 async def create_segment(
     payload: SegmentCreate,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     if payload.combinator not in ("AND", "OR"):
         raise HTTPException(status_code=422, detail="combinator must be AND or OR")
     seg = Segment(
+        tenant_id=require_user_tenant_id(current_user),
         name=payload.name,
         description=payload.description,
-        conditions=json.dumps([c.model_dump(exclude_none=True) for c in payload.conditions]),
+        conditions=json.dumps([c.model_dump(mode="json", exclude_none=True) for c in payload.conditions]),
         combinator=payload.combinator,
         created_by=current_user.id,
     )
@@ -215,13 +262,11 @@ async def create_segment(
 @router.get("/segments/{segment_id}", response_model=SegmentRead)
 async def get_segment(
     segment_id: uuid.UUID,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    seg = await db.get(Segment, segment_id)
-    if not seg:
-        raise HTTPException(status_code=404, detail="Segment not found")
+    seg = await _get_owned_segment(db, segment_id, _)
     member_count = await _count_segment_matches(
         db, json.loads(seg.conditions), seg.combinator, _.tenant_id
     )
@@ -232,19 +277,17 @@ async def get_segment(
 async def update_segment(
     segment_id: uuid.UUID,
     payload: SegmentUpdate,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    seg = await db.get(Segment, segment_id)
-    if not seg:
-        raise HTTPException(status_code=404, detail="Segment not found")
+    seg = await _get_owned_segment(db, segment_id, _)
     if payload.name is not None:
         seg.name = payload.name
     if payload.description is not None:
         seg.description = payload.description
     if payload.conditions is not None:
-        seg.conditions = json.dumps([c.model_dump(exclude_none=True) for c in payload.conditions])
+        seg.conditions = json.dumps([c.model_dump(mode="json", exclude_none=True) for c in payload.conditions])
     if payload.combinator is not None:
         if payload.combinator not in ("AND", "OR"):
             raise HTTPException(status_code=422, detail="combinator must be AND or OR")
@@ -262,13 +305,11 @@ async def update_segment(
 @router.delete("/segments/{segment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_segment(
     segment_id: uuid.UUID,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(require_admin),
 ):
-    seg = await db.get(Segment, segment_id)
-    if not seg:
-        raise HTTPException(status_code=404, detail="Segment not found")
+    seg = await _get_owned_segment(db, segment_id, _)
     await db.delete(seg)
     await db.commit()
 
@@ -278,7 +319,7 @@ async def delete_segment(
 @router.post("/segments/{segment_id}/evaluate")
 async def evaluate_segment(
     segment_id: uuid.UUID,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -286,9 +327,7 @@ async def evaluate_segment(
     Evaluate the segment definition against the current visitor table.
     Returns: total matching count + up to 20 sample visitor_ids.
     """
-    seg = await db.get(Segment, segment_id)
-    if not seg:
-        raise HTTPException(status_code=404, detail="Segment not found")
+    seg = await _get_owned_segment(db, segment_id, _)
 
     conditions: list[dict] = json.loads(seg.conditions)
     combinator = seg.combinator  # "AND" | "OR"
@@ -317,26 +356,27 @@ async def evaluate_segment(
 async def sync_segment_to_esp(
     segment_id: uuid.UUID,
     provider: str,
-    _feature: User = Depends(RequireFeature("full_tracking")),
+    _feature: User = Depends(RequireFeature("audience_segments")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
     """
     Evaluate the segment and sync matching contacts to the selected ESP.
 
-    Matching logic mirrors evaluate_segment; contacts are resolved via
-    Contact.visitor_id (tenant-scoped). Currently supports SendGrid and
+    Matching logic mirrors evaluate_segment; contacts are resolved via the
+    canonical Visitor.contact_id relationship. Currently supports SendGrid and
     Mailchimp. Returns counts for transparency.
     """
     if provider not in ("sendgrid", "mailchimp"):
         raise HTTPException(status_code=422, detail="provider must be 'sendgrid' or 'mailchimp'")
 
     from app.core.config import settings
-    from app.services.esp_service import sendgrid_upsert_contact, mailchimp_upsert_member
+    from app.services.esp_service import (
+        mailchimp_upsert_member,
+        sendgrid_upsert_contact,
+    )
 
-    seg = await db.get(Segment, segment_id)
-    if not seg:
-        raise HTTPException(status_code=404, detail="Segment not found")
+    seg = await _get_owned_segment(db, segment_id, _)
 
     if provider == "sendgrid" and not settings.SENDGRID_API_KEY:
         raise HTTPException(status_code=400, detail="SendGrid not configured: set SENDGRID_API_KEY.")
@@ -405,7 +445,12 @@ async def sync_segment_to_esp(
     matching_visitor_ids = (await db.exec(q)).all()
 
     # Resolve to contacts (tenant-scoped)
-    contact_q = select(Contact).where(Contact.visitor_id.in_(matching_visitor_ids))
+    contact_q = (
+        select(Contact)
+        .join(Visitor, Visitor.contact_id == Contact.id)
+        .where(Visitor.visitor_id.in_(matching_visitor_ids))
+        .distinct()
+    )
     if _.tenant_id:
         contact_q = contact_q.where(Contact.tenant_id == _.tenant_id)
     contacts = (await db.exec(contact_q)).all()

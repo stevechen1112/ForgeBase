@@ -3,6 +3,7 @@ import { ContactForm } from "@/components/forms/ContactForm";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { pageBodyLooksLikeHtml, parsePageBlocks, parseStructuredData, type FlexiblePageBlock } from "@/lib/page-content";
+import { withBasePath } from "@/lib/basePath";
 import type { Page } from "@/types/content";
 
 type Props = {
@@ -46,7 +47,7 @@ function renderBlock(block: FlexiblePageBlock, index: number) {
       return (
         <section key={`hero-${index}`} className="relative overflow-hidden bg-blue-950 text-white">
           {block.backgroundImageUrl ? (
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${block.backgroundImageUrl})` }} />
+            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${withBasePath(block.backgroundImageUrl)})` }} />
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/80 to-blue-900/60" />
           <div className="relative mx-auto max-w-6xl px-6 py-24 sm:py-32">
@@ -196,7 +197,7 @@ function renderBlock(block: FlexiblePageBlock, index: number) {
             <div>
               {block.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={block.imageUrl} alt={block.imageAlt ?? block.title ?? "page image"} className="aspect-video w-full rounded-2xl border border-gray-200 object-cover shadow-sm" />
+                <img src={withBasePath(block.imageUrl)} alt={block.imageAlt ?? block.title ?? "page image"} className="aspect-video w-full rounded-2xl border border-gray-200 object-cover shadow-sm" />
               ) : null}
             </div>
           </div>
@@ -223,7 +224,7 @@ export function FlexiblePageRenderer({ page }: Props) {
         <>
           <section className="relative overflow-hidden bg-blue-950 text-white">
             {page.hero_image_url ? (
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${page.hero_image_url})` }} />
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${withBasePath(page.hero_image_url)})` }} />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/80 to-blue-900/60" />
             <div className="relative mx-auto max-w-6xl px-6 py-24 sm:py-32 text-center">

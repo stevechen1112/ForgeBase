@@ -8,7 +8,7 @@ Scheduled Publishing Service
 import logging
 from datetime import datetime, timezone
 
-from sqlmodel import select, col
+from sqlmodel import col, select
 
 from app.db.session import get_session_ctx
 from app.models.product import Product
@@ -45,6 +45,13 @@ async def run_scheduled_publishing() -> dict:
             published_count += 1
 
         if published_count:
+            await session.commit()
+            from app.services.knowledge_sync import sync_knowledge_now
+
+            for product in products:
+                if product.tenant_id is None:
+                    continue
+                await sync_knowledge_now(session, tenant_id=product.tenant_id, item=product)
             await session.commit()
 
     return {"published": published_count}

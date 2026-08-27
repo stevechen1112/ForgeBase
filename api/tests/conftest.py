@@ -5,11 +5,17 @@ Unit tests that don't need a DB run with the raw app.
 Integration tests require a live DATABASE_URL and are run in CI
 or locally when PostgreSQL is available.
 """
+
 import os
 import uuid
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+
+# Service-layer helpers use the module-level DB session factory instead of the
+# FastAPI dependency override. Tests use function-scoped event loops, so that
+# shared factory must not retain asyncpg connections from a previous loop.
+os.environ.setdefault("DATABASE_NULL_POOL", "true")
 
 # Mark tests that require a running DB so they can be selectively skipped.
 requires_db = pytest.mark.skipif(
@@ -79,6 +85,30 @@ def _make_engine():
     return eng, factory
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_shared_rate_limit_store():
+    """Reset the database-backed limiter using the canonical async driver.
+
+    CI and production dependencies intentionally do not install a second,
+    synchronous PostgreSQL driver. Keeping this cleanup async prevents hidden
+    local-only behavior and makes the complete suite deterministic.
+    """
+    if not os.getenv("DATABASE_URL"):
+        yield
+        return
+
+    from sqlalchemy import text
+
+    eng, factory = _make_engine()
+    try:
+        async with factory() as session:
+            await session.exec(text("DELETE FROM rate_limit_hits"))
+            await session.commit()
+    finally:
+        await eng.dispose()
+    yield
+
+
 @pytest_asyncio.fixture
 async def http_client():
     """ASGI test client for the FastAPI app (no real HTTP).
@@ -121,8 +151,14 @@ async def two_tenants():
 
     eng, factory = _make_engine()
     tag = uuid.uuid4().hex[:8]
-    tenant_a = Tenant(name="Tenant Alpha", slug=f"alpha-{tag}", plan="professional")
-    tenant_b = Tenant(name="Tenant Beta",  slug=f"beta-{tag}",  plan="starter")
+    tenant_a = Tenant(
+        name="Tenant Alpha",
+        slug=f"alpha-{tag}",
+    )
+    tenant_b = Tenant(
+        name="Tenant Beta",
+        slug=f"beta-{tag}",
+    )
 
     async with factory() as session:
         session.add(tenant_a)
@@ -139,27 +175,53 @@ async def two_tenants():
     async with factory() as session:
         for tid in (str(tenant_a.id), str(tenant_b.id)):
             for table in (
+                "attribution_events",
+                "attribution_links",
+                "sales_handoff_events",
+                "sales_handoffs",
+                "inbound_replies",
+                "inbound_reply_policies",
+                "outreach_message_reviews",
+                "outreach_messages",
+                "journey_snapshots",
+                "outreach_draft_policies",
+                "contact_candidate_reviews",
+                "contact_candidates",
+                "contact_persona_policies",
+                "provider_usage",
+                "identification_reviews",
+                "company_identifications",
+                "network_observations",
+                "growth_automation_policies",
+                "retirement_usage_events",
                 "copilot_run_logs",
+                "operational_jobs",
+                "consent_records",
+                "site_builds",
+                "platform_audit_logs",
                 "idempotency_keys",
                 "reply_templates",
                 "notification_preferences",
                 "copilot_conversations",
                 "notification_log",
                 "tracking_events",
+                "rfq_notes",
                 "rfq_events",
                 "rfq_requests",
+                "rfq_drafts",
                 "contacts",
-                "ai_generation_logs",
-                "page_briefs",
+                "knowledge_chunks",
+                "knowledge_sync_jobs",
+                "knowledge_sources",
                 "content_assets",
                 "integration_credentials",
                 "chat_sessions",
                 "tracking_sessions",
                 "visitors",
-                "intake_projects",
                 "pages",
                 "redirects",
                 "ctas",
+                "segments",
                 "faq_items",
                 "comparison_topics",
                 "certifications",
@@ -170,11 +232,13 @@ async def two_tenants():
                 "site_profiles",
                 "users",
             ):
-                await session.execute(
+                await session.exec(
                     text(f"DELETE FROM {table} WHERE tenant_id = :tid"),
-                    {"tid": tid},
+                    params={"tid": tid},
                 )
-            await session.execute(text("DELETE FROM tenants WHERE id = :tid"), {"tid": tid})
+            await session.exec(
+                text("DELETE FROM tenants WHERE id = :tid"), params={"tid": tid}
+            )
         await session.commit()
 
     await eng.dispose()

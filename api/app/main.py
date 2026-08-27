@@ -13,13 +13,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.config import settings
-from app.core import rate_limit
 from app.api.v1.router import api_router
-from app.services.score_decay import run_daily_score_decay
+from app.core import rate_limit
+from app.core.config import settings
+from app.services.copilot.digest import run_daily_digest
 from app.services.google_ads import sync_high_intent_to_customer_match
 from app.services.scheduled_publishing import run_scheduled_publishing
-from app.services.copilot.digest import run_daily_digest
+from app.services.score_decay import run_daily_score_decay
 
 logger = logging.getLogger("forgebase.api")
 
@@ -88,6 +88,48 @@ async def _nurture_process_job() -> None:
         logger.exception("Nurture process job failed")
 
 
+async def _operational_outbox_job() -> None:
+    from app.services.operational_outbox import process_operational_jobs
+    try:
+        stats = await process_operational_jobs()
+        if stats["completed"] or stats["retried"] or stats["failed"]:
+            logger.info("Operational outbox: %s", stats)
+    except Exception:
+        logger.exception("Operational outbox job failed")
+
+
+async def _analytics_retention_job() -> None:
+    from app.db.session import get_session_ctx
+    from app.services.privacy_retention import purge_expired_analytics
+    try:
+        async with get_session_ctx() as db:
+            stats = await purge_expired_analytics(db)
+        if stats["events"] or stats["sessions"]:
+            logger.info("Analytics retention cleanup: %s", stats)
+    except Exception:
+        logger.exception("Analytics retention cleanup failed")
+
+
+async def _ops_monitor_job() -> None:
+    from app.services.ops_monitor import check_operational_health
+    try:
+        stats = await check_operational_health()
+        if not stats["healthy"]:
+            logger.error("Operational job health degraded: %s", stats)
+    except Exception:
+        logger.exception("Operational health monitor failed")
+
+
+async def _knowledge_sync_job() -> None:
+    from app.services.knowledge_sync import process_knowledge_sync_jobs
+    try:
+        stats = await process_knowledge_sync_jobs()
+        if stats["completed"] or stats["failed"]:
+            logger.info("Knowledge sync: %s", stats)
+    except Exception:
+        logger.exception("Knowledge sync job failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not _SCHEDULER_ENABLED:
@@ -149,6 +191,42 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=300,
     )
+    _scheduler.add_job(
+        _operational_outbox_job,
+        trigger="interval",
+        seconds=30,
+        id="operational_outbox",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=30,
+    )
+    _scheduler.add_job(
+        _analytics_retention_job,
+        trigger="cron",
+        hour=4,
+        minute=15,
+        id="analytics_retention",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    _scheduler.add_job(
+        _ops_monitor_job,
+        trigger="interval",
+        minutes=5,
+        id="operational_health_monitor",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=120,
+    )
+    _scheduler.add_job(
+        _knowledge_sync_job,
+        trigger="interval",
+        minutes=1,
+        id="knowledge_sync",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=30,
+    )
     _scheduler.start()
     logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min, daily digest 00:00 UTC")
     yield
@@ -184,7 +262,7 @@ async def enforce_rate_limit(request: Request, call_next):
         client_ip = xff.split(",")[-1].strip()
     else:
         client_ip = request.client.host if request.client else "unknown"
-    if not rate_limit.check(request.method, request.url.path, client_ip):
+    if not await rate_limit.check_shared(request.method, request.url.path, client_ip):
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             content={"error": "Too many requests", "status_code": 429},
@@ -244,7 +322,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(api_router)
 
 # Local asset uploads (dev / no R2)
-from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
 _uploads_dir = Path(__file__).resolve().parent.parent / "uploads"
@@ -258,6 +335,7 @@ async def health_check():
 
 
 @app.get("/health/ready", tags=["system"])
+@app.head("/health/ready", tags=["system"], include_in_schema=False)
 async def readiness_check():
     """Deep readiness probe used by production deployment.
 
@@ -270,9 +348,9 @@ async def readiness_check():
         from app.db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as session:
-            await session.execute(text("SELECT 1"))
+            await session.exec(text("SELECT 1"))
             revision = (
-                await session.execute(text("SELECT version_num FROM alembic_version"))
+                await session.exec(text("SELECT version_num FROM alembic_version"))
             ).scalar_one_or_none()
         from alembic.config import Config
         from alembic.script import ScriptDirectory
@@ -307,4 +385,16 @@ async def readiness_check():
     return JSONResponse(
         status_code=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"status": "ready" if ready else "degraded", "checks": checks},
+    )
+
+
+@app.get("/health/external-test", tags=["system"])
+async def external_test_readiness_check():
+    """Separate launch gate; does not make an otherwise healthy API restart-loop."""
+    from app.services.external_test_readiness import external_test_readiness
+
+    result = external_test_readiness()
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if result["ready"] else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=result,
     )

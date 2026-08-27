@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -254,7 +255,7 @@ class CTACreate(BaseModel):
     bg_color: Optional[str] = Field(default=None, max_length=20)
     image_url: Optional[str] = Field(default=None, max_length=500)
     locale: str = Field(default="en", max_length=5)
-    status: str = Field(default="active")
+    status: Literal["draft", "published", "archived"] = "draft"
     sort_order: int = Field(default=0, ge=0)
     target_intent_stage: str = Field(default="any", max_length=20)
 
@@ -270,7 +271,7 @@ class CTAUpdate(BaseModel):
     bg_color: Optional[str] = Field(default=None, max_length=20)
     image_url: Optional[str] = Field(default=None, max_length=500)
     locale: Optional[str] = Field(default=None, max_length=5)
-    status: Optional[str] = None
+    status: Optional[Literal["draft", "published", "archived"]] = None
     sort_order: Optional[int] = Field(default=None, ge=0)
     target_intent_stage: Optional[str] = Field(default=None, max_length=20)
 
@@ -315,7 +316,6 @@ class PageCreate(BaseModel):
     noindex: bool = False
     entity_type: Optional[str] = Field(default=None, max_length=40)
     entity_id: Optional[uuid.UUID] = None
-    brief_id: Optional[uuid.UUID] = None
 
 
 class PageUpdate(BaseModel):
@@ -335,7 +335,6 @@ class PageUpdate(BaseModel):
     noindex: Optional[bool] = None
     entity_type: Optional[str] = Field(default=None, max_length=40)
     entity_id: Optional[uuid.UUID] = None
-    brief_id: Optional[uuid.UUID] = None
 
 
 class PageRead(BaseModel):
@@ -356,7 +355,6 @@ class PageRead(BaseModel):
     noindex: bool
     entity_type: Optional[str]
     entity_id: Optional[uuid.UUID]
-    brief_id: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
     published_at: Optional[datetime]

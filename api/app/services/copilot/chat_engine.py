@@ -26,7 +26,7 @@ from sqlmodel import col, select
 
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
-from app.core.tracing import get_openai_client, chat_completion_kwargs
+from app.core.tracing import chat_completion_kwargs, get_openai_client
 from app.db.session import get_session_ctx
 from app.models.copilot_conversation import CopilotConversation
 from app.models.copilot_run_log import CopilotRunLog
@@ -497,7 +497,9 @@ class CopilotEngine:
 
     async def _build_company_context(self) -> str:
         """Load SiteProfile and return a compact company context string for the system prompt."""
-        from app.models.site_profile import SiteProfile  # avoid circular at module level
+        from app.models.site_profile import (
+            SiteProfile,  # avoid circular at module level
+        )
         async with get_session_ctx() as s:
             profile = (await s.exec(
                 select(SiteProfile).where(SiteProfile.tenant_id == self.tenant_id)

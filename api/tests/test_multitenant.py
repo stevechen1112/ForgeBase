@@ -9,7 +9,7 @@ Coverage:
   - Tenant data isolation: tenant A content is invisible to tenant B
   - Slug uniqueness: same slug is allowed across different tenants
   - Auth boundary: admin of tenant A cannot read/modify tenant B content
-  - Plan gating: Professional-only features blocked for Starter tenants
+  - Capability governance: disabled tenant capabilities remain blocked
   - Chat session: chat created under tenant A is isolated from tenant B
   - SiteProfile isolation: each tenant gets its own site profile
 """
@@ -237,6 +237,7 @@ async def test_chat_session_scoped_to_tenant(
             "session_id": tracking_session_id,
             "page_url": "https://test.invalid/",
             "page_type": "home",
+            "analytics_consent": True,
         },
     )
     assert tracking_resp.status_code in (200, 201, 202), tracking_resp.text
@@ -344,7 +345,7 @@ async def test_site_profile_scoped_to_tenant(
     # Upsert site profile for tenant A
     upsert_a = await http_client.put(
         "/api/v1/site-profile",
-        json={"brand_name": "Alpha Tools", "site_url": "https://alphatools.test"},
+        json={"brand_name": "Alpha Tools"},
         headers={**_auth(token_a), **_tenant_header(tenant_a.id)},
     )
     assert upsert_a.status_code in (200, 201), upsert_a.text

@@ -5,11 +5,12 @@ Create tenants table for multi-tenant SaaS support and add tenant_id FK to users
 Revision ID: 0026_tenants_and_user_tenant_id
 Revises: 0025_drop_phase2_residuals
 """
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime, timezone
+
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects.postgresql import UUID
 
 revision = "0026_tenants_and_user_tenant_id"
 down_revision = "0025_drop_phase2_residuals"

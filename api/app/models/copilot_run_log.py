@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
 
@@ -15,9 +16,11 @@ class CopilotRunLog(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="tenants.id", index=True
+        default=None, foreign_key="tenants.id", ondelete="SET NULL", index=True
     )
-    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    user_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     channel: str = Field(max_length=20)         # 'web' | 'telegram'
     llm_calls: int = Field(default=1)            # how many LLM round-trips in this run
     tool_count: int = Field(default=0)           # number of tool calls executed

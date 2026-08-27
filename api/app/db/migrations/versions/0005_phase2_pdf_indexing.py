@@ -6,8 +6,8 @@ Create Date: 2026-04-01 00:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "0005_phase2_pdf_indexing"
 down_revision: Union[str, None] = "0004_phase1b_tracking_identity"

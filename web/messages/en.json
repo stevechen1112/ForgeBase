@@ -33,8 +33,8 @@
     "submitRfq": "Submit RFQ",
     "contact": "Contact Us",
     "openMenu": "Open menu",
-    "partnerTitle": "Global Manufacturing Partner",
-    "partnerDescription": "Serving 40+ countries with one-stop B2B sourcing support.",
+    "partnerTitle": "ForgeBase functional test site",
+    "partnerDescription": "Used to test browsing, RFQ intake, and back-office workflows; it does not represent a manufacturer or supply capability.",
     "langSwitch": "繁中",
     "nav": {
       "products": "Products",
@@ -45,14 +45,14 @@
     }
   },
   "footer": {
-    "description": "Precision manufacturing solutions trusted by industrial buyers in 40+ countries. ISO 9001 certified, 20+ years of experience.",
-    "builtWithPrecision": "Built with precision · Designed for growth",
+    "description": "This is a ForgeBase functional test scenario. Company, product, credential, and operating details are fictional demonstration data.",
+    "builtWithPrecision": "Built to validate B2B website, RFQ, and back-office workflows",
     "allRightsReserved": "All rights reserved.",
-    "certifications": ["ISO 9001:2015", "CE Certified", "RoHS Compliant", "SGS Audited"],
+    "certifications": ["Test scenario data", "Not a real certification", "No certificate issued", "No supply offered"],
     "footerCta": {
-      "title": "Ready to start your program?",
-      "description": "Get a quote within 24 hours for qualified enquiries.",
-      "requestQuote": "Request Quote"
+      "title": "Want to try the RFQ workflow?",
+      "description": "Submitted information enters the ForgeBase test system only; NorthForge will not provide a sales response.",
+      "requestQuote": "Submit a test RFQ"
     },
     "sections": {
       "products": {
@@ -117,6 +117,8 @@
       "submit": "Send Enquiry",
       "submitFailed": "Submission failed. Please try again.",
       "unexpectedError": "An unexpected error occurred.",
+      "validationFailed": "Please review the form fields and submit again.",
+      "challengeRefreshed": "The page verification has been refreshed. Please submit once more.",
       "labels": {
         "fullName": "Name",
         "email": "Email",
@@ -172,10 +174,10 @@
       "tradeSectionTitle": "Trade Terms (optional — helps us quote faster)",
       "successTitle": "RFQ Submitted Successfully",
       "referenceNumber": "Your reference number:",
-      "successDescription": "Our team will review your request and reply within 1 business day if the specification details are complete.",
+      "successDescription": "Your information has entered the ForgeBase test system. NorthForge is fictional and will not provide a quote, supply, or sales response.",
       "submitting": "Submitting...",
       "submit": "Submit RFQ",
-      "footerNote": "By submitting this form you agree to our Privacy Policy. We will never share your data with third parties.",
+      "footerNote": "By submitting, you agree to this test site's privacy notice. Information is used only for ForgeBase functional testing and security checks.",
       "submitFailed": "Submission failed. Please try again.",
       "unexpectedError": "An unexpected error occurred.",
       "labels": {
@@ -207,57 +209,56 @@
   },
   "contactPage": {
     "metadata": {
-      "title": "Contact NorthForge Tools",
-      "description": "Contact NorthForge Tools to discuss sourcing plans, private-label packaging, toolkit programs, or export-ready hand tool requirements."
+      "title": "NorthForge test contact form",
+      "description": "This is a ForgeBase form and back-office workflow test, not a manufacturer contact channel."
     },
     "breadcrumb": "Contact",
-    "title": "Talk to NorthForge Tools",
-    "description": "Use this channel for sourcing discussions, product clarification, private-label planning, and toolkit program enquiries. Qualified messages are reviewed within 1 business day.",
-    "reasonsTitle": "Best Reasons to Contact NorthForge",
+    "title": "NorthForge test contact form",
+    "description": "This page tests a general contact form, data intake, and back-office handling. NorthForge is fictional and does not provide sourcing, quotations, or supply responses.",
+    "reasonsTitle": "Workflows available to test",
     "reasons": [
-      { "label": "Catalog or Repeat Supply", "desc": "Pricing, MOQ, lead times, and repeat-order planning" },
-      { "label": "OEM / Private Label", "desc": "Logo, packaging, barcode, case, and assortment discussions" },
-      { "label": "Technical Clarification", "desc": "Torque, insulation, material, finish, and use-case review" },
-      { "label": "Toolkit Program Planning", "desc": "Mixed-SKU sets, drawer systems, and export-ready bundles" }
+      { "label": "General contact form", "desc": "Validate fields, challenge checks, and intake records" },
+      { "label": "RFQ form", "desc": "Validate case creation, routing, and back-office workflows" },
+      { "label": "Multilingual content", "desc": "Validate Traditional Chinese and English content presentation" },
+      { "label": "Visitor events", "desc": "Validate consent-aware website activity collection" }
     ],
-    "officesTitle": "Our Offices",
+    "officesTitle": "Test site notice",
     "offices": [
-      { "city": "Taichung Manufacturing Coordination", "address": "Taichung, Taiwan", "phone": "+886-4-3700-2218", "hours": "Mon-Fri 09:00-18:00 CST" },
-      { "city": "Taipei Export Sales Desk", "address": "Taipei, Taiwan", "phone": "+886-2-7709-8891", "hours": "Mon-Fri 09:00-18:00 CST" }
+      { "city": "ForgeBase functional testing", "address": "NorthForge is a fictional demonstration scenario with no office or manufacturing location.", "phone": "No phone service", "hours": "No sales response is provided" }
     ],
-    "responseTitle": "What Helps Us Reply Faster",
-    "responseDescription": "Include the tool category, approximate volume, target market, and whether you need OEM packaging or compliance documents. The clearer the request, the faster we can route it correctly.",
-    "formTitle": "Send an Enquiry",
-    "formDescription": "Use the form for general business enquiries. If you already have quantities, specifications, or packaging requirements, the RFQ flow is better.",
+    "responseTitle": "How information is used",
+    "responseDescription": "Information is used only as a sample for ForgeBase external testing of intake, routing, and security. Do not submit confidential materials, purchase commitments, or real supply requests.",
+    "formTitle": "Send a test enquiry",
+    "formDescription": "Submission creates test data only. NorthForge staff will not contact or reply to you.",
     "quickLinksPrompt": "Looking for something specific?",
     "quickLinks": {
       "products": "Browse Products",
-      "certifications": "Certifications",
-      "rfq": "Request a Quote"
+      "certifications": "View test credential page",
+      "rfq": "Test the RFQ workflow"
     }
   },
   "rfqPage": {
     "metadata": {
-      "title": "Request a Quotation",
-      "description": "Submit your RFQ for torque tools, insulated tools, workshop tools, or private-label toolkit programs. Get a qualified response within 1 business day."
+      "title": "Test the RFQ workflow",
+      "description": "Submit information to validate ForgeBase intake and sales-workflow steps. You will not receive a quotation, supply, or commercial response."
     },
-    "title": "Request a Tool Program Quotation",
-    "description": "Share your product scope, packaging needs, and sourcing timeline. Our team will review the details and respond with the right next step within 1 business day.",
-    "builtForTitle": "What this RFQ is built for",
+    "title": "Test the RFQ workflow",
+    "description": "You may submit non-confidential test data to validate form submission, case creation, routing, and back-office handling. NorthForge is fictional and does not quote or supply products.",
+    "builtForTitle": "What this test RFQ validates",
     "builtForItems": [
-      "Standard tool sourcing and recurring distributor supply",
-      "Private-label packaging, barcode, and molded-case programs",
-      "Mixed-SKU toolkit builds and drawer-set assortments",
-      "Specification review for torque, insulation, material, and finish requirements",
-      "Documentation support for export and compliance-sensitive orders",
-      "NDA requests for confidential OEM discussions"
+      "RFQ fields, validation, and anti-abuse checks",
+      "Case creation, status, and owner workflows",
+      "Source page, visitor history, and intent context display",
+      "Multilingual content and form experience",
+      "Retention, deletion, and external-test safety rules",
+      "It does not include purchasing, quotations, samples, or NDA handling"
     ],
-    "helpTitle": "Need help?",
-    "helpDescription": "If you only know the application and target market, NorthForge can help narrow down the right tool family and packaging path.",
-    "helpCta": "Contact our engineers →",
-    "responseWindowLabel": "Typical quote-routing window",
-    "responseWindowTime": "24-48h",
-    "responseWindowHours": "Mon-Fri, 9:00-18:00 CST"
+    "helpTitle": "Before you test",
+    "helpDescription": "Do not submit personal sensitive data, real purchase commitments, drawings, or other confidential material. This page is for ForgeBase functional testing only.",
+    "helpCta": "View the test contact form →",
+    "responseWindowLabel": "Test intake status",
+    "responseWindowTime": "No sales response",
+    "responseWindowHours": "Information does not enter a real quotation or supply workflow"
   },
   "faqPage": {
     "metadata": {
@@ -327,23 +328,23 @@
   },
   "legal": {
     "privacy": {
-      "metadata": { "title": "Privacy Policy", "description": "Privacy policy for NorthForge Tools website enquiries and document requests." },
+      "metadata": { "title": "Test site privacy notice", "description": "Data-processing notice for the ForgeBase NorthForge functional test site." },
       "breadcrumb": "Privacy Policy",
       "title": "Privacy Policy",
       "paragraphs": [
-        "NorthForge Tools collects enquiry details, quotation requests, and document request information only for business response, sales follow-up, and customer support purposes.",
-        "Submitted information may include your name, company, email, phone number, country, and product interest. We do not sell personal data to third parties.",
-        "Information is retained only as long as needed for commercial communication, compliance, and recordkeeping. You may request correction or deletion by contacting sales@northforgetools.com."
+        "NorthForge is a ForgeBase functional test scenario, not a manufacturer or supply website. Form information is used only to verify intake, routing, security, and back-office workflows.",
+        "Submitted information may include your name, company, email, phone number, country, and test content. Do not submit sensitive data, purchase commitments, drawings, or other confidential material. We do not sell personal data to third parties.",
+        "Test records are retained under ForgeBase external-test retention rules and may be removed by a system administrator when testing requires it. This test site does not provide NorthForge sales contact or replies."
       ]
     },
     "terms": {
-      "metadata": { "title": "Terms of Service", "description": "Terms governing the use of the NorthForge Tools website and business enquiry channels." },
+      "metadata": { "title": "Test site use notice", "description": "Use notice for the ForgeBase NorthForge functional test site." },
       "breadcrumb": "Terms of Service",
       "title": "Terms of Service",
       "paragraphs": [
-        "This website is provided for product presentation, business enquiry, RFQ intake, and technical document access related to NorthForge Tools.",
-        "Specifications, availability, lead times, and pricing shown on the website are illustrative unless otherwise confirmed in a written quotation or sales agreement.",
-        "Use of this website does not create a supply contract. Final terms are governed by issued quotations, purchase orders, and mutually agreed commercial terms."
+        "This website demonstrates ForgeBase B2B website, RFQ intake, and back-office workflows. NorthForge Tools, its products, credentials, and company information are fictional test data.",
+        "Specifications, supply, lead times, pricing, documents, and contact information shown here must not be used for purchasing, verification, or commercial decisions.",
+        "Use of this site creates no supply, quotation, employment, agency, or other commercial relationship. Test submissions do not receive a NorthForge external reply."
       ]
     },
     "cookies": {
@@ -357,39 +358,39 @@
       ]
     },
     "dealers": {
-      "metadata": { "title": "Dealer Locator", "description": "Regional distributor and dealer support information for NorthForge Tools." },
+      "metadata": { "title": "Test dealer locator", "description": "A ForgeBase NorthForge functional-test page, not real distributor information." },
       "breadcrumb": "Dealer Locator",
-      "title": "Dealer Locator",
-      "intro": "NorthForge works with importers, distributors, and private-label partners across multiple regions, with routing based on product category, channel type, and market scope.",
-      "regionTitle": "Supported Regions",
+      "title": "Test dealer locator",
+      "intro": "This page validates distributor-information layout and navigation only. It does not represent real NorthForge partners or supply coverage.",
+      "regionTitle": "Demonstration regions",
       "regions": [
         "East Asia and Southeast Asia",
         "European distribution partners",
         "Australia and Oceania",
         "Private-label importer programs in North America"
       ],
-      "asideTitle": "Need a regional contact?",
-      "asideDescription": "Contact sales@northforgetools.com with your country, target channels, and product categories. We will route you to the correct sales contact or distributor support team."
+      "asideTitle": "Test-site reminder",
+      "asideDescription": "This site does not provide regional sales, distributor referrals, or supply contact. Do not send purchasing or confidential information."
     }
   },
   "home": {
     "metadata": {
-      "title": "NorthForge Tools | OEM Hand Tool Manufacturer in Taiwan",
-      "description": "Taiwan-based OEM/ODM hand tool manufacturer specializing in torque tools, insulated tools, workshop tools, and private-label toolkit programs for distributors and tool brands."
+      "title": "NorthForge Tools | ForgeBase B2B website functional test",
+      "description": "A ForgeBase test scenario for B2B website, product browsing, forms, and back-office workflows; it does not represent a manufacturer, product supply, or certification."
     },
     "hero": {
-      "eyebrow": "Trusted Export Manufacturer for Professional Tool Programs",
-      "titleLine1": "Precision-Built Hand Tools for Brands,",
-      "titleLine2": "Distributors, and Industrial Buyers",
-      "description": "NorthForge Tools helps importers, private-label brands, and industrial distributors source torque tools, insulated tools, workshop tools, and custom toolkit programs with stronger quality control and cleaner export execution.",
-      "primaryCta": "Request a Quote",
+      "eyebrow": "ForgeBase B2B website functional test scenario",
+      "titleLine1": "Test how visitors browse products",
+      "titleLine2": "and leave a more complete RFQ",
+      "description": "NorthForge Tools is a fictional hand-tool website scenario used to validate product content, multilingual pages, RFQ intake, and back-office workflows. It is not a real manufacturer or supply capability.",
+      "primaryCta": "Test the RFQ workflow",
       "secondaryCta": "Browse Products →"
     },
     "stats": [
-      { "value": "20+", "label": "Years Export Experience" },
+      { "value": "TEST", "label": "Fictional company scenario" },
       { "value": "30+", "label": "Core Demo SKUs" },
-      { "value": "40+", "label": "Countries Served" },
-      { "value": "98%", "label": "Shipment-Readiness KPI" }
+      { "value": "2", "label": "Primary languages tested" },
+      { "value": "RFQ", "label": "Intake workflow test" }
     ],
     "featured": {
       "eyebrow": "Featured",
@@ -445,7 +446,7 @@
       "description": "Whether you need recurring catalog supply, private-label packaging, or a custom toolkit assortment, NorthForge can help structure the right sourcing program for your market.",
       "primaryCta": "Request a Quote",
       "secondaryCta": "Contact Sales",
-      "note": "Response within 1 business day for qualified enquiries"
+      "note": "Test submissions do not receive a quote, supply, or sales response"
     }
   },
   "products": {

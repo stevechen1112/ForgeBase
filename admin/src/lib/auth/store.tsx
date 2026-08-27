@@ -7,6 +7,10 @@ import { createContext, useContext, useReducer, useEffect, ReactNode } from "rea
 import type { UserRead, TokenResponse } from "@/lib/api/auth";
 import { clearAuthStorage, readAuthStorage, writeAuthStorage } from "@/lib/auth/storage";
 
+function isTenantSession(payload: TokenResponse | null): payload is TokenResponse {
+  return Boolean(payload?.user?.tenant_id && !payload.user.is_superuser);
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 type AuthState =
   | { status: "loading" }
@@ -61,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const raw = readAuthStorage();
       const stored = raw ? (JSON.parse(raw) as TokenResponse) : null;
+      if (!isTenantSession(stored)) {
+        clearAuthStorage();
+        dispatch({ type: "HYDRATED", payload: null });
+        return;
+      }
       dispatch({ type: "HYDRATED", payload: stored });
     } catch {
       dispatch({ type: "HYDRATED", payload: null });
@@ -75,7 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const handleRefreshed = (e: Event) => {
       const detail = (e as CustomEvent<TokenResponse>).detail;
-      if (detail) dispatch({ type: "SET_AUTH", payload: detail });
+      if (isTenantSession(detail)) {
+        dispatch({ type: "SET_AUTH", payload: detail });
+      } else {
+        clearAuthStorage();
+        dispatch({ type: "LOGOUT" });
+      }
     };
     window.addEventListener("auth:unauthorized", handleUnauthorized);
     window.addEventListener("auth:refreshed", handleRefreshed);
@@ -86,6 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (tokenResponse: TokenResponse) => {
+    if (!isTenantSession(tokenResponse)) {
+      clearAuthStorage();
+      throw new Error("此帳號不是租戶後台帳號");
+    }
     writeAuthStorage(JSON.stringify(tokenResponse));
     dispatch({ type: "SET_AUTH", payload: tokenResponse });
   };

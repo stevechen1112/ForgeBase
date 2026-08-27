@@ -4,7 +4,7 @@ import { ContactForm } from "@/components/forms/ContactForm";
 import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 import { Link } from "@/i18n/navigation";
 import { getPublishedPageByType } from "@/lib/api";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialPageHero } from "@/components/themes";
@@ -41,8 +41,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const resolvedLocale = resolveLocale(locale);
+  const { siteConfig } = await getRuntimeSiteContext();
   const pageOverride = await getPublishedPageByType("contact", resolvedLocale);
-  if (pageOverride) {
+  if (pageOverride && !siteConfig.demoCompanyFolder) {
     return {
       title: pageOverride.seo_title ?? pageOverride.title,
       description: pageOverride.seo_description ?? pageOverride.subtitle ?? undefined,
@@ -58,6 +59,7 @@ export default async function ContactPage({ params }: Props) {
     contactEmail,
     contactPhone,
     isIndustrial,
+    siteConfig,
   } = await getRuntimeSiteContext();
   const { locale } = await params;
   resolveLocale(locale);
@@ -66,6 +68,7 @@ export default async function ContactPage({ params }: Props) {
     getMessageNamespace<ContactPageMessages>("contactPage"),
     getMessageNamespace<CommonMessages>("common"),
   ]);
+  const isTestScenario = Boolean(siteConfig.demoCompanyFolder);
   if (isIndustrial) {
     return (
       <>
@@ -82,18 +85,18 @@ export default async function ContactPage({ params }: Props) {
               { label: common.home, href: "/" },
               { label: copy.breadcrumb },
             ]}
-            eyebrow="Sales Contact"
+            eyebrow={isTestScenario ? "ForgeBase functional test" : "Sales Contact"}
             title={copy.title || SITE_NAME}
             description={copy.description}
           >
-            <div className="flex flex-wrap gap-3">
+            {!isTestScenario && <div className="flex flex-wrap gap-3">
               <a href={`mailto:${contactEmail}`} className="border border-gray-700 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-300 hover:border-primary hover:text-primary">
                 {contactEmail}
               </a>
               <a href={`tel:${contactPhone.replace(/\D/g, "")}`} className="border border-gray-700 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-gray-300 hover:border-primary hover:text-primary">
                 {contactPhone}
               </a>
-            </div>
+            </div>}
           </IndustrialPageHero>
           <section className="py-16">
             <div className="mx-auto max-w-7xl px-6">

@@ -11,20 +11,22 @@ Routes (prefix: /esp, mounted on tracking_router → /api/v1/tracking/esp/):
 from __future__ import annotations
 
 import asyncio
+import html
 import logging
+import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
-from sqlmodel import select
+from sqlmodel import func, select
 
 from app.api.v1.deps import require_admin as get_current_admin
-from app.db.session import get_session
 from app.core.config import settings
+from app.db.session import get_session
 from app.models.contact import Contact
+from app.models.email_delivery import EmailDeliveryEvent, EmailSuppression
 from app.services import email_service
 from app.services.esp_service import (
-    mailchimp_add_tags,
     mailchimp_get_audience_stats,
     mailchimp_upsert_member,
     sendgrid_get_stats,
@@ -43,6 +45,20 @@ class TestEmailIn(BaseModel):
     to: EmailStr
     subject: str = "ForgeBase 測試信件"
     body: Optional[str] = None
+
+
+def _live_test_recipient_allowed(address: str) -> bool:
+    normalized = address.strip().lower()
+    local, _, domain = normalized.partition("@")
+    # Official Resend test inbox: exercises delivery without reaching a person.
+    if domain == "resend.dev" and (local == "delivered" or local.startswith("delivered+")):
+        return True
+    allowlist = {
+        item.strip().lower()
+        for item in settings.EMAIL_TEST_RECIPIENT_ALLOWLIST.split(",")
+        if item.strip()
+    }
+    return normalized in allowlist or domain in allowlist
 
 
 class SyncContactsResult(BaseModel):
@@ -66,6 +82,18 @@ async def get_esp_status(_admin=Depends(get_current_admin)):
         "mailchimp_configured": bool(settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_AUDIENCE_ID),
         "from_email": settings.EMAIL_FROM,
         "from_name": settings.EMAIL_FROM_NAME,
+        "dry_run": settings.EMAIL_DRY_RUN,
+        "external_delivery_enabled": settings.EMAIL_EXTERNAL_DELIVERY_ENABLED,
+        "internal_recipient_allowlist_configured": bool(settings.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST.strip()),
+        "resend_webhook_configured": bool(settings.RESEND_WEBHOOK_SECRET),
+        "live_delivery_enabled": (
+            not settings.EMAIL_DRY_RUN
+            and (
+                bool(settings.SENDGRID_API_KEY)
+                if settings.ESP_PROVIDER.lower() == "sendgrid"
+                else bool(settings.RESEND_API_KEY)
+            )
+        ),
     }
 
 
@@ -75,16 +103,68 @@ async def send_test_email(
     _admin=Depends(get_current_admin),
 ):
     """Send a test email through the currently active ESP provider."""
-    html_body = f"<p>{payload.body or '這是一封來自 ForgeBase 的測試信件。'}</p>"
-    ok = await email_service.send_email(
-        to=str(payload.to),
+    recipient = str(payload.to)
+    if not settings.EMAIL_DRY_RUN and not _live_test_recipient_allowed(recipient):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Live test recipient is not allowlisted. Use delivered@resend.dev "
+                "or configure EMAIL_TEST_RECIPIENT_ALLOWLIST."
+            ),
+        )
+    body = payload.body or "這是一封來自 ForgeBase 的測試信件。"
+    result = await email_service.send_email_result(
+        to=recipient,
         subject=payload.subject,
-        html_body=html_body,
-        text_body=payload.body or "這是一封來自 ForgeBase 的測試信件。",
+        html_body=f"<p>{html.escape(body)}</p>",
+        text_body=body,
+        idempotency_key=f"forgebase-test-{uuid.uuid4()}",
+        recipient_kind="test",
     )
-    if not ok:
+    if not result.success:
         raise HTTPException(status_code=502, detail="Email send failed — check provider credentials.")
-    return {"success": True, "provider": settings.ESP_PROVIDER, "to": payload.to}
+    return {
+        "success": True,
+        "delivered": result.delivered,
+        "dry_run": result.dry_run,
+        "provider": result.provider,
+        "provider_message_id": result.message_id,
+        "to": payload.to,
+    }
+
+
+@router.get("/delivery-governance")
+async def get_delivery_governance(
+    db=Depends(get_session),
+    _admin=Depends(get_current_admin),
+):
+    active_suppressions = int(
+        (await db.exec(select(func.count(EmailSuppression.id)).where(EmailSuppression.active.is_(True)))).one()
+    )
+    recent_events = list(
+        (
+            await db.exec(
+                select(EmailDeliveryEvent)
+                .order_by(EmailDeliveryEvent.created_at.desc())
+                .limit(20)
+            )
+        ).all()
+    )
+    return {
+        "mode": "dry_run" if settings.EMAIL_DRY_RUN else "live",
+        "external_delivery_enabled": settings.EMAIL_EXTERNAL_DELIVERY_ENABLED,
+        "internal_allowlist_configured": bool(settings.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST.strip()),
+        "webhook_signature_configured": bool(settings.RESEND_WEBHOOK_SECRET),
+        "active_suppressions": active_suppressions,
+        "recent_events": [
+            {
+                "event_type": event.event_type,
+                "recipient": event.recipient_masked,
+                "occurred_at": event.occurred_at or event.created_at,
+            }
+            for event in recent_events
+        ],
+    }
 
 
 @router.post("/mailchimp/sync-contacts", response_model=SyncContactsResult)
@@ -99,7 +179,7 @@ async def sync_contacts_to_mailchimp(
     if not settings.MAILCHIMP_API_KEY or not settings.MAILCHIMP_AUDIENCE_ID:
         raise HTTPException(status_code=400, detail="Mailchimp not configured: set MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID.")
 
-    contacts = (await db.execute(select(Contact))).scalars().all()
+    contacts = (await db.exec(select(Contact))).all()
 
     success = 0
     failed = 0
@@ -144,7 +224,7 @@ async def sync_contacts_to_sendgrid(
     if not settings.SENDGRID_API_KEY:
         raise HTTPException(status_code=400, detail="SendGrid not configured: set SENDGRID_API_KEY.")
 
-    contacts = (await db.execute(select(Contact))).scalars().all()
+    contacts = (await db.exec(select(Contact))).all()
 
     success = 0
     failed = 0

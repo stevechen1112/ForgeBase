@@ -37,9 +37,12 @@ from contextlib import asynccontextmanager
 import httpx
 import pytest
 from unittest.mock import MagicMock, patch
+from sqlmodel import select
 
 from app.core.config import settings
+from app.models.operational_job import OperationalJob
 from app.models.rfq_request import RFQRequest
+from app.services.operational_outbox import _execute
 from tests.conftest import requires_db, _make_engine
 
 # ---------------------------------------------------------------------------
@@ -113,6 +116,17 @@ def _make_fake_agentOS_post(received: dict):
     return _post
 
 
+async def _run_agentos_job(rfq_id: uuid.UUID) -> None:
+    """Execute the durable job the same way the background worker does."""
+    eng, factory = _make_engine()
+    async with factory() as db:
+        job = (await db.exec(select(OperationalJob).where(
+            OperationalJob.idempotency_key == f"rfq:{rfq_id}:agentos"
+        ))).one()
+    await eng.dispose()
+    await _execute(job)
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -120,13 +134,10 @@ def _make_fake_agentOS_post(received: dict):
 
 @requires_db
 @pytest.mark.asyncio
-async def test_rfq_creation_calls_agentOS_with_correct_payload(http_client):
+async def test_rfq_creation_does_not_call_locked_agentos_runtime(http_client):
     """
-    When a visitor submits an RFQ, ForgeBase must call AgentOS POST /tasks
-    with the rfq_id embedded in workflow_input.
-
-    Will fail until:
-    - RFQ creation handler includes the AgentOS trigger call.
+    The legacy job may remain during observation, but the worker must not call
+    AgentOS while automation_runs is locked off.
     """
     received: dict = {}
 
@@ -138,41 +149,18 @@ async def test_rfq_creation_calls_agentOS_with_correct_payload(http_client):
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
         )
+        assert rfq_response.status_code in (200, 201), rfq_response.text
+        await _run_agentos_job(uuid.UUID(rfq_response.json()["rfq_id"]))
 
-    assert rfq_response.status_code in (200, 201), rfq_response.text
-
-    assert received, (
-        "ForgeBase did NOT call AgentOS after creating the RFQ. "
-        "Add the auto-trigger in the RFQ creation handler."
-    )
-
-    assert "/tasks" in received["url"], (
-        f"AgentOS call went to unexpected URL: {received['url']!r}. "
-        "Expected a POST to <AGENTOSS_URL>/tasks."
-    )
-
-    payload = received["payload"]
-    assert payload["domain"] == "forgebase_rfq", (
-        f"Wrong domain sent to AgentOS: {payload.get('domain')!r}. "
-        "Expected 'forgebase_rfq'."
-    )
-
-    # workflow_input.rfq_id 綁定的是 RFQRequest.id（UUID），不是 rfq_number
-    rfq_identifier = rfq_response.json()["rfq_id"]
-    assert str(rfq_identifier) in str(payload["workflow_input"].get("rfq_id", "")), (
-        f"AgentOS workflow_input.rfq_id does not match the created RFQ. "
-        f"Sent rfq_id={payload['workflow_input'].get('rfq_id')!r}, "
-        f"expected rfq identifier={rfq_identifier!r}."
-    )
+    assert received == {}
 
 
 @requires_db
 @pytest.mark.asyncio
-async def test_rfq_creation_stores_agent_run_id_on_rfq_record(http_client):
+async def test_rfq_creation_leaves_agent_run_id_empty_while_locked(http_client):
     """
-    After calling AgentOS, ForgeBase must persist the returned run_id
-    into rfq.agent_run_id so the Admin UI can display task status without
-    requiring a manual run_id input.
+    Historical AgentOS fields remain readable, but no new run id is created
+    while the retirement candidate is locked off.
 
     驗證方式說明：公開表單回應刻意不含 agent_run_id（內部 run id 不應暴露給
     訪客），因此直接查 DB 驗證持久化；Admin 端的序列化由
@@ -188,9 +176,9 @@ async def test_rfq_creation_stores_agent_run_id_on_rfq_record(http_client):
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
         )
-
-    assert rfq_response.status_code in (200, 201), rfq_response.text
-    rfq_id = uuid.UUID(rfq_response.json()["rfq_id"])
+        assert rfq_response.status_code in (200, 201), rfq_response.text
+        rfq_id = uuid.UUID(rfq_response.json()["rfq_id"])
+        await _run_agentos_job(rfq_id)
 
     eng, factory = _make_engine()
     async with factory() as db:
@@ -198,16 +186,13 @@ async def test_rfq_creation_stores_agent_run_id_on_rfq_record(http_client):
     await eng.dispose()
 
     assert rfq is not None, f"RFQ {rfq_id} 在資料庫中找不到"
-    assert rfq.agent_run_id == FAKE_AGENTOSS_RUN_ID, (
-        f"agent_run_id mismatch. "
-        f"Expected {FAKE_AGENTOSS_RUN_ID!r}, got {rfq.agent_run_id!r}. "
-        "ForgeBase must store the run_id returned by AgentOS into the RFQ record."
-    )
+    assert rfq.agent_run_id is None
+    assert received == {}
 
 
 @requires_db
 @pytest.mark.asyncio
-async def test_rfq_detail_endpoint_exposes_agent_run_id(http_client):
+async def test_rfq_detail_preserves_dormant_agent_run_id_contract(http_client):
     """
     GET /api/v1/tracking/rfqs/{id} must return agent_run_id so the Admin
     RFQ detail page can display AgentOS task status automatically — without
@@ -229,9 +214,9 @@ async def test_rfq_detail_endpoint_exposes_agent_run_id(http_client):
             "/api/v1/forms/rfq",
             json=_RFQ_FORM_PAYLOAD,
         )
-
-    assert create_response.status_code in (200, 201), create_response.text
-    rfq_id = create_response.json()["rfq_id"]
+        assert create_response.status_code in (200, 201), create_response.text
+        rfq_id = create_response.json()["rfq_id"]
+        await _run_agentos_job(uuid.UUID(rfq_id))
 
     eng, factory = _make_engine()
     async with factory() as session:
@@ -260,11 +245,8 @@ async def test_rfq_detail_endpoint_exposes_agent_run_id(http_client):
             f"GET /tracking/rfqs/{rfq_id} does not return agent_run_id. "
             "Ensure the RFQ detail schema serializes agent_run_id."
         )
-        assert fetched["agent_run_id"] == FAKE_AGENTOSS_RUN_ID, (
-            f"Fetched agent_run_id={fetched.get('agent_run_id')!r} does not match "
-            f"the run_id returned by AgentOS ({FAKE_AGENTOSS_RUN_ID!r}). "
-            "Check that the value is persisted and not discarded."
-        )
+        assert fetched["agent_run_id"] is None
+        assert received == {}
     finally:
         async with factory() as session:
             row = await session.get(User, admin_id)

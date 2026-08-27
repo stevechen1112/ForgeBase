@@ -185,6 +185,33 @@
     --hero-via:     220 18% 12%;
     --hero-to:      220 15% 18%;
   }
+
+  /* Precision machining: graphite technical surfaces with lime metrology accent. */
+  [data-theme="precision"] {
+    --background:   210 13% 96%;
+    --foreground:   210 20% 8%;
+    --card:         0 0% 100%;
+    --card-foreground: 210 20% 8%;
+    --popover:      0 0% 100%;
+    --popover-foreground: 210 20% 8%;
+    --primary:      76 88% 48%;
+    --primary-foreground: 210 25% 7%;
+    --secondary:    210 12% 91%;
+    --secondary-foreground: 210 20% 10%;
+    --muted:        210 10% 92%;
+    --muted-foreground: 210 7% 42%;
+    --accent:       76 60% 88%;
+    --accent-foreground: 210 25% 8%;
+    --destructive:  0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border:       210 10% 78%;
+    --input:        210 10% 78%;
+    --ring:         76 88% 48%;
+    --radius:       0.125rem;
+    --hero-from:    210 28% 5%;
+    --hero-via:     210 22% 9%;
+    --hero-to:      205 18% 15%;
+  }
 }
 
 @layer base {

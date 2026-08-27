@@ -16,24 +16,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { paths?: unknown };
+  let body: { paths?: unknown; layouts?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const paths = Array.isArray(body.paths)
-    ? body.paths.filter(
-        (p): p is string => typeof p === "string" && p.startsWith("/") && !p.startsWith("//"),
-      )
-    : [];
-  if (paths.length === 0) {
-    return NextResponse.json({ error: "paths required" }, { status: 422 });
+  const sanitize = (value: unknown) =>
+    Array.isArray(value)
+      ? value.filter(
+          (item): item is string => typeof item === "string" && item.startsWith("/") && !item.startsWith("//"),
+        )
+      : [];
+  const paths = sanitize(body.paths);
+  const layouts = sanitize(body.layouts);
+  if (paths.length === 0 && layouts.length === 0) {
+    return NextResponse.json({ error: "paths or layouts required" }, { status: 422 });
   }
 
   for (const path of paths.slice(0, 50)) {
     revalidatePath(path);
   }
-  return NextResponse.json({ revalidated: true, paths });
+  for (const path of layouts.slice(0, 20)) {
+    revalidatePath(path, "layout");
+  }
+  return NextResponse.json({ revalidated: true, paths, layouts });
 }

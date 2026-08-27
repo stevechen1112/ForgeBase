@@ -9,9 +9,8 @@
 import json
 from typing import Any, Optional
 
-from app.models.rfq_request import RFQRequest
 from app.models.reply_template import ReplyTemplate
-from app.services.rfq_auto_reply import compute_missing_info
+from app.models.rfq_request import RFQRequest
 
 _PACKAGING_TERMS = ["packaging", "package", "carton", "pallet", "box", "label", "packing"]
 _DRAWING_TERMS = ["drawing", "blueprint", "cad", "dxf", "step file", "attachment", "diagram", "圖"]

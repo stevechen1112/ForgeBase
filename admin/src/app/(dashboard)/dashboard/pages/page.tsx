@@ -1,11 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { pagesApi, type Page } from "@/lib/api/content";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -27,26 +23,7 @@ const COLUMNS = [
     className: "w-32",
     render: (_v: unknown, row: Page) => PAGE_TYPE_LABELS[row.page_type] ?? row.page_type,
   },
-  { key: "slug", label: "網址路徑", className: "w-44 font-mono text-xs" },
   { key: "locale", label: "語言", className: "w-20" },
-  {
-    key: "noindex",
-    label: "索引",
-    className: "w-24",
-    render: (_v: unknown, row: Page) =>
-      row.noindex
-        ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">不索引</Badge>
-        : <Badge variant="outline" className="border-green-500 text-green-700 text-xs">可索引</Badge>,
-  },
-  {
-    key: "structured_data",
-    label: "結構化資料",
-    className: "w-20",
-    render: (_v: unknown, row: Page) =>
-      row.structured_data
-        ? <span className="text-xs text-green-600 font-medium">✓</span>
-        : <span className="text-xs text-muted-foreground">—</span>,
-  },
   { key: "status", label: "狀態", className: "w-28", render: (_v: unknown, row: Page) => <StatusBadge status={row.status} /> },
 ];
 
@@ -56,7 +33,6 @@ export default function PagesListPage() {
   const [rows, setRows] = useState<Page[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [localeFilter, setLocaleFilter] = useState("");
 
   const load = useCallback(() => {
@@ -69,19 +45,12 @@ export default function PagesListPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("確定刪除？")) return;
-    setDeleting(id);
-    await pagesApi.delete(token, id);
-    load(); setDeleting(null);
-  };
-
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">頁面管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理官網靜態頁與內容頁，可設多語與搜尋用標題／說明</p>
+          <p className="mt-1 text-sm text-muted-foreground">更新既有頁面的文字、圖片與內容狀態；網址與網站結構由 ForgeBase 團隊維護</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -93,10 +62,9 @@ export default function PagesListPage() {
             <option value="en">English</option>
             <option value="zh-tw">繁體中文</option>
           </select>
-          <Button asChild><Link href="/dashboard/pages/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增頁面</Link></Button>
         </div>
       </div>
-      <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/pages" onDelete={handleDelete} isDeleting={deleting} />
+      <DataTable columns={COLUMNS} rows={rows} editBasePath="/dashboard/pages" />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );

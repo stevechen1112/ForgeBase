@@ -3,8 +3,8 @@
 - add chat_sessions
 - add chat_messages
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0019_chat_mvp"
 down_revision = "0018_growth_site_fields"

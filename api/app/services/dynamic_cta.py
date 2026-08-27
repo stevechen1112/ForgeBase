@@ -39,7 +39,11 @@ STAGE_ACTION_PRIORITY: dict[str, list[str]] = {
 }
 
 
-def _facet_action_override(facets: dict[str, int] | None) -> tuple[list[str] | None, dict[str, str]]:
+def _localized(locale: str, english: str, traditional_chinese: str) -> str:
+    return traditional_chinese if locale.lower().replace("_", "-").startswith("zh") else english
+
+
+def _facet_action_override(facets: dict[str, int] | None, locale: str) -> tuple[list[str] | None, dict[str, str]]:
     """依 facet 組合回傳覆寫的 action 優先序與個人化提示（§4.2）。
 
     回傳 (None, {}) 表示無強訊號，沿用 stage 優先序。
@@ -54,19 +58,19 @@ def _facet_action_override(facets: dict[str, int] | None) -> tuple[list[str] | N
     if procurement >= _FACET_STRONG:
         return (
             ["rfq", "download", "contact", "comparison", "external_link"],
-            {"facet_reason": "procurement_ready", "headline_prefix": "規格已備，直接取得報價"},
+            {"facet_reason": "procurement_ready", "headline_prefix": _localized(locale, "Specifications ready — continue to RFQ", "規格已備，直接取得報價")},
         )
     # 產品興趣高但信任驗證不足 → 先補信任內容
     if product >= _FACET_STRONG and trust < _FACET_STRONG:
         return (
             ["download", "comparison", "contact", "rfq", "external_link"],
-            {"facet_reason": "trust_gap", "headline_prefix": "先驗證我們的品質與產能"},
+            {"facet_reason": "trust_gap", "headline_prefix": _localized(locale, "Review quality evidence first", "先驗證品質與製程證據")},
         )
     # 產品興趣高且已有信任 → 比較頁／應用頁深化
     if product >= _FACET_STRONG:
         return (
             ["comparison", "download", "rfq", "contact", "external_link"],
-            {"facet_reason": "deepen_product", "headline_prefix": "比較規格，找到最合適型號"},
+            {"facet_reason": "deepen_product", "headline_prefix": _localized(locale, "Compare specifications before enquiring", "比較規格，再進一步詢問")},
         )
     return None, {}
 
@@ -78,6 +82,7 @@ def select_dynamic_cta(
     page_context: dict[str, Any] | None = None,
     top_products_viewed: list[str] | None = None,
     facets: dict[str, int] | None = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
     """
     Select the best CTA for this visitor from the available CTA list.
@@ -98,7 +103,7 @@ def select_dynamic_cta(
         }
     """
     stage = intent_stage if intent_stage in STAGE_ACTION_PRIORITY else "cold"
-    facet_priority, facet_personalization = _facet_action_override(facets)
+    facet_priority, facet_personalization = _facet_action_override(facets, locale)
     action_priority = facet_priority or STAGE_ACTION_PRIORITY[stage]
 
     # Filter CTAs by target_intent_stage: keep "any" + matching stage
@@ -135,21 +140,21 @@ def select_dynamic_cta(
 
     if stage == "sales_ready":
         variant = "urgent"
-        personalization["headline_prefix"] = "您已準備好詢價"
-        personalization["cta_label_override"] = "立即送出詢價單"
+        personalization["headline_prefix"] = _localized(locale, "Your requirement is ready for RFQ", "您的需求已可進入詢價")
+        personalization["cta_label_override"] = _localized(locale, "Continue to RFQ", "繼續詢價")
     elif stage == "hot":
         variant = "standard"
-        personalization["headline_prefix"] = "開始您的詢價"
+        personalization["headline_prefix"] = _localized(locale, "Continue with your enquiry", "開始您的詢價")
         if top_products_viewed:
             personalization["product_hint"] = top_products_viewed[0]
     elif stage == "warm":
         variant = "soft"
-        personalization["headline_prefix"] = "進一步了解"
+        personalization["headline_prefix"] = _localized(locale, "Review the next detail", "進一步了解")
         if page_context and page_context.get("entity_name"):
             personalization["entity_hint"] = page_context["entity_name"]
     else:
         variant = "soft"
-        personalization["headline_prefix"] = "歡迎聯絡我們"
+        personalization["headline_prefix"] = _localized(locale, "Ready when you have a requirement", "有需求時，歡迎進一步聯絡")
 
     # facet 訊號的個人化優先於 stage 預設（§4.2：像銷售助理的下一步）
     if facet_priority is not None:

@@ -7,9 +7,8 @@ Create Date: 2026-08-03
 - rfq_requests.won_reason：成交原因（§6.3 成交／流失原因必填，供日後回寫 intent 權重）
 - reply_templates：回覆範本庫（§5.4，依產品線／國家／語系維護）
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0051_rfq_outcome_and_templates"
 down_revision = "0050_visitor_intent_facets"

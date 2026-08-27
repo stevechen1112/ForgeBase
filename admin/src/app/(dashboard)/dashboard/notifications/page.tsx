@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Bell, CheckCircle2, XCircle } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 import Link from "next/link";
+import { useCapabilities } from "@/lib/hooks/useCapabilities";
 
 type NotifLog = {
   id: string;
@@ -24,6 +25,13 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   churn_risk: "流失預警",
   chat_handoff: "對話轉業務",
   content_suggestion: "內容建議",
+};
+
+const EVENT_TYPE_FEATURES: Partial<Record<string, string>> = {
+  hot_visitor: "intent_scoring",
+  churn_risk: "intent_scoring",
+  chat_handoff: "chat_handoff",
+  content_suggestion: "full_tracking",
 };
 
 const STATUS_CLS: Record<string, string> = {
@@ -51,6 +59,7 @@ function formatDt(iso: string): string {
 export default function NotificationCenterPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
+  const { hasFeature, isLoading: featuresLoading } = useCapabilities();
 
   const [logs, setLogs] = useState<NotifLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,7 +82,15 @@ export default function NotificationCenterPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = logs.filter((l) => {
+  const visibleEventTypes = Object.entries(EVENT_TYPE_LABELS).filter(([eventType]) => {
+    const feature = EVENT_TYPE_FEATURES[eventType];
+    return !feature || (!featuresLoading && hasFeature(feature));
+  });
+  const visibleLogs = logs.filter((log) => {
+    const feature = EVENT_TYPE_FEATURES[log.event_type];
+    return !feature || (!featuresLoading && hasFeature(feature));
+  });
+  const filtered = visibleLogs.filter((l) => {
     if (channelFilter && l.channel !== channelFilter) return false;
     if (statusFilter && l.status !== statusFilter) return false;
     if (eventFilter && l.event_type !== eventFilter) return false;
@@ -138,7 +155,7 @@ export default function NotificationCenterPage() {
           onChange={(e) => setEventFilter(e.target.value)}
         >
           <option value="">全部事件</option>
-          {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => (
+          {visibleEventTypes.map(([v, l]) => (
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
@@ -154,16 +171,16 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Stats row */}
-      {logs.length > 0 && (
+      {visibleLogs.length > 0 && (
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>共 {logs.length} 筆</span>
+          <span>共 {visibleLogs.length} 筆</span>
           <span className="text-green-600">
             <CheckCircle2 className="inline h-3.5 w-3.5 mr-0.5" />
-            {logs.filter((l) => l.status === "sent").length} 已送出
+            {visibleLogs.filter((l) => l.status === "sent").length} 已送出
           </span>
           <span className="text-red-600">
             <XCircle className="inline h-3.5 w-3.5 mr-0.5" />
-            {logs.filter((l) => l.status === "failed").length} 失敗
+            {visibleLogs.filter((l) => l.status === "failed").length} 失敗
           </span>
         </div>
       )}
@@ -177,7 +194,7 @@ export default function NotificationCenterPage() {
         <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
           <Bell className="h-8 w-8 mx-auto mb-3 opacity-30" />
           <p className="text-sm">尚無通知記錄</p>
-          {!logs.length && (
+          {!visibleLogs.length && (
             <p className="text-xs mt-1">
               請先至{" "}
               <Link href="/dashboard/settings/notifications" className="underline underline-offset-2">
@@ -188,8 +205,8 @@ export default function NotificationCenterPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="max-w-full overflow-x-auto rounded-lg border">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium">時間</th>

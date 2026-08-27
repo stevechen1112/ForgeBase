@@ -121,11 +121,12 @@ async def scan_sla_breaches() -> dict:
     - 即將逾期（1 小時內）且未提醒 → notify_rfq_reminder
     - 已逾期且未標記 → sla_breached=True + notify_rfq_escalation（升級主管）
     """
-    from sqlmodel import select, col
+    from sqlmodel import col, select
+
+    from app.core.datetime import utcnow_naive
     from app.db.session import get_session_ctx
     from app.models.rfq_request import RFQRequest
     from app.services.notifications import notify_rfq_escalation, notify_rfq_reminder
-    from app.core.datetime import utcnow_naive
 
     now = utcnow_naive()
     soon = now + timedelta(hours=1)

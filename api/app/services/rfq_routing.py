@@ -10,18 +10,16 @@ Rules (evaluated in order):
 Config is read from env vars / DB settings for production deployments.
 For now, defaults live in ROUTING_RULES below.
 """
+import logging
 import os
 import uuid
-import logging
-from datetime import datetime
-from app.core.datetime import utcnow_naive
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.rfq_request import RFQRequest
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +44,9 @@ async def route_rfq(rfq_id: uuid.UUID) -> None:
             await _do_route(rfq_id, db)
     except Exception as exc:
         logger.error("rfq_routing error rfq_id=%s: %s", rfq_id, exc)
+        # The durable operational outbox owns retry policy. Swallowing here
+        # would incorrectly mark a failed routing job as completed.
+        raise
 
 
 async def _do_route(rfq_id: uuid.UUID, db: AsyncSession) -> None:
@@ -89,8 +90,9 @@ async def _round_robin_pick(rfq_id: uuid.UUID, db: AsyncSession) -> uuid.UUID | 
     if not SALES_POOL_IDS:
         return None
 
+    from sqlmodel import col, func
+
     from app.models.rfq_request import RFQRequest
-    from sqlmodel import func, col
 
     # Count open RFQs per pool member
     open_statuses = ("new", "assigned", "in_progress")

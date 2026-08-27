@@ -24,8 +24,25 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  sources: Array<{ type: string; id: string; name: string; url?: string }>;
+  sources: Array<{ type: string; id: string; name: string; url?: string; filename?: string; page_number?: string }>;
+  grounding_status: "grounded" | "limited" | "blocked" | null;
+  claim_warnings: string[];
   created_at: string;
+};
+
+const GROUNDING_LABEL: Record<string, string> = {
+  grounded: "已根據網站資料回覆",
+  limited: "資料不足，回覆已限縮",
+  blocked: "已依安全規則阻擋",
+};
+
+const WARNING_LABEL: Record<string, string> = {
+  commercial_terms_require_sales_confirmation: "價格、交期等商務條件仍需業務確認",
+  compliance_claim_requires_documented_source: "合規聲明仍需正式文件佐證",
+  insufficient_compliance_evidence: "網站資料不足以證明該認證或合規聲明",
+  no_published_source: "沒有可支撐這則回覆的已發布資料",
+  prompt_injection_blocked: "偵測到嘗試改變系統規則的請求",
+  unsupported_numeric_claim: "回覆中的數字規格未出現在已索引原文",
 };
 
 type ChatDetail = {
@@ -220,11 +237,27 @@ export default function ChatDetailPage() {
                       }`}
                     >
                       <p className="whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === "assistant" && msg.grounding_status && (
+                        <div className="mt-2 border-t border-border/50 pt-2">
+                          <Badge variant={msg.grounding_status === "grounded" ? "secondary" : "outline"} className="text-[10px]">
+                            {GROUNDING_LABEL[msg.grounding_status] ?? msg.grounding_status}
+                          </Badge>
+                          {msg.claim_warnings.length > 0 && (
+                            <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[10px] text-amber-700">
+                              {msg.claim_warnings.map((warning) => (
+                                <li key={warning}>{WARNING_LABEL[warning] ?? "需人工確認"}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                       {msg.sources.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
                           {msg.sources.map((src, i) => (
                             <Badge key={i} variant="outline" className="text-[10px]">
                               {src.type}: {src.name}
+                              {src.filename ? ` · ${src.filename}` : ""}
+                              {src.page_number ? ` p.${src.page_number}` : ""}
                             </Badge>
                           ))}
                         </div>

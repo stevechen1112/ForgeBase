@@ -2,8 +2,8 @@
 
 - page_briefs: add brief_status (varchar 30, default 'draft')
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0017_add_brief_status_to_page_briefs"
 down_revision = "0016_users_last_login_at"

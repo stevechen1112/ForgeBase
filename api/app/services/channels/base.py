@@ -3,7 +3,7 @@ Channel abstraction — base interface for all notification channels.
 All channels implement: send(recipient_config, message, buttons)
 """
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Optional
 
 
 class BaseChannel(ABC):

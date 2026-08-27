@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { SUPPORTED_LOCALES, draftKey, takeDraft } from "@/lib/i18n";
 
 const SELECT_CLS = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
@@ -25,7 +26,7 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
     question: initial?.question ?? "",
     answer: initial?.answer ?? "",
     category_tag: initial?.category_tag ?? "",
-    locale: initial?.locale ?? "en",
+    locale: initial?.locale ?? "zh-tw",
     sort_order: initial?.sort_order ?? 0,
     status: initial?.status ?? "draft",
     // 跨語系配對鍵：建立繁中版本時沿用英文列的 key，避免產生重複繁中列
@@ -77,9 +78,22 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
       {draftNotice && (
         <Alert className="border-violet-200 bg-violet-50">
           <AlertDescription className="text-violet-800">
-            此表單已由 AI 從英文版起草，請逐欄確認用詞後再儲存。
+            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
           </AlertDescription>
         </Alert>
+      )}
+
+      {id && form.variant_key && (
+        <LocaleSwitcher
+          entityType="faq"
+          basePath="/dashboard/faqs"
+          id={id}
+          slug={form.variant_key}
+          currentLocale={form.locale}
+          currentStatus={form.status}
+          currentUpdatedAt={initial?.updated_at}
+          pairField="variant_key"
+        />
       )}
 
       <Card>
@@ -97,7 +111,7 @@ export default function FAQForm({ initial, id, aiDraft }: Props) {
             <Label>分類標籤</Label>
             <Input {...f("category_tag")} maxLength={60} />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>排序</Label>
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />

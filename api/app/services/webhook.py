@@ -33,6 +33,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
+from sqlmodel import select
+
+from app.db.session import get_session_ctx
+from app.models.contact import Contact
+from app.models.rfq_request import RFQProductLink, RFQRequest
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +79,77 @@ def fire_webhook(event_type: str, data: dict[str, Any]) -> None:
     }
 
     for url in endpoints:
-        asyncio.create_task(_send_with_retry(url, event_type, payload.copy()))
+        endpoint_payload = {**payload, "metadata": payload["metadata"].copy()}
+        asyncio.create_task(_send_with_retry(url, event_type, endpoint_payload))
+
+
+async def deliver_webhook_once(
+    event_type: str,
+    data: dict[str, Any],
+    *,
+    webhook_id: str,
+) -> None:
+    """Deliver once and let the durable operational outbox own retries."""
+    endpoints = _endpoints()
+    if not endpoints:
+        return
+
+    payload = {
+        "event": event_type,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "data": data,
+        "metadata": {"webhook_id": webhook_id, "retry_count": 0},
+    }
+    body_bytes = json.dumps(payload, ensure_ascii=False, default=str).encode()
+    headers = {
+        "Content-Type": "application/json",
+        "X-Webhook-Event": event_type,
+        "X-Webhook-Id": webhook_id,
+    }
+    if _WEBHOOK_SECRET:
+        headers["X-Webhook-Signature"] = f"sha256={_sign(body_bytes)}"
+
+    failures: list[str] = []
+    async with httpx.AsyncClient(timeout=10) as client:
+        for url in endpoints:
+            try:
+                response = await client.post(url, content=body_bytes, headers=headers)
+                response.raise_for_status()
+            except Exception as exc:
+                failures.append(f"{url}: {exc}")
+    if failures:
+        raise RuntimeError("; ".join(failures))
+
+
+async def deliver_rfq_created(rfq_id: uuid.UUID) -> None:
+    """Rebuild an RFQ webhook from committed database state, without PII in job payloads."""
+    async with get_session_ctx() as db:
+        rfq = await db.get(RFQRequest, rfq_id)
+        if not rfq:
+            raise ValueError(f"RFQ {rfq_id} not found")
+        contact = await db.get(Contact, rfq.contact_id) if rfq.contact_id else None
+        product_ids = list((await db.exec(
+            select(RFQProductLink.product_id).where(RFQProductLink.rfq_id == rfq_id)
+        )).all())
+
+    await deliver_webhook_once(
+        "rfq.created",
+        {
+            "rfq_id": str(rfq.id),
+            "rfq_number": rfq.rfq_number,
+            "contact": {
+                "full_name": contact.full_name if contact else None,
+                "email": contact.email if contact else None,
+                "company_name": contact.company_name if contact else None,
+                "country": contact.country if contact else None,
+            },
+            "products": [{"product_id": str(product_id)} for product_id in product_ids],
+            "intent_score": rfq.intent_score_at_submit,
+            "priority": rfq.priority,
+            "source_page": rfq.source_page,
+        },
+        webhook_id=f"rfq-created-{rfq.id}",
+    )
 
 
 async def _send_with_retry(url: str, event_type: str, payload: dict) -> None:

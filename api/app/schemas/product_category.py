@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
+from pydantic import BaseModel, Field
 
 # ── ProductCategory schemas ──────────────────────────────────────────────────
 

@@ -85,7 +85,7 @@ export default function NurtureOutboxPage() {
         <CardHeader>
           <CardTitle className="text-base">待確認（{items.length}）</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="max-w-full overflow-x-auto p-0">
           {loading ? (
             <p className="py-10 text-center text-sm text-muted-foreground">載入中…</p>
           ) : items.length === 0 ? (
@@ -94,7 +94,7 @@ export default function NurtureOutboxPage() {
               <p className="text-sm text-muted-foreground">目前沒有待寄的跟進郵件</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">主旨</th>

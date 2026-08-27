@@ -16,6 +16,7 @@ build/
 .env.*
 !.env.example
 !.env.*.example
+backups/
 langfuse/.env.langfuse
 
 # Node
@@ -55,5 +56,6 @@ api/app/db/migrations/__pycache__/
 
 # Local-only / scratch (keep working tree aligned with remote)
 .copilot-extracted/
+.codex-ppt-weekly/
 api/_check_db_state.py
 **/import_state.json

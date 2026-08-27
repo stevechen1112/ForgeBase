@@ -7,9 +7,8 @@ Create Date: 2026-08-03
 CF→FB Publish Contract §6：支援 `Idempotency-Key` header，
 重送時回傳首次結果，避免重複建頁。
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0049_idempotency_keys"
 down_revision = "0048_site_profile_ops_config"

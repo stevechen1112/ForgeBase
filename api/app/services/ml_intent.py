@@ -140,7 +140,7 @@ async def predict_ml_score(
         features = await extract_features_for_visitor(visitor_row, event_counts)
         prob = float(model.predict_proba(features)[0][1])
         return round(prob, 4)
-    except Exception as exc:
+    except Exception:
         logger.exception("ML prediction failed")
         return estimate_score_from_heuristic(visitor_row, event_counts)
 
@@ -202,7 +202,7 @@ async def train_model(session: AsyncSession) -> dict[str, Any]:
         FROM tracking_events e
         GROUP BY e.visitor_id, e.event_name
     """)
-    events_result = await session.execute(events_sql)
+    events_result = await session.exec(events_sql)
     events_rows = events_result.mappings().all()
 
     # Build per-visitor event count dict
@@ -236,7 +236,9 @@ async def train_model(session: AsyncSession) -> dict[str, Any]:
     """)
     visitor_ids = list(visitor_events.keys())
 
-    visitors_result = await session.execute(visitors_sql, {"visitor_ids": tuple(visitor_ids)})
+    visitors_result = await session.exec(
+        visitors_sql, params={"visitor_ids": tuple(visitor_ids)}
+    )
     visitor_rows = visitors_result.mappings().all()
 
     if len(visitor_rows) < 20:

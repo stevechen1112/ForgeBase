@@ -1,7 +1,7 @@
 """
 Notification Service — 1b.4.7
 
-Sends email notifications via SMTP (configurable).
+Sends internal email notifications through the shared ESP service.
 
 Triggers:
   - notify_new_rfq(rfq_id)         — alert sales team of new RFQ
@@ -9,68 +9,55 @@ Triggers:
   - notify_rfq_reminder(rfq_id)    — 24-hour unacknowledged reminder
   - notify_rfq_escalation(rfq_id)  — 48-hour escalation to manager
 
-SMTP config via env vars:
-  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
-  SALES_NOTIFY_EMAIL — fallback "all new RFQs" recipient
+Configuration via env vars:
+  ESP_PROVIDER / RESEND_API_KEY / EMAIL_FROM / EMAIL_FROM_NAME
+  SALES_NOTIFY_EMAIL — fallback "all new RFQs" internal recipient
   MANAGER_EMAIL      — escalation recipient
 """
+import html
 import logging
-import os
-import smtplib
 import uuid
-from datetime import datetime
-from app.core.datetime import utcnow_naive
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from typing import Optional
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
-from app.models.rfq_request import RFQRequest
 from app.models.contact import Contact
+from app.models.rfq_request import RFQRequest
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.visitor import Visitor
+from app.services.email_service import EmailDeliveryResult, send_email_result
+from app.services.capability_access import tenant_has_feature
 
 logger = logging.getLogger(__name__)
 
-# ── SMTP config ───────────────────────────────────────────────────────────────
-SMTP_HOST = os.getenv("SMTP_HOST", "")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
-SALES_NOTIFY_EMAIL = os.getenv("SALES_NOTIFY_EMAIL", "")
-MANAGER_EMAIL = os.getenv("MANAGER_EMAIL", "")
-
-
-def _send_email(to: str, subject: str, body_html: str) -> bool:
-    """Low-level SMTP send. Returns True on success."""
-    if not SMTP_HOST or not to:
-        logger.debug("SMTP not configured or empty recipient — skipping email")
-        return False
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = SMTP_FROM
-        msg["To"] = to
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body_html, "html", "utf-8"))
-
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            if SMTP_USER:
-                server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, to, msg.as_string())
-        return True
-    except smtplib.SMTPException:
-        logger.exception("Email send failed to=%s", to)
-        return False
-    except Exception:
-        logger.exception("Unexpected email send failure to=%s", to)
-        return False
+async def _send_email(
+    to: str,
+    subject: str,
+    body_html: str,
+    *,
+    idempotency_key: str,
+) -> EmailDeliveryResult:
+    """Send through the configured ESP; never treat a dry run as delivered."""
+    if not to:
+        return EmailDeliveryResult(
+            False,
+            False,
+            settings.EMAIL_DRY_RUN,
+            settings.ESP_PROVIDER,
+            error="empty_recipient",
+        )
+    return await send_email_result(
+        to=to,
+        subject=subject,
+        html_body=body_html,
+        idempotency_key=idempotency_key,
+        recipient_kind="internal",
+    )
 
 
 async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> None:
@@ -78,11 +65,20 @@ async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> N
     Alert sales team when an anonymous visitor reaches hot/sales_ready
     without having submitted an RFQ. (1b.3.5 Intent trigger)
     """
-    if not SALES_NOTIFY_EMAIL:
+    if not settings.SALES_NOTIFY_EMAIL:
         return
     try:
         async with get_session_ctx() as db:
             visitor = await db.get(Visitor, visitor_id)
+            if not visitor or not visitor.tenant_id:
+                return
+            tenant = await db.get(Tenant, visitor.tenant_id)
+            if (
+                not tenant
+                or not tenant_has_feature(tenant, "notifications")
+                or not tenant_has_feature(tenant, "intent_scoring")
+            ):
+                return
             contact_name = "Anonymous"
             contact_email = "—"
             if visitor and visitor.contact_id:
@@ -91,6 +87,10 @@ async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> N
                     contact_name = contact.full_name
                     contact_email = contact.email
             stage_label = stage.replace("_", " ").title()
+            contact_name = html.escape(contact_name or "Anonymous", quote=True)
+            contact_email = html.escape(contact_email or "—", quote=True)
+            stage_label = html.escape(stage_label, quote=True)
+            admin_url = settings.ADMIN_URL.rstrip("/")
             subject = f"[ForgeBase] 🔥 High-Intent Visitor — Stage: {stage_label} (score {score})"
             body = f"""
 <html><body style="font-family:Arial,sans-serif;color:#333">
@@ -102,14 +102,19 @@ async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> N
   <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Known As</td><td style="padding:8px">{contact_name} ({contact_email})</td></tr>
 </table>
 <p style="margin-top:20px">
-  <a href="https://admin.forgebase.io/dashboard/visitors/{visitor_id}"
+  <a href="{admin_url}/dashboard/visitors/{visitor_id}"
      style="background:#1a56db;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px">
     View Visitor Profile
   </a>
 </p>
 </body></html>
 """
-            _send_email(SALES_NOTIFY_EMAIL, subject, body)
+            await _send_email(
+                settings.SALES_NOTIFY_EMAIL,
+                subject,
+                body,
+                idempotency_key=f"visitor-hot-{visitor_id}-{stage}-{score}",
+            )
     except SQLAlchemyError:
         logger.exception("notify_visitor_hot database error visitor_id=%s", visitor_id)
     except Exception:
@@ -118,22 +123,32 @@ async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> N
 
 # ── Notification triggers ─────────────────────────────────────────────────────
 
-async def notify_new_rfq(rfq_id: uuid.UUID) -> None:
+async def notify_new_rfq(rfq_id: uuid.UUID) -> bool:
     """Alert the configured sales inbox about a new RFQ."""
-    if not SALES_NOTIFY_EMAIL:
-        return
+    if not settings.SALES_NOTIFY_EMAIL:
+        return False
     try:
         async with get_session_ctx() as db:
             rfq, contact = await _load_rfq_contact(rfq_id, db)
             if not rfq:
-                return
+                return False
             subject = f"[ForgeBase] New RFQ {rfq.rfq_number} — Priority: {rfq.priority.upper()}"
             body = _rfq_email_body(rfq, contact, action="New RFQ Received")
-            _send_email(SALES_NOTIFY_EMAIL, subject, body)
+            result = await _send_email(
+                settings.SALES_NOTIFY_EMAIL,
+                subject,
+                body,
+                idempotency_key=f"rfq-new-{rfq_id}",
+            )
+            if not result.success:
+                raise RuntimeError("New RFQ email delivery failed")
+            return True
     except SQLAlchemyError:
         logger.exception("notify_new_rfq database error rfq_id=%s", rfq_id)
+        raise
     except Exception:
         logger.exception("notify_new_rfq unexpected error rfq_id=%s", rfq_id)
+        raise
 
 
 async def notify_rfq_assigned(rfq_id: uuid.UUID) -> None:
@@ -148,7 +163,13 @@ async def notify_rfq_assigned(rfq_id: uuid.UUID) -> None:
                 return
             subject = f"[ForgeBase] RFQ Assigned to You: {rfq.rfq_number}"
             body = _rfq_email_body(rfq, contact, action="RFQ Assigned to You")
-            if _send_email(assignee.email, subject, body):
+            result = await _send_email(
+                assignee.email,
+                subject,
+                body,
+                idempotency_key=f"rfq-assigned-{rfq_id}-{assignee.id}",
+            )
+            if result.delivered:
                 rfq.assigned_notified_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
@@ -165,14 +186,22 @@ async def notify_rfq_reminder(rfq_id: uuid.UUID) -> None:
             rfq, contact = await _load_rfq_contact(rfq_id, db)
             if not rfq:
                 return
-            recipient = SALES_NOTIFY_EMAIL
+            recipient = settings.SALES_NOTIFY_EMAIL
             if rfq.assigned_to:
                 assignee = await db.get(User, rfq.assigned_to)
                 if assignee and getattr(assignee, "email", None):
                     recipient = assignee.email
             subject = f"[ForgeBase] ⏰ 24h Reminder: {rfq.rfq_number} still open"
             body = _rfq_email_body(rfq, contact, action="24-Hour Reminder")
-            if recipient and _send_email(recipient, subject, body):
+            result = None
+            if recipient:
+                result = await _send_email(
+                    recipient,
+                    subject,
+                    body,
+                    idempotency_key=f"rfq-reminder-24h-{rfq_id}",
+                )
+            if result and result.delivered:
                 rfq.reminder_24h_sent_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
@@ -184,7 +213,7 @@ async def notify_rfq_reminder(rfq_id: uuid.UUID) -> None:
 
 async def notify_rfq_escalation(rfq_id: uuid.UUID) -> None:
     """48-hour escalation: alert manager."""
-    if not MANAGER_EMAIL:
+    if not settings.MANAGER_EMAIL:
         return
     try:
         async with get_session_ctx() as db:
@@ -193,7 +222,13 @@ async def notify_rfq_escalation(rfq_id: uuid.UUID) -> None:
                 return
             subject = f"[ForgeBase] 🚨 48h Escalation: {rfq.rfq_number} no action taken"
             body = _rfq_email_body(rfq, contact, action="48-Hour Escalation — Manager Alert")
-            if _send_email(MANAGER_EMAIL, subject, body):
+            result = await _send_email(
+                settings.MANAGER_EMAIL,
+                subject,
+                body,
+                idempotency_key=f"rfq-escalation-48h-{rfq_id}",
+            )
+            if result.delivered:
                 rfq.escalation_48h_sent_at = utcnow_naive()
                 db.add(rfq)
                 await db.commit()
@@ -218,12 +253,14 @@ async def _load_rfq_contact(
 
 
 def _rfq_email_body(rfq: RFQRequest, contact: Optional[Contact], action: str) -> str:
-    contact_name = contact.full_name if contact else "Unknown"
-    contact_email = contact.email if contact else "—"
-    contact_company = contact.company_name if contact else "—"
+    contact_name = html.escape(contact.full_name if contact else "Unknown", quote=True)
+    contact_email = html.escape(contact.email if contact else "—", quote=True)
+    contact_company = html.escape(contact.company_name if contact else "—", quote=True)
+    action_display = html.escape(action, quote=True)
+    admin_url = settings.ADMIN_URL.rstrip("/")
     return f"""
 <html><body style="font-family: Arial, sans-serif; color: #333;">
-<h2 style="color:#1a56db">ForgeBase — {action}</h2>
+<h2 style="color:#1a56db">ForgeBase — {action_display}</h2>
 <table style="border-collapse:collapse;width:100%">
   <tr><td style="padding:8px;font-weight:bold;width:180px">RFQ Number</td><td style="padding:8px">{rfq.rfq_number}</td></tr>
   <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Contact</td><td style="padding:8px">{contact_name} ({contact_email})</td></tr>
@@ -234,7 +271,7 @@ def _rfq_email_body(rfq: RFQRequest, contact: Optional[Contact], action: str) ->
   <tr><td style="padding:8px;font-weight:bold">Submitted</td><td style="padding:8px">{rfq.created_at.strftime('%Y-%m-%d %H:%M UTC')}</td></tr>
 </table>
 <p style="margin-top:20px">
-  <a href="https://admin.forgebase.io/dashboard/rfqs/{rfq.id}"
+  <a href="{admin_url}/dashboard/rfqs/{rfq.id}"
      style="background:#1a56db;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px">
     View RFQ in Admin
   </a>

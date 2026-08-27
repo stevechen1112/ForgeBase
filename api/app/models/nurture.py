@@ -10,10 +10,12 @@ A NurtureEnrollment tracks a contact's progress through a sequence.
 """
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
 from typing import Optional
 
-from sqlmodel import SQLModel, Field
+from sqlalchemy import Index, text
+from sqlmodel import Field, SQLModel
+
+from app.core.datetime import utcnow_naive
 
 
 class NurtureSequence(SQLModel, table=True):
@@ -21,7 +23,9 @@ class NurtureSequence(SQLModel, table=True):
     __tablename__ = "nurture_sequences"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
     name: str = Field(max_length=200, index=True)
     description: Optional[str] = Field(default=None)
 
@@ -36,7 +40,9 @@ class NurtureSequence(SQLModel, table=True):
     # Approval gate: sequence must be approved before any email is sent.
     is_approved: bool = Field(default=False, sa_column_kwargs={"server_default": "false"})
     approved_at: Optional[datetime] = Field(default=None)
-    approved_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    approved_by: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
 
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
@@ -47,8 +53,12 @@ class NurtureStep(SQLModel, table=True):
     __tablename__ = "nurture_steps"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    sequence_id: uuid.UUID = Field(foreign_key="nurture_sequences.id", index=True)
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
+    sequence_id: uuid.UUID = Field(
+        foreign_key="nurture_sequences.id", ondelete="CASCADE", index=True
+    )
 
     step_order: int = Field(default=0)
     delay_days: int = Field(default=0)
@@ -68,11 +78,17 @@ class NurtureEnrollment(SQLModel, table=True):
     __tablename__ = "nurture_enrollments"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    sequence_id: uuid.UUID = Field(foreign_key="nurture_sequences.id", index=True)
-    contact_id: uuid.UUID = Field(foreign_key="contacts.id", index=True)
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
+    sequence_id: uuid.UUID = Field(
+        foreign_key="nurture_sequences.id", ondelete="CASCADE", index=True
+    )
+    contact_id: uuid.UUID = Field(
+        foreign_key="contacts.id", ondelete="CASCADE", index=True
+    )
 
-    status: str = Field(default="active", max_length=20)
+    status: str = Field(default="active", max_length=20, index=True)
     # "active" | "completed" | "unsubscribed" | "bounced"
 
     current_step: int = Field(default=0)
@@ -89,21 +105,45 @@ class NurtureEnrollment(SQLModel, table=True):
 class NurtureOutbox(SQLModel, table=True):
     """One queued nurture email awaiting manual approval before send."""
     __tablename__ = "nurture_outbox"
+    __table_args__ = (
+        Index(
+            "uq_nurture_outbox_pending_enrollment_step",
+            "enrollment_id",
+            "step_id",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tenant_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tenants.id", index=True)
-    enrollment_id: uuid.UUID = Field(foreign_key="nurture_enrollments.id", index=True)
-    sequence_id: uuid.UUID = Field(foreign_key="nurture_sequences.id", index=True)
-    step_id: uuid.UUID = Field(foreign_key="nurture_steps.id", index=True)
-    contact_id: uuid.UUID = Field(foreign_key="contacts.id", index=True)
+    tenant_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="tenants.id", ondelete="CASCADE", index=True
+    )
+    enrollment_id: uuid.UUID = Field(
+        foreign_key="nurture_enrollments.id", ondelete="CASCADE", index=True
+    )
+    sequence_id: uuid.UUID = Field(
+        foreign_key="nurture_sequences.id", ondelete="CASCADE", index=True
+    )
+    step_id: uuid.UUID = Field(
+        foreign_key="nurture_steps.id", ondelete="CASCADE"
+    )
+    contact_id: uuid.UUID = Field(
+        foreign_key="contacts.id", ondelete="CASCADE"
+    )
+    outreach_message_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="outreach_messages.id", index=True
+    )
 
-    status: str = Field(default="pending", max_length=20)
+    status: str = Field(default="pending", max_length=20, index=True)
     # "pending" | "sent" | "skipped" | "failed"
 
     subject: str = Field(max_length=500)
     due_at: datetime = Field(default_factory=utcnow_naive)
     created_at: datetime = Field(default_factory=utcnow_naive)
-    reviewed_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    reviewed_by: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     reviewed_at: Optional[datetime] = Field(default=None)
     sent_at: Optional[datetime] = Field(default=None)
     error: Optional[str] = Field(default=None)

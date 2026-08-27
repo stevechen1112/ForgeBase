@@ -1,130 +1,62 @@
 import type { MetadataRoute } from "next";
 import {
-  getPublishedCategories,
-  getAllPublishedProducts,
-  getAllPublishedApplications,
-  getPublishedCapabilities,
-  getPublishedCertifications,
-  getPublishedComparisons,
-  getPublishedFAQs,
+  getPublishedCategories, getAllPublishedProducts, getAllPublishedApplications,
+  getPublishedCapabilities, getPublishedCertifications, getPublishedComparisons, getPublishedFAQs,
 } from "@/lib/api";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 
+type Entry = MetadataRoute.Sitemap[number];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { siteUrl: SITE_URL } = await getRuntimeSiteContext();
+  const { siteUrl } = await getRuntimeSiteContext();
   const now = new Date();
-
-  // Fetch ALL published content across all locales — paginate to capture all items
-  const MAX_SITEMAP_ITEMS = 5000;
-  const [categories, productsRes, applicationsRes, capabilities, certifications, comparisons, faqs] = await Promise.all([
-    getPublishedCategories(),
-    getAllPublishedProducts("en", 1, MAX_SITEMAP_ITEMS),
-    getAllPublishedApplications("en", 1, MAX_SITEMAP_ITEMS),
-    getPublishedCapabilities(),
-    getPublishedCertifications(),
-    getPublishedComparisons(),
-    getPublishedFAQs(),
+  const [enCategories, zhCategoriesRaw, enProducts, zhProductsRaw, enApps, zhAppsRaw, capabilities, certifications, comparisons, faqs] = await Promise.all([
+    getPublishedCategories("en"), getPublishedCategories("zh-TW"),
+    getAllPublishedProducts("en", 1, 100), getAllPublishedProducts("zh-TW", 1, 100),
+    getAllPublishedApplications("en", 1, 100), getAllPublishedApplications("zh-TW", 1, 100),
+    getPublishedCapabilities("en"), getPublishedCertifications("en"), getPublishedComparisons("en"), getPublishedFAQs("en"),
   ]);
+  const zhCategories = zhCategoriesRaw.filter((item) => item.locale === "zh-TW");
+  const zhProducts = zhProductsRaw.data.filter((item) => item.locale === "zh-TW");
+  const zhApps = zhAppsRaw.data.filter((item) => item.locale === "zh-TW");
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
-    { url: `${SITE_URL}/products`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${SITE_URL}/applications`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/certifications`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/capabilities`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/comparisons`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/request-quote`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${SITE_URL}/rfq`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${SITE_URL}/news`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
-    { url: `${SITE_URL}/careers`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${SITE_URL}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${SITE_URL}/dealers`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/zh-TW`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${SITE_URL}/zh-TW/products`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/zh-TW/applications`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${SITE_URL}/zh-TW/certifications`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE_URL}/zh-TW/about`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE_URL}/zh-TW/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${SITE_URL}/zh-TW/rfq`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-  ];
+  const localized = (path: string, priority: number, changeFrequency: Entry["changeFrequency"] = "monthly"): Entry[] => {
+    const en = `${siteUrl}${path === "/" ? "" : path}`;
+    const zh = `${siteUrl}/zh-TW${path === "/" ? "" : path}`;
+    const languages = { "x-default": en, en, "zh-TW": zh };
+    return [
+      { url: en, lastModified: now, changeFrequency, priority, alternates: { languages } },
+      { url: zh, lastModified: now, changeFrequency, priority: Math.max(0.1, priority - 0.1), alternates: { languages } },
+    ];
+  };
 
-  const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({
-    url: `${SITE_URL}/products/${cat.slug}`,
-    lastModified: now,
-    changeFrequency: "weekly",
-    priority: 0.8,
+  const staticRoutes = [
+    ["/", 1, "weekly"], ["/products", .9, "weekly"], ["/applications", .8, "weekly"],
+    ["/certifications", .6, "monthly"], ["/capabilities", .6, "monthly"], ["/faq", .6, "monthly"],
+    ["/comparisons", .6, "monthly"], ["/rfq", .5, "yearly"], ["/about", .5, "monthly"],
+    ["/contact", .5, "yearly"], ["/privacy", .3, "yearly"], ["/terms", .3, "yearly"], ["/cookies", .3, "yearly"],
+  ].flatMap(([path, priority, frequency]) => localized(path as string, priority as number, frequency as Entry["changeFrequency"]));
+
+  const categoryRoutes: Entry[] = enCategories.map((category) => ({
+    url: `${siteUrl}/products/${category.slug}`, lastModified: now, changeFrequency: "weekly", priority: .8,
   }));
+  categoryRoutes.push(...zhCategories.map((category) => ({
+    url: `${siteUrl}/zh-TW/products/${category.slug}`, lastModified: now, changeFrequency: "weekly" as const, priority: .7,
+  })));
 
-  // Products: en → /products/{catSlug}/{slug}
-  //           others → /{locale}/products/{catSlug}/{slug}
-  const productRoutes: MetadataRoute.Sitemap = productsRes.data.map((product) => {
-    const cat = categories.find((c) => c.id === product.category_id);
-    const catSlug = cat?.slug ?? "uncategorised";
-    const localeMod = product.locale && product.locale !== "en"
-      ? `/${product.locale}`
-      : "";
-    return {
-      url: `${SITE_URL}${localeMod}/products/${catSlug}/${product.slug}`,
-      lastModified: product.published_at ? new Date(product.published_at) : now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    };
-  });
-
-  // Applications: en → /applications/{slug}
-  //               others → /{locale}/applications/{slug}
-  const applicationRoutes: MetadataRoute.Sitemap = applicationsRes.data.map((app) => {
-    const localeMod = app.locale && app.locale !== "en" ? `/${app.locale}` : "";
-    return {
-      url: `${SITE_URL}${localeMod}/applications/${app.slug}`,
-      lastModified: app.published_at ? new Date(app.published_at) : now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    };
-  });
-
-  const capabilityRoutes: MetadataRoute.Sitemap = capabilities.map((cap) => ({
-    url: `${SITE_URL}/capabilities/${cap.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.6,
+  const productEntry = (product: (typeof enProducts.data)[number], categories: typeof enCategories): Entry => {
+    const category = categories.find((item) => item.id === product.category_id);
+    const prefix = product.locale === "zh-TW" ? "/zh-TW" : "";
+    return { url: `${siteUrl}${prefix}/products/${category?.slug || "uncategorised"}/${product.slug}`, lastModified: product.published_at ? new Date(product.published_at) : now, changeFrequency: "monthly", priority: .7 };
+  };
+  const productRoutes = [...enProducts.data.map((item) => productEntry(item, enCategories)), ...zhProducts.map((item) => productEntry(item, zhCategories))];
+  const appRoutes: Entry[] = [...enApps.data, ...zhApps].map((item) => ({
+    url: `${siteUrl}${item.locale === "zh-TW" ? "/zh-TW" : ""}/applications/${item.slug}`,
+    lastModified: item.published_at ? new Date(item.published_at) : now, changeFrequency: "monthly", priority: .7,
   }));
-
-  const certificationRoutes: MetadataRoute.Sitemap = certifications.map((cert) => ({
-    url: `${SITE_URL}/certifications/${cert.slug}`,
-    lastModified: cert.expires_at ? new Date(cert.expires_at) : now,
-    changeFrequency: "monthly",
-    priority: 0.6,
-  }));
-
-  const comparisonRoutes: MetadataRoute.Sitemap = comparisons.map((topic) => ({
-    url: `${SITE_URL}/comparisons/${topic.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.6,
-  }));
-
-  const faqTagRoutes: MetadataRoute.Sitemap = [...new Set(faqs.map((faq) => faq.category_tag).filter(Boolean))].map((tag) => ({
-    url: `${SITE_URL}/faq/${encodeURIComponent(String(tag).toLowerCase().replace(/\s+/g, "-"))}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.5,
-  }));
-
-  return [
-    ...staticRoutes,
-    ...categoryRoutes,
-    ...productRoutes,
-    ...applicationRoutes,
-    ...capabilityRoutes,
-    ...certificationRoutes,
-    ...comparisonRoutes,
-    ...faqTagRoutes,
-  ];
+  const capabilityRoutes: Entry[] = capabilities.map((item) => ({ url: `${siteUrl}/capabilities/${item.slug}`, lastModified: now, changeFrequency: "monthly", priority: .6 }));
+  const certificationRoutes: Entry[] = certifications.map((item) => ({ url: `${siteUrl}/certifications/${item.slug}`, lastModified: item.expires_at ? new Date(item.expires_at) : now, changeFrequency: "monthly", priority: .6 }));
+  const comparisonRoutes: Entry[] = comparisons.map((item) => ({ url: `${siteUrl}/comparisons/${item.slug}`, lastModified: now, changeFrequency: "monthly", priority: .6 }));
+  const faqRoutes: Entry[] = [...new Set(faqs.map((item) => item.category_tag).filter(Boolean))].map((tag) => ({ url: `${siteUrl}/faq/${encodeURIComponent(String(tag).toLowerCase().replace(/\s+/g, "-"))}`, lastModified: now, changeFrequency: "monthly", priority: .5 }));
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...appRoutes, ...capabilityRoutes, ...certificationRoutes, ...comparisonRoutes, ...faqRoutes];
 }

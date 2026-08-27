@@ -13,6 +13,9 @@ export { IndustrialHeader } from "./industrial/IndustrialHeader";
 export { IndustrialFooter } from "./industrial/IndustrialFooter";
 export { IndustrialHero } from "./industrial/IndustrialHero";
 export { IndustrialHomePage } from "./industrial/IndustrialHomePage";
+export { PrecisionHeader } from "./precision/PrecisionHeader";
+export { PrecisionFooter } from "./precision/PrecisionFooter";
+export { PrecisionHomePage } from "./precision/PrecisionHomePage";
 export {
 	IndustrialPageHero,
 	IndustrialSectionHeading,

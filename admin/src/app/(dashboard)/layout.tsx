@@ -1,15 +1,14 @@
 import { RouteGuard } from "@/components/auth/RouteGuard";
+import { FeatureAccessGuard } from "@/components/auth/FeatureAccessGuard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { PlanProvider } from "@/lib/hooks/usePlan";
-import { CopilotFloatingWidget } from "@/components/copilot/CopilotFloatingWidget";
+import { CapabilityProvider } from "@/lib/hooks/useCapabilities";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <RouteGuard>
-      <PlanProvider>
-        <DashboardShell>{children}</DashboardShell>
-        <CopilotFloatingWidget />
-      </PlanProvider>
+      <CapabilityProvider>
+        <DashboardShell><FeatureAccessGuard>{children}</FeatureAccessGuard></DashboardShell>
+      </CapabilityProvider>
     </RouteGuard>
   );
 }

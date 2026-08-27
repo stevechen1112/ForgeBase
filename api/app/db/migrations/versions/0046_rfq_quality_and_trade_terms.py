@@ -8,9 +8,8 @@ T9: quality_score / quality_reasons_json（規則式 Lead Quality Score v1）
 T10: incoterm / annual_volume / is_trial_order / required_certs_json /
      target_price（表單第二步貿易條件欄位，全選填）
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0046_rfq_quality_and_trade_terms"
 down_revision = "0045_contacts_tenant_scoped_email"

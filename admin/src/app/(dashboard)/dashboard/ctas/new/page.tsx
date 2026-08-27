@@ -1,5 +1,5 @@
 import CTAForm from "../CTAForm";
-export const metadata = { title: "新增行動按鈕 — NorthForge Admin" };
+export const metadata = { title: "新增行動按鈕 — ForgeBase 管理後台" };
 export default function NewCTAPage() {
   return (
     <div>

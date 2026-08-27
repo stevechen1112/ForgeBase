@@ -15,7 +15,6 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
-
 revision = "0059_locale_sync_v1"
 down_revision = "0058_normalize_locale_case"
 branch_labels = None

@@ -32,7 +32,7 @@ from app.models.certification import Certification
 from app.models.contact import Contact
 from app.models.product import Product
 from app.models.product_category import ProductCategory
-from app.models.rfq_request import RFQRequest, RFQProductLink
+from app.models.rfq_request import RFQProductLink, RFQRequest
 from app.models.site_profile import SiteProfile
 from app.models.visitor import Visitor
 

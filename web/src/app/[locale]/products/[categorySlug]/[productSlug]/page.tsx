@@ -24,10 +24,12 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { getCustomPackagingImage, getProductImage, getQualityInspectionImage } from "@/lib/demoAssets";
 import { buildCanonicalUrl, buildLocaleAlternates, buildTwitterMeta } from "@/lib/seo";
+import { withBasePath } from "@/lib/basePath";
 import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
-import { getMessageNamespace } from "@/lib/messages";
+import { getMessageNamespace } from "@/lib/messages.server";
 import { resolveLocale } from "@/lib/siteCopy";
 import { INDUSTRIAL_PROSE_CLASS, IndustrialCtaPanel, IndustrialPageHero } from "@/components/themes";
+import { ProductImageGallery } from "@/components/ui/ProductImageGallery";
 
 type Props = { params: Promise<{ locale: string; categorySlug: string; productSlug: string }> };
 
@@ -68,7 +70,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return { title: "Not Found" };
 
   const pagePath = `/products/${categorySlug}/${product.slug}`;
-  const canonical = buildCanonicalUrl(pagePath, undefined, runtimeSiteConfig);
+  const actualLocale = product.locale || "en";
+  const canonical = buildCanonicalUrl(pagePath, actualLocale, runtimeSiteConfig);
 
   // hreflang: fetch all published locale variants of this slug
   const localeVariants = await getProductLocales(product.slug).catch(() => []);
@@ -76,10 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = product.seo_title ?? `${product.model_number} ${product.product_name}`;
   const description = product.seo_description ?? product.short_description;
-  const ogImage =
-    product.og_image_url ??
-    getProductImage(product, categorySlug, runtimeSiteConfig) ??
-    undefined;
+  const ogImage = getProductImage(product, categorySlug, runtimeSiteConfig) ?? undefined;
 
   return {
     title,
@@ -88,6 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical,
       languages,
     },
+    robots: resolveLocale(actualLocale) === resolveLocale(locale) ? undefined : { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -100,6 +101,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { siteUrl: SITE_URL, siteName: BRAND_NAME, isIndustrial, siteConfig: runtimeSiteConfig } = await getRuntimeSiteContext();
+  const hiddenBlocks = runtimeSiteConfig.hiddenBlocks ?? {};
   const { locale, categorySlug, productSlug } = await params;
   const resolvedLocale = resolveLocale(locale);
   const [common, copy] = await Promise.all([
@@ -176,7 +178,7 @@ export default async function ProductDetailPage({ params }: Props) {
             description: product.short_description,
             model: product.model_number,
             brand: BRAND_NAME,
-            imageUrl: product.og_image_url ?? product.image_url ?? undefined,
+            imageUrl: productImage ?? undefined,
             imageAlt: product.image_alt ?? product.product_name,
             url: productUrl,
             siteUrl: SITE_URL,
@@ -213,18 +215,13 @@ export default async function ProductDetailPage({ params }: Props) {
             <div className="mx-auto max-w-7xl px-6">
               {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
               <div className="grid gap-10 lg:grid-cols-2">
-                <div className="overflow-hidden border border-gray-300 bg-gray-100 aspect-square max-h-96 lg:max-h-full">
-                  {productImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={productImage} alt={product.product_name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-gray-300">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
+                <ProductImageGallery
+                  productName={product.product_name}
+                  mainImage={productImage}
+                  mainAlt={product.image_alt}
+                  gallery={product.gallery_images}
+                  industrial
+                />
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{product.model_number}</p>
                   <h1 className="mt-1 text-3xl font-black uppercase tracking-tight text-gray-900">{product.product_name}</h1>
@@ -237,6 +234,7 @@ export default async function ProductDetailPage({ params }: Props) {
                     productName={product.product_name}
                     categorySlug={category.slug}
                     categoryName={category.category_name}
+                    industrial={isIndustrial}
                   />
                 </div>
               </div>
@@ -246,7 +244,9 @@ export default async function ProductDetailPage({ params }: Props) {
                   <div className={INDUSTRIAL_PROSE_CLASS} dangerouslySetInnerHTML={{ __html: product.full_description }} />
                 </div>
               )}
+              {(!hiddenBlocks.productInspection || !hiddenBlocks.productPackaging) && (
               <div className="mt-12 grid gap-6 lg:grid-cols-2">
+                {!hiddenBlocks.productInspection && (
                 <div className="overflow-hidden border border-gray-300 bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={getQualityInspectionImage(runtimeSiteConfig) ?? undefined} alt={`${BRAND_NAME} quality inspection workflow`} className="h-56 w-full object-cover" />
@@ -255,6 +255,8 @@ export default async function ProductDetailPage({ params }: Props) {
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.inspectionDescription}</p>
                   </div>
                 </div>
+                )}
+                {!hiddenBlocks.productPackaging && (
                 <div className="overflow-hidden border border-gray-300 bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={getCustomPackagingImage(runtimeSiteConfig) ?? undefined} alt={`${BRAND_NAME} private-label packaging support`} className="h-56 w-full object-cover" />
@@ -263,21 +265,31 @@ export default async function ProductDetailPage({ params }: Props) {
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.packagingDescription}</p>
                   </div>
                 </div>
+                )}
               </div>
+              )}
+              {(!hiddenBlocks.productReadiness || !hiddenBlocks.productSpecControl || !hiddenBlocks.productContext) && (
               <div className="mt-12 grid gap-4 md:grid-cols-3">
+                {!hiddenBlocks.productReadiness && (
                 <div className="border-l-4 border-primary bg-gray-50 p-5">
                   <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.readinessTitle}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.readinessDescription}</p>
                 </div>
+                )}
+                {!hiddenBlocks.productSpecControl && (
                 <div className="border-l-4 border-gray-300 bg-gray-50 p-5">
                   <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.specControlTitle}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.specControlDescription}</p>
                 </div>
+                )}
+                {!hiddenBlocks.productContext && (
                 <div className="border-l-4 border-gray-300 bg-gray-50 p-5">
                   <h2 className="text-sm font-black uppercase tracking-wide text-gray-900">{copy.contextTitle}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">{copy.contextDescription}</p>
                 </div>
+                )}
               </div>
+              )}
               {specs && specs.length > 0 && (
                 <div className="mt-12">
                   <h2 className="mb-4 text-xl font-black uppercase tracking-wide text-gray-900">{copy.specsTitle}</h2>
@@ -342,7 +354,7 @@ export default async function ProductDetailPage({ params }: Props) {
                       <div key={cert.id} className="flex items-center gap-2 border border-primary/40 bg-primary/5 px-4 py-2" title={cert.description ?? cert.cert_name}>
                         {cert.badge_icon_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={cert.badge_icon_url} alt={cert.cert_name} className="h-5 w-5 object-contain" />
+                          <img src={withBasePath(cert.badge_icon_url)} alt={cert.cert_name} className="h-5 w-5 object-contain" />
                         ) : (
                           <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
                         )}
@@ -406,7 +418,7 @@ export default async function ProductDetailPage({ params }: Props) {
           description: product.short_description,
           model: product.model_number,
           brand: BRAND_NAME,
-          imageUrl: product.og_image_url ?? product.image_url ?? undefined,
+          imageUrl: productImage ?? undefined,
           imageAlt: product.image_alt ?? product.product_name,
           url: productUrl,
           siteUrl: SITE_URL,
@@ -448,33 +460,12 @@ export default async function ProductDetailPage({ params }: Props) {
         <div className="container mx-auto max-w-5xl px-6">
           {showLocaleFallback && <LocaleFallbackNotice locale={resolvedLocale} className="mb-8" />}
           <div className="grid gap-10 lg:grid-cols-2">
-            {/* Left: image placeholder */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 aspect-square max-h-96 lg:max-h-full">
-              {productImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={productImage}
-                  alt={product.product_name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-24 w-24 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              )}
-            </div>
+            <ProductImageGallery
+              productName={product.product_name}
+              mainImage={productImage}
+              mainAlt={product.image_alt}
+              gallery={product.gallery_images}
+            />
 
             {/* Right: info */}
             <div>
@@ -493,6 +484,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 productName={product.product_name}
                 categorySlug={category.slug}
                 categoryName={category.category_name}
+                industrial={isIndustrial}
               />
             </div>
           </div>
@@ -508,7 +500,9 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
           )}
 
+          {(!hiddenBlocks.productInspection || !hiddenBlocks.productPackaging) && (
           <div className="mt-12 grid gap-6 lg:grid-cols-2">
+            {!hiddenBlocks.productInspection && (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -523,6 +517,8 @@ export default async function ProductDetailPage({ params }: Props) {
                 </p>
               </div>
             </div>
+            )}
+            {!hiddenBlocks.productPackaging && (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -537,28 +533,38 @@ export default async function ProductDetailPage({ params }: Props) {
                 </p>
               </div>
             </div>
+            )}
           </div>
+          )}
 
+          {(!hiddenBlocks.productReadiness || !hiddenBlocks.productSpecControl || !hiddenBlocks.productContext) && (
           <div className="mt-12 grid gap-4 md:grid-cols-3">
+            {!hiddenBlocks.productReadiness && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
               <h2 className="text-sm font-semibold text-gray-900">{copy.readinessTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
                 {copy.readinessDescription}
               </p>
             </div>
+            )}
+            {!hiddenBlocks.productSpecControl && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
               <h2 className="text-sm font-semibold text-gray-900">{copy.specControlTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
                 {copy.specControlDescription}
               </p>
             </div>
+            )}
+            {!hiddenBlocks.productContext && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
               <h2 className="text-sm font-semibold text-gray-900">{copy.contextTitle}</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
                 {copy.contextDescription}
               </p>
             </div>
+            )}
           </div>
+          )}
 
           {/* Specifications table */}
           {specs && specs.length > 0 && (
@@ -656,7 +662,7 @@ export default async function ProductDetailPage({ params }: Props) {
                     {cert.badge_icon_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={cert.badge_icon_url}
+                        src={withBasePath(cert.badge_icon_url)}
                         alt={cert.cert_name}
                         className="h-5 w-5 object-contain"
                       />

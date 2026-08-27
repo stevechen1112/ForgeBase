@@ -24,7 +24,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="w-60 border-0 p-0 [&>button]:z-10 [&>button]:text-white"
+          className="w-[min(15rem,calc(100vw-1rem))] border-0 p-0 [&>button]:z-10 [&>button]:text-white"
         >
           <SheetTitle className="sr-only">平台管理功能選單</SheetTitle>
           <PlatformSidebar />
@@ -53,7 +53,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="min-w-0 flex-1 overflow-y-auto bg-muted/30 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 p-4 sm:p-6">
           {children}
         </main>
       </div>

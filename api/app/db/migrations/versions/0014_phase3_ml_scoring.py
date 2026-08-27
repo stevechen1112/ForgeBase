@@ -2,8 +2,8 @@
 
 - visitors: add ml_intent_score (float, nullable), ml_score_updated_at (timestamptz, nullable)
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0014_phase3_ml_scoring"
 down_revision = "0013_phase2_download_gate"

@@ -15,7 +15,12 @@ import type {
   Page,
 } from "@/types/content";
 import { withTenantHeaders } from "@/lib/tenant";
-import { toContentLocale } from "@/lib/contentLocale";
+import {
+  mergePublishedListBySlug,
+  parseListPage,
+  shouldFetchEnglishListFallback,
+  withLocaleQuery,
+} from "@/lib/localeListFallback";
 
 const BASE = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEFAULT_CONTENT_LOCALE = "en";
@@ -34,26 +39,32 @@ function logApiFallback(path: string, error: unknown) {
   console.warn(`[api] Falling back for ${path}`, error);
 }
 
-function withLocale(path: string, locale: string): string {
-  const [pathname, query = ""] = path.split("?");
-  const params = new URLSearchParams(query);
-  params.set("locale", toContentLocale(locale, DEFAULT_CONTENT_LOCALE));
-  const nextQuery = params.toString();
-  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
-}
-
 async function apiListFetchWithLocaleFallback<T>(
   path: string,
   locale: string,
   fallback: ListResponse<T>,
   options?: RequestInit
 ): Promise<ListResponse<T>> {
-  const response = await apiFetch<ListResponse<T>>(path, fallback, options);
-  if (locale === DEFAULT_CONTENT_LOCALE || response.data.length > 0) {
-    return response;
+  const localized = await apiFetch<ListResponse<T>>(path, fallback, options);
+  if (!shouldFetchEnglishListFallback(locale, parseListPage(path))) {
+    return localized;
   }
 
-  return apiFetch<ListResponse<T>>(withLocale(path, DEFAULT_CONTENT_LOCALE), fallback, options);
+  const english = await apiFetch<ListResponse<T>>(
+    withLocaleQuery(path, DEFAULT_CONTENT_LOCALE),
+    fallback,
+    options
+  );
+  const merged = mergePublishedListBySlug(localized.data ?? [], english.data ?? []);
+  return {
+    data: merged,
+    meta: {
+      total: Math.max(localized.meta?.total ?? 0, english.meta?.total ?? 0, merged.length),
+      page: 1,
+      page_size: Math.max(localized.meta?.page_size ?? 0, merged.length, 1),
+      total_pages: Math.max(localized.meta?.total_pages ?? 0, english.meta?.total_pages ?? 0, merged.length > 0 ? 1 : 0),
+    },
+  };
 }
 
 async function isApiAvailable(): Promise<boolean> {
@@ -174,7 +185,7 @@ export async function getProductsByCategory(
 
 export async function getProductBySlug(slug: string, locale = "en"): Promise<Product | null> {
   const res = await apiListFetchWithLocaleFallback<Product>(
-    `/content/products?slug=${slug}&locale=${locale}&page_size=1`,
+    `/content/products?slug=${slug}&locale=${locale}&status=published&page_size=1`,
     locale,
     emptyListResponse<Product>()
   );
@@ -241,25 +252,22 @@ async function getPublishedPage(
     `/content/pages?${search.toString()}`,
     emptyListResponse<Page>()
   );
-  if (response.data[0]) {
-    return response.data[0];
+  const page = response.data[0] ?? null;
+  if (page || locale === DEFAULT_CONTENT_LOCALE) {
+    return page;
   }
 
-  if (locale !== DEFAULT_CONTENT_LOCALE) {
-    const fallback = new URLSearchParams({
-      status: "published",
-      locale: DEFAULT_CONTENT_LOCALE,
-      page_size: "1",
-      ...params,
-    });
-    const fallbackResponse = await apiFetch<ListResponse<Page>>(
-      `/content/pages?${fallback.toString()}`,
-      emptyListResponse<Page>()
-    );
-    return fallbackResponse.data[0] ?? null;
-  }
-
-  return null;
+  const fallbackSearch = new URLSearchParams({
+    status: "published",
+    locale: DEFAULT_CONTENT_LOCALE,
+    page_size: "1",
+    ...params,
+  });
+  const fallback = await apiFetch<ListResponse<Page>>(
+    `/content/pages?${fallbackSearch.toString()}`,
+    emptyListResponse<Page>()
+  );
+  return fallback.data[0] ?? null;
 }
 
 export async function getPublishedPageByType(pageType: string, locale = DEFAULT_CONTENT_LOCALE): Promise<Page | null> {

@@ -152,8 +152,10 @@ async def test_forgebase_writeback(http_client: AsyncClient):
     """
     # ── Step 1: 建立 RFQ 記錄（suppress AgentOS auto-trigger）────────────────
     from app.core.config import settings
-    selective_post = _make_selective_post(settings.AGENTOSS_URL or "")
-    with patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
+    agentos_url = "https://agentos.test"
+    selective_post = _make_selective_post(agentos_url)
+    with patch.object(settings, "AGENTOSS_URL", agentos_url), \
+         patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
          patch.object(httpx.AsyncClient, "post", new=selective_post):
         rfq_response = await http_client.post(
             "/api/v1/forms/rfq",
@@ -187,7 +189,8 @@ async def test_forgebase_writeback(http_client: AsyncClient):
             request=httpx.Request("GET", url),
         )
 
-    with patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
+    with patch.object(settings, "AGENTOSS_URL", agentos_url), \
+         patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
          patch.object(httpx.AsyncClient, "get", new=mock_get):
         result = await writeback_agentOS_result(rfq_id, _RUN_ID)
 
@@ -209,7 +212,8 @@ async def test_forgebase_writeback(http_client: AsyncClient):
     )
 
     # ── Step 5: 冪等性驗證 ───────────────────────────────────────────────────
-    with patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
+    with patch.object(settings, "AGENTOSS_URL", agentos_url), \
+         patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
          patch.object(httpx.AsyncClient, "get", new=mock_get):
         result2 = await writeback_agentOS_result(rfq_id, _RUN_ID)
 
@@ -237,8 +241,10 @@ async def test_forgebase_writeback_partial_evidence(http_client: AsyncClient):
     writeback 應只更新 agent_analysis_summary，不覆蓋 agent_draft_body（維持 None）。
     """
     from app.core.config import settings
-    selective_post = _make_selective_post(settings.AGENTOSS_URL or "")
-    with patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
+    agentos_url = "https://agentos.test"
+    selective_post = _make_selective_post(agentos_url)
+    with patch.object(settings, "AGENTOSS_URL", agentos_url), \
+         patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
          patch.object(httpx.AsyncClient, "post", new=selective_post):
         rfq_response = await http_client.post(
             "/api/v1/forms/rfq",
@@ -260,7 +266,8 @@ async def test_forgebase_writeback_partial_evidence(http_client: AsyncClient):
             request=httpx.Request("GET", url),
         )
 
-    with patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
+    with patch.object(settings, "AGENTOSS_URL", agentos_url), \
+         patch("app.services.agentOS.get_session_ctx", new=_service_test_session_ctx), \
          patch.object(httpx.AsyncClient, "get", new=mock_get_partial):
         result = await writeback_agentOS_result(rfq_id, _RUN_ID)
 

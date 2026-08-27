@@ -1,5 +1,5 @@
 import ComparisonForm from "../ComparisonForm";
-export const metadata = { title: "新增競品比較 — NorthForge Admin" };
+export const metadata = { title: "新增競品比較 — ForgeBase 管理後台" };
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

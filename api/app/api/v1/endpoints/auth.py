@@ -1,16 +1,21 @@
-from datetime import datetime
-from app.core.datetime import utcnow_naive
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select
-from app.db.session import get_session
-from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token
-from app.models.user import User
-from app.models.tenant import Tenant
-from app.schemas.user import LoginRequest, TokenResponse, UserRead
-from app.services.subscription import get_plan
 from slugify import slugify
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.core.datetime import utcnow_naive
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_password_hash,
+    verify_password,
+)
+from app.db.session import get_session
+from app.models.tenant import Tenant
+from app.models.user import User
+from app.schemas.user import LoginRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,7 +27,6 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: str
     company_name: str
-    plan: str = "starter"  # "starter" | "professional"
     registration_key: str = ""
 
 
@@ -54,10 +58,6 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     elif settings.is_production:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Registration is closed")
 
-    # Validate plan
-    if payload.plan not in ("starter", "professional"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Plan must be 'starter' or 'professional'")
-
     # Validate password strength
     if len(payload.password) < 8:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password must be at least 8 characters")
@@ -79,13 +79,9 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
         counter += 1
 
     # Create tenant
-    plan_config = get_plan(payload.plan)
     tenant = Tenant(
         name=payload.company_name,
         slug=slug,
-        plan=payload.plan,
-        max_products=plan_config["max_products"],
-        max_admins=plan_config["max_admins"],
     )
     session.add(tenant)
     await session.flush()  # Get tenant.id
@@ -178,7 +174,7 @@ async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_s
 
 # ── Team member management ───────────────────────────────────────────────────
 
-from app.api.v1.deps import get_current_user, require_admin
+from app.api.v1.deps import require_admin
 
 
 class InviteRequest(BaseModel):
@@ -239,16 +235,6 @@ async def invite_team_member(
     existing = await session.exec(select(User).where(User.email == payload.email))
     if existing.first():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Email already registered")
-
-    # Check admin quota
-    from app.services.subscription import check_quota
-    if payload.role in ("admin", "owner"):
-        quota_result = await check_quota(session, current_user.tenant_id, "admin")
-        if not quota_result.get("allowed", True):
-            raise HTTPException(
-                status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=quota_result.get("message", "Admin quota exceeded"),
-            )
 
     user = User(
         email=payload.email,

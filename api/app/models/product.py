@@ -1,27 +1,30 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from typing import TYPE_CHECKING, List, Optional
+
 from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, Relationship, SQLModel
+
 from app.core.datetime import utcnow_naive
 from app.models.associations import (
+    AlternativePartLink,
     ProductApplicationLink,
     ProductCertificationLink,
-    ProductFAQLink,
     ProductComparisonLink,
-    AlternativePartLink,
+    ProductFAQLink,
 )
 
 if TYPE_CHECKING:
-    from app.models.product_category import ProductCategory
     from app.models.application import Application
     from app.models.certification import Certification
-    from app.models.faq_item import FAQItem
     from app.models.comparison_topic import ComparisonTopic
     from app.models.content_asset import ContentAsset
+    from app.models.faq_item import FAQItem
+    from app.models.product_category import ProductCategory
 
 
 class Product(SQLModel, table=True):
+    model_config = {"protected_namespaces": ()}
     __tablename__ = "products"
     __table_args__ = (
         UniqueConstraint("slug", "locale", "tenant_id", name="uq_products_slug_locale_tenant"),

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatMessage, type ChatMessageItem } from "@/components/chat/ChatMessage";
+import { chatDirection, getChatUiCopy } from "@/components/chat/chat-ui-copy";
 import { useMessageNamespace } from "@/lib/messages";
 
 type ChatMessages = {
@@ -23,6 +24,7 @@ interface ChatPanelProps {
   title?: string;
   subtitle?: string;
   messages: ChatMessageItem[];
+  responseLocale: string;
   suggestions: string[];
   isBusy: boolean;
   error: string | null;
@@ -36,6 +38,7 @@ export function ChatPanel({
   title,
   subtitle,
   messages,
+  responseLocale,
   suggestions,
   isBusy,
   error,
@@ -47,6 +50,8 @@ export function ChatPanel({
   const copy = useMessageNamespace<ChatMessages>("chat");
   const resolvedTitle = title ?? copy.title;
   const resolvedSubtitle = subtitle ?? copy.subtitle;
+  const responseCopy = getChatUiCopy(responseLocale);
+  const responseDirection = chatDirection(responseLocale);
 
   return (
     <Card className="flex h-full flex-col overflow-hidden border-slate-200 shadow-xl">
@@ -90,19 +95,19 @@ export function ChatPanel({
           )}
 
           {handoffReady && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <Badge variant="success" className="mb-2">{copy.rfqReady}</Badge>
+            <div dir={responseDirection} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <Badge variant="success" className="mb-2">{responseCopy.rfqReady}</Badge>
               <p className="text-sm text-emerald-800">
-                {copy.rfqReadyDescription}
+                {responseCopy.rfqReadyDescription}
               </p>
               <Button className="mt-3" onClick={() => void onPrepareRfq()} disabled={isBusy}>
-                {copy.prepareRfq}
+                {responseCopy.prepareRfq}
               </Button>
             </div>
           )}
 
           {isBusy && (
-            <div className="text-sm text-slate-500">{copy.thinking}</div>
+            <div dir={responseDirection} className="text-sm text-slate-500">{responseCopy.thinking}</div>
           )}
 
           {error && (
@@ -112,7 +117,7 @@ export function ChatPanel({
           )}
         </div>
 
-        <ChatInput disabled={isBusy} onSubmit={onSubmit} />
+        <ChatInput disabled={isBusy} locale={responseLocale} onSubmit={onSubmit} />
       </CardContent>
     </Card>
   );

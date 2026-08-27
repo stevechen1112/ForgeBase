@@ -36,7 +36,6 @@ interface PagePreview {
   noindex: boolean;
   entity_type: string | null;
   entity_id: string | null;
-  brief_id: string | null;
   locale: string;
   status: string;
 }

@@ -1,5 +1,6 @@
 #!/opt/homebrew/bin/python3
 import json
+import os
 import sys
 import urllib.error
 import urllib.parse
@@ -7,9 +8,9 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-API_BASE = "http://localhost:8000/api/v1"
-LOGIN_EMAIL = "admin@forgebase.com"
-LOGIN_PASSWORD = "ForgeBase_Admin_2026!"
+API_BASE = os.environ.get("FORGEBASE_API_BASE", "http://localhost:8000/api/v1").rstrip("/")
+LOGIN_EMAIL = os.environ.get("FORGEBASE_DEMO_IMPORT_EMAIL", "admin@forgebase.com")
+LOGIN_PASSWORD = os.environ.get("FORGEBASE_DEMO_IMPORT_PASSWORD", "")
 LOCALE = "en"
 
 PUBLISHABLE_ENDPOINTS = {
@@ -74,6 +75,8 @@ class Importer:
         }
 
     def login(self):
+        if not LOGIN_PASSWORD:
+            raise RuntimeError("Set FORGEBASE_DEMO_IMPORT_PASSWORD before importing demo content")
         _, body = api_request(
             "POST",
             "/auth/login",

@@ -13,22 +13,17 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import resolve_tenant_id
 from app.db.session import get_session
-from sqlalchemy import or_
-from app.models.associations import (
-    ProductApplicationLink,
-    ProductCertificationLink,
-    ProductFAQLink,
-    ApplicationFAQLink,
-    AlternativePartLink,
-)
 from app.models.application import Application
-from app.models.certification import Certification
-from app.models.faq_item import FAQItem
+from app.models.associations import (
+    AlternativePartLink,
+    ProductApplicationLink,
+)
 from app.models.product import Product
 from app.models.product_category import ProductCategory
 
@@ -53,6 +48,8 @@ class PublicRelatedApplication(BaseModel):
 
 
 class PublicRelatedProduct(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     id: uuid.UUID
     product_name: str
     slug: str

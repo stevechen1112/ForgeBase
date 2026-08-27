@@ -10,9 +10,8 @@ Phase 3.2  ML Intent Scoring Endpoints
 """
 import json
 import uuid
-from typing import Optional, List
+from typing import List, Optional
 
-from app.core.datetime import utcnow_naive
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -20,6 +19,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import RequireFeature, get_current_user, require_content_editor
+from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.site_profile import SiteProfile
 from app.models.user import User
@@ -30,6 +30,7 @@ from app.services.ml_intent import (
     predict_ml_score,
     train_model,
 )
+from app.services.retirement_observability import record_retirement_usage
 
 router = APIRouter(tags=["ML Intent Scoring"])
 
@@ -67,7 +68,7 @@ async def _get_site_profile(tenant_id: Optional[uuid.UUID], session: AsyncSessio
 
 @router.get("/tracking/intent-rules", response_model=IntentScoringConfig)
 async def get_intent_rules(
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("advanced_intent_rules")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -90,7 +91,7 @@ async def get_intent_rules(
 @router.put("/tracking/intent-rules", response_model=IntentScoringConfig)
 async def update_intent_rules(
     body: IntentScoringConfig,
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("advanced_intent_rules")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
@@ -131,7 +132,7 @@ async def update_intent_rules(
 @router.post("/tracking/ml/train", status_code=status.HTTP_202_ACCEPTED)
 async def train_intent_model(
     background_tasks: BackgroundTasks,
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("ml_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
@@ -141,6 +142,12 @@ async def train_intent_model(
     Returns 202 immediately; check /tracking/ml/status for results.
     """
     background_tasks.add_task(train_model, session)
+    await record_retirement_usage(
+        session,
+        candidate_key="ml_scoring_runtime",
+        event_name="train",
+        tenant_id=current_user.tenant_id,
+    )
     return {
         "message": "ML model training started in background.",
         "status_endpoint": "/api/v1/tracking/ml/status",
@@ -151,11 +158,19 @@ async def train_intent_model(
 
 @router.get("/tracking/ml/status")
 async def intent_model_status(
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("ml_scoring")),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Return current ML model status, metadata, and last training details."""
-    return get_model_status()
+    result = get_model_status()
+    await record_retirement_usage(
+        session,
+        candidate_key="ml_scoring_runtime",
+        event_name="status",
+        tenant_id=current_user.tenant_id,
+    )
+    return result
 
 
 # ── 3.2.2  Predict score for single visitor ───────────────────────────────────
@@ -164,7 +179,7 @@ async def intent_model_status(
 async def predict_visitor_intent_score(
     visitor_id: uuid.UUID,
     save: bool = Query(False, description="Persist the blended score back to visitors table"),
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("ml_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -179,7 +194,7 @@ async def predict_visitor_intent_score(
                first_seen, last_activity_at, tenant_id
         FROM visitors WHERE visitor_id = :vid
     """)
-    v_result = await session.execute(v_sql, {"vid": visitor_id})
+    v_result = await session.exec(v_sql, params={"vid": visitor_id})
     visitor_row = v_result.mappings().first()
     if not visitor_row:
         raise HTTPException(status_code=404, detail="Visitor not found")
@@ -193,7 +208,7 @@ async def predict_visitor_intent_score(
         WHERE visitor_id = :vid
         GROUP BY event_name
     """)
-    ev_result = await session.execute(ev_sql, {"vid": visitor_id})
+    ev_result = await session.exec(ev_sql, params={"vid": visitor_id})
     event_counts: dict[str, int] = {
         r["event_name"]: int(r["cnt"]) for r in ev_result.mappings().all()
     }
@@ -209,15 +224,22 @@ async def predict_visitor_intent_score(
                 ml_score_updated_at = :updated_at
             WHERE visitor_id = :vid
         """)
-        await session.execute(
+        await session.exec(
             update_sql,
-            {
+            params={
                 "score": ml_prob * 100,
                 "updated_at": utcnow_naive(),
                 "vid": visitor_id,
             },
         )
         await session.commit()
+
+    await record_retirement_usage(
+        session,
+        candidate_key="ml_scoring_runtime",
+        event_name="score_and_save" if save else "score_preview",
+        tenant_id=current_user.tenant_id,
+    )
 
     return {
         "visitor_id": str(visitor_id),
@@ -235,7 +257,7 @@ async def predict_visitor_intent_score(
 async def batch_score_visitors(
     background_tasks: BackgroundTasks,
     limit: int = Query(500, ge=10, le=5000),
-    _feature: User = Depends(RequireFeature("intent_scoring")),
+    _feature: User = Depends(RequireFeature("ml_scoring")),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_content_editor),
 ):
@@ -244,6 +266,12 @@ async def batch_score_visitors(
     Runs in background. Processes up to `limit` visitors (most recently active first).
     """
     background_tasks.add_task(_run_batch_scoring, limit, current_user.tenant_id)
+    await record_retirement_usage(
+        session,
+        candidate_key="ml_scoring_runtime",
+        event_name="batch_score",
+        tenant_id=current_user.tenant_id,
+    )
     return {
         "message": f"Batch scoring started for up to {limit} visitors.",
         "limit": limit,
@@ -256,7 +284,6 @@ async def _run_batch_scoring(limit: int, tenant_id=None) -> None:
     Scoped to the triggering user's tenant; tenant_id=None (platform-level
     caller) scores across all tenants.
     """
-    from datetime import datetime
 
     from app.db.session import get_session  # avoid circular at module level
 
@@ -271,9 +298,9 @@ async def _run_batch_scoring(limit: int, tenant_id=None) -> None:
                 ORDER BY last_activity_at DESC NULLS LAST
                 LIMIT :lim
             """)
-            v_result = await session.execute(
+            v_result = await session.exec(
                 visitors_sql,
-                {"lim": limit, "tid": str(tenant_id) if tenant_id else None},
+                params={"lim": limit, "tid": str(tenant_id) if tenant_id else None},
             )
             rows = v_result.mappings().all()
 
@@ -286,21 +313,21 @@ async def _run_batch_scoring(limit: int, tenant_id=None) -> None:
                         WHERE visitor_id = :vid
                         GROUP BY event_name
                     """)
-                    ev_result = await session.execute(ev_sql, {"vid": vid})
+                    ev_result = await session.exec(ev_sql, params={"vid": vid})
                     event_counts: dict[str, int] = {
                         r["event_name"]: int(r["cnt"]) for r in ev_result.mappings().all()
                     }
 
                     ml_prob = predict_ml_score(dict(vrow), event_counts)
 
-                    await session.execute(
+                    await session.exec(
                         text("""
                             UPDATE visitors
                             SET ml_intent_score = :score,
                                 ml_score_updated_at = :updated_at
                             WHERE visitor_id = :vid
                         """),
-                        {
+                        params={
                             "score": ml_prob * 100,
                             "updated_at": utcnow_naive(),
                             "vid": vid,

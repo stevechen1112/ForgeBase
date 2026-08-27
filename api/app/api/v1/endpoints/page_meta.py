@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.v1.deps import require_content_editor
+from app.api.v1.deps import require_admin
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.page import Page
@@ -40,12 +40,16 @@ async def update_page_meta(
     page_id: uuid.UUID,
     payload: PageMetaUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_content_editor),
+    current_user: User = Depends(require_admin),
 ):
     page = await session.get(Page, page_id)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
-    if page.tenant_id and current_user.tenant_id and page.tenant_id != current_user.tenant_id:
+    if not current_user.is_superuser and (
+        page.tenant_id is None
+        or current_user.tenant_id is None
+        or page.tenant_id != current_user.tenant_id
+    ):
         raise HTTPException(status_code=404, detail="Page not found")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -69,7 +73,7 @@ async def update_page_meta(
 async def check_page_trust_standards(
     page_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_content_editor),
+    current_user: User = Depends(require_admin),
 ):
     """信任內容標準檢查（實效計畫 §4.4）。
 
@@ -79,7 +83,11 @@ async def check_page_trust_standards(
     page = await session.get(Page, page_id)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
-    if page.tenant_id and current_user.tenant_id and page.tenant_id != current_user.tenant_id:
+    if not current_user.is_superuser and (
+        page.tenant_id is None
+        or current_user.tenant_id is None
+        or page.tenant_id != current_user.tenant_id
+    ):
         raise HTTPException(status_code=404, detail="Page not found")
 
     result = evaluate_trust_content(page.page_type, page.title or "", page.body or "")

@@ -1,6 +1,6 @@
 "use client";
-import { PlanGate } from "@/components/plan/PlanGate";
+import { CapabilityGate } from "@/components/capabilities/CapabilityGate";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <PlanGate feature="dynamic_cta">{children}</PlanGate>;
+  return <CapabilityGate feature="dynamic_cta">{children}</CapabilityGate>;
 }

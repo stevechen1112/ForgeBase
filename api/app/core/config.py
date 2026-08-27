@@ -1,8 +1,6 @@
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
-
 
 _ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
@@ -10,6 +8,7 @@ _ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
+    DATABASE_NULL_POOL: bool = False
 
     # Security
     SECRET_KEY: str
@@ -31,14 +30,101 @@ class Settings(BaseSettings):
     R2_SECRET_ACCESS_KEY: str = ""
     R2_BUCKET_NAME: str = "forgebase-assets"
     R2_PUBLIC_URL: str = ""
+    ASSET_TENANT_QUOTA_BYTES: int = 2_147_483_648  # 2 GiB per tenant
+
+    # Public form abuse prevention and privacy lifecycle
+    RFQ_BOT_CHALLENGE_REQUIRED: bool = False
+    RFQ_CHALLENGE_MIN_AGE_SECONDS: int = 2
+    RFQ_CHALLENGE_MAX_AGE_SECONDS: int = 7200
+    TURNSTILE_SECRET_KEY: str = ""
+    TURNSTILE_SITE_KEY: str = ""
+    TURNSTILE_ALLOWED_HOSTNAMES: str = ""
+    TURNSTILE_EXPECTED_ACTION: str = "rfq_submit"
+    ANALYTICS_RETENTION_DAYS: int = 180
+    CONSENT_POLICY_VERSION: str = "2026-08-15"
+    # Only direct peers in these CIDRs may supply X-Forwarded-For. Keep empty
+    # unless the deployment's reverse-proxy networks are known explicitly.
+    TRUSTED_PROXY_CIDRS: str = ""
+
+    # Company-identification POC. PDL is registered only when both the API key
+    # and the deployment's contracted per-match cost are configured.
+    PDL_API_KEY: str = ""
+    PDL_DATA_USE_APPROVED: bool = False
+    PDL_IP_ENRICH_URL: str = "https://api.peopledatalabs.com/v5/ip/enrich"
+    PDL_IP_ENRICH_ESTIMATED_COST: float = 0.0
+    COMPANY_PROVIDER_TIMEOUT_SECONDS: float = 8.0
+    COMPANY_PROVIDER_CIRCUIT_FAILURES: int = 5
+    COMPANY_PROVIDER_CIRCUIT_COOLDOWN_SECONDS: int = 300
+
+    # Contact-window POC providers. Registration requires the matching data-use
+    # approval flag, credential and non-zero contracted unit cost.
+    APOLLO_API_KEY: str = ""
+    APOLLO_DATA_USE_APPROVED: bool = False
+    APOLLO_PEOPLE_SEARCH_URL: str = "https://api.apollo.io/api/v1/mixed_people/api_search"
+    APOLLO_PEOPLE_MATCH_URL: str = "https://api.apollo.io/api/v1/people/match"
+    APOLLO_CONTACT_ESTIMATED_COST: float = 0.0
+    HUNTER_API_KEY: str = ""
+    HUNTER_DATA_USE_APPROVED: bool = False
+    HUNTER_EMAIL_VERIFIER_URL: str = "https://api.hunter.io/v2/email-verifier"
+    HUNTER_VERIFY_ESTIMATED_COST: float = 0.0
+    CONTACT_PROVIDER_TIMEOUT_SECONDS: float = 10.0
+    CONTACT_PROVIDER_CIRCUIT_FAILURES: int = 5
+    CONTACT_PROVIDER_CIRCUIT_COOLDOWN_SECONDS: int = 300
+
+    # Operational monitoring (webhook optional; structured logs are always emitted)
+    OPS_ALERT_WEBHOOK_URL: str = ""
+    OPS_FAILED_JOB_ALERT_THRESHOLD: int = 1
+    OPS_STALE_JOB_MINUTES: int = 15
+    OPS_ALERT_COOLDOWN_MINUTES: int = 60
+    EXTERNAL_MONITOR_NAME: str = ""
 
     # Resend
     RESEND_API_KEY: str = ""
+    RESEND_WEBHOOK_SECRET: str = ""
+    RESEND_WEBHOOK_TOLERANCE_SECONDS: int = 300
     EMAIL_FROM: str = "noreply@example.com"
     EMAIL_FROM_NAME: str = "ForgeBase"
-    # When true (or when no ESP key is configured), log and treat send as success.
-    # Use for demo closed-loop without a real ESP key; do not rely on in production mail delivery.
+    # When true, exercise the application path without contacting the ESP.
+    # A dry run must never be recorded as an actual delivery.
     EMAIL_DRY_RUN: bool = False
+    # Platform-level kill switch. Tenant settings can never override this.
+    # Keep false throughout public testing when leads must not be contacted.
+    EMAIL_EXTERNAL_DELIVERY_ENABLED: bool = False
+    # Independent North Star outreach kill switch. Both switches must be on.
+    OUTREACH_SEND_ENABLED: bool = False
+    # Public API origin used for signed unsubscribe links, e.g. https://api.example.com.
+    OUTREACH_PUBLIC_BASE_URL: str = ""
+    # Separate signing secret; never reuse provider webhook credentials.
+    OUTREACH_UNSUBSCRIBE_SECRET: str = ""
+    OUTREACH_UNSUBSCRIBE_TOKEN_DAYS: int = 365
+    INBOUND_REPLY_ENABLED: bool = False
+    OUTREACH_INBOUND_DOMAIN: str = ""
+    OUTREACH_INBOUND_SECRET: str = ""
+    INBOUND_REPLY_MAX_WEBHOOK_BYTES: int = 262144
+    INBOUND_REPLY_MAX_FETCH_BYTES: int = 1048576
+    INBOUND_REPLY_MAX_BODY_CHARS: int = 50000
+    INBOUND_REPLY_MAX_ATTACHMENTS: int = 20
+    INBOUND_REPLY_MAX_ATTACHMENT_BYTES: int = 26214400
+    # Internal notifications are delivered only to exact addresses or domains
+    # listed here. This prevents an RFQ assignee field from becoming an
+    # accidental external-recipient path.
+    EMAIL_INTERNAL_RECIPIENT_ALLOWLIST: str = ""
+    # Comma-separated addresses or domains permitted by the admin test-email
+    # endpoint while live delivery is enabled.
+    EMAIL_TEST_RECIPIENT_ALLOWLIST: str = ""
+    SALES_NOTIFY_EMAIL: str = ""
+    MANAGER_EMAIL: str = ""
+
+    # Synthetic smoke tests may mark their data without allowing an arbitrary
+    # public visitor to hide real activity from reporting.
+    SYNTHETIC_TEST_TOKEN: str = ""
+
+    # Off-site backup readiness. Assets and backups may use separate buckets.
+    BACKUP_S3_ENDPOINT_URL: str = ""
+    BACKUP_S3_ACCESS_KEY_ID: str = ""
+    BACKUP_S3_SECRET_ACCESS_KEY: str = ""
+    BACKUP_S3_BUCKET_NAME: str = ""
+    BACKUP_ENCRYPTION_KEY: str = ""
 
     # Google Search Console
     GSC_SERVICE_ACCOUNT_KEY_JSON: str = ""   # JSON string of service account credentials
@@ -58,14 +144,6 @@ class Settings(BaseSettings):
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ENCRYPTION_MASTER_KEY: str = ""
 
-    # PayPal Subscriptions
-    PAYPAL_MODE: str = "sandbox"  # "sandbox" | "live"
-    PAYPAL_CLIENT_ID: str = ""
-    PAYPAL_CLIENT_SECRET: str = ""
-    PAYPAL_WEBHOOK_ID: str = ""
-    PAYPAL_STARTER_PLAN_ID: str = ""
-    PAYPAL_PROFESSIONAL_PLAN_ID: str = ""
-
     # App
     APP_ENV: str = "development"
     APP_URL: str = "http://localhost:8000"
@@ -83,6 +161,7 @@ class Settings(BaseSettings):
 
     # Web 前台 on-demand revalidate（CF→FB Publish Contract §8）
     WEB_REVALIDATE_URL: str = ""        # e.g. https://www.client.com/api/revalidate
+    WEB_REVALIDATE_URLS: str = ""       # comma-separated; overrides URL when set
     WEB_REVALIDATE_SECRET: str = ""     # 與 web 端 REVALIDATE_SECRET 相同
 
     # Admin seed
@@ -101,10 +180,10 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
 
     # AgentOS integration (Condition 1: auto-trigger RFQ workflows)
-    AGENTOSS_URL: str = "http://localhost:8000"
+    AGENTOSS_URL: str = ""
 
     @property
-    def allowed_origins_list(self) -> List[str]:
+    def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
 
     @property

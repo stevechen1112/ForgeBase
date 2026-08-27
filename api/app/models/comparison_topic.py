@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
-from app.core.datetime import utcnow_naive
-from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from typing import TYPE_CHECKING, List, Optional
+
 from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, Relationship, SQLModel
+
+from app.core.datetime import utcnow_naive
 from app.models.associations import ProductComparisonLink
 
 if TYPE_CHECKING:

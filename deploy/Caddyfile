@@ -1,17 +1,24 @@
-# 正式環境沒有網域，直接為公開 IP 申請 Let's Encrypt shortlived 憑證。
-# 明確保留 HTTP site，憑證申請或更新期間仍可進行健康檢查。
+# pcbrm.tw is the canonical site. The public IP only remains as a redirect.
+# HTTP stays explicit so local health checks remain available during TLS renewal.
 {
-	# 多數用戶端連線 IP 時不傳 SNI；指定預設名稱才能選中 IP 憑證。
 	default_sni {$DOMAIN}
-	# 保留下方明確定義的本機 HTTP health route，其餘流量手動導向 HTTPS。
 	auto_https disable_redirects
 }
 
 (forgebase_routes) {
 	encode zstd gzip
 
+	# Guard the legacy CMS asset path so it cannot fall through to marketing.
+	@legacy_demo_assets path /demo/handtool-company/assets/*
+	handle @legacy_demo_assets {
+		rewrite * /northforge-tools{uri}
+		reverse_proxy web:3000
+	}
+
+	# These are Next.js application routes, not shared FastAPI routes.
 	@web_api path /api/revalidate /api/health/*
 	handle @web_api {
+		rewrite * /northforge-tools{uri}
 		reverse_proxy web:3000
 	}
 
@@ -24,8 +31,16 @@
 		reverse_proxy admin:3000
 	}
 
-	handle {
+	handle /templates* {
+		reverse_proxy templates:80
+	}
+
+	handle /northforge-tools* {
 		reverse_proxy web:3000
+	}
+
+	handle {
+		reverse_proxy marketing:3020
 	}
 }
 
@@ -43,10 +58,35 @@
 }
 
 https://{$DOMAIN} {
+	import forgebase_routes
+}
+
+https://www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+# Dedicated test-only host for the second connected tenant. sslip.io resolves
+# to the Linode IP without pretending this is a customer's production domain.
+https://axisform.172-233-64-5.sslip.io {
+	encode zstd gzip
+	@web_api path /api/revalidate /api/health/*
+	handle @web_api {
+		reverse_proxy web_precision:3000
+	}
+	@api path /api/* /uploads/* /health /health/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web_precision:3000
+	}
+}
+
+https://{$APEX_DOMAIN} {
 	tls {
 		issuer acme https://acme-v02.api.letsencrypt.org/directory {
 			profile shortlived
 		}
 	}
-	import forgebase_routes
+	redir https://{$DOMAIN}{uri} permanent
 }
