@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from scripts import release_package
 from scripts.release_package import (
     VERSION_PATTERN,
     ReleasePackageError,
+    build_release_package,
     migration_topology,
     verify_release_package,
 )
@@ -39,3 +41,9 @@ def test_verifier_rejects_corrupt_outer_checksum(tmp_path: Path) -> None:
     )
     with pytest.raises(ReleasePackageError, match="Outer package checksum mismatch"):
         verify_release_package(package)
+
+
+def test_dirty_tree_is_rejected_for_release(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(release_package, "run_git", lambda *_args, **_kwargs: " M changed")
+    with pytest.raises(ReleasePackageError, match="clean Git working tree"):
+        build_release_package(ROOT, tmp_path)

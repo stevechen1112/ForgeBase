@@ -10,7 +10,7 @@ import re
 import subprocess
 import tarfile
 import tempfile
-from datetime import datetime, timezone
+import uuid
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -119,7 +119,14 @@ def _source_archive(root: Path, destination: Path) -> None:
         zipped.write(raw_tar)
 
 
-def _copy_evidence(root: Path, stage: Path, spec: dict[str, Any]) -> list[dict[str, Any]]:
+def _copy_evidence(
+    root: Path,
+    stage: Path,
+    spec: dict[str, Any],
+    *,
+    revision: str,
+    source_timestamp: str,
+) -> list[dict[str, Any]]:
     evidence_root = root / "artifacts"
     copied: list[dict[str, Any]] = []
     for relative in spec["required_local_evidence"]:
@@ -128,7 +135,19 @@ def _copy_evidence(root: Path, stage: Path, spec: dict[str, Any]) -> list[dict[s
             raise ReleasePackageError(f"Required release evidence missing: {relative}")
         target = stage / "evidence" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(source.read_bytes())
+        if relative.endswith("python-sbom.cdx.json"):
+            sbom_payload = json.loads(source.read_text(encoding="utf-8"))
+            sbom_payload.setdefault("metadata", {})["timestamp"] = source_timestamp
+            deterministic_uuid = uuid.UUID(
+                hex=hashlib.sha256(f"{revision}:python-sbom".encode()).hexdigest()[:32]
+            )
+            sbom_payload["serialNumber"] = f"urn:uuid:{deterministic_uuid}"
+            target.write_text(
+                json.dumps(sbom_payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        else:
+            target.write_bytes(source.read_bytes())
         copied.append({"path": f"evidence/{relative}", "sha256": sha256_file(target)})
     security = json.loads((evidence_root / "security-gate/summary.json").read_text(encoding="utf-8"))
     for key in (
@@ -138,7 +157,11 @@ def _copy_evidence(root: Path, stage: Path, spec: dict[str, Any]) -> list[dict[s
     ):
         if security.get(key) != 0:
             raise ReleasePackageError(f"Security evidence is not releasable: {key}")
-    sbom = json.loads((evidence_root / "security-gate/python-sbom.cdx.json").read_text(encoding="utf-8"))
+    sbom = json.loads(
+        (stage / "evidence/security-gate/python-sbom.cdx.json").read_text(
+            encoding="utf-8"
+        )
+    )
     if sbom.get("bomFormat") != "CycloneDX":
         raise ReleasePackageError("Python SBOM is not CycloneDX")
     return copied
@@ -187,6 +210,7 @@ def build_release_package(
     if dirty and not allow_dirty:
         raise ReleasePackageError("Release packaging requires a clean Git working tree")
     revision = str(run_git(root, "rev-parse", "HEAD"))
+    source_timestamp = str(run_git(root, "show", "-s", "--format=%cI", "HEAD"))
     spec = json.loads((root / "release/release-spec.json").read_text(encoding="utf-8"))
     output.mkdir(parents=True, exist_ok=True)
     package = output / f"forgebase-{version}.tar.gz"
@@ -196,7 +220,13 @@ def build_release_package(
         stage.mkdir()
         source_archive = stage / "SOURCE.tar.gz"
         _source_archive(root, source_archive)
-        evidence = _copy_evidence(root, stage, spec)
+        evidence = _copy_evidence(
+            root,
+            stage,
+            spec,
+            revision=revision,
+            source_timestamp=source_timestamp,
+        )
         critical = [
             {"path": path, "sha256": sha256_file(root / path)}
             for path in _tracked_critical_files(root)
@@ -208,7 +238,9 @@ def build_release_package(
             "release_channel": spec["release_channel"],
             "source_revision": revision,
             "dirty": dirty,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            # Use source metadata, not wall-clock time, so one commit produces
+            # byte-identical release packages across repeated builds.
+            "created_at": source_timestamp,
             "migration": migration_topology(root),
             "components": spec["components"],
             "critical_files": critical,
@@ -276,4 +308,22 @@ def verify_release_package(package: Path) -> dict[str, Any]:
         source = root / "SOURCE.tar.gz"
         if sha256_file(source) != manifest.get("source_archive_sha256"):
             raise ReleasePackageError("Source archive digest mismatch")
+        if not re.fullmatch(r"[0-9a-f]{40}", str(manifest.get("source_revision", ""))):
+            raise ReleasePackageError("Invalid source revision")
+        if not manifest.get("required_external_gates"):
+            raise ReleasePackageError("Required external gates are missing")
+        with tarfile.open(source, "r:gz") as source_tar:
+            source_members = {member.name: member for member in source_tar.getmembers()}
+            for item in manifest.get("critical_files", []):
+                relative = item.get("path")
+                member = source_members.get(relative)
+                if not relative or not member or not member.isfile():
+                    raise ReleasePackageError(
+                        f"Critical file missing from source archive: {relative}"
+                    )
+                stream = source_tar.extractfile(member)
+                if stream is None or sha256_bytes(stream.read()) != item.get("sha256"):
+                    raise ReleasePackageError(
+                        f"Critical source digest mismatch: {relative}"
+                    )
         return manifest
