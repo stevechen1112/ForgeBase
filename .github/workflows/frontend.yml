@@ -1,67 +1,58 @@
-name: Web & Admin CI
+name: Frontend Release Contract
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - "web/**"
-      - "admin/**"
-      - "shared/**"
-      - ".github/workflows/frontend.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "web/**"
-      - "admin/**"
-      - "shared/**"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  web:
+  frontend:
+    name: ${{ matrix.label }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: admin
+            label: Admin
+            path: admin
+          - id: web
+            label: Tenant Web
+            path: web
+          - id: marketing
+            label: ForgeBase Marketing
+            path: forgebase-site
+          - id: templates
+            label: Template Portfolio
+            path: template-demos
     defaults:
       run:
-        working-directory: web
-
+        working-directory: ${{ matrix.path }}
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_NAME: ForgeBase CI
+      FORGEBASE_STRICT_BUILD_API: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: web/package-lock.json
-
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
       - run: npm ci
       - run: npm run type-check
       - run: npm run lint
+      - name: Verify template structure
+        if: matrix.id == 'templates'
+        run: npm run check:structure
       - run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
-          NEXT_PUBLIC_SITE_NAME: ForgeBase
-          # CI validates compilation without a live API. Production keeps the
-          # strict default and still fails when the backend is unavailable.
-          FORGEBASE_STRICT_BUILD_API: "0"
-
-  admin:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: admin
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: admin/package-lock.json
-
-      - run: npm ci
-      - run: npm run type-check
-      - run: npm run lint
-      - run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
-
-  # Production deploy to Linode is handled by deploy.yml on push to main
-  # Vercel deployment is disabled — using Linode only
+      - name: Verify rendered template compliance
+        if: matrix.id == 'templates'
+        run: node scripts/check-compliance.mjs
+      - name: Reject high or critical production dependency advisories
+        run: npm audit --omit=dev --audit-level=high

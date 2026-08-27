@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | I1 | 完整 North Star E2E Lab | 完成 | 通過 | 完成 |
 | I2 | Browser／RBAC 自動化 | 完成 | 通過 | 完成 |
-| I3 | 完整 Release CI | 未開始 | 未開始 | 待辦 |
+| I3 | 完整 Release CI | 完成 | 通過 | 完成 |
 | I4 | Restore／Rollback 自動化 | 未開始 | 未開始 | 待辦 |
 | I5 | 日／法／俄公開網站介面包 | 未開始 | 未開始 | 待辦 |
 | I6 | AI／Knowledge Eval | 未開始 | 未開始 | 待辦 |
@@ -83,3 +83,38 @@
 
 - I2 內部產品化 Gate 與 code review 通過，可進入 I3。
 - 本批證明 RBAC UI／API 一致性與主要 desktop／mobile 管理路徑；完整瀏覽器相容矩陣、輔助科技與真實裝置驗證仍屬後續對外驗收範圍。
+
+## I3：完整 Release CI
+
+### 已實作
+
+- 將原本分散且重複的 API／Frontend／Deploy checks 重構為可重用的 API Release Contract、Frontend Release Contract 與單一 Complete Release Gate；PR、`develop` push、手動執行與 `main` 生產部署共用同一套契約。
+- API Gate 強制執行全 migration、完整 unit／integration／tenant isolation／public form／outbound／claim tests、coverage、schema contract、North Star 全鏈 Lab 與 blocking Python lint；所有外寄、outreach 與 inbound switch 在 CI 明確 fail closed。
+- Frontend Gate 使用 matrix 覆蓋 Admin、Tenant Web、ForgeBase Marketing 與 Template Portfolio，逐一執行 deterministic install、type-check、lint、production build、production dependency audit；Templates 另執行 structure 與 rendered compliance。
+- Browser Gate 在獨立 PostgreSQL service 安裝 Chromium，執行 I2 的真實登入／RBAC matrix，並保存 JSON、JUnit、log 與 failure screenshot evidence。
+- Production Image Gate 實際 build API、Admin、NorthForge Web、AxisForm Web、Marketing、Templates 六個生產 image 變體；BuildKit cache 依 image 隔離，任一變體失敗即阻止發布。
+- Production Topology Gate 以完整必要環境變數解析 `docker-compose.prod.yml`，並對全部 deploy shell 執行 syntax validation。
+- 生產 `deploy` job 現在只依賴單一 `release-gate`；前述任何 job 或 matrix cell 失敗，都不會進入 SSH、同步、migration 或服務切換。
+- workflows 採最小 `contents: read` 權限、明確 timeout、release concurrency cancellation，以及失敗時仍上傳 14 天的 API／Browser machine-readable evidence。
+
+### Code review 發現與修正
+
+1. 舊 CI 僅 build Admin 與 Tenant Web，遺漏實際生產的 Marketing、Templates 與 AxisForm compile-time variant：改為四前端驗證與六 image build matrix，與 production Compose 服務一一對應。
+2. I1 North Star Lab 與 I2 Browser/RBAC Lab 雖可本機執行，未接入部署前硬閘：納入可重用 Release Gate，並上傳不可被 console 摘要取代的 JSON／JUnit 證據。
+3. 舊 deploy workflow 自行複製部分 API／Frontend checks，容易與一般 CI 漂移：抽成 `workflow_call` 契約，部署與 PR 只保留一份真實定義。
+4. 逐一 image build 仍不能證明 Compose 變數與依賴圖有效：新增 production topology 與 deploy shell syntax Gate。
+5. I2 runner 在 Windows 終止 process tree，但在 Linux 只終止 parent，GitHub runner 可能殘留 Next child：Linux 啟動獨立 process group，結束時對整組送出 TERM，逾時再 KILL。
+6. 初稿把 CI 中 `push: false` 的 image build 稱為 immutable image，語意超過實際證據：更名為 production image contract；正式部署仍由既有 safe-deploy 在目標主機建置與記錄 manifest。
+
+### 驗證
+
+- `actionlint 1.7.12`：三個可重用／統一 Gate 及部署 workflow 全數通過。
+- API：`299 passed, 3 skipped`；3 項 skip 僅屬已鎖定退場／外部 repository 才可執行的 AgentOS 測試，核心 ForgeBase 測試無 skip；migration、schema contract、North Star Lab（`1 passed`）及 blocking Ruff lint 通過。
+- Admin／Tenant Web／Marketing／Templates：四組 type-check、lint、production build、production dependency audit 全數通過，各組 `0 vulnerabilities`；Template structure／compliance 通過（6 templates、66 static pages）。
+- Docker：5 份 Dockerfile 的 BuildKit check 無警告；API、Admin、NorthForge、AxisForm、Marketing、Templates 共 6 個生產 image 變體皆完成實際 build。
+- Production Compose `config --quiet`、全部 deploy shell `bash -n`、Browser/RBAC `61 passed, 0 failed`、Ruff、compileall 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I3 內部產品化 Gate 與 code review 通過，可進入 I4。
+- CI 已阻擋程式、權限、資料庫契約、前端與 image build 回歸；外部供應鏈簽章、正式 registry immutable promotion 與更深入 security scanning 由 I9／I13 接續，不在本批虛構為已完成。

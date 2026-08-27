@@ -1,20 +1,17 @@
-name: API CI
+name: API Release Contract
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - "api/**"
-      - ".github/workflows/api.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "api/**"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: Migration, API suite, and North Star
     runs-on: ubuntu-latest
-
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16-alpine
@@ -25,57 +22,70 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U forgebase_test -d forgebase_test"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: api/requirements.txt
-
-      - name: Install dependencies
-        working-directory: api
-        run: pip install -r requirements.txt
-
-      - name: Run database migrations
-        working-directory: api
-        env:
-          DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
-          SECRET_KEY: test-secret-key-for-ci-only
-        run: alembic upgrade head
-
-      - name: Run tests
-        working-directory: api
-        env:
-          DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
-          SECRET_KEY: test-secret-key-for-ci-only
-          OPENAI_API_KEY: sk-test
-          AI_MODEL_NAME: gpt-5.6-luna
-        run: pytest tests/ -v --cov=app --cov-report=term-missing
-
-      - name: Verify North Star database contract
-        working-directory: api
-        env:
-          DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
-          SECRET_KEY: test-secret-key-for-ci-only
-        run: python scripts/verify_schema_contract.py
-
-  lint:
-    runs-on: ubuntu-latest
+          --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+asyncpg://forgebase_test:forgebase_test@localhost:5432/forgebase_test
+      DATABASE_NULL_POOL: "true"
+      SECRET_KEY: release-check-secret-key-at-least-32-characters
+      OPENAI_API_KEY: sk-release-check
+      AI_MODEL_NAME: gpt-5.6-luna
+      EMAIL_DRY_RUN: "true"
+      EMAIL_EXTERNAL_DELIVERY_ENABLED: "false"
+      OUTREACH_SEND_ENABLED: "false"
+      INBOUND_REPLY_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install ruff
-      # Keep the blocking gate focused on syntax errors and undefined names.
-      # The repository's historical style/import cleanup is tracked separately.
-      - run: ruff check api/app/ --select E9,F63,F7,F82
-  # Production deploy is handled by deploy.yml on push to main
+          cache: pip
+          cache-dependency-path: api/requirements.txt
+      - name: Install API dependencies
+        run: |
+          pip install -r api/requirements.txt
+          mkdir -p artifacts
+      - name: Apply every migration
+        working-directory: api
+        run: alembic upgrade head
+      - name: Run unit, integration, tenant, public-form, outbound, and claim tests
+        working-directory: api
+        run: >-
+          pytest -q
+          --junitxml=../artifacts/api-tests.junit.xml
+          --cov=app
+          --cov-report=term-missing
+      - name: Verify North Star database contract
+        working-directory: api
+        run: python scripts/verify_schema_contract.py
+      - name: Run hermetic North Star full-chain gate
+        working-directory: api
+        run: >-
+          python scripts/run_north_star_lab.py
+          --artifacts-dir ../artifacts/north-star-lab
+      - name: Upload API release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-release-evidence
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
+
+  lint:
+    name: Python blocking lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.16.4
+      - name: Reject syntax errors and undefined names
+        run: >-
+          ruff check api/app api/scripts api/tests scripts
+          --select E9,F63,F7,F82

@@ -15,6 +15,7 @@ import json
 import os
 import secrets
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -636,9 +637,11 @@ def _run_browser_and_api_matrix(
 
 
 def _terminate(process: subprocess.Popen | None) -> None:
-    if process is None or process.poll() is not None:
+    if process is None:
         return
     if os.name == "nt":
+        if process.poll() is not None:
+            return
         subprocess.run(
             ["taskkill", "/PID", str(process.pid), "/T", "/F"],
             stdout=subprocess.DEVNULL,
@@ -650,11 +653,17 @@ def _terminate(process: subprocess.Popen | None) -> None:
         except subprocess.TimeoutExpired:
             pass
         return
-    process.terminate()
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
     try:
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        process.kill()
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         process.wait(timeout=5)
 
 
@@ -750,6 +759,7 @@ def main() -> int:
                 stdout=api_log,
                 stderr=subprocess.STDOUT,
                 text=True,
+                start_new_session=os.name != "nt",
             )
             admin_process = subprocess.Popen(
                 [
@@ -768,6 +778,7 @@ def main() -> int:
                 stdout=admin_log,
                 stderr=subprocess.STDOUT,
                 text=True,
+                start_new_session=os.name != "nt",
             )
             _wait_http(f"http://{host}:{args.api_port}/health", api_process, 90)
             _wait_http(

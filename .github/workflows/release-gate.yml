@@ -1,0 +1,185 @@
+name: Complete Release Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "admin/**"
+      - "web/**"
+      - "forgebase-site/**"
+      - "template-demos/**"
+      - "shared/**"
+      - "scripts/**"
+      - "deploy/**"
+      - "docker-compose.prod.yml"
+      - ".github/workflows/**"
+  push:
+    branches: [develop]
+    paths:
+      - "api/**"
+      - "admin/**"
+      - "web/**"
+      - "forgebase-site/**"
+      - "template-demos/**"
+      - "shared/**"
+      - "scripts/**"
+      - "deploy/**"
+      - "docker-compose.prod.yml"
+      - ".github/workflows/**"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API contract
+    uses: ./.github/workflows/api.yml
+
+  frontend:
+    name: Frontend contract
+    uses: ./.github/workflows/frontend.yml
+
+  admin-browser-rbac:
+    name: Admin browser and RBAC
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: forgebase_browser_test
+          POSTGRES_PASSWORD: forgebase_browser_test
+          POSTGRES_DB: forgebase_browser_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U forgebase_browser_test -d forgebase_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+asyncpg://forgebase_browser_test:forgebase_browser_test@localhost:5432/forgebase_browser_test
+      DATABASE_NULL_POOL: "true"
+      SECRET_KEY: browser-release-check-secret-at-least-32-characters
+      OPENAI_API_KEY: sk-browser-release-check
+      AI_MODEL_NAME: gpt-5.6-luna
+      EMAIL_DRY_RUN: "true"
+      EMAIL_EXTERNAL_DELIVERY_ENABLED: "false"
+      OUTREACH_SEND_ENABLED: "false"
+      INBOUND_REPLY_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            api/requirements.txt
+            scripts/requirements-ui-scan.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - name: Install browser gate dependencies
+        run: |
+          pip install -r api/requirements.txt -r scripts/requirements-ui-scan.txt
+          python -m playwright install --with-deps chromium
+          npm ci --prefix admin
+      - name: Run real Admin browser and API RBAC matrix
+        run: python scripts/run_admin_rbac_lab.py
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-browser-rbac-evidence
+          path: artifacts/admin-rbac-lab/
+          if-no-files-found: error
+          retention-days: 14
+
+  production-images:
+    name: Production image / ${{ matrix.label }}
+    needs: [api, frontend, admin-browser-rbac]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: api
+            label: API
+            context: api
+            build_args: ""
+          - id: admin
+            label: Admin
+            context: admin
+            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+          - id: web-northforge
+            label: NorthForge Web
+            context: web
+            build_args: |
+              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+              NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000/northforge-tools
+              NEXT_PUBLIC_SITE_NAME=NorthForge Tools
+              NEXT_PUBLIC_BASE_PATH=/northforge-tools
+              NEXT_PUBLIC_ASSET_BASE=/northforge-tools/demo/handtool-company/assets
+          - id: web-precision
+            label: AxisForm Web
+            context: web
+            build_args: |
+              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+              NEXT_PUBLIC_TENANT_SLUG=axisform-precision
+              NEXT_PUBLIC_SITE_URL=http://axisform.example
+              NEXT_PUBLIC_SITE_NAME=AxisForm Precision
+              NEXT_PUBLIC_BASE_PATH=
+              NEXT_PUBLIC_ASSET_BASE=/demo/precision-machining/assets
+          - id: marketing
+            label: ForgeBase Marketing
+            context: forgebase-site
+            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+          - id: templates
+            label: Template Portfolio
+            context: template-demos
+            build_args: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image contract
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          build-args: ${{ matrix.build_args }}
+          cache-from: type=gha,scope=release-${{ matrix.id }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.id }}
+
+  production-compose:
+    name: Production topology and deploy scripts
+    needs: production-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROTOCOL: https
+      DOMAIN: forgebase.example
+      APEX_DOMAIN: forgebase.example
+      POSTGRES_USER: forgebase_ci
+      POSTGRES_PASSWORD: forgebase_ci_password
+      POSTGRES_DB: forgebase_ci
+      REVALIDATE_SECRET: release-ci-revalidate-secret
+      API_ENV_FILE: ./deploy/api.env.example
+      NEXT_PUBLIC_SITE_NAME: ForgeBase CI
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production Compose graph
+        run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Validate deployment shell syntax
+        run: bash -n deploy/*.sh
