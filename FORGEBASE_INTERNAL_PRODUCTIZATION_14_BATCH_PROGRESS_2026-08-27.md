@@ -15,7 +15,7 @@
 | I5 | 日／法／俄公開網站介面包 | 完成 | 通過 | 完成 |
 | I6 | AI／Knowledge Eval | 完成 | 通過 | 完成 |
 | I7 | Fault Injection／Endurance | 完成 | 通過 | 完成 |
-| I8 | Performance／Capacity／Soak | 未開始 | 未開始 | 待辦 |
+| I8 | Performance／Capacity／Soak | 完成 | 通過 | 完成 |
 | I9 | Security Automation | 未開始 | 未開始 | 待辦 |
 | I10 | Tenant Delivery Factory | 未開始 | 未開始 | 待辦 |
 | I11 | Privacy／Retention Operations | 未開始 | 未開始 | 待辦 |
@@ -250,3 +250,32 @@
 
 - I7 內部產品化 Gate 與 code review 通過，可進入 I8。
 - 本批證明應用層 queue 在受控故障與 286-job 併發批次下的 claim、retry、rollback 與終態一致性；主機斷電、跨區網路分割、真實 provider 長時間 outage 與數小時／數日 soak 屬 I8 或 staging／production 演練，不在本批宣稱完成。
+
+## I8：Performance／Capacity／Soak
+
+### 已實作
+
+- 新增 test-database-only 的 Performance／Capacity／Short-soak Lab：建立 800 筆已發布商品，對實際 FastAPI／Pydantic／PostgreSQL 公開商品列表執行 180 requests、18 concurrency，另跑 40 requests 的 tracemalloc short soak；所有 request 都走 tenant resolution、count、排序、gallery batch query 與 response serialization。
+- 同一 Lab 以 4 個 worker drain 300 筆 Operational Outbox jobs，量測 jobs/sec、失敗與重複 effect；queue benchmark 使用 job-type scope，只處理本次 capacity fixture，不會把共用 CI DB 的其他待辦誤標完成。
+- 新增公開商品列表複合索引、商品圖庫複合索引，以及 Operational／Knowledge queue ready／stale partial indexes；以 PostgreSQL `EXPLAIN` 硬性確認公開列表使用預期索引。
+- Gate 強制 API 0 failure、p95 `< 1,000 ms`、吞吐 `>= 10 req/s`、short-soak retained traced memory `< 32 MiB`、queue `>= 40 jobs/s`、0 duplicate effect；輸出 JSON／JUnit 並納入 API Release Contract。
+
+### Code review 發現與修正
+
+1. 第一版商品索引把 `display_priority` 建成預設升冪，但公開查詢為優先度降冪、名稱升冪；混合排序無法直接利用該索引並會額外 Sort：migration 改成 `display_priority DESC, product_name ASC`，再以實際 query plan 驗證。
+2. 初次 query-plan 驗證在大量 fixture 寫入後未更新統計資料，planner 仍估算只有一列而選擇舊單欄索引：Lab 在量測前執行 `ANALYZE products`，避免以失真的統計產生假陰性或假陽性。
+3. 第一版把 tracemalloc 放在 latency benchmark 外層，Python allocation tracing 把 p95 人為放大到約 1.45 秒：latency／throughput 與 memory short soak 拆成兩段，報告各自量測的真實範圍。
+4. 第一版只呼叫四個 queue worker 一次，若共用 DB 有其他待辦或 claim 排程不平均，可能尚未 drain 本批 fixture：改為 bounded waves 並逐輪查本批 job 終態。
+5. Code review 發現 benchmark monkeypatch `_execute` 時，global worker 可能處理不屬於本測試的 job：worker 增加可選、預設關閉的 `job_types` claim scope；正式 scheduler 維持全類型，本 Lab 只 claim `capacity_lab`。
+
+### 驗證
+
+- 最近一次 Performance Gate：180/180 API requests 成功；p50 `417.16 ms`、p95 `617.12 ms`、`41.17 req/s`；40-request short soak retained traced memory `0.09 MiB`、peak `6.17 MiB`。
+- Queue capacity：300/300 jobs 完成，4 workers，`51.85 jobs/s`、0 failure、0 duplicate effect。
+- PostgreSQL query plan 使用 `ix_products_public_listing`；0091 migration 已完成 downgrade／upgrade round trip。
+- Blocking Ruff、compileall、workflow YAML parse、schema contract 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I8 內部產品化 Gate 與 code review 通過，可進入 I9。
+- 本批數字是同機、ASGI in-process、隔離 PostgreSQL 的 regression baseline，不是生產容量或網路 SLA；它不包含 TLS、reverse proxy、跨區 latency、Next.js render、真實 LLM/provider，也不把 40-request memory sample 宣稱成數小時 soak。正式容量仍需在 staging 以 production topology、預期資料量和長時間負載重新標定。

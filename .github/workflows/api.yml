@@ -73,6 +73,11 @@ jobs:
         run: >-
           python scripts/run_fault_injection_endurance.py
           --artifacts-dir ../artifacts/fault-injection-endurance
+      - name: Run performance, capacity, and short-soak gate
+        working-directory: api
+        run: >-
+          python scripts/run_performance_capacity_lab.py
+          --artifacts-dir ../artifacts/performance-capacity-soak
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -178,23 +178,27 @@ async def _run_worker_maintenance(db: AsyncSession) -> None:
             logger.exception("Operational outbox maintenance failed: %s", label)
 
 
-async def process_operational_jobs(limit: int = 25) -> dict[str, int]:
+async def process_operational_jobs(
+    limit: int = 25, *, job_types: set[str] | None = None
+) -> dict[str, int]:
     stats = {"completed": 0, "retried": 0, "failed": 0}
     async with get_session_ctx() as db:
         now = utcnow_naive()
         await _run_worker_maintenance(db)
+        statement = select(OperationalJob).where(
+            or_(
+                (OperationalJob.status.in_(["pending", "retry"]))
+                & (OperationalJob.available_at <= now),
+                (OperationalJob.status == "processing")
+                & (OperationalJob.locked_at <= now - timedelta(minutes=10)),
+            ),
+        )
+        if job_types:
+            statement = statement.where(OperationalJob.job_type.in_(job_types))
         jobs = list(
             (
                 await db.exec(
-                    select(OperationalJob)
-                    .where(
-                        or_(
-                            (OperationalJob.status.in_(["pending", "retry"]))
-                            & (OperationalJob.available_at <= now),
-                            (OperationalJob.status == "processing")
-                            & (OperationalJob.locked_at <= now - timedelta(minutes=10)),
-                        ),
-                    )
+                    statement
                     .order_by(OperationalJob.available_at)
                     .limit(limit)
                     .with_for_update(skip_locked=True)
