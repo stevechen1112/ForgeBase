@@ -57,5 +57,6 @@ jobs:
               -e ADMIN_EMAIL="$operator_email" \
               -e ADMIN_PASSWORD="$operator_password" \
               -e ADMIN_IS_SUPERUSER=true \
+              -e PYTHONPATH=/app \
               api python scripts/seed_admin_bcrypt.py
           '

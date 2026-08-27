@@ -1,12 +1,18 @@
 """One-time admin seed using bcrypt directly (bypasses passlib compat issue)."""
 import asyncio
 import os
+import sys
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 import bcrypt
 from dotenv import load_dotenv
 
 load_dotenv()
+
+API_DIR = Path(__file__).resolve().parents[1]
+if str(API_DIR) not in sys.path:
+    sys.path.insert(0, str(API_DIR))
 
 from app.core.config import settings  # noqa: E402
 
