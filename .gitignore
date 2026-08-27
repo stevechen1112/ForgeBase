@@ -49,6 +49,7 @@ docker-compose.override.yml
 .coverage
 htmlcov/
 .pytest_cache/
+artifacts/
 
 # Alembic
 # (保留 migrations/ 目錄，但不 track __pycache__)
