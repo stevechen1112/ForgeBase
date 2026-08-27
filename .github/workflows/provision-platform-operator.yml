@@ -1,0 +1,61 @@
+name: Provision Platform Operator
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-platform-operator-provision
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    name: Provision tenantless superuser
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      PLATFORM_OPERATOR_EMAIL: ${{ secrets.PLATFORM_OPERATOR_EMAIL }}
+      PLATFORM_OPERATOR_PASSWORD: ${{ secrets.PLATFORM_OPERATOR_PASSWORD }}
+
+    steps:
+      - name: Validate protected inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$PLATFORM_OPERATOR_EMAIL"
+          test "${#PLATFORM_OPERATOR_PASSWORD}" -ge 20
+          [[ "$PLATFORM_OPERATOR_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Create or rotate authorized platform operator
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf '%s\n' "$PLATFORM_OPERATOR_EMAIL"
+            printf '%s\n' "$PLATFORM_OPERATOR_PASSWORD"
+          } | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            IFS= read -r operator_email
+            IFS= read -r operator_password
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e ADMIN_EMAIL="$operator_email" \
+              -e ADMIN_PASSWORD="$operator_password" \
+              -e ADMIN_IS_SUPERUSER=true \
+              api python scripts/seed_admin_bcrypt.py
+          '
