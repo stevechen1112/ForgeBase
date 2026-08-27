@@ -62,6 +62,9 @@ export default function DashboardPage() {
   const { hasFeature, isLoading: featuresLoading } = useCapabilities();
   const hasFullTracking = !featuresLoading && hasFeature("full_tracking");
   const hasMultilingual = !featuresLoading && hasFeature("multilingual");
+  const canReviewLocaleCoverage = Boolean(
+    user && ["owner", "admin", "marketing_manager"].includes(user.role),
+  );
 
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
@@ -79,7 +82,9 @@ export default function DashboardPage() {
           ? apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token)
           : Promise.resolve(null),
         apiClient.get<RFQRow[]>("/tracking/rfqs?limit=200", token),
-        hasMultilingual ? localeCoverageApi.get(token) : Promise.resolve(null),
+        hasMultilingual && canReviewLocaleCoverage
+          ? localeCoverageApi.get(token)
+          : Promise.resolve(null),
       ]);
       if (funnelResult.status === "fulfilled" && funnelResult.value) {
         setFunnel(funnelResult.value);
@@ -107,7 +112,13 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [featuresLoading, hasFullTracking, hasMultilingual, token]);
+  }, [
+    canReviewLocaleCoverage,
+    featuresLoading,
+    hasFullTracking,
+    hasMultilingual,
+    token,
+  ]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
