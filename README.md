@@ -383,7 +383,7 @@ docker compose -f docker-compose.prod.yml ps    # web 應顯示 healthy
 
 ```bash
 # 0. 建立本地 PostgreSQL user 與 database（首次設定）
-# psql -U postgres -c "CREATE USER forgebase WITH PASSWORD 'forgebase_dev';"
+# psql -U postgres -c "CREATE USER forgebase WITH PASSWORD 'forgebase_dev';" # pragma: allowlist secret -- local-only example
 # psql -U postgres -c "CREATE DATABASE forgebase OWNER forgebase;"
 
 # 1. 後端 API

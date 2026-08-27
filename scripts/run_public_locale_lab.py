@@ -109,6 +109,20 @@ def main() -> int:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1280, "height": 900})
+            challenge_requests: list[str] = []
+
+            def fulfill_rfq_challenge(route) -> None:
+                challenge_requests.append(route.request.url)
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body='{"challenge":"public-locale-lab"}',
+                )
+
+            page.route(
+                "http://127.0.0.1:8000/api/v1/forms/rfq/challenge",
+                fulfill_rfq_challenge,
+            )
 
             def on_console(message: ConsoleMessage) -> None:
                 if message.type == "error":
@@ -173,6 +187,16 @@ def main() -> int:
                 return page.url
 
             record(checks, "language-switcher-preserves-route", verify_switcher)
+
+            def verify_rfq_challenge_stub() -> str:
+                expected = len(LOCALES) * 2
+                assert len(challenge_requests) == expected, (
+                    f"expected {expected} RFQ challenge requests, "
+                    f"received {len(challenge_requests)}"
+                )
+                return f"{len(challenge_requests)} requests"
+
+            record(checks, "rfq-challenge-api-stub", verify_rfq_challenge_stub)
             page.set_viewport_size({"width": 390, "height": 844})
             for locale in ("ja", "fr", "ru"):
                 page.goto(f"http://127.0.0.1:{PORT}/{locale}", wait_until="domcontentloaded")

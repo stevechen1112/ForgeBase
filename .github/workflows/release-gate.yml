@@ -159,7 +159,7 @@ jobs:
     timeout-minutes: 20
     env:
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3105
       NEXT_PUBLIC_SITE_NAME: ForgeBase Locale Lab
       FORGEBASE_STRICT_BUILD_API: "0"
@@ -209,12 +209,12 @@ jobs:
           - id: admin
             label: Admin
             context: admin
-            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
           - id: web-northforge
             label: NorthForge Web
             context: web
             build_args: |
-              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
               NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000/northforge-tools
               NEXT_PUBLIC_SITE_NAME=NorthForge Tools
               NEXT_PUBLIC_BASE_PATH=/northforge-tools
@@ -223,7 +223,7 @@ jobs:
             label: AxisForm Web
             context: web
             build_args: |
-              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+              NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
               NEXT_PUBLIC_TENANT_SLUG=axisform-precision
               NEXT_PUBLIC_SITE_URL=http://axisform.example
               NEXT_PUBLIC_SITE_NAME=AxisForm Precision
@@ -232,7 +232,7 @@ jobs:
           - id: marketing
             label: ForgeBase Marketing
             context: forgebase-site
-            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+            build_args: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
           - id: templates
             label: Template Portfolio
             context: template-demos

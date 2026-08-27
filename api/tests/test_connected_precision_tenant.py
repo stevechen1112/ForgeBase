@@ -92,7 +92,7 @@ async def test_precision_build_readiness_requires_matching_host_and_owner(two_te
             tenant_id=tenant.id,
             email=f"owner-{tenant.id}@example.test",
             full_name="Test Owner",
-            hashed_password="not-used",
+            hashed_password="not-used",  # pragma: allowlist secret -- test fixture
             role="owner",
             is_active=True,
         )

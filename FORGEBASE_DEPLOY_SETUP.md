@@ -12,7 +12,7 @@
 
 | 變數 | 說明 | 範例 |
 |---|---|---|
-| `DATABASE_URL` | PostgreSQL 連線字串（asyncpg） | `postgresql+asyncpg://user:pass@host:5432/forgebase` |
+| `DATABASE_URL` | PostgreSQL 連線字串（asyncpg） | `postgresql+asyncpg://user:pass@host:5432/forgebase` | <!-- pragma: allowlist secret -- documentation placeholder -->
 | `SECRET_KEY` | JWT 簽章密鑰（≥32 字元隨機字串） | `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
 
 ### 1.2 AI / LLM

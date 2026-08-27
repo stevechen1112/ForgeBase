@@ -162,7 +162,10 @@ async def test_apollo_adapter_never_requests_personal_email_or_phone_and_filters
             return httpx.Response(200, json={"person": {"id": "person-1", "name": "Buyer", "title": "Buyer", "email": "buyer@acme.example", "email_status": "verified"}})
         return httpx.Response(200, json={"person": {"id": "person-2", "name": "Personal", "email": "person@gmail.com"}})
 
-    provider = ApolloContactProvider(api_key="test-key", transport=httpx.MockTransport(handler))
+    provider = ApolloContactProvider(
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
+        transport=httpx.MockTransport(handler),
+    )
     provider._cost = Decimal("0.4")
     result = await provider.search(_context())
     assert result.request_id == "apollo-search"
@@ -215,7 +218,7 @@ async def test_pdl_person_search_uses_exact_company_and_work_email_only() -> Non
         )
 
     provider = PeopleDataLabsContactProvider(
-        api_key="test-key",
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
         transport=httpx.MockTransport(handler),
     )
     provider._cost = Decimal("0.2")
@@ -237,7 +240,7 @@ async def test_pdl_person_search_uses_exact_company_and_work_email_only() -> Non
 @pytest.mark.asyncio
 async def test_pdl_person_search_treats_no_match_as_empty_result() -> None:
     provider = PeopleDataLabsContactProvider(
-        api_key="test-key",
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
         transport=httpx.MockTransport(lambda _: httpx.Response(404)),
     )
     result = await provider.search(_context())
@@ -299,7 +302,7 @@ async def test_hunter_domain_search_filters_business_contacts_and_accounts_credi
         )
 
     provider = HunterDomainSearchContactProvider(
-        api_key="test-key",
+        api_key="test-key",  # pragma: allowlist secret -- test fixture
         transport=httpx.MockTransport(handler),
     )
     provider._cost = Decimal("0.3")
@@ -319,10 +322,10 @@ def test_real_contact_providers_fail_closed_until_all_gates_are_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "APP_ENV", "production")
-    monkeypatch.setattr(settings, "PDL_API_KEY", "pdl-test-key")
+    monkeypatch.setattr(settings, "PDL_API_KEY", "pdl-test-key")  # pragma: allowlist secret -- test fixture
     monkeypatch.setattr(settings, "PDL_CONTACT_DATA_USE_APPROVED", False)
     monkeypatch.setattr(settings, "PDL_CONTACT_ESTIMATED_COST", 0.2)
-    monkeypatch.setattr(settings, "HUNTER_API_KEY", "hunter-test-key")
+    monkeypatch.setattr(settings, "HUNTER_API_KEY", "hunter-test-key")  # pragma: allowlist secret -- test fixture
     monkeypatch.setattr(settings, "HUNTER_DATA_USE_APPROVED", True)
     monkeypatch.setattr(settings, "HUNTER_CONTACT_ESTIMATED_COST", 0.0)
     monkeypatch.setattr(settings, "APOLLO_API_KEY", "")

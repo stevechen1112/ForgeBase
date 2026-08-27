@@ -18,7 +18,7 @@ import asyncpg
 # ==============================================================
 # 設定
 # ==============================================================
-DB_URL = "postgresql://forgebase:forgebase_dev@localhost:5432/forgebase"
+DB_URL = "postgresql://forgebase:forgebase_dev@localhost:5432/forgebase"  # pragma: allowlist secret -- local-only demo
 ADMIN_EMAIL = "admin@forgebase.com"
 
 NOW = datetime.utcnow()
