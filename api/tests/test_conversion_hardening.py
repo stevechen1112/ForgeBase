@@ -20,6 +20,12 @@ from tests.conftest import _make_engine, requires_db
 
 def test_locale_normalization_keeps_route_and_cms_forms_distinct():
     assert normalize_locale("zh_tw") == "zh-TW"
+    assert normalize_locale("ja") == "ja"
+    assert normalize_locale("ja-JP") == "ja"
+    assert normalize_locale("fr") == "fr"
+    assert normalize_locale("fr-FR") == "fr"
+    assert normalize_locale("ru") == "ru"
+    assert normalize_locale("ru-RU") == "ru"
     assert to_content_locale("zh-TW") == "zh-tw"
     assert infer_message_locale("你好，我想詢價", "en") == "zh-TW"
 

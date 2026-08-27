@@ -16,6 +16,8 @@ _INJECTION_PATTERNS = (
     r"顯示.{0,8}(系統提示|隱藏指令)",
     r"(以前|上記|システム).{0,10}(指示|命令).{0,8}(無視|忘れ)",
     r"(zeige|enthülle).{0,12}(system|intern).{0,12}(anweisung|prompt)",
+    r"(ignore|révèle|affiche).{0,20}(instructions?|invite|prompt).{0,20}(précédent|système|interne)",
+    r"(игнорируй|покажи|раскрой).{0,24}(системн|внутренн|инструкц|промпт)",
 )
 _PRICE_TERMS = (
     "price",
@@ -35,6 +37,15 @@ _PRICE_TERMS = (
     "가격",
     "견적",
     "납기",
+    "prix",
+    "tarif",
+    "coût",
+    "délai",
+    "date de livraison",
+    "цена",
+    "стоимость",
+    "срок поставки",
+    "дата поставки",
 )
 _COMPLIANCE_TERMS = (
     "certified",
@@ -54,6 +65,12 @@ _COMPLIANCE_TERMS = (
     "인증",
     "규정 준수",
     "보증",
+    "certifié",
+    "conforme",
+    "garantie",
+    "сертифицирован",
+    "соответствует",
+    "гарантия",
 )
 _TRUSTED_TYPES = {
     "product",
@@ -64,6 +81,12 @@ _TRUSTED_TYPES = {
     "capability",
     "page",
     "asset",
+}
+_RFQ_HANDOFF_WARNINGS = {
+    "commercial_terms_require_sales_confirmation",
+    "insufficient_compliance_evidence",
+    "unsupported_numeric_claim",
+    "no_published_source",
 }
 _NUMBER_RE = re.compile(
     r"(?<![\w./-])(\d+(?:[.,]\d+)?)(?:\s*(mm|cm|m|kg|g|lb|hrc|mpa|nm|v|w|%))?",
@@ -78,6 +101,10 @@ class GroundedReply:
     status: str
     warnings: list[str]
     blocked: bool = False
+
+
+def should_offer_rfq_handoff(result: GroundedReply) -> bool:
+    return not result.blocked and bool(_RFQ_HANDOFF_WARNINGS.intersection(result.warnings))
 
 
 def normalize_source(source: dict[str, Any]) -> dict[str, str] | None:
@@ -161,6 +188,14 @@ def apply_grounding_policy(
     relevant_compliance_source = any(
         source["type"] == "certification" for source in trusted_sources
     )
+    asks_commercial_terms = any(term in lowered_question for term in _PRICE_TERMS)
+    if asks_commercial_terms:
+        return GroundedReply(
+            reply=policy_reply("commercial_terms", locale),
+            sources=trusted_sources,
+            status="limited",
+            warnings=["commercial_terms_require_sales_confirmation"],
+        )
     asks_compliance = any(term in lowered_question for term in _COMPLIANCE_TERMS)
     if asks_compliance and not relevant_compliance_source:
         return GroundedReply(

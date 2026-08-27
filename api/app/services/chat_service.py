@@ -33,7 +33,11 @@ from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
 from app.schemas.chat import GeneratedChatPayload
-from app.services.chat_grounding import apply_grounding_policy, buyer_facing_sources
+from app.services.chat_grounding import (
+    apply_grounding_policy,
+    buyer_facing_sources,
+    should_offer_rfq_handoff,
+)
 from app.services.chat_locale import (
     fallback_reply,
     localized_greeting,
@@ -56,6 +60,11 @@ from app.services.knowledge_sync import ensure_tenant_knowledge_index
 from app.services.knowledge_text import wrap_untrusted
 
 logger = logging.getLogger(__name__)
+
+
+def _localized_public_path(path: str, locale: str | None) -> str:
+    route_locale = normalize_locale(locale)
+    return path if route_locale == "en" else f"/{route_locale}{path}"
 
 
 def _tenant_chat_copy(
@@ -617,8 +626,9 @@ class ChatService:
         reply = grounded.reply
         sources = grounded.sources
         if grounded.status != "grounded":
-            suggested_action = "none"
-            handoff_ready = False
+            should_offer_rfq = should_offer_rfq_handoff(grounded)
+            suggested_action = "rfq" if should_offer_rfq else "none"
+            handoff_ready = should_offer_rfq
 
         assistant_message = ChatMessage(
             chat_session_id=chat_session.id,
@@ -887,9 +897,12 @@ class ChatService:
                         "type": "faq",
                         "id": str(faq.id),
                         "name": faq.question,
-                        "url": f"/faq/{faq.category_tag}"
-                        if faq.category_tag
-                        else "/faq",
+                        "url": _localized_public_path(
+                            f"/faq/{faq.category_tag}"
+                            if faq.category_tag
+                            else "/faq",
+                            chat_session.locale,
+                        ),
                     }
                 )
 
@@ -902,7 +915,9 @@ class ChatService:
                         "type": "certification",
                         "id": str(cert.id),
                         "name": cert.cert_name,
-                        "url": f"/certifications/{cert.slug}",
+                        "url": _localized_public_path(
+                            f"/certifications/{cert.slug}", chat_session.locale
+                        ),
                     }
                 )
 
@@ -950,7 +965,10 @@ class ChatService:
                             "type": "product",
                             "id": str(product.id),
                             "name": product.product_name,
-                            "url": f"/products/{category.slug}/{product.slug}",
+                            "url": _localized_public_path(
+                                f"/products/{category.slug}/{product.slug}",
+                                chat_session.locale,
+                            ),
                         }
                     )
                     for faq in [
@@ -965,9 +983,12 @@ class ChatService:
                                 "type": "faq",
                                 "id": str(faq.id),
                                 "name": faq.question,
-                                "url": f"/faq/{faq.category_tag}"
-                                if faq.category_tag
-                                else "/faq",
+                                "url": _localized_public_path(
+                                    f"/faq/{faq.category_tag}"
+                                    if faq.category_tag
+                                    else "/faq",
+                                    chat_session.locale,
+                                ),
                             }
                         )
                     for cert in [
@@ -984,7 +1005,10 @@ class ChatService:
                                 "type": "certification",
                                 "id": str(cert.id),
                                 "name": cert.cert_name,
-                                "url": f"/certifications/{cert.slug}",
+                                "url": _localized_public_path(
+                                    f"/certifications/{cert.slug}",
+                                    chat_session.locale,
+                                ),
                             }
                         )
 
@@ -1038,9 +1062,12 @@ class ChatService:
                             "type": "product",
                             "id": str(product.id),
                             "name": product.product_name,
-                            "url": f"/products/{product.category.slug}/{product.slug}"
-                            if product.category
-                            else "/products",
+                            "url": _localized_public_path(
+                                f"/products/{product.category.slug}/{product.slug}"
+                                if product.category
+                                else "/products",
+                                chat_session.locale,
+                            ),
                         }
                     )
                     for faq in [
@@ -1055,9 +1082,12 @@ class ChatService:
                                 "type": "faq",
                                 "id": str(faq.id),
                                 "name": faq.question,
-                                "url": f"/faq/{faq.category_tag}"
-                                if faq.category_tag
-                                else "/faq",
+                                "url": _localized_public_path(
+                                    f"/faq/{faq.category_tag}"
+                                    if faq.category_tag
+                                    else "/faq",
+                                    chat_session.locale,
+                                ),
                             }
                         )
                     for cert in [
@@ -1074,7 +1104,10 @@ class ChatService:
                                 "type": "certification",
                                 "id": str(cert.id),
                                 "name": cert.cert_name,
-                                "url": f"/certifications/{cert.slug}",
+                                "url": _localized_public_path(
+                                    f"/certifications/{cert.slug}",
+                                    chat_session.locale,
+                                ),
                             }
                         )
 
@@ -1089,9 +1122,12 @@ class ChatService:
                             "type": "faq",
                             "id": str(faq.id),
                             "name": faq.question,
-                            "url": f"/faq/{faq.category_tag}"
-                            if faq.category_tag
-                            else "/faq",
+                            "url": _localized_public_path(
+                                f"/faq/{faq.category_tag}"
+                                if faq.category_tag
+                                else "/faq",
+                                chat_session.locale,
+                            ),
                         }
                     )
 
@@ -1127,7 +1163,10 @@ class ChatService:
                     "type": "faq",
                     "id": str(faq.id),
                     "name": faq.question,
-                    "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+                    "url": _localized_public_path(
+                        f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+                        chat_session.locale,
+                    ),
                 }
             )
         return "\n".join(faq_lines), sources

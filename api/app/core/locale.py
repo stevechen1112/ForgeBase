@@ -105,9 +105,10 @@ def normalize_locale(value: str | None, default: str = "en") -> str:
     raw = (value or "").strip().replace("_", "-").lower()
     if raw.startswith("zh"):
         return "zh-TW"
-    if raw.startswith("en"):
-        return "en"
-    return default
+    route_locale = to_route_locale(raw, default="")
+    if not route_locale and "-" in raw:
+        route_locale = to_route_locale(raw.split("-", 1)[0], default="")
+    return route_locale or default
 
 
 def normalize_chat_locale(value: str | None, default: str = "en") -> str:

@@ -10,9 +10,10 @@ from sqlalchemy import or_, text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.locale import normalize_locale
 from app.models.knowledge import KnowledgeChunk, KnowledgeSource
 
-_TOKEN_RE = re.compile(r"[A-Za-z0-9\u4e00-\u9fff]{2,}")
+_TOKEN_RE = re.compile(r"[^\W_]{2,}", re.UNICODE)
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,10 @@ async def retrieve_public_chunks(
 ) -> list[RetrievedChunk]:
     if tenant_id is None:
         return []
+    normalized_locale = normalize_locale(locale)
+    allowed_locales = [normalized_locale]
+    if normalized_locale != "en":
+        allowed_locales.append("en")
 
     fts_ids: set[uuid.UUID] = set()
     if (query or "").strip():
@@ -104,7 +109,7 @@ async def retrieve_public_chunks(
                             LIMIT 40
                             """
                         ),
-                        params={"tenant_id": tenant_id, "locale": locale, "query": query},
+                        params={"tenant_id": tenant_id, "locale": normalized_locale, "query": query},
                     )
                 ).all()
                 fts_ids = {row[0] for row in fts_rows}
@@ -118,6 +123,7 @@ async def retrieve_public_chunks(
             KnowledgeChunk.tenant_id == tenant_id,
             KnowledgeSource.status == "indexed",
             KnowledgeSource.visibility == "public",
+            KnowledgeSource.locale.in_(allowed_locales),
         )
     )
     tokens = tokenize(query)[:6]

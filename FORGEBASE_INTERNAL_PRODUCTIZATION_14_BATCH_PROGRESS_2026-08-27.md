@@ -13,7 +13,7 @@
 | I3 | 完整 Release CI | 完成 | 通過 | 完成 |
 | I4 | Restore／Rollback 自動化 | 完成 | 通過 | 完成 |
 | I5 | 日／法／俄公開網站介面包 | 完成 | 通過 | 完成 |
-| I6 | AI／Knowledge Eval | 未開始 | 未開始 | 待辦 |
+| I6 | AI／Knowledge Eval | 完成 | 通過 | 完成 |
 | I7 | Fault Injection／Endurance | 未開始 | 未開始 | 待辦 |
 | I8 | Performance／Capacity／Soak | 未開始 | 未開始 | 待辦 |
 | I9 | Security Automation | 未開始 | 未開始 | 待辦 |
@@ -188,3 +188,34 @@
 
 - I5 內部產品化 Gate 與 code review 通過，可進入 I6。
 - 本批交付的是完整五語公開網站「介面包」與發布基礎設施；每個租戶的產品／公司內容仍需逐語人工審核發布。未發布內容會明確標示 fallback，不把來源語內容冒充已完成在地化，也不代表已由母語法務或產業譯者完成外部市場驗收。
+
+## I6：AI／Knowledge Eval
+
+### 已實作
+
+- 將原本只有七筆文字描述、無法執行的 eval catalog 改為版本化 frozen dataset 與 deterministic evaluator；20 個案例覆蓋英文、繁中、日文、法文、俄文，以及已發布事實、無來源／未發布資訊、價格／保證交期、無證據合規聲明與 prompt injection。
+- Gate 計算並強制公司已發布事實正確率、無來源公司事實率、高風險降級率、注入阻擋率及語言一致率；資料集另驗證版本、最少案例數、唯一 ID、必要類別與五個公開語系，並把 SHA-256 寫入 evidence，避免刪除困難案例後仍誤判通過。
+- 重構既有 `api/scripts/run_ai_dialogue_eval.py` 為可重跑、零網路、零付費模型的 release runner，輸出 JSON 與 JUnit；納入 API Release Contract，失敗會阻止後續發布。
+- 修正 knowledge locale 正規化，使 `ja`、`fr`、`ru` 及其地區 tag 不再被壓成英文；public retrieval 明確限定目前 tenant 與「請求語系＋英文 fallback」，並擴充 Unicode tokenizer 以保留假名、重音拉丁字母與西里爾字母。
+- 修正 knowledge compiler 與即時 page context 的 citation URL：英文使用無前綴 canonical path，繁中／日／法／俄使用正確語系前綴，產品連結包含 category slug；跨 tenant 的異常 category reference 不會被編入知識來源。
+- 補齊法文／俄文 greeting、suggestion、澄清問題與安全降級文案；價格或保證交期一律改為未確認並導向 RFQ，無正式認證來源不做合規推論，unsupported numeric claim 降級，prompt injection 阻擋且不建立 RFQ handoff。
+
+### Code review 發現與修正
+
+1. 第一版擴充五語網站後，knowledge 的 `normalize_locale` 仍只保留英文／繁中，且主 SQL retrieval 沒有 locale predicate：日／法／俄資料可能被存成英文或跨語回答；改為共用五語 route locale，主查詢與 FTS 同時限制語系，僅允許英文作明確 fallback。
+2. 編譯後的產品來源仍使用不存在的 `/products/{product}`，非英文來源也缺少 locale prefix；即時 page context 又維持另一套舊 URL：兩條 citation 路徑改用相同 canonical 規則，並補上跨 tenant category 防護。
+3. 原邏輯只替價格／交期加 warning，仍可能回傳 `grounded`；所有 `limited` 又被統一取消 handoff，與「資訊不足時導向詢價」相衝突：商務承諾現在必定降級，只有安全阻擋不導流，其餘可由真人確認的缺口建立 RFQ handoff。
+4. 法文／俄文雖已有公開網站介面，AI 固定文案、澄清問題和風險詞彙仍回退英文或無法識別：補齊兩語完整安全與商務路徑，並加入五語 frozen cases。
+5. 既有 `run_ai_dialogue_eval.py` 會呼叫真實模型、缺少目前必要參數，且輸出寫死另一台電腦的絕對路徑；review 時移除另建的重複 runner，直接把既有入口改成 hermetic release gate，避免並存兩套評測技術債。
+6. 初版 frozen dataset 沒有結構完整性與內容指紋，移除高風險案例仍可能得到綠燈：加入 version、數量、唯一 ID、必要類別、必要語系驗證及 dataset SHA-256 evidence。
+
+### 驗證
+
+- Frozen AI／Knowledge Gate：`20 passed, 0 failed`；五項門檻分別為 `1.0`、`0.0`、`1.0`、`1.0`、`1.0`，全部通過；evidence 明確記錄 `network_calls: 0`、`live_model_used: false`。
+- AI／knowledge／chat／多語相關回歸：`59 passed, 7 skipped`；完整本機 API suite：`224 passed, 90 skipped`。skip 為本機未提供 PostgreSQL／外部條件的既有整合案例，Release CI 仍在 PostgreSQL service 執行完整資料庫路徑。
+- Blocking Ruff、compileall、workflow YAML parse 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I6 內部產品化 Gate 與 code review 通過，可進入 I7。
+- 本批證明 deterministic retrieval／grounding／language／handoff 安全契約，不宣稱目前外部 LLM provider 的自然語言事實正確率已被證實；少量核准模型 smoke eval、完整線上模型 regression、真實 citation precision 與真實 retrieval recall 仍應在 staging／夜間外部驗證中執行，不能由零網路 CI 虛構為完成。

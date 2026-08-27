@@ -64,7 +64,16 @@ def _published(entity: Any) -> bool:
     return status == "published"
 
 
-def compile_product_document(product: Product, category_name: str = "") -> dict[str, Any]:
+def _localized_url(locale: str | None, path: str) -> str:
+    route_locale = normalize_locale(locale)
+    return path if route_locale == "en" else f"/{route_locale}{path}"
+
+
+def compile_product_document(
+    product: Product,
+    category_name: str = "",
+    category_slug: str = "",
+) -> dict[str, Any]:
     specs = strip_html(product.specifications)
     body = "\n".join(
         part
@@ -82,7 +91,10 @@ def compile_product_document(product: Product, category_name: str = "") -> dict[
     return {
         "title": product.product_name,
         "locale": normalize_locale(product.locale or "en"),
-        "url": f"/products/{product.slug}",
+        "url": _localized_url(
+            product.locale,
+            f"/products/{category_slug}/{product.slug}" if category_slug else "/products",
+        ),
         "text": body,
         "metadata": {"model_number": product.model_number, "product_name": product.product_name},
     }
@@ -101,7 +113,7 @@ def compile_category_document(category: ProductCategory) -> dict[str, Any]:
     return {
         "title": category.category_name,
         "locale": normalize_locale(category.locale or "en"),
-        "url": f"/products/{category.slug}",
+        "url": _localized_url(category.locale, f"/products/{category.slug}"),
         "text": body,
         "metadata": {"category_name": category.category_name},
     }
@@ -123,7 +135,7 @@ def compile_application_document(application: Application) -> dict[str, Any]:
     return {
         "title": application.application_name,
         "locale": normalize_locale(application.locale or "en"),
-        "url": f"/applications/{application.slug}",
+        "url": _localized_url(application.locale, f"/applications/{application.slug}"),
         "text": body,
         "metadata": {"industry": application.industry},
     }
@@ -143,7 +155,7 @@ def compile_capability_document(capability: Capability) -> dict[str, Any]:
     return {
         "title": capability.capability_name,
         "locale": normalize_locale(capability.locale or "en"),
-        "url": f"/capabilities/{capability.slug}",
+        "url": _localized_url(capability.locale, f"/capabilities/{capability.slug}"),
         "text": body,
         "metadata": {},
     }
@@ -163,7 +175,7 @@ def compile_certification_document(cert: Certification) -> dict[str, Any]:
     return {
         "title": cert.cert_name,
         "locale": normalize_locale(cert.locale or "en"),
-        "url": f"/certifications/{cert.slug}",
+        "url": _localized_url(cert.locale, f"/certifications/{cert.slug}"),
         "text": body,
         "metadata": {"cert_name": cert.cert_name},
     }
@@ -174,7 +186,10 @@ def compile_faq_document(faq: FAQItem) -> dict[str, Any]:
     return {
         "title": faq.question,
         "locale": normalize_locale(faq.locale or "en"),
-        "url": f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+        "url": _localized_url(
+            faq.locale,
+            f"/faq/{faq.category_tag}" if faq.category_tag else "/faq",
+        ),
         "text": body,
         "metadata": {},
     }
@@ -196,7 +211,10 @@ def compile_page_document(page: Page) -> dict[str, Any]:
     return {
         "title": page.title,
         "locale": normalize_locale(page.locale or "en"),
-        "url": f"/{page.slug}" if page.slug and page.slug != "home" else "/",
+        "url": _localized_url(
+            page.locale,
+            f"/{page.slug}" if page.slug and page.slug != "home" else "/",
+        ),
         "text": body,
         "metadata": {"page_type": page.page_type},
     }
@@ -221,10 +239,13 @@ async def _load_entity(session: AsyncSession, source_type: str, source_id: uuid.
 async def _compile_cms(session: AsyncSession, source_type: str, entity: Any) -> dict[str, Any]:
     if source_type == "product":
         category_name = ""
+        category_slug = ""
         if entity.category_id:
             category = await session.get(ProductCategory, entity.category_id)
-            category_name = category.category_name if category else ""
-        return compile_product_document(entity, category_name)
+            if category and _tenant_ok(category, entity.tenant_id):
+                category_name = category.category_name
+                category_slug = category.slug
+        return compile_product_document(entity, category_name, category_slug)
     if source_type == "category":
         return compile_category_document(entity)
     if source_type == "application":

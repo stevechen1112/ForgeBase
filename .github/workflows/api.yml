@@ -61,6 +61,8 @@ jobs:
       - name: Verify North Star database contract
         working-directory: api
         run: python scripts/verify_schema_contract.py
+      - name: Run frozen AI and public knowledge quality gate
+        run: python api/scripts/run_ai_dialogue_eval.py
       - name: Run hermetic North Star full-chain gate
         working-directory: api
         run: >-
