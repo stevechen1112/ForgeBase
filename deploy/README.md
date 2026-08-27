@@ -187,13 +187,38 @@ bash deploy/safe-deploy.sh
 
 推送到 `main` 後的 GitHub Actions production workflow 也必須呼叫同一支腳本；同步程式碼時會排除主機上的 `backups/`，避免 `rsync --delete` 刪除資料庫備份與映像 rollback manifest。
 
-若健康檢查未通過，腳本會保留 rollback manifest。先查看 API 與 migration logs，再使用輸出的 manifest 回復應用程式映像：
+若健康檢查未通過，腳本會保留 rollback manifest。先查看 API 與 migration logs，並先做不變更 image／container 的完整 preflight：
 
 ```bash
-bash deploy/rollback.sh /absolute/path/to/backups/images-TIMESTAMP.manifest
+bash deploy/rollback.sh --dry-run \
+  --approve-api-schema-compatibility \
+  /absolute/path/to/backups/images-TIMESTAMP.manifest
+
+# 確認舊 API 可讀取目前 schema 後，才實際切換
+bash deploy/rollback.sh \
+  --approve-api-schema-compatibility \
+  /absolute/path/to/backups/images-TIMESTAMP.manifest
 ```
 
-rollback 不會自動倒回資料庫，避免未經確認覆寫正式資料。只有確認 migration 不向前相容時，才人工審核並使用同一時間戳的資料庫備份。
+rollback 會先驗證 manifest 服務、重複項、所有舊 image 是否存在，以及 target image 是否與 Compose 完全一致；任一項失敗時不會改 tag 或 container。只要 manifest 含 API，就必須明確提供 `--approve-api-schema-compatibility`，避免舊程式直接碰觸不相容的新 schema。
+
+rollback 不會自動倒回資料庫，避免未經確認覆寫正式資料。每次 `backup.sh` 會以 restricted permission 產生壓縮 SQL、Compose snapshot 與 manifest；manifest 記錄 SHA-256、Alembic head、public table 數及核心資料表 row counts。可先在 disposable database 驗證本機 recovery point：
+
+```bash
+bash deploy/restore-drill.sh --local \
+  /absolute/path/to/backups/database-TIMESTAMP.sql.gz
+```
+
+若已設定加密 off-site backup，則使用 object key；下載會同時驗證 AES-GCM 與 object metadata 內的 plaintext SHA-256：
+
+```bash
+bash deploy/restore-drill.sh --offsite \
+  forgebase/database-TIMESTAMP.sql.gz.enc
+```
+
+Restore drill 會比對 checksum、Alembic head、table 數及核心 row counts，輸出 `restore-drills/*.json` 的 RTO／backup age evidence，並在結束時刪除唯一 `forgebase_restore_drill_*` 暫存資料庫。只有確認 migration 不向前相容時，才另行人工審核正式資料庫回復；drill 永遠不會覆寫 production database。
+
+PR／release 使用 `bash deploy/restore-rollback-lab.sh` 在獨立 Compose project 自動演練 point-in-time backup／restore、API schema approval gate、non-mutating dry-run 與兩版 application image rollback，不使用 production 設定或資源。
 
 背景工作可透過 `/api/v1/ops/operational-jobs/summary` 檢查，失敗工作可由租戶管理員或平台超級管理員使用 `/api/v1/ops/operational-jobs/{id}/retry` 重送。若設定 `OPS_ALERT_WEBHOOK_URL`，每五分鐘監控會在 failed/stale 工作超標時送出告警。
 

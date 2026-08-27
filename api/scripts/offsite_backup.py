@@ -44,6 +44,14 @@ def client():
     )
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        while chunk := source.read(CHUNK):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def encrypt(source: Path, target: Path) -> str:
     nonce = secrets.token_bytes(12)
     encryptor = Cipher(algorithms.AES(encryption_key()), modes.GCM(nonce)).encryptor()
@@ -99,10 +107,26 @@ def upload(source: Path) -> None:
 
 
 def download(key: str, destination: Path) -> None:
+    s3 = client()
+    bucket = required("BACKUP_S3_BUCKET_NAME")
+    metadata = s3.head_object(Bucket=bucket, Key=key).get("Metadata", {})
+    expected_checksum = str(metadata.get("plaintext-sha256", "")).strip().lower()
+    if len(expected_checksum) != 64 or any(
+        character not in "0123456789abcdef" for character in expected_checksum
+    ):
+        raise RuntimeError("Backup object is missing a valid plaintext SHA-256")
     encrypted = destination.with_suffix(destination.suffix + ".enc")
-    client().download_file(required("BACKUP_S3_BUCKET_NAME"), key, str(encrypted))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    s3.download_file(bucket, key, str(encrypted))
     try:
-        decrypt(encrypted, destination)
+        try:
+            decrypt(encrypted, destination)
+            actual_checksum = file_sha256(destination)
+            if not secrets.compare_digest(actual_checksum, expected_checksum):
+                raise RuntimeError("Backup plaintext checksum mismatch")
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
     finally:
         encrypted.unlink(missing_ok=True)
     print(destination)

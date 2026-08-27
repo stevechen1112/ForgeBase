@@ -6,13 +6,15 @@ import time
 from pathlib import Path
 
 import pytest
-
+from app.api.v1.endpoints.webhooks import _should_add_suppression
 from app.core.config import settings
 from app.services import email_service
 from app.services.external_test_readiness import external_test_readiness
 from app.services.resend_webhook import verify_resend_signature
-from app.api.v1.endpoints.webhooks import _should_add_suppression
+from cryptography.exceptions import InvalidTag
 from scripts.offsite_backup import decrypt, encrypt
+
+from scripts import offsite_backup
 
 
 @pytest.mark.asyncio
@@ -107,3 +109,72 @@ def test_offsite_backup_encryption_round_trip(monkeypatch, tmp_path: Path):
     assert restored.read_bytes() == source.read_bytes()
     assert checksum == hashlib.sha256(source.read_bytes()).hexdigest()
     assert source.read_bytes() not in encrypted.read_bytes()
+
+
+def test_offsite_download_verifies_plaintext_checksum(monkeypatch, tmp_path: Path):
+    key = base64.urlsafe_b64encode(b"k" * 32).decode()
+    monkeypatch.setenv("BACKUP_ENCRYPTION_KEY", key)
+    monkeypatch.setenv("BACKUP_S3_BUCKET_NAME", "private-backups")
+    plaintext = tmp_path / "source.sql.gz"
+    encrypted = tmp_path / "source.sql.gz.enc"
+    destination = tmp_path / "restored" / "database.sql.gz"
+    plaintext.write_bytes(b"verified backup" * 100)
+    checksum = encrypt(plaintext, encrypted)
+
+    class FakeS3:
+        @staticmethod
+        def head_object(*, Bucket, Key):
+            assert Bucket == "private-backups"
+            assert Key == "forgebase/database.sql.gz.enc"
+            return {"Metadata": {"plaintext-sha256": checksum}}
+
+        @staticmethod
+        def download_file(bucket, object_key, target):
+            assert bucket == "private-backups"
+            assert object_key == "forgebase/database.sql.gz.enc"
+            Path(target).write_bytes(encrypted.read_bytes())
+
+    monkeypatch.setattr(offsite_backup, "client", lambda: FakeS3())
+    offsite_backup.download("forgebase/database.sql.gz.enc", destination)
+
+    assert destination.read_bytes() == plaintext.read_bytes()
+    assert not destination.with_suffix(destination.suffix + ".enc").exists()
+
+
+def test_offsite_download_rejects_bad_or_missing_checksum(monkeypatch, tmp_path: Path):
+    key = base64.urlsafe_b64encode(b"k" * 32).decode()
+    monkeypatch.setenv("BACKUP_ENCRYPTION_KEY", key)
+    monkeypatch.setenv("BACKUP_S3_BUCKET_NAME", "private-backups")
+    plaintext = tmp_path / "source.sql.gz"
+    encrypted = tmp_path / "source.sql.gz.enc"
+    destination = tmp_path / "database.sql.gz"
+    plaintext.write_bytes(b"backup payload")
+    encrypt(plaintext, encrypted)
+
+    class FakeS3:
+        metadata = {"plaintext-sha256": "0" * 64}
+
+        @classmethod
+        def head_object(cls, **_kwargs):
+            return {"Metadata": cls.metadata}
+
+        @staticmethod
+        def download_file(_bucket, _object_key, target):
+            Path(target).write_bytes(encrypted.read_bytes())
+
+    monkeypatch.setattr(offsite_backup, "client", lambda: FakeS3())
+    with pytest.raises(RuntimeError, match="checksum mismatch"):
+        offsite_backup.download("forgebase/database.sql.gz.enc", destination)
+    assert not destination.exists()
+
+    FakeS3.metadata = {}
+    with pytest.raises(RuntimeError, match="missing a valid plaintext SHA-256"):
+        offsite_backup.download("forgebase/database.sql.gz.enc", destination)
+
+    FakeS3.metadata = {"plaintext-sha256": hashlib.sha256(plaintext.read_bytes()).hexdigest()}
+    corrupted = bytearray(encrypted.read_bytes())
+    corrupted[-17] ^= 1
+    encrypted.write_bytes(corrupted)
+    with pytest.raises(InvalidTag):
+        offsite_backup.download("forgebase/database.sql.gz.enc", destination)
+    assert not destination.exists()

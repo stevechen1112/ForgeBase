@@ -11,7 +11,7 @@
 | I1 | 完整 North Star E2E Lab | 完成 | 通過 | 完成 |
 | I2 | Browser／RBAC 自動化 | 完成 | 通過 | 完成 |
 | I3 | 完整 Release CI | 完成 | 通過 | 完成 |
-| I4 | Restore／Rollback 自動化 | 未開始 | 未開始 | 待辦 |
+| I4 | Restore／Rollback 自動化 | 完成 | 通過 | 完成 |
 | I5 | 日／法／俄公開網站介面包 | 未開始 | 未開始 | 待辦 |
 | I6 | AI／Knowledge Eval | 未開始 | 未開始 | 待辦 |
 | I7 | Fault Injection／Endurance | 未開始 | 未開始 | 待辦 |
@@ -118,3 +118,40 @@
 
 - I3 內部產品化 Gate 與 code review 通過，可進入 I4。
 - CI 已阻擋程式、權限、資料庫契約、前端與 image build 回歸；外部供應鏈簽章、正式 registry immutable promotion 與更深入 security scanning 由 I9／I13 接續，不在本批虛構為已完成。
+
+## I4：Restore／Rollback 自動化
+
+### 已實作
+
+- `backup.sh` 改為 restricted umask、`.partial` 寫入、gzip integrity check 與 atomic rename；同名 database／Compose／manifest 任一存在即 fail closed，不覆寫既有 recovery point。
+- 每個 DB backup 伴隨不展開 secrets 的 Compose snapshot 與 JSON manifest，記錄 SHA-256、compressed bytes、Alembic head、public table count、North Star 關鍵資料表 row counts、off-site 狀態及 object key。
+- 本機 recovery point 即使設定中的 off-site upload 失敗仍保留完整 manifest，並把 `offsite_status` 寫成 failed；部署則維持失敗，不把「本機可用」誤當成「異地備份成功」。
+- Off-site download 在 AES-256-GCM authentication 外，強制讀取 object metadata 的 plaintext SHA-256 並以 constant-time compare 驗證；metadata 缺失、checksum 錯誤或 ciphertext 損壞時刪除所有 partial plaintext／encrypted temp file。
+- `restore-drill.sh` 同時支援 `--local` 與 `--offsite`，只建立唯一 `forgebase_restore_drill_*` disposable database；驗證 gzip、checksum、Alembic head、table count 與核心 row counts後輸出 RTO／backup age evidence，結束時只刪除該 drill database。
+- `rollback.sh` 新增完整 preflight 與 `--dry-run`：拒絕未知／重複 service、遺失 image、與 Compose 不一致的 target；所有項目先通過才 tag／recreate。manifest 含 API 時必須明確提供 `--approve-api-schema-compatibility`。
+- 實際 rollback 後逐一等待 container running／healthy，再輸出 JSON evidence；資料庫永不自動回復，evidence 明確記錄 `database_restored: false`。
+- 新增隔離 Recovery Lab：啟動專屬 PostgreSQL／Compose project，建立 point-in-time 資料，跑真實 backup／restore，拉兩版 Alpine images，先驗 dry-run 再實際回切 API／Web，最後刪除 container、network、volume、image tags、temp DB、temp files 與 lock。
+- Complete Release Gate 新增 Recovery Drill job 並保存 JSON／JUnit／restore／rollback evidence；production topology job 另以 ShellCheck 驗證五支 recovery／deployment 控制腳本。
+
+### Code review 發現與修正
+
+1. 舊 restore drill 只能使用 off-site key，且只確認「至少有一張表」：加入 local recovery point 模式，以及 checksum、schema version、table count 與核心 row counts 對帳。
+2. Off-site object 雖保存 plaintext checksum，下載時從未驗證：新增 metadata 格式驗證與 plaintext 串流 SHA-256 比對；corrupt／missing metadata 都 fail closed。
+3. 第一版 checksum failure 已刪 destination，但 AES-GCM decrypt failure 可能留下部分 plaintext：所有 decrypt／checksum exception 現在都先刪 plaintext，再刪 encrypted temp。
+4. 舊 rollback 邊讀 manifest 邊 tag，後段才發現壞資料時可能形成 partial mutation：改為完整解析、去重、Compose target 與所有 image preflight 後才允許第一個 tag。
+5. 舊 rollback 可讓舊 API 直接碰新 schema：API 回切新增人工 schema compatibility acknowledgement；dry-run 可在不變更 image 或 container 下完成同一套 preflight。
+6. 同秒或指定相同 stamp 可能覆寫備份／evidence：備份拒絕任何既有 target，restore／rollback evidence 增加唯一 suffix；Lab 也以 atomic lock 阻止同 checkout 並行污染共用測試 tags。
+7. Lab 初稿成功才輸出總報告，失敗可能讓 CI 上傳舊證據：每次先刪精確舊 evidence，EXIT trap 會在失敗時輸出本次 failed JSON／JUnit，再清理隔離資源。
+8. 初稿先做 off-site upload 才寫 local manifest，網路失敗會留下無 metadata 的 SQL：manifest 改為先落盤，upload 成功／失敗再更新 off-site 狀態。
+
+### 驗證
+
+- 隔離 Restore／Rollback Lab：`11 passed, 0 failed`；最近一次 point-in-time restore RTO `2s`，backup age `2s`，`production_resources_touched: false`。
+- Lab 後殘留驗證：container `0`、測試 image tag `0`、lock `0`、disposable restore database `0`。
+- Off-site encryption／download／checksum／corruption 與 external hardening：`8 passed`。
+- ShellCheck、`bash -n`、Actionlint、blocking Ruff 與 `git diff --check` 通過；Recovery Lab 已接入 release deployment dependency graph。
+
+### Gate 結論
+
+- I4 內部產品化 Gate 與 code review 通過，可進入 I5。
+- 本批證明 recovery tooling 與隔離演練可重跑，不宣稱 production RPO／RTO 已達標；正式數字仍須由排程頻率、off-site bucket、真實資料量及 production restore drill evidence 決定。資料庫正式回復維持人工核准，避免自動覆寫客戶資料。

@@ -106,9 +106,26 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  recovery-drill:
+    name: Backup, restore, and rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated recovery drill
+        run: bash deploy/restore-rollback-lab.sh
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-rollback-evidence
+          path: artifacts/restore-rollback-lab/
+          if-no-files-found: error
+          retention-days: 14
+
   production-images:
     name: Production image / ${{ matrix.label }}
-    needs: [api, frontend, admin-browser-rbac]
+    needs: [api, frontend, admin-browser-rbac, recovery-drill]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -183,3 +200,11 @@ jobs:
         run: docker compose -f docker-compose.prod.yml config --quiet
       - name: Validate deployment shell syntax
         run: bash -n deploy/*.sh
+      - name: Lint recovery and deployment controls
+        run: >-
+          shellcheck
+          deploy/backup.sh
+          deploy/restore-drill.sh
+          deploy/rollback.sh
+          deploy/restore-rollback-lab.sh
+          deploy/safe-deploy.sh

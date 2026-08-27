@@ -52,7 +52,7 @@ docker compose --env-file "$repo_dir/.env" -f "$compose_file" run --rm migrate
 # retired container IP.
 docker compose --env-file "$repo_dir/.env" -f "$compose_file" up -d --no-deps api
 api_ready=false
-for attempt in $(seq 1 18); do
+for _attempt in $(seq 1 18); do
   api_container_id="$(docker compose --env-file "$repo_dir/.env" -f "$compose_file" ps -q api)"
   api_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$api_container_id")"
   if [ "$api_health" = "healthy" ]; then
@@ -87,7 +87,7 @@ docker compose --env-file "$repo_dir/.env" -f "$compose_file" up -d --no-deps --
 domain="$(sed -n 's/^DOMAIN=//p' "$repo_dir/.env" | tail -n 1)"
 protocol="$(sed -n 's/^PROTOCOL=//p' "$repo_dir/.env" | tail -n 1)"
 protocol="${protocol:-https}"
-for attempt in $(seq 1 18); do
+for _attempt in $(seq 1 18); do
   services_ready=true
   for service in "${release_services[@]}"; do
     container_id="$(docker compose --env-file "$repo_dir/.env" -f "$compose_file" ps -q "$service")"
@@ -109,5 +109,5 @@ for attempt in $(seq 1 18); do
   sleep 5
 done
 
-printf 'Deployment readiness failed. Use deploy/rollback.sh %s after inspection.\n' "$manifest" >&2
+printf 'Deployment readiness failed. Inspect migration compatibility, then use deploy/rollback.sh --approve-api-schema-compatibility %s.\n' "$manifest" >&2
 exit 1
