@@ -8,10 +8,6 @@ from decimal import Decimal
 
 import httpx
 import pytest
-from fastapi import HTTPException
-from pydantic import ValidationError
-from sqlmodel import func, select
-
 from app.api.v1.endpoints.contact_enrichment import (
     CandidateDecisionIn,
     ConvertCandidateIn,
@@ -19,6 +15,7 @@ from app.api.v1.endpoints.contact_enrichment import (
     convert_candidate,
     review_candidate,
 )
+from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.models.company_identification import (
     CompanyIdentification,
@@ -35,6 +32,9 @@ from app.models.user import User
 from app.models.visitor import Visitor
 from app.services.company_identification.privacy import delete_visitor_company_evidence
 from app.services.contact_enrichment.jobs import enqueue_contact_enrichment_job
+from app.services.contact_enrichment.providers import (
+    available_contact_provider_names,
+)
 from app.services.contact_enrichment.providers.apollo import ApolloContactProvider
 from app.services.contact_enrichment.providers.base import (
     ContactProviderCandidate,
@@ -42,15 +42,23 @@ from app.services.contact_enrichment.providers.base import (
     ContactSearchContext,
 )
 from app.services.contact_enrichment.providers.hunter import (
+    HunterDomainSearchContactProvider,
     HunterEmailVerificationProvider,
 )
 from app.services.contact_enrichment.providers.mock import (
     MockEmailVerificationProvider,
 )
+from app.services.contact_enrichment.providers.pdl import (
+    PeopleDataLabsContactProvider,
+)
 from app.services.contact_enrichment.runtime import (
     run_contact_enrichment_job,
     score_candidate,
 )
+from fastapi import HTTPException
+from pydantic import ValidationError
+from sqlmodel import func, select
+
 from tests.conftest import _make_engine, requires_db
 
 
@@ -160,6 +168,176 @@ async def test_apollo_adapter_never_requests_personal_email_or_phone_and_filters
     assert result.request_id == "apollo-search"
     assert [row.business_email for row in result.candidates] == ["buyer@acme.example"]
     assert "gmail.com" not in repr(result)
+
+
+@pytest.mark.asyncio
+async def test_pdl_person_search_uses_exact_company_and_work_email_only() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["x-api-key"] == "test-key"
+        payload = json.loads(request.content)
+        assert payload["size"] == 2
+        must = payload["query"]["bool"]["must"]
+        assert {"term": {"job_company_website": "acme.example"}} in must
+        assert {"exists": {"field": "work_email"}} in must
+        assert "personal_emails" not in payload["data_include"]
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "pdl-person-search"},
+            json={
+                "status": 200,
+                "total": 3,
+                "data": [
+                    {
+                        "id": "pdl-1",
+                        "full_name": "Business Buyer",
+                        "work_email": "buyer@acme.example",
+                        "job_title": "Buyer",
+                        "job_title_role": "procurement",
+                        "job_title_levels": ["manager"],
+                        "job_company_website": "acme.example",
+                        "job_last_verified": "2026-08-01T08:00:00+08:00",
+                        "linkedin_url": "linkedin.com/in/business-buyer",
+                    },
+                    {
+                        "id": "pdl-2",
+                        "full_name": "Wrong Domain",
+                        "work_email": "person@other.example",
+                        "job_company_website": "acme.example",
+                    },
+                    {
+                        "id": "pdl-3",
+                        "full_name": "Wrong Company",
+                        "work_email": "other@acme.example",
+                        "job_company_website": "other.example",
+                    },
+                ],
+            },
+        )
+
+    provider = PeopleDataLabsContactProvider(
+        api_key="test-key",
+        transport=httpx.MockTransport(handler),
+    )
+    provider._cost = Decimal("0.2")
+    result = await provider.search(_context())
+    assert result.request_id == "pdl-person-search"
+    assert result.units == 3
+    assert result.estimated_cost == Decimal("0.6")
+    assert [row.business_email for row in result.candidates] == [
+        "buyer@acme.example"
+    ]
+    assert result.candidates[0].provider_confidence == 0
+    assert result.candidates[0].source_url == (
+        "https://linkedin.com/in/business-buyer"
+    )
+    assert result.candidates[0].source_freshness is not None
+    assert result.candidates[0].source_freshness.isoformat() == "2026-08-01T00:00:00"
+
+
+@pytest.mark.asyncio
+async def test_pdl_person_search_treats_no_match_as_empty_result() -> None:
+    provider = PeopleDataLabsContactProvider(
+        api_key="test-key",
+        transport=httpx.MockTransport(lambda _: httpx.Response(404)),
+    )
+    result = await provider.search(_context())
+    assert result.candidates == ()
+    assert result.units == 0
+
+
+@pytest.mark.asyncio
+async def test_hunter_domain_search_filters_business_contacts_and_accounts_credits() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["x-api-key"] == "test-key"
+        assert request.url.params["domain"] == "acme.example"
+        assert request.url.params["department"] == "procurement"
+        assert request.url.params["job_titles"] == "buyer"
+        assert request.url.params["type"] == "personal"
+        assert "api_key" not in request.url.params
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "hunter-domain-search"},
+            json={
+                "data": {
+                    "emails": [
+                        {
+                            "value": "buyer@acme.example",
+                            "type": "personal",
+                            "confidence": 92,
+                            "first_name": "Business",
+                            "last_name": "Buyer",
+                            "position": "Buyer",
+                            "department": "procurement",
+                            "seniority": "senior",
+                            "linkedin": "linkedin.com/in/business-buyer",
+                            "verification": {
+                                "date": "2026-08-10",
+                                "status": "valid",
+                            },
+                            "sources": [
+                                {
+                                    "uri": "https://acme.example/team",
+                                    "last_seen_on": "2026-08-12T08:00:00+08:00",
+                                }
+                            ],
+                        },
+                        {
+                            "value": "info@acme.example",
+                            "type": "generic",
+                            "confidence": 90,
+                        },
+                        {
+                            "value": "person@gmail.com",
+                            "type": "personal",
+                            "confidence": 80,
+                            "first_name": "Personal",
+                            "last_name": "Mailbox",
+                        },
+                    ]
+                }
+            },
+        )
+
+    provider = HunterDomainSearchContactProvider(
+        api_key="test-key",
+        transport=httpx.MockTransport(handler),
+    )
+    provider._cost = Decimal("0.3")
+    result = await provider.search(_context())
+    assert result.request_id == "hunter-domain-search"
+    assert result.units == 1
+    assert result.estimated_cost == Decimal("0.3")
+    assert [row.business_email for row in result.candidates] == [
+        "buyer@acme.example"
+    ]
+    assert result.candidates[0].provider_confidence == pytest.approx(0.92)
+    assert result.candidates[0].source_freshness is not None
+    assert result.candidates[0].source_freshness.isoformat() == "2026-08-12T00:00:00"
+
+
+def test_real_contact_providers_fail_closed_until_all_gates_are_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+    monkeypatch.setattr(settings, "PDL_API_KEY", "pdl-test-key")
+    monkeypatch.setattr(settings, "PDL_CONTACT_DATA_USE_APPROVED", False)
+    monkeypatch.setattr(settings, "PDL_CONTACT_ESTIMATED_COST", 0.2)
+    monkeypatch.setattr(settings, "HUNTER_API_KEY", "hunter-test-key")
+    monkeypatch.setattr(settings, "HUNTER_DATA_USE_APPROVED", True)
+    monkeypatch.setattr(settings, "HUNTER_CONTACT_ESTIMATED_COST", 0.0)
+    monkeypatch.setattr(settings, "APOLLO_API_KEY", "")
+    monkeypatch.setattr(settings, "APOLLO_DATA_USE_APPROVED", False)
+    monkeypatch.setattr(settings, "APOLLO_CONTACT_ESTIMATED_COST", 0.0)
+
+    assert available_contact_provider_names() == ()
+
+    monkeypatch.setattr(settings, "PDL_CONTACT_DATA_USE_APPROVED", True)
+    monkeypatch.setattr(settings, "HUNTER_CONTACT_ESTIMATED_COST", 0.1)
+
+    assert available_contact_provider_names() == (
+        "pdl_person",
+        "hunter_domain",
+    )
 
 
 @pytest.mark.asyncio

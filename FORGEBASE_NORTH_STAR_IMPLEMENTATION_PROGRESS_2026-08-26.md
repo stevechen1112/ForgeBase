@@ -95,7 +95,7 @@
 
 - `ContactPersonaPolicy`、`ContactCandidate`、append-only `ContactCandidateReview` 與 0081 migration；模式僅 `off`／`review_only`。
 - persona 強制限制部門／職稱、seniority、地區與排除詞；每公司候選、每日查詢、每日成本與 TTL 上限。
-- provider-neutral contact search／email verification contracts、deterministic mock、Apollo People Search＋Enrichment POC、Hunter Email Verifier POC。
+- provider-neutral contact search／email verification contracts、deterministic mock、PDL Person Search、Hunter Domain Search／Email Verifier 與既有 Apollo adapter；第一輪 POC 只啟用 PDL＋Hunter，Apollo 維持條件式第三候選。
 - 真實 adapter 只有在資料使用權旗標、API key 與合約單價均設定時註冊；production 不註冊 mock。
 - `contact_enrich` durable job；payload 只有 company identification ID，不含 IP、visitor 或 email。
 - 公司 domain、email 格式、公開商務信箱、persona、地區與第一方產品興趣的可解釋 relevance score。
@@ -130,7 +130,7 @@
 
 ### 尚未通過的營運 Gate
 
-- Apollo／Hunter 或替代供應商的 OEM／Reseller、下游顯示、保存與外聯用途尚未取得書面核准。
+- PDL／Hunter 或替代供應商的 OEM／Reseller、下游顯示、保存與外聯用途尚未取得書面核准；免費帳號只可作受控內部 POC。
 - 尚未在台灣、日本、北美與歐洲 blind POC 證明 persona relevance、verified email、freshness 與每位核准窗口成本。
 - 因此 production policy 必須維持 `off`；即使開發環境可用 mock 驗證，也不得將候選投入寄送。
 
@@ -534,6 +534,17 @@
 
 - 本機登入後 UIUX、主要導覽、資料載入、四類動態明細（含 RFQ）與行動版驗收通過；本批發現的兩項可重現問題已修正並完成 code review。
 - 本批屬於 production deployment 前置驗收；正式發布結果不由本段預先宣稱，應以對應的 GitHub Actions release run 與發布後 smoke test 為準。正式 ESP／外部資料供應商與真實 RFQ 營運證據仍是獨立外部 Gate。
+
+## 2026-08-27 外部供應商 POC 接入補充
+
+- 第一輪聯絡窗口供應商定案為 PDL Person Search＋Hunter Domain Search／Email Verifier；Apollo 降為條件式第三候選，不申請、不購買、不在 production 啟用。
+- Resend、PDL、Hunter 免費帳號均完成不揭露金鑰的 API 認證健康檢查；Resend 的 `premierbiz.com.tw` 寄件網域已 verified，全程未寄出測試信。
+- 新增 PDL Person Search 與 Hunter Domain Search provider adapter；兩者都沿用資料使用核准＋API key＋非零單位成本三重註冊 Gate。
+- 寄件顯示名稱、寄件地址與真人接手地址已有明確設定值；金鑰不提交 Git，外部寄送、inbound reply 與資料使用核准開關仍維持 false。
+- 三組 API key 已保存於 GitHub repository secrets，寄件與接手設定已保存於 repository variables；repository credential scan 無洩漏，尚未注入 production 主機。
+- 完整決策、設定對應與後續 Gate 記錄於 `FORGEBASE_EXTERNAL_PROVIDER_POC_DECISION_2026-08-27.md`。
+- Code review 將 PDL Person Search 的核准從公司 IP 資料核准拆為獨立 `PDL_CONTACT_DATA_USE_APPROVED`，防止用途擴張；PDL／Hunter source freshness 也改為先正規化 UTC，再存為既有資料模型使用的 naive UTC。
+- 乾淨 PostgreSQL 完整 API 回歸為 324 passed、3 skipped、0 failed；PDL Sandbox 與 Hunter 自有公司網域的極小量 adapter 實測正常處理且為 0 候選，未寄信、未輸出個資。
 
 ## 整體實作結論
 

@@ -1142,7 +1142,11 @@ ForgeBase 自建匿名旅程、意圖、觸發、信心、證據、Persona 排�
 
 ### DR-NS-008：供應商中立與暫定 POC 組合
 
-正式架構不依賴 HubSpot 或任何單一 CRM。A 暫以 IPinfo 作網路品質過濾，Leadfeeder 與 People Data Labs 作公司辨識 POC；B 暫以 Apollo Data Reseller 與 People Data Labs 作聯絡窗口 POC，Hunter 作 Email 驗證候選。這是 POC 名單，不是正式採購結論；最終選擇必須通過資料品質、APAC 表現、單位經濟、合規及下游授權 Gate。
+正式架構不依賴 HubSpot 或任何單一 CRM。A 暫以 IPinfo 作網路品質過濾，Leadfeeder 與 People Data Labs 作公司辨識 POC；B 第一輪以 People Data Labs Person Search 與 Hunter Domain Search 作聯絡窗口平行 POC，Hunter 同時作 Email 驗證候選。Apollo 只保留為前兩者皆無法達標時的第三候選，不在第一輪申請、採購或啟用。這是 POC 名單，不是正式採購結論；最終選擇必須通過資料品質、APAC 表現、單位經濟、合規及下游授權 Gate。
+
+### DR-NS-009：免費帳號與 production 授權分離
+
+2026-08-27 已完成 Resend、People Data Labs 與 Hunter 免費帳號的 API 認證健康檢查；這只證明金鑰可用，不代表已取得 ForgeBase 多租戶產品所需的資料展示、保存、外聯或 OEM／Reseller 權利。程式可完成 fail-closed adapter 與內部 POC，但 production 的 `*_DATA_USE_APPROVED`、外部寄送及自動化模式在書面授權與營運 Gate 通過前必須維持關閉。
 
 ---
 
@@ -1278,8 +1282,8 @@ ForgeBase 應自建「誰與此次商機最相關」的判斷；外部供應商�
 |---|---|---|---|
 | 網路品質 | IPinfo | 可由公司辨識商的 privacy flags 補充 | ASN、VPN、Proxy、Hosting、ISP 過濾，不直接作最終公司身份 |
 | A 公司辨識 | Leadfeeder API | People Data Labs IP Enrichment | IP → 公司候選、公司資料、信心與來源比較 |
-| B 聯絡窗口 | Apollo Data Reseller API | People Data Labs Person Search | 依公司、部門、職稱、資歷與地區尋找候選 |
-| Email 查找／驗證 | Hunter API | Apollo／PDL 既有 Email 結果加內部規則 | Finder、Verifier、寄送前品質 Gate |
+| B 聯絡窗口 | People Data Labs Person Search | Hunter Domain Search；Apollo 僅為條件式第三候選 | 依公司、部門、職稱、資歷與地區尋找候選 |
+| Email 查找／驗證 | Hunter API | PDL 既有 work email 加內部規則 | Domain Search、Verifier、寄送前品質 Gate |
 | CRM | 不指定 | HubSpot、Salesforce、其他 CRM | 選配同步，不承擔 ForgeBase 北極星主流程 |
 
 #### 官方能力依據
@@ -1290,7 +1294,7 @@ ForgeBase 應自建「誰與此次商機最相關」的判斷；外部供應商�
 - [Apollo API](https://docs.apollo.io/) 支援 People／Organization Search、Enrichment 與 Email 等資料；若向非 Apollo 使用者展示或嵌入資料，必須使用適用的客製或 Reseller 合約。[Apollo Data Reseller](https://www.apollo.io/partners/api-reseller)
 - [Hunter API](https://hunter.io/api) 提供 Domain Search、Email Finder 及 Email Verifier，適合作查找／驗證層，不單獨負責 Persona 排序。
 
-這些名稱是截至 2026-08-26 的 POC 候選，不是永久技術依賴或已完成的採購決定。
+這些名稱已依 2026-08-27 決策更新，仍是 POC 候選，不是永久技術依賴或已完成的採購決定。
 
 ### 22.6 為什麼 HubSpot 不作必要依賴
 
@@ -1382,17 +1386,19 @@ Precision、Coverage、Conflict、Cost、Latency
 
 ```text
 同一批 confirmed company domain＋Persona policy
-  ├─ Apollo People／Organization Search
-  └─ PDL Person Search
+  ├─ PDL Person Search
+  └─ Hunter Domain Search
        ↓
 ForgeBase relevance ranking
        ↓
-Hunter／供應商 Email verification
+Hunter Email Verifier／供應商既有驗證結果
        ↓
 人工 approve／reject
        ↓
 Relevance、Verified Email、Freshness、Cost
 ```
+
+若 PDL 與 Hunter 在至少兩個目標市場都未通過硬性 Gate，才另開第二輪 Apollo Data Reseller 商務資格與 blind POC；不得因現有 adapter 存在就直接選用 Apollo。
 
 #### B 評分權重
 

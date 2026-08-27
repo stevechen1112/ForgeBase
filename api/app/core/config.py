@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     PDL_DATA_USE_APPROVED: bool = False
     PDL_IP_ENRICH_URL: str = "https://api.peopledatalabs.com/v5/ip/enrich"
     PDL_IP_ENRICH_ESTIMATED_COST: float = 0.0
+    PDL_CONTACT_DATA_USE_APPROVED: bool = False
+    PDL_PERSON_SEARCH_URL: str = "https://api.peopledatalabs.com/v5/person/search"
+    PDL_CONTACT_ESTIMATED_COST: float = 0.0
     COMPANY_PROVIDER_TIMEOUT_SECONDS: float = 8.0
     COMPANY_PROVIDER_CIRCUIT_FAILURES: int = 5
     COMPANY_PROVIDER_CIRCUIT_COOLDOWN_SECONDS: int = 300
@@ -65,6 +68,8 @@ class Settings(BaseSettings):
     APOLLO_CONTACT_ESTIMATED_COST: float = 0.0
     HUNTER_API_KEY: str = ""
     HUNTER_DATA_USE_APPROVED: bool = False
+    HUNTER_DOMAIN_SEARCH_URL: str = "https://api.hunter.io/v2/domain-search"
+    HUNTER_CONTACT_ESTIMATED_COST: float = 0.0
     HUNTER_EMAIL_VERIFIER_URL: str = "https://api.hunter.io/v2/email-verifier"
     HUNTER_VERIFY_ESTIMATED_COST: float = 0.0
     CONTACT_PROVIDER_TIMEOUT_SECONDS: float = 10.0

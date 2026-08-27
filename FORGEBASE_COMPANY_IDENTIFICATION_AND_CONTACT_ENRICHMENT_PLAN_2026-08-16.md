@@ -34,8 +34,8 @@ ForgeBase 採用以下產品與技術方向：
 | 網路品質與排除 | IPinfo；IP2Location 為候補 | 分類 ASN、ISP、VPN、Proxy、Hosting 等，不直接認定公司 |
 | 公司辨識 | People Data Labs、Albacross、Snitcher IP-to-Company | 並行競測的主要 Adapter；優先保留 ForgeBase 自有追蹤 |
 | 進階白標／辨識率對照 | Snitcher Radar | 比較 session／fingerprinting 能否顯著提高 match rate；不預設取代 ForgeBase 自有追蹤核心 |
-| 聯絡人候選搜尋 | People Data Labs | 依公司、部門、職務、職級與地區搜尋 |
-| Email 補找與驗證 | Hunter | 只處理企業 Email 補找與驗證 |
+| 聯絡人候選搜尋 | People Data Labs、Hunter Domain Search | PDL 作結構化 Persona 主測；Hunter 作網域聯絡窗口對照與補找 |
+| Email 驗證 | Hunter | 驗證候選企業 Email；不得把驗證結果冒充訪客本人身份 |
 | 外部效果基準 | Leadfeeder／Dealfront、Lead Forensics | 人工或商務 POC 比較；未取得 OEM 權利前不作核心依賴 |
 | Waterfall 實驗 | Clay | 只用於短期資料源驗證，不作正式執行核心 |
 | 人物級訪客辨識 | 不啟用 | RB2B、Vector 等不納入第一版 |
@@ -297,9 +297,11 @@ Adapter 最低責任：
 
 ### Hunter
 
-只負責企業 Email 補找與驗證：
+負責企業聯絡窗口 Domain Search、Email 補找與驗證，作為 PDL Person Search 的第一輪對照來源：
 
 - 不負責判斷哪位聯絡人曾造訪。
+- Domain Search 只接受已確認公司網域，並限制個人型企業信箱、Persona 條件與每次最多 10 筆，以符合 Free 帳號測試邊界。
+- ForgeBase 自行計算旅程與 Persona relevance；Hunter confidence 只作供應商資料品質訊號。
 - 正式採用前確認資料展示、保存、匯出與 SaaS 使用權。
 
 ### 暫不採用
@@ -322,6 +324,8 @@ Adapter 最低責任：
 | Waterfall | ForgeBase Adapter；Clay 短期實驗 | 手動樣本比較 | 長期把 Clay 當正式核心 |
 
 進入付費 POC 前，應至少取得兩個可比較的公司辨識來源；最多同時接三個，避免工程與測試成本失控。
+
+聯絡窗口第一輪只比較 PDL Person Search 與 Hunter Domain Search；Apollo 保留為兩者皆無法達標時的第三候選，不申請、不購買，也不在 production 啟用。
 
 ---
 
@@ -616,3 +620,5 @@ ForgeBase 第一層網站工具仍以固定月費為主；第二層公司辨識�
 | 2026-08-16 | 在供應商授權與實測完成前，外聯維持關閉，候選資料不得計為 Leads。 |
 | 2026-08-16 | 確認先完成 ForgeBase 第一階段公開上線與供應商中立底層，再以已上線產品、NorthForge 測試站及 Partner Brief 對外接洽。 |
 | 2026-08-16 | 確認 NorthForge 為第一輪真實流量測試站；Google Search Ads 為主要可控引流，自然搜尋與已知公司控制組同步執行。 |
+| 2026-08-27 | 第一輪聯絡窗口 POC 定案為 PDL Person Search＋Hunter Domain Search／Email Verifier；Apollo 降為第三候選，只有前兩者無法達標才重新評估。 |
+| 2026-08-27 | Resend、PDL、Hunter 免費帳號與 API 認證已完成無寄信健康檢查；免費帳號不等於已取得多租戶下游展示、保存或外聯授權，production 外部資料與寄送開關維持關閉。 |
