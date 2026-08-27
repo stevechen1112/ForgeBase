@@ -52,6 +52,7 @@ async def test_api_capacity_queue_throughput_and_short_soak(
     product_count = 800
     request_count = 180
     concurrency = 18
+    queue_warmup_count = 40
     queue_count = 300
 
     category = ProductCategory(
@@ -121,9 +122,6 @@ async def test_api_capacity_queue_throughput_and_short_soak(
 
     assert statuses == {200: request_count}
     assert all(status == 200 for status, _latency in soak_results)
-    assert api_p95 < 1_000
-    assert requests_per_second >= 10
-    assert retained_memory_mb < 32
 
     @asynccontextmanager
     async def session_context():
@@ -146,6 +144,37 @@ async def test_api_capacity_queue_throughput_and_short_soak(
         effects[job.idempotency_key] += 1
 
     monkeypatch.setattr(operational_outbox, "_execute", execute)
+    warmup_job_ids: list[uuid.UUID] = []
+    async with factory() as db:
+        for index in range(queue_warmup_count):
+            job = OperationalJob(
+                tenant_id=tenant.id,
+                job_type="capacity_lab",
+                payload_json="{}",
+                idempotency_key=f"capacity-warmup:{category.id}:{index}",
+            )
+            warmup_job_ids.append(job.id)
+            db.add(job)
+        await db.commit()
+
+    warmup_stats = await asyncio.gather(
+        *(
+            operational_outbox.process_operational_jobs(
+                limit=10, job_types={"capacity_lab"}
+            )
+            for _ in range(4)
+        )
+    )
+    assert sum(item["completed"] for item in warmup_stats) == queue_warmup_count
+    assert len(effects) == queue_warmup_count
+    assert set(effects.values()) == {1}
+    async with factory() as db:
+        await db.exec(
+            delete(OperationalJob).where(OperationalJob.id.in_(warmup_job_ids))
+        )
+        await db.commit()
+    effects.clear()
+
     job_ids: list[uuid.UUID] = []
     async with factory() as db:
         for index in range(queue_count):
@@ -218,17 +247,26 @@ async def test_api_capacity_queue_throughput_and_short_soak(
     assert len(effects) == queue_count
     assert set(effects.values()) == {1}
     assert sum(item["completed"] for item in queue_stats) == queue_count
-    assert queue_per_second >= 40
     plan_text = "\n".join(str(row[0]) for row in plan)
     assert "ix_products_public_listing" in plan_text
 
+    thresholds_met = (
+        api_p95 < 1_000
+        and requests_per_second >= 10
+        and retained_memory_mb < 32
+        and queue_per_second >= 40
+    )
     _write_report(
         {
             "schema_version": 1,
             "lab": "performance-capacity-soak",
-            "status": "passed",
+            "status": "passed" if thresholds_met else "failed",
             "finished_at": datetime.now(timezone.utc).isoformat(),
-            "dataset": {"products": product_count, "queue_jobs": queue_count},
+            "dataset": {
+                "products": product_count,
+                "queue_warmup_jobs": queue_warmup_count,
+                "queue_jobs": queue_count,
+            },
             "api": {
                 "requests": request_count,
                 "short_soak_requests": len(soak_results),
@@ -264,3 +302,8 @@ async def test_api_capacity_queue_throughput_and_short_soak(
         await db.exec(delete(OperationalJob).where(OperationalJob.id.in_(job_ids)))
         await db.commit()
     await engine.dispose()
+
+    assert api_p95 < 1_000
+    assert requests_per_second >= 10
+    assert retained_memory_mb < 32
+    assert queue_per_second >= 40

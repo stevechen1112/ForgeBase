@@ -267,11 +267,12 @@
 3. 第一版把 tracemalloc 放在 latency benchmark 外層，Python allocation tracing 把 p95 人為放大到約 1.45 秒：latency／throughput 與 memory short soak 拆成兩段，報告各自量測的真實範圍。
 4. 第一版只呼叫四個 queue worker 一次，若共用 DB 有其他待辦或 claim 排程不平均，可能尚未 drain 本批 fixture：改為 bounded waves 並逐輪查本批 job 終態。
 5. Code review 發現 benchmark monkeypatch `_execute` 時，global worker 可能處理不屬於本測試的 job：worker 增加可選、預設關閉的 `job_types` claim scope；正式 scheduler 維持全類型，本 Lab 只 claim `capacity_lab`。
+6. Release review 發現共享 runner 的第一次 queue tick 會把冷啟動成本混入 steady-state 容量，造成 300/300 完成、0 failure、0 duplicate 但 `38.07 jobs/s` 的邊界假陰性：正式量測前先以獨立 40-job fixture 暖機並清除其資料與 effects，`40 jobs/s` 門檻維持不變；失敗報告也改為保留完整指標，不再被 generic exit-code artifact 覆寫。
 
 ### 驗證
 
-- 最近一次 Performance Gate：180/180 API requests 成功；p50 `417.16 ms`、p95 `617.12 ms`、`41.17 req/s`；40-request short soak retained traced memory `0.09 MiB`、peak `6.17 MiB`。
-- Queue capacity：300/300 jobs 完成，4 workers，`51.85 jobs/s`、0 failure、0 duplicate effect。
+- 最近一次 Performance Gate：180/180 API requests 成功；p50 `345.38 ms`、p95 `514.68 ms`、`49.91 req/s`；40-request short soak retained traced memory `0.09 MiB`、peak `6.06 MiB`。
+- Queue capacity：40-job warmup 後，300/300 jobs 完成，4 workers，`56.36 jobs/s`、0 failure、0 duplicate effect。
 - PostgreSQL query plan 使用 `ix_products_public_listing`；0091 migration 已完成 downgrade／upgrade round trip。
 - Blocking Ruff、compileall、workflow YAML parse、schema contract 與 `git diff --check` 通過。
 

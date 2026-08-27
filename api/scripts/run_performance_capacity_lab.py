@@ -59,7 +59,7 @@ def main() -> int:
             ]
         )
     )
-    if exit_code:
+    if exit_code and not report.exists():
         report.write_text(
             json.dumps(
                 {
