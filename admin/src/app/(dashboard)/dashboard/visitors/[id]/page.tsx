@@ -110,10 +110,18 @@ const EVENT_LABEL: Record<string, string> = {
   rfq_start: "開始填寫詢價表",
   spec_download: "下載規格書",
   faq_view: "查看 FAQ",
+  faq_expand: "展開 FAQ",
   product_view: "查看產品頁",
   cta_click: "點擊 CTA",
+  cta_impression: "顯示行動按鈕",
   application_view: "查看應用場景",
   category_view: "查看分類頁",
+  comparison_view: "查看比較頁",
+  certification_view: "查看認證頁",
+  form_start: "開始填寫表單",
+  form_submit: "提交表單",
+  return_visit: "再次回訪",
+  session_depth_reached: "達成深度瀏覽",
 };
 
 const RFQ_STATUS_COLOR: Record<string, string> = {
@@ -121,8 +129,21 @@ const RFQ_STATUS_COLOR: Record<string, string> = {
   assigned: "bg-yellow-100 text-yellow-800",
   in_progress: "bg-orange-100 text-orange-800",
   quoted: "bg-purple-100 text-purple-800",
+  negotiation: "bg-indigo-100 text-indigo-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-muted text-muted-foreground",
+  expired: "bg-slate-100 text-slate-700",
+};
+
+const RFQ_STATUS_LABEL: Record<string, string> = {
+  new: "待處理",
+  assigned: "待處理（已分派）",
+  in_progress: "聯繫中",
+  quoted: "報價／樣品",
+  negotiation: "洽談中",
+  won: "已成交",
+  lost: "未成交",
+  expired: "已結案",
 };
 
 const CHAT_STATUS_LABEL: Record<string, string> = {
@@ -170,9 +191,9 @@ export default function VisitorDetailPage() {
           <AlertDescription>{error ?? "找不到訪客"}</AlertDescription>
         </Alert>
         <Button asChild variant="outline">
-          <Link href="/dashboard/intent">
+          <Link href="/dashboard/visitors">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回買家關注度
+            返回訪客旅程
           </Link>
         </Button>
       </div>
@@ -188,7 +209,7 @@ export default function VisitorDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
-          <Link href="/dashboard/intent">
+          <Link href="/dashboard/visitors" aria-label="返回訪客旅程">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -446,11 +467,11 @@ export default function VisitorDetailPage() {
                                 RFQ_STATUS_COLOR[entry.status ?? ""] ?? "bg-muted"
                               }`}
                             >
-                              {entry.status?.replace("_", " ")}
+                              {RFQ_STATUS_LABEL[entry.status ?? ""] ?? entry.status}
                             </Badge>
                             {entry.priority === "urgent" && (
                               <Badge className="bg-red-100 text-red-700 text-[10px]">
-                                urgent
+                                緊急
                               </Badge>
                             )}
                             <time className="ml-auto text-[10px] text-muted-foreground">
