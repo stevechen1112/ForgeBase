@@ -7,6 +7,7 @@ import hashlib
 import os
 import secrets
 import sys
+import tempfile
 from pathlib import Path
 
 import boto3
@@ -52,6 +53,19 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def encrypted_scratch_path(anchor: Path) -> Path:
+    configured_work_dir = os.environ.get("BACKUP_WORK_DIR", "").strip()
+    work_dir = Path(configured_work_dir) if configured_work_dir else anchor.parent
+    work_dir.mkdir(parents=True, exist_ok=True)
+    descriptor, scratch_name = tempfile.mkstemp(
+        dir=work_dir,
+        prefix=f".{anchor.name}.",
+        suffix=".enc",
+    )
+    os.close(descriptor)
+    return Path(scratch_name)
+
+
 def encrypt(source: Path, target: Path) -> str:
     nonce = secrets.token_bytes(12)
     encryptor = Cipher(algorithms.AES(encryption_key()), modes.GCM(nonce)).encryptor()
@@ -93,16 +107,19 @@ def decrypt(source: Path, target: Path) -> None:
 def upload(source: Path) -> None:
     if not source.is_file():
         raise RuntimeError(f"Backup does not exist: {source}")
-    encrypted = source.with_suffix(source.suffix + ".enc")
-    checksum = encrypt(source, encrypted)
-    bucket = required("BACKUP_S3_BUCKET_NAME")
-    prefix = os.environ.get("BACKUP_S3_PREFIX", "forgebase").strip("/")
-    key = f"{prefix}/{encrypted.name}"
-    client().upload_file(
-        str(encrypted), bucket, key,
-        ExtraArgs={"Metadata": {"plaintext-sha256": checksum, "format": "fgbk1-aes256-gcm"}},
-    )
-    encrypted.unlink()
+    encrypted = encrypted_scratch_path(source)
+    object_name = f"{source.name}.enc"
+    try:
+        checksum = encrypt(source, encrypted)
+        bucket = required("BACKUP_S3_BUCKET_NAME")
+        prefix = os.environ.get("BACKUP_S3_PREFIX", "forgebase").strip("/")
+        key = f"{prefix}/{object_name}"
+        client().upload_file(
+            str(encrypted), bucket, key,
+            ExtraArgs={"Metadata": {"plaintext-sha256": checksum, "format": "fgbk1-aes256-gcm"}},
+        )
+    finally:
+        encrypted.unlink(missing_ok=True)
     print(key)
 
 
@@ -115,10 +132,10 @@ def download(key: str, destination: Path) -> None:
         character not in "0123456789abcdef" for character in expected_checksum
     ):
         raise RuntimeError("Backup object is missing a valid plaintext SHA-256")
-    encrypted = destination.with_suffix(destination.suffix + ".enc")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    s3.download_file(bucket, key, str(encrypted))
+    encrypted = encrypted_scratch_path(destination)
     try:
+        s3.download_file(bucket, key, str(encrypted))
         try:
             decrypt(encrypted, destination)
             actual_checksum = file_sha256(destination)

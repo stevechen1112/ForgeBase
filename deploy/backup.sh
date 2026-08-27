@@ -9,6 +9,7 @@ api_env_file="${FORGEBASE_API_ENV_FILE:-$repo_dir/deploy/api.env}"
 backup_dir="${FORGEBASE_BACKUP_DIR:-$repo_dir/backups}"
 stamp="${FORGEBASE_BACKUP_STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
 database_file="$backup_dir/database-$stamp.sql.gz"
+container_database_file="/offsite-work/$(basename "$database_file")"
 partial_file="$database_file.partial"
 compose_snapshot="$backup_dir/compose-$stamp.yml"
 manifest_file="$backup_dir/database-$stamp.manifest.json"
@@ -18,6 +19,7 @@ database_permissions_delegated=false
 database_original_uid=""
 database_original_gid=""
 database_original_mode=""
+offsite_work_dir=""
 case "$api_runtime_uid" in ''|*[!0-9]*) printf 'Invalid API runtime UID.\n' >&2; exit 1 ;; esac
 case "$api_runtime_gid" in ''|*[!0-9]*) printf 'Invalid API runtime GID.\n' >&2; exit 1 ;; esac
 if ! test "$api_runtime_uid" -gt 0; then
@@ -54,9 +56,22 @@ restore_database_permissions() {
     database_permissions_delegated=false
   fi
 }
+cleanup_offsite_work_dir() {
+  if [ -n "$offsite_work_dir" ]; then
+    case "$offsite_work_dir" in
+      "$backup_dir"/.offsite-upload-*)
+        find "$offsite_work_dir" -mindepth 1 -maxdepth 1 -type f -delete
+        rmdir -- "$offsite_work_dir"
+        offsite_work_dir=""
+        ;;
+      *) printf 'Refusing to clean unexpected off-site work directory.\n' >&2; return 1 ;;
+    esac
+  fi
+}
 cleanup() {
   rm -f -- "$partial_file"
   restore_database_permissions || true
+  cleanup_offsite_work_dir || true
 }
 trap cleanup EXIT
 
@@ -161,14 +176,20 @@ if [ "$offsite_configured" = true ]; then
   database_permissions_delegated=true
   chown -- "$api_runtime_uid:$api_runtime_gid" "$database_file"
   chmod -- 0400 "$database_file"
+  offsite_work_dir="$(mktemp -d "$backup_dir/.offsite-upload-XXXXXX")"
+  chown -- "$api_runtime_uid:$api_runtime_gid" "$offsite_work_dir"
+  chmod -- 0700 "$offsite_work_dir"
   if offsite_object_key="$(compose run --rm --no-deps \
-    -v "$database_file:/backups/database.sql.gz:ro" api \
-    python scripts/offsite_backup.py upload /backups/database.sql.gz)"; then
+    -e BACKUP_WORK_DIR=/offsite-work \
+    -v "$offsite_work_dir:/offsite-work" \
+    -v "$database_file:$container_database_file:ro" api \
+    python scripts/offsite_backup.py upload "$container_database_file")"; then
     offsite_status="passed"
   else
     offsite_status="failed"
   fi
   restore_database_permissions
+  cleanup_offsite_work_dir
   python3 - "$manifest_file" "$offsite_object_key" "$offsite_status" <<'PY'
 import json
 import sys

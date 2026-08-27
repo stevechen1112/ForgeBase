@@ -308,12 +308,12 @@
 9. 更新 Trivy DB 後發現舊 `nginx:1.27-alpine` 有 35 個可修補 High／Critical；`nginxinc/nginx-unprivileged:1.28-alpine` 又落後在 1.28.2，`nginx:1.28-alpine` 的客製 modules 會鎖住 Alpine 修補版。Final stage 因此改以純 Alpine security repository 安裝 nginx 1.28.3-r7，保留非 root 與既有 port 80 contract，不混用兩套 package source。
 10. `release-package.yml` 的 tag filter 使用 GitHub 不接受的連續 `?` glob，造成每次 main push 額外產生 0-job failure：改為數字字元類別 pattern，並以 actionlint 對全部 workflows 做 blocking 語法驗證。
 11. 首次把 production API 切換至 UID 10001 後，既有 root-owned `uploads_data` 使 `/health/ready` 唯一出現 `storage:error`；safe-deploy 現在於 migration／API switch 前，以同一已掃描 API image 的 root one-shot 將精確掛載點正規化為 `10001:10001` 與 owner-only 權限。此步驟可安全重播，未使用 `chmod 777`，也不新增未掃描的 init image。
-12. 第二次 production deploy 在 migration 前的 off-site backup 被 root 建立的 `0600` 備份檔阻擋；上傳流程現在只把該單一檔案暫時授權給 API UID 10001、以 read-only bind mount 提供，並以 EXIT trap 還原原始 owner／group／mode。Off-site restore 同樣只掛載預建的單一目的檔，不再把整個 root-owned 暫存目錄暴露給容器；可覆寫 UID／GID 另加純數字且非 root 的 fail-closed 驗證。
+12. 第二次 production deploy 在 migration 前的 off-site backup 被 root 建立的 `0600` 備份檔阻擋；上傳流程現在只把該單一檔案暫時授權給 API UID 10001、以 read-only bind mount 提供，並以 EXIT trap 還原原始 owner／group／mode。後續實機驗證再發現加密暫存檔原本會寫在唯讀來源旁；upload／download 現改用獨立、owner-only scratch mount，成功、供應商失敗或中斷都清除。原始備份以 nested read-only mount 疊加在 scratch 內，因此部署更新前的舊 API image 與更新後版本都能安全執行；off-site restore 同樣只另掛載預建的單一目的檔，不暴露 root-owned 暫存根目錄。可覆寫 UID／GID 另加純數字且非 root 的 fail-closed 驗證。
 
 ### 驗證
 
 - 統一 Security Gate：Python dependency vulnerabilities `0`、Bandit medium／high findings `0`、unreviewed secret candidates `0`；成功產生 CycloneDX Python SBOM。
-- 完整 PostgreSQL API suite：`316 passed, 3 skipped`；PyJWT／模型簽章專用測試 `3 passed`，外部備份與加密 hardening `8 passed`。
+- 完整 PostgreSQL API suite：`316 passed, 3 skipped`；PyJWT／模型簽章專用測試 `3 passed`，外部備份與加密 hardening `10 passed`。
 - Hardened API image 實際 build、以 UID／GID `10001` 啟動並 import `ForgeBase API`；runtime image 無 pytest。Trivy 0.72 本機實掃在套用可用 OS 更新後，fixable High／Critical 為 `0`。
 - Admin、Web、Marketing Node 24 images 全數實際 build；Admin `/backend/login`、Web 五語系路由與 Marketing `/` 回傳 200，runtime UID `100`、npm 不存在。Trivy 0.74 對三個最終映像實掃 High／Critical 均為 `0`。
 - Template image 實際 build，`/templates/` 回傳 200、nginx 1.28.3 以 UID 100 執行；更新版 Trivy 0.74 實掃 High／Critical `0`，production Compose／Caddy port 80 graph 驗證通過。

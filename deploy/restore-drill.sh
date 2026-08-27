@@ -48,6 +48,7 @@ if ! test "$api_runtime_gid" -gt 0; then
 fi
 drill_dir="$(mktemp -d)"
 downloaded_file="$drill_dir/restore.sql.gz"
+container_downloaded_file="/offsite-work/restore.sql.gz"
 project_args=()
 if [ -n "${FORGEBASE_COMPOSE_PROJECT_NAME:-}" ]; then
   project_args=(--project-name "$FORGEBASE_COMPOSE_PROJECT_NAME")
@@ -88,8 +89,14 @@ else
   # than exposing the root-owned restore-drill directory.
   install -m 0600 -o "$api_runtime_uid" -g "$api_runtime_gid" \
     -- /dev/null "$downloaded_file"
-  compose run --rm --no-deps -v "$downloaded_file:/drill/restore.sql.gz" api \
-    python scripts/offsite_backup.py download "$source_value" /drill/restore.sql.gz
+  offsite_work_dir="$drill_dir/offsite-work"
+  install -d -m 0700 -o "$api_runtime_uid" -g "$api_runtime_gid" \
+    -- "$offsite_work_dir"
+  compose run --rm --no-deps \
+    -e BACKUP_WORK_DIR=/offsite-work \
+    -v "$offsite_work_dir:/offsite-work" \
+    -v "$downloaded_file:$container_downloaded_file" api \
+    python scripts/offsite_backup.py download "$source_value" "$container_downloaded_file"
   chown -- "$(id -u):$(id -g)" "$downloaded_file"
   chmod -- 0600 "$downloaded_file"
 fi

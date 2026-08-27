@@ -111,10 +111,46 @@ def test_offsite_backup_encryption_round_trip(monkeypatch, tmp_path: Path):
     assert source.read_bytes() not in encrypted.read_bytes()
 
 
+@pytest.mark.parametrize("fail_upload", [False, True])
+def test_offsite_upload_uses_and_cleans_dedicated_work_dir(
+    monkeypatch, tmp_path: Path, fail_upload: bool
+):
+    key = base64.urlsafe_b64encode(b"w" * 32).decode()
+    monkeypatch.setenv("BACKUP_ENCRYPTION_KEY", key)
+    monkeypatch.setenv("BACKUP_S3_BUCKET_NAME", "private-backups")
+    monkeypatch.setenv("BACKUP_WORK_DIR", str(tmp_path / "scratch"))
+    source = tmp_path / "database-20260828T010203Z.sql.gz"
+    source.write_bytes(b"offsite scratch boundary" * 100)
+    uploaded_paths = []
+
+    class FakeS3:
+        @staticmethod
+        def upload_file(path, bucket, object_key, *, ExtraArgs):
+            uploaded_paths.append(Path(path))
+            assert bucket == "private-backups"
+            assert object_key == "forgebase/database-20260828T010203Z.sql.gz.enc"
+            assert ExtraArgs["Metadata"]["format"] == "fgbk1-aes256-gcm"
+            if fail_upload:
+                raise RuntimeError("simulated upload failure")
+
+    monkeypatch.setattr(offsite_backup, "client", lambda: FakeS3())
+    if fail_upload:
+        with pytest.raises(RuntimeError, match="simulated upload failure"):
+            offsite_backup.upload(source)
+    else:
+        offsite_backup.upload(source)
+
+    assert len(uploaded_paths) == 1
+    assert uploaded_paths[0].parent == tmp_path / "scratch"
+    assert list((tmp_path / "scratch").iterdir()) == []
+    assert not source.with_suffix(source.suffix + ".enc").exists()
+
+
 def test_offsite_download_verifies_plaintext_checksum(monkeypatch, tmp_path: Path):
     key = base64.urlsafe_b64encode(b"k" * 32).decode()
     monkeypatch.setenv("BACKUP_ENCRYPTION_KEY", key)
     monkeypatch.setenv("BACKUP_S3_BUCKET_NAME", "private-backups")
+    monkeypatch.setenv("BACKUP_WORK_DIR", str(tmp_path / "scratch"))
     plaintext = tmp_path / "source.sql.gz"
     encrypted = tmp_path / "source.sql.gz.enc"
     destination = tmp_path / "restored" / "database.sql.gz"
@@ -132,13 +168,14 @@ def test_offsite_download_verifies_plaintext_checksum(monkeypatch, tmp_path: Pat
         def download_file(bucket, object_key, target):
             assert bucket == "private-backups"
             assert object_key == "forgebase/database.sql.gz.enc"
+            assert Path(target).parent == tmp_path / "scratch"
             Path(target).write_bytes(encrypted.read_bytes())
 
     monkeypatch.setattr(offsite_backup, "client", lambda: FakeS3())
     offsite_backup.download("forgebase/database.sql.gz.enc", destination)
 
     assert destination.read_bytes() == plaintext.read_bytes()
-    assert not destination.with_suffix(destination.suffix + ".enc").exists()
+    assert list((tmp_path / "scratch").iterdir()) == []
 
 
 def test_offsite_download_rejects_bad_or_missing_checksum(monkeypatch, tmp_path: Path):

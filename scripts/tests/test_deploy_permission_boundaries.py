@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -19,9 +18,14 @@ def test_offsite_backup_delegates_only_one_read_only_file() -> None:
     assert 'if ! test "$api_runtime_uid" -gt 0' in script
     assert 'database_original_uid="$(stat -c \'%u\' -- "$database_file")"' in script
     assert 'chmod -- 0400 "$database_file"' in script
-    assert '"$database_file:/backups/database.sql.gz:ro"' in script
+    assert 'container_database_file="/offsite-work/$(basename "$database_file")"' in script
+    assert '"$database_file:$container_database_file:ro"' in script
+    assert 'upload "$container_database_file"' in script
+    assert 'BACKUP_WORK_DIR=/offsite-work' in script  # pragma: allowlist secret -- env/path contract
+    assert '"$offsite_work_dir:/offsite-work"' in script
     assert '"$backup_dir:/backups"' not in script
     assert "restore_database_permissions" in script
+    assert "cleanup_offsite_work_dir" in script
 
 
 def test_offsite_restore_exposes_only_a_precreated_destination_file() -> None:
@@ -29,7 +33,10 @@ def test_offsite_restore_exposes_only_a_precreated_destination_file() -> None:
 
     assert 'install -m 0600 -o "$api_runtime_uid" -g "$api_runtime_gid"' in script
     assert 'if ! test "$api_runtime_uid" -gt 0' in script
-    assert '"$downloaded_file:/drill/restore.sql.gz"' in script
+    assert 'container_downloaded_file="/offsite-work/restore.sql.gz"' in script
+    assert '"$downloaded_file:$container_downloaded_file"' in script
+    assert 'BACKUP_WORK_DIR=/offsite-work' in script  # pragma: allowlist secret -- env/path contract
+    assert '"$offsite_work_dir:/offsite-work"' in script
     assert '"$drill_dir:/drill"' not in script
     assert 'chown -- "$(id -u):$(id -g)" "$downloaded_file"' in script
 
