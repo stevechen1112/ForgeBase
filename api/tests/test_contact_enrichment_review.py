@@ -374,10 +374,11 @@ async def test_review_only_runtime_dedupes_encrypts_and_manual_conversion_has_no
             )
             await db.commit()
             assert deleted["contact_candidates"] == 1
+            assert deleted["preserved_business_company_evidence"] == 1
             retained = await db.get(ContactCandidate, candidate.id)
             retained_contact = await db.get(Contact, contact.id)
             assert retained is not None
-            assert retained.company_identification_id is None
+            assert retained.company_identification_id == company_id
             assert retained.source_company_domain == "acme.example"
             assert retained_contact is not None
     finally:

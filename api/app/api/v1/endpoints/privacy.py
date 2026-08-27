@@ -8,7 +8,6 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import resolve_tenant_id
@@ -16,10 +15,8 @@ from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.db.session import get_session
 from app.models.consent_record import ConsentRecord
-from app.models.tracking_event import TrackingEvent
-from app.models.tracking_session import TrackingSession
 from app.models.visitor import Visitor
-from app.services.company_identification.privacy import delete_visitor_company_evidence
+from app.services.privacy_operations import erase_anonymous_visitor
 
 router = APIRouter(prefix="/privacy", tags=["Privacy"])
 
@@ -54,12 +51,22 @@ async def record_analytics_consent(
         source=body.source,
     ))
 
-    deleted_events = 0
-    deleted_sessions = 0
-    deleted_company_evidence = {
-        "network_observations": 0,
-        "company_jobs": 0,
-        "provider_usage": 0,
+    erased = {
+        "deleted": {
+            "tracking_events": 0,
+            "tracking_sessions": 0,
+            "network_observations": 0,
+            "company_jobs": 0,
+            "provider_usage": 0,
+        },
+        "preserved": [
+            "rfq_requests",
+            "chat_sessions",
+            "contact_records",
+            "rfq_business_records",
+            "chat_business_records",
+            "converted_contacts",
+        ],
     }
     if body.status == "granted":
         if visitor is None:
@@ -69,54 +76,22 @@ async def record_analytics_consent(
         visitor.updated_at = utcnow_naive()
         db.add(visitor)
     else:
-        if tenant_id is not None:
-            deleted_company_evidence = await delete_visitor_company_evidence(
+        if visitor is not None:
+            erased = await erase_anonymous_visitor(
                 db,
                 tenant_id=tenant_id,
                 visitor_id=body.visitor_id,
-            )
-        event_result = await db.exec(
-            delete(TrackingEvent).where(
-                TrackingEvent.visitor_id == body.visitor_id,
-                TrackingEvent.tenant_id == tenant_id,
-            )
-        )
-        session_result = await db.exec(
-            delete(TrackingSession).where(
-                TrackingSession.visitor_id == body.visitor_id,
-                TrackingSession.tenant_id == tenant_id,
-            )
-        )
-        deleted_events = int(event_result.rowcount or 0)
-        deleted_sessions = int(session_result.rowcount or 0)
-        if visitor:
+            ) or erased
             visitor.analytics_consent_status = body.status
-            visitor.consent_updated_at = utcnow_naive()
-            visitor.total_visits = 0
-            visitor.total_page_views = 0
-            visitor.intent_score = 0
-            visitor.intent_stage = "cold"
-            visitor.facet_product_interest = 0
-            visitor.facet_trust_validation = 0
-            visitor.facet_procurement_readiness = 0
-            visitor.facet_urgency = 0
-            visitor.intent_explanation = None
-            visitor.ml_intent_score = None
-            visitor.ml_score_updated_at = None
-            visitor.stage_alert_sent = False
-            visitor.device_type = None
-            visitor.country = None
-            visitor.updated_at = utcnow_naive()
             db.add(visitor)
 
     await db.commit()
+    deleted = dict(erased["deleted"])
+    deleted["events"] = deleted.pop("tracking_events", 0)
+    deleted["sessions"] = deleted.pop("tracking_sessions", 0)
     return {
         "status": body.status,
         "policy_version": body.policy_version,
-        "deleted": {
-            "events": deleted_events,
-            "sessions": deleted_sessions,
-            **deleted_company_evidence,
-        },
-        "preserved": ["rfq_requests", "chat_sessions", "contact_records"],
+        "deleted": deleted,
+        "preserved": erased["preserved"],
     }

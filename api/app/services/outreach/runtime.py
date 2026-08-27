@@ -705,6 +705,11 @@ async def validate_message_for_approval(
 
 async def purge_expired_outreach_evidence(db) -> dict[str, int]:
     result = await db.exec(
-        delete(JourneySnapshot).where(JourneySnapshot.expires_at <= utcnow_naive())
+        delete(JourneySnapshot).where(
+            JourneySnapshot.expires_at <= utcnow_naive(),
+            ~select(OutreachMessage.id)
+            .where(OutreachMessage.journey_snapshot_id == JourneySnapshot.id)
+            .exists(),
+        )
     )
     return {"journey_snapshots": int(result.rowcount or 0)}

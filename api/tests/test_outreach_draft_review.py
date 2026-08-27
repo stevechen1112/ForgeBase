@@ -55,6 +55,7 @@ from app.services.outreach.runtime import (
     run_outreach_draft_job,
 )
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlmodel import select
 from starlette.requests import Request
 
@@ -630,9 +631,43 @@ async def test_snapshot_grounding_and_human_approved_delivery_lifecycle(
             )
             await db.commit()
             assert deleted["outreach_jobs"] == 1
+            assert deleted["preserved_business_company_evidence"] == 1
             db.expire_all()
-            assert await db.get(JourneySnapshot, snapshot_id) is None
-            assert await db.get(OutreachMessage, message_id) is None
+            # An anonymous visitor is not the same person as the company contact.
+            # Preserve the already-sent business communication and its evidence.
+            assert await db.get(JourneySnapshot, snapshot_id) is not None
+            assert await db.get(OutreachMessage, message_id) is not None
+
+            await db.exec(
+                text(
+                    "UPDATE network_observations SET observed_at = NOW() - INTERVAL '40 days', "
+                    "expires_at = NOW() - INTERVAL '1 day' WHERE id = :id"
+                ),
+                params={"id": str(observation_id)},
+            )
+            await db.exec(
+                text(
+                    "UPDATE contact_candidates SET created_at = NOW() - INTERVAL '40 days', "
+                    "expires_at = NOW() - INTERVAL '1 day' WHERE id = :id"
+                ),
+                params={"id": str(candidate_id)},
+            )
+            await db.exec(
+                text(
+                    "UPDATE journey_snapshots SET generated_at = NOW() - INTERVAL '40 days', "
+                    "expires_at = NOW() - INTERVAL '1 day' WHERE id = :id"
+                ),
+                params={"id": str(snapshot_id)},
+            )
+            await db.commit()
+            from app.services.privacy_retention import purge_expired_analytics
+
+            retained = await purge_expired_analytics(db, commit=False)
+            await db.commit()
+            assert retained["preserved_business_company_evidence"] >= 1
+            assert await db.get(ContactCandidate, candidate_id) is not None
+            assert await db.get(JourneySnapshot, snapshot_id) is not None
+            assert await db.get(OutreachMessage, message_id) is not None
     finally:
         await engine.dispose()
 

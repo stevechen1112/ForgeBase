@@ -26,6 +26,7 @@ from app.models.contact_enrichment import (
     ContactPersonaPolicy,
 )
 from app.models.email_delivery import EmailSuppression
+from app.models.outreach import OutreachMessage
 from app.models.visitor import Visitor
 from app.services.contact_enrichment.providers import (
     ContactProviderCandidate,
@@ -487,6 +488,9 @@ async def purge_expired_contact_candidates(db) -> int:
         delete(ContactCandidate).where(
             ContactCandidate.expires_at <= now,
             ContactCandidate.status != "converted",
+            ~select(OutreachMessage.id)
+            .where(OutreachMessage.contact_candidate_id == ContactCandidate.id)
+            .exists(),
         )
     )
     return int(result.rowcount or 0)

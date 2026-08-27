@@ -52,6 +52,10 @@ async def _delete_platform_superuser(user_id: uuid.UUID) -> None:
                 params={"user_id": str(user_id)},
             )
             await session.exec(
+                text("DELETE FROM privacy_operations WHERE actor_user_id = :user_id"),
+                params={"user_id": str(user_id)},
+            )
+            await session.exec(
                 text("DELETE FROM users WHERE id = :user_id"),
                 params={"user_id": str(user_id)},
             )
@@ -469,4 +473,170 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     await session.commit()
             finally:
                 await engine.dispose()
+        await _delete_platform_superuser(platform_user_id)
+
+
+@requires_db
+@pytest.mark.asyncio
+async def test_privacy_operations_are_tenant_scoped_audited_and_replay_safe(
+    http_client,
+    two_tenants,
+) -> None:
+    tenant_a, tenant_b = two_tenants
+    platform_user_id, platform_token = await _create_platform_superuser()
+    visitor_id = uuid.uuid4()
+    retention_visitor_id = uuid.uuid4()
+    subject = {
+        "tenant_id": str(tenant_a.id),
+        "visitor_id": str(visitor_id),
+        "reason": "Verified privacy request PRIV-2026-001",
+    }
+    try:
+        tracked = await http_client.post(
+            "/api/v1/tracking/events",
+            headers={"X-Tenant-ID": str(tenant_a.id)},
+            json={
+                "event_name": "product_view",
+                "visitor_id": str(visitor_id),
+                "session_id": str(uuid.uuid4()),
+                "page_url": "/products/private-interest",
+                "analytics_consent": True,
+            },
+        )
+        assert tracked.status_code == 202, tracked.text
+
+        cross_tenant = await http_client.post(
+            "/api/v1/admin/privacy/visitors/export",
+            headers=_auth(platform_token),
+            json={**subject, "tenant_id": str(tenant_b.id)},
+        )
+        assert cross_tenant.status_code == 404
+
+        exported = await http_client.post(
+            "/api/v1/admin/privacy/visitors/export",
+            headers=_auth(platform_token),
+            json=subject,
+        )
+        assert exported.status_code == 200, exported.text
+        export_body = exported.json()
+        assert export_body["export"]["visitor"]["visitor_id"] == str(visitor_id)
+        assert len(export_body["export"]["events"]) == 1
+        assert export_body["export"]["events"][0]["page_url"] == "/products/private-interest"
+        assert "raw_ip" in export_body["export"]["excluded_security_fields"]
+
+        missing_key = await http_client.post(
+            "/api/v1/admin/privacy/visitors/erase",
+            headers=_auth(platform_token),
+            json=subject,
+        )
+        assert missing_key.status_code == 422
+
+        erase_key = f"privacy-erase-{uuid.uuid4()}"
+        erased = await http_client.post(
+            "/api/v1/admin/privacy/visitors/erase",
+            headers={**_auth(platform_token), "Idempotency-Key": erase_key},
+            json=subject,
+        )
+        assert erased.status_code == 200, erased.text
+        assert erased.json()["deleted"]["tracking_events"] == 1
+        assert erased.json()["deleted"]["tracking_sessions"] == 1
+        assert erased.json()["replayed"] is False
+
+        replay = await http_client.post(
+            "/api/v1/admin/privacy/visitors/erase",
+            headers={**_auth(platform_token), "Idempotency-Key": erase_key},
+            json=subject,
+        )
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["operation_id"] == erased.json()["operation_id"]
+        assert replay.json()["replayed"] is True
+
+        conflict = await http_client.post(
+            "/api/v1/admin/privacy/visitors/erase",
+            headers={**_auth(platform_token), "Idempotency-Key": erase_key},
+            json={**subject, "reason": "A different verified request reason"},
+        )
+        assert conflict.status_code == 409
+
+        await http_client.post(
+            "/api/v1/tracking/events",
+            headers={"X-Tenant-ID": str(tenant_a.id)},
+            json={
+                "event_name": "page_view",
+                "visitor_id": str(retention_visitor_id),
+                "session_id": str(uuid.uuid4()),
+                "page_url": "/old-page",
+                "analytics_consent": True,
+            },
+        )
+        engine, factory = _make_engine()
+        try:
+            async with factory() as session:
+                await session.exec(
+                    text(
+                        "UPDATE tracking_events SET timestamp = NOW() - INTERVAL '400 days' "
+                        "WHERE visitor_id = :visitor_id"
+                    ),
+                    params={"visitor_id": str(retention_visitor_id)},
+                )
+                await session.exec(
+                    text(
+                        "UPDATE tracking_sessions SET updated_at = NOW() - INTERVAL '400 days' "
+                        "WHERE visitor_id = :visitor_id"
+                    ),
+                    params={"visitor_id": str(retention_visitor_id)},
+                )
+                await session.commit()
+        finally:
+            await engine.dispose()
+
+        inventory = await http_client.get(
+            "/api/v1/admin/privacy/retention", headers=_auth(platform_token)
+        )
+        assert inventory.status_code == 200, inventory.text
+        assert inventory.json()["expired"]["tracking_events"] >= 1
+        assert inventory.json()["expired"]["tracking_sessions"] >= 1
+
+        retention_key = f"privacy-retention-{uuid.uuid4()}"
+        retention = await http_client.post(
+            "/api/v1/admin/privacy/retention/run",
+            headers={**_auth(platform_token), "Idempotency-Key": retention_key},
+            json={"confirm": True, "reason": "Scheduled retention verification run"},
+        )
+        assert retention.status_code == 200, retention.text
+        assert retention.json()["processed"]["events"] >= 1
+        assert retention.json()["processed"]["sessions"] >= 1
+
+        operations = await http_client.get(
+            "/api/v1/admin/privacy/operations", headers=_auth(platform_token)
+        )
+        assert operations.status_code == 200, operations.text
+        assert {row["operation_type"] for row in operations.json()} >= {
+            "visitor_export",
+            "visitor_erasure",
+            "retention_run",
+        }
+        serialized_ledger = str(operations.json())
+        assert str(visitor_id) not in serialized_ledger
+
+        engine, factory = _make_engine()
+        try:
+            async with factory() as session:
+                state = (
+                    await session.exec(
+                        text(
+                            "SELECT analytics_consent_status, intent_score, country "
+                            "FROM visitors WHERE visitor_id = :visitor_id"
+                        ),
+                        params={"visitor_id": str(visitor_id)},
+                    )
+                ).mappings().one()
+                assert dict(state) == {
+                    "analytics_consent_status": "revoked",
+                    "intent_score": 0,
+                    "country": None,
+                }
+        finally:
+            await engine.dispose()
+    finally:
         await _delete_platform_superuser(platform_user_id)

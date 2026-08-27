@@ -100,12 +100,12 @@ async def _operational_outbox_job() -> None:
 
 async def _analytics_retention_job() -> None:
     from app.db.session import get_session_ctx
-    from app.services.privacy_retention import purge_expired_analytics
+    from app.services.privacy_operations import run_scheduled_retention
     try:
         async with get_session_ctx() as db:
-            stats = await purge_expired_analytics(db)
-        if stats["events"] or stats["sessions"]:
-            logger.info("Analytics retention cleanup: %s", stats)
+            result = await run_scheduled_retention(db)
+        if any(result["processed"].values()):
+            logger.info("Privacy retention cleanup: %s", result)
     except Exception:
         logger.exception("Analytics retention cleanup failed")
 

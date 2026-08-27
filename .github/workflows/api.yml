@@ -85,6 +85,11 @@ jobs:
         run: >-
           python scripts/run_tenant_delivery_factory_lab.py
           --artifacts-dir ../artifacts/tenant-delivery-factory
+      - name: Run privacy and retention operations gate
+        working-directory: api
+        run: >-
+          python scripts/run_privacy_retention_lab.py
+          --artifacts-dir ../artifacts/privacy-retention
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -17,6 +17,7 @@ from app.models.company_identification import (
 )
 from app.models.contact_enrichment import ContactCandidate
 from app.models.operational_job import OperationalJob
+from app.models.outreach import OutreachMessage
 
 
 async def _delete_jobs_referencing_observations(
@@ -74,16 +75,56 @@ async def delete_visitor_company_evidence(
             )
         ).all()
     )
-    company_ids = list(
+    company_rows = list(
         (
             await db.exec(
-                select(CompanyIdentification.id).where(
+                select(
+                    CompanyIdentification.id,
+                    CompanyIdentification.network_observation_id,
+                ).where(
                     CompanyIdentification.tenant_id == tenant_id,
                     CompanyIdentification.visitor_id == visitor_id,
                 )
             )
         ).all()
     )
+    company_ids = [row[0] for row in company_rows]
+    protected_company_ids: set[uuid.UUID] = set()
+    if company_ids:
+        protected_company_ids.update(
+            row
+            for row in (
+                await db.exec(
+                    select(ContactCandidate.company_identification_id).where(
+                        col(ContactCandidate.company_identification_id).in_(company_ids),
+                        ContactCandidate.status == "converted",
+                    )
+                )
+            ).all()
+            if row is not None
+        )
+        protected_company_ids.update(
+            (
+                await db.exec(
+                    select(OutreachMessage.company_identification_id).where(
+                        col(OutreachMessage.company_identification_id).in_(company_ids)
+                    )
+                )
+            ).all()
+        )
+    deletable_company_ids = [
+        company_id for company_id in company_ids if company_id not in protected_company_ids
+    ]
+    protected_observation_ids = {
+        observation_id
+        for company_id, observation_id in company_rows
+        if company_id in protected_company_ids
+    }
+    deletable_observation_ids = [
+        observation_id
+        for observation_id in observation_ids
+        if observation_id not in protected_observation_ids
+    ]
     candidate_hashes = list(
         (
             await db.exec(
@@ -91,6 +132,11 @@ async def delete_visitor_company_evidence(
                     ContactCandidate.tenant_id == tenant_id,
                     col(ContactCandidate.company_identification_id).in_(company_ids),
                     ContactCandidate.status != "converted",
+                    ~select(OutreachMessage.id)
+                    .where(
+                        OutreachMessage.contact_candidate_id == ContactCandidate.id
+                    )
+                    .exists(),
                 )
             )
         ).all()
@@ -130,13 +176,13 @@ async def delete_visitor_company_evidence(
                     OperationalJob.idempotency_key.startswith(
                         f"contact-enrich:{tenant_id}:{company_id}:"
                     )
-                    for company_id in company_ids
+                    for company_id in deletable_company_ids
                 ]
             ),
         )
-    ) if company_ids else None
+    ) if deletable_company_ids else None
     contact_usage_filters = [
-        ProviderUsage.request_key == str(company_id) for company_id in company_ids
+        ProviderUsage.request_key == str(company_id) for company_id in deletable_company_ids
     ] + [
         ProviderUsage.request_key == f"candidate:{digest[:12]}"
         for digest in candidate_hashes
@@ -153,17 +199,20 @@ async def delete_visitor_company_evidence(
             ContactCandidate.tenant_id == tenant_id,
             col(ContactCandidate.company_identification_id).in_(company_ids),
             ContactCandidate.status != "converted",
+            ~select(OutreachMessage.id)
+            .where(OutreachMessage.contact_candidate_id == ContactCandidate.id)
+            .exists(),
         )
     ) if company_ids else None
     deleted_references = await _delete_jobs_referencing_observations(
         db,
         tenant_id=tenant_id,
-        observation_ids=observation_ids,
+        observation_ids=deletable_observation_ids,
     )
     result = await db.exec(
         delete(NetworkObservation).where(
             NetworkObservation.tenant_id == tenant_id,
-            NetworkObservation.visitor_id == visitor_id,
+            col(NetworkObservation.id).in_(deletable_observation_ids),
         )
     )
     deleted = {
@@ -177,6 +226,10 @@ async def delete_visitor_company_evidence(
         else 0,
         **deleted_references,
     }
+    if protected_observation_ids:
+        deleted["preserved_business_company_evidence"] = len(
+            protected_observation_ids
+        )
     outreach_job_count = int(outreach_jobs.rowcount or 0) if outreach_jobs is not None else 0
     if outreach_job_count:
         deleted["outreach_jobs"] = outreach_job_count
@@ -193,6 +246,40 @@ async def purge_expired_company_evidence(db: AsyncSession) -> dict[str, int]:
             )
         ).all()
     )
+    protected_rows = set(
+        (
+            await db.exec(
+                select(CompanyIdentification.network_observation_id)
+                .join(
+                    ContactCandidate,
+                    ContactCandidate.company_identification_id == CompanyIdentification.id,
+                )
+                .where(ContactCandidate.status == "converted")
+                .where(
+                    col(CompanyIdentification.network_observation_id).in_(
+                        [row[0] for row in rows]
+                    )
+                )
+            )
+        ).all()
+    )
+    protected_rows.update(
+        (
+            await db.exec(
+                select(CompanyIdentification.network_observation_id)
+                .join(
+                    OutreachMessage,
+                    OutreachMessage.company_identification_id == CompanyIdentification.id,
+                )
+                .where(
+                    col(CompanyIdentification.network_observation_id).in_(
+                        [row[0] for row in rows]
+                    )
+                )
+            )
+        ).all()
+    )
+    rows = [row for row in rows if row[0] not in protected_rows]
     deleted_references = {"company_jobs": 0, "provider_usage": 0}
     tenant_observations: dict[uuid.UUID, list[uuid.UUID]] = {}
     for observation_id, tenant_id in rows:
@@ -207,10 +294,11 @@ async def purge_expired_company_evidence(db: AsyncSession) -> dict[str, int]:
             deleted_references[key] += value
     result = await db.exec(
         delete(NetworkObservation).where(
-            NetworkObservation.expires_at <= utcnow_naive()
+            col(NetworkObservation.id).in_([row[0] for row in rows])
         )
     )
     return {
         "network_observations": int(result.rowcount or 0),
+        "preserved_business_company_evidence": len(protected_rows),
         **deleted_references,
     }

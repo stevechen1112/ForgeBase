@@ -206,6 +206,34 @@ export type TenantProvisioningManifest = {
   };
 };
 
+export type PrivacyRetentionInventory = {
+  generated_at: string;
+  analytics_retention_days: number;
+  analytics_cutoff: string;
+  expired: Record<string, number>;
+  total_expired: number;
+  retained_business_evidence: Record<string, number>;
+  policy: Record<string, string>;
+};
+
+export type PrivacyOperation = {
+  id: string;
+  operation_type: "retention_run" | "visitor_export" | "visitor_erasure";
+  tenant_id?: string;
+  subject_hash_prefix?: string;
+  reason?: string;
+  status: string;
+  result: Record<string, unknown>;
+  created_at: string;
+  completed_at: string;
+};
+
+export type VisitorPrivacyRequest = {
+  tenant_id: string;
+  visitor_id: string;
+  reason: string;
+};
+
 export type FeatureCatalogItem = {
   key: string;
   label: string;
@@ -776,6 +804,41 @@ export const platformAdminApi = {
       `/admin/tenants/${id}/provisioning-manifest`,
       token,
     ),
+
+  privacyRetention: (token: string) =>
+    apiClient.get<PrivacyRetentionInventory>("/admin/privacy/retention", token),
+
+  privacyOperations: (token: string) =>
+    apiClient.get<PrivacyOperation[]>("/admin/privacy/operations", token),
+
+  runPrivacyRetention: (
+    token: string,
+    body: { confirm: boolean; reason: string },
+    idempotencyKey: string,
+  ) => apiClient.post<Record<string, unknown>>(
+    "/admin/privacy/retention/run",
+    body,
+    token,
+    { "Idempotency-Key": idempotencyKey },
+  ),
+
+  exportVisitorPrivacyData: (token: string, body: VisitorPrivacyRequest) =>
+    apiClient.post<{ operation_id: string; export: Record<string, unknown> }>(
+      "/admin/privacy/visitors/export",
+      body,
+      token,
+    ),
+
+  eraseVisitorPrivacyData: (
+    token: string,
+    body: VisitorPrivacyRequest,
+    idempotencyKey: string,
+  ) => apiClient.post<Record<string, unknown>>(
+    "/admin/privacy/visitors/erase",
+    body,
+    token,
+    { "Idempotency-Key": idempotencyKey },
+  ),
 
   updateTenant: (token: string, id: string, body: TenantUpdate) =>
     apiClient.put<TenantSummary>(`/admin/tenants/${id}`, body, token),

@@ -18,7 +18,7 @@
 | I8 | Performance／Capacity／Soak | 完成 | 通過 | 完成 |
 | I9 | Security Automation | 完成 | 通過 | 完成 |
 | I10 | Tenant Delivery Factory | 完成 | 通過 | 完成 |
-| I11 | Privacy／Retention Operations | 未開始 | 未開始 | 待辦 |
+| I11 | Privacy／Retention Operations | 完成 | 通過 | 完成 |
 | I12 | SLO／Monitoring／Incident Console | 未開始 | 未開始 | 待辦 |
 | I13 | Release Package | 未開始 | 未開始 | 待辦 |
 | I14 | 類別四退場報告 | 未開始 | 未開始 | 待辦 |
@@ -345,3 +345,37 @@
 
 - I10 內部產品化 Gate 與 code review 通過，可進入 I11。
 - 本批證明 ForgeBase 可用一致、可追溯且 retry-safe 的方式產生租戶交付骨架；DNS、憑證、真實 CMS tenant、mailbox／ESP、外部資料授權與客戶內容驗收仍是對外資源或人工 Gate，不因建立 factory 而被虛構為已完成。
+
+## I11：Privacy／Retention Operations
+
+### 已實作
+
+- 新增平台「隱私與資料保留」治理頁：集中顯示行為事件、瀏覽 session、網路觀察、未轉換窗口候選、旅程快照與 inbound reply 正文的到期佇列，並區分因既有商務紀錄而合法保留的技術證據。
+- 新增 superuser-only 匿名訪客資料匯出：輸出 visitor、session、事件、公司候選、遮罩窗口候選、旅程、外聯狀態、對話與 RFQ；明確排除 raw IP、provider raw payload、ciphertext 與 token hash。完整 export 只回傳給操作者下載，不寫回資料庫。
+- 新增匿名訪客 erasure：移除租戶範圍內 tracking events／sessions、可刪除公司與未轉換窗口衍生資料，將 Visitor 撤回 consent 並清零意圖、裝置與國家；RFQ、chat、converted contact 與必要寄送商務稽核依政策保留。
+- 高權限清除與 retention run 使用 `Idempotency-Key`、request fingerprint 與 PostgreSQL advisory lock；同規格重試回放原始結果，改變請求內容則 409。
+- 新增 PII-minimised `privacy_operations` ledger；只保存 tenant、subject HMAC、理由、分類筆數與處理摘要，不保存 raw visitor UUID、email 或 export payload。理由欄拒絕 email 及 raw subject ID。
+- 每日 scheduler 改用同一套 retention transaction；以日期 key 保證跨 replica 每日只完成一次，並將自動執行結果寫入 ledger。
+- Inbound reply 到期後清除可解密正文、附件 metadata 與 sender ciphertext，保留非 PII delivery／classification／handoff 鏈；所有 retention 類型在同一 runner 內處理。
+- 新增 0093 migration、Privacy／Retention Lab、JSON／JUnit evidence 與 Release Contract gate；Admin 導覽新增治理入口。
+
+### Code review 發現與修正
+
+1. 初次整合測試發現 retention transaction 完成刪除後呼叫 audit helper 少傳 `tenant_id=None`，造成整個 request 500；補齊平台級 audit scope，並確認未 commit 的刪除會 rollback。
+2. 舊 `purge_expired_company_evidence` 刪除 NetworkObservation 時會透過 FK cascade 刪掉 Company、JourneySnapshot 與已寄送 OutreachMessage；舊 contact／journey TTL 也有相同問題：三條 purge 路徑都加入 business-evidence protection，已轉換聯絡人或已有外聯訊息的鏈路不列入可刪除佇列。
+3. 第一版為保護 converted contact 而整間公司全部保留，連同一公司的未轉換／DNC 候選也無法清除：改成公司證據保留、候選逐筆判斷；只有 converted 或被 OutreachMessage 引用的候選保留，其餘照常刪除並停止 pending automation job。
+4. 到期 inventory 初稿仍把受保護紀錄算在「待刪除」，每次執行後會永遠顯示非零：改成 actionable 與 retained business evidence 分開計數，UI 明示兩者邊界。
+5. 匯出 RFQ 若遇 legacy malformed JSON 會使整份 DSR export 500：改成安全解析；格式不合法時保留原字串供申請者取得，不因單筆歷史資料阻斷整份匯出。
+6. 原每日 scheduler 直接執行 purge，沒有 durable operation evidence，也無法防止多 replica 同時執行：改成日期冪等 ledger 與 DB advisory lock。
+
+### 驗證
+
+- Privacy／Retention Lab：`27 passed`；跨租戶 subject 防護、export 不落庫、erasure replay、匿名追蹤刪除、商務證據保留、TTL、ledger 去識別化與零外部網路呼叫全部通過。
+- I11 相關公司／窗口／外聯／平台整合回歸：`28 passed`；0093 migration 完成 `0092 → 0093 → 0092 → 0093` upgrade／downgrade round trip。
+- Admin TypeScript、ESLint、production build（75 routes）通過；Security Gate dependency、SAST、secret candidate 均為 `0`。
+- 完整 PostgreSQL API suite 首輪 `317 passed, 3 skipped, 1 failed`，失敗揭露同公司 converted candidate 的細粒度保留邊界；修正後完整回歸為 `318 passed, 3 skipped`。
+
+### Gate 結論
+
+- I11 內部產品化 Gate 與 code review 通過，可進入 I12。
+- 本批提供的是產品內的資料生命週期與作業證據，不構成特定司法管轄區的法律意見；正式市場仍需由法務確認 legal basis、法定保存義務、DSR 身分核驗與供應商同步刪除契約。

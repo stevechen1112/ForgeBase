@@ -13,6 +13,7 @@ Revision notes (참고 aihr admin.py):
 import json
 import sys
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 from uuid import UUID
@@ -32,6 +33,7 @@ from app.core.locale import PUBLIC_SITE_LOCALES
 from app.core.security import get_password_hash
 from app.db.session import get_session
 from app.models.platform_audit_log import PlatformAuditLog
+from app.models.privacy_operation import PrivacyOperation
 from app.models.site_build import SiteBuild
 from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
@@ -44,6 +46,14 @@ from app.services.capability_access import (
     resolve_tenant_features,
 )
 from app.services.external_test_readiness import external_test_readiness
+from app.services.privacy_operations import (
+    erase_anonymous_visitor,
+    export_anonymous_visitor,
+    privacy_request_fingerprint,
+    privacy_subject_hash,
+    retention_inventory,
+)
+from app.services.privacy_retention import purge_expired_analytics
 from app.services.site_provisioning import (
     SITE_TEMPLATES,
     evaluate_delivery_stage,
@@ -199,6 +209,17 @@ class TenantProvisionIn(BaseModel):
         if any(locale not in PUBLIC_SITE_LOCALES for locale in cleaned):
             raise ValueError("Unsupported public-site locale")
         return cleaned
+
+
+class VisitorPrivacyOperationIn(BaseModel):
+    tenant_id: UUID
+    visitor_id: UUID
+    reason: str = Field(min_length=10, max_length=500)
+
+
+class RetentionRunIn(BaseModel):
+    confirm: bool = False
+    reason: str = Field(min_length=10, max_length=500)
 
 
 class SiteBuildUpdate(BaseModel):
@@ -1404,6 +1425,257 @@ async def platform_audit_log(
         )
         for row in rows.mappings().all()
     ]
+
+
+def _privacy_operation_payload(row: PrivacyOperation) -> dict[str, Any]:
+    return {
+        "id": str(row.id),
+        "operation_type": row.operation_type,
+        "tenant_id": str(row.tenant_id) if row.tenant_id else None,
+        "subject_hash_prefix": row.subject_hash[:12] if row.subject_hash else None,
+        "reason": row.reason,
+        "status": row.status,
+        "result": json.loads(row.result_json),
+        "created_at": row.created_at,
+        "completed_at": row.completed_at,
+    }
+
+
+def _validate_privacy_reason(reason: str, *, raw_subject: UUID | None = None) -> None:
+    normalized = reason.lower()
+    if "@" in reason or (raw_subject and str(raw_subject).lower() in normalized):
+        raise HTTPException(
+            status_code=422,
+            detail="Privacy reason must use a ticket/reference and contain no email or raw subject ID",
+        )
+
+
+@router.get("/privacy/retention")
+async def platform_privacy_retention(
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> Any:
+    return await retention_inventory(session)
+
+
+@router.get("/privacy/operations")
+async def platform_privacy_operations(
+    limit: int = Query(50, ge=1, le=200),
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(require_superuser),
+) -> Any:
+    rows = list(
+        (
+            await session.exec(
+                select(PrivacyOperation)
+                .order_by(PrivacyOperation.created_at.desc())
+                .limit(limit)
+            )
+        ).all()
+    )
+    return [_privacy_operation_payload(row) for row in rows]
+
+
+@router.post("/privacy/retention/run")
+async def platform_run_privacy_retention(
+    body: RetentionRunIn,
+    idempotency_key: str = Header(
+        min_length=8, max_length=128, alias="Idempotency-Key"
+    ),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_superuser),
+) -> Any:
+    if not body.confirm:
+        raise HTTPException(status_code=422, detail="Explicit retention confirmation required")
+    _validate_privacy_reason(body.reason)
+    fingerprint = privacy_request_fingerprint(
+        {"operation_type": "retention_run", "reason": body.reason}
+    )
+    if session.get_bind().dialect.name == "postgresql":
+        await session.exec(
+            text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+            params={"lock_key": f"forgebase-privacy:{idempotency_key}"},
+        )
+    replay = (
+        await session.exec(
+            select(PrivacyOperation).where(
+                PrivacyOperation.idempotency_key == idempotency_key
+            )
+        )
+    ).first()
+    if replay:
+        if replay.request_fingerprint != fingerprint:
+            raise HTTPException(status_code=409, detail="Privacy operation key conflict")
+        return {**json.loads(replay.result_json), "replayed": True}
+    before = await retention_inventory(session)
+    deleted = await purge_expired_analytics(session, commit=False)
+    after = await retention_inventory(session)
+    run = PrivacyOperation(
+        idempotency_key=idempotency_key,
+        request_fingerprint=fingerprint,
+        operation_type="retention_run",
+        actor_user_id=current_user.id,
+        reason=body.reason,
+        result_json="{}",
+    )
+    response = {
+        "operation_id": str(run.id),
+        "operation_type": "retention_run",
+        "before": before["expired"],
+        "processed": deleted,
+        "after": after["expired"],
+        "replayed": False,
+    }
+    run.result_json = json.dumps(response, default=str)
+    session.add(run)
+    await _record_platform_audit(
+        session,
+        current_user,
+        action="privacy.retention_run",
+        target_type="privacy_operation",
+        target_id=str(run.id),
+        tenant_id=None,
+        changes={"before": before["total_expired"], "after": after["total_expired"]},
+    )
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Privacy operation conflict") from exc
+    return response
+
+
+@router.post("/privacy/visitors/export")
+async def platform_export_visitor_data(
+    body: VisitorPrivacyOperationIn,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_superuser),
+) -> Any:
+    _validate_privacy_reason(body.reason, raw_subject=body.visitor_id)
+    exported = await export_anonymous_visitor(
+        session, tenant_id=body.tenant_id, visitor_id=body.visitor_id
+    )
+    if exported is None:
+        raise HTTPException(status_code=404, detail="Privacy subject not found")
+    subject_hash = privacy_subject_hash(
+        tenant_id=body.tenant_id, visitor_id=body.visitor_id
+    )
+    run = PrivacyOperation(
+        idempotency_key=f"privacy-export:{uuid.uuid4()}",
+        request_fingerprint=privacy_request_fingerprint(
+            {
+                "operation_type": "visitor_export",
+                "tenant_id": body.tenant_id,
+                "subject_hash": subject_hash,
+            }
+        ),
+        operation_type="visitor_export",
+        tenant_id=body.tenant_id,
+        actor_user_id=current_user.id,
+        subject_hash=subject_hash,
+        reason=body.reason,
+        result_json=json.dumps(
+            {
+                "category_counts": {
+                    key: len(value)
+                    for key, value in exported.items()
+                    if isinstance(value, list)
+                }
+            }
+        ),
+    )
+    session.add(run)
+    await _record_platform_audit(
+        session,
+        current_user,
+        action="privacy.visitor_exported",
+        target_type="privacy_operation",
+        target_id=str(run.id),
+        tenant_id=body.tenant_id,
+        changes={"subject_hash_prefix": subject_hash[:12]},
+    )
+    await session.commit()
+    return {"operation_id": str(run.id), "export": exported}
+
+
+@router.post("/privacy/visitors/erase")
+async def platform_erase_visitor_data(
+    body: VisitorPrivacyOperationIn,
+    idempotency_key: str = Header(
+        min_length=8, max_length=128, alias="Idempotency-Key"
+    ),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_superuser),
+) -> Any:
+    _validate_privacy_reason(body.reason, raw_subject=body.visitor_id)
+    subject_hash = privacy_subject_hash(
+        tenant_id=body.tenant_id, visitor_id=body.visitor_id
+    )
+    fingerprint = privacy_request_fingerprint(
+        {
+            "operation_type": "visitor_erasure",
+            "tenant_id": body.tenant_id,
+            "subject_hash": subject_hash,
+            "reason": body.reason,
+        }
+    )
+    if session.get_bind().dialect.name == "postgresql":
+        await session.exec(
+            text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+            params={"lock_key": f"forgebase-privacy:{idempotency_key}"},
+        )
+    replay = (
+        await session.exec(
+            select(PrivacyOperation).where(
+                PrivacyOperation.idempotency_key == idempotency_key
+            )
+        )
+    ).first()
+    if replay:
+        if replay.request_fingerprint != fingerprint:
+            raise HTTPException(status_code=409, detail="Privacy operation key conflict")
+        return {**json.loads(replay.result_json), "replayed": True}
+    erased = await erase_anonymous_visitor(
+        session, tenant_id=body.tenant_id, visitor_id=body.visitor_id
+    )
+    if erased is None:
+        raise HTTPException(status_code=404, detail="Privacy subject not found")
+    run = PrivacyOperation(
+        idempotency_key=idempotency_key,
+        request_fingerprint=fingerprint,
+        operation_type="visitor_erasure",
+        tenant_id=body.tenant_id,
+        actor_user_id=current_user.id,
+        subject_hash=subject_hash,
+        reason=body.reason,
+        result_json="{}",
+    )
+    response = {
+        "operation_id": str(run.id),
+        "operation_type": "visitor_erasure",
+        **erased,
+        "replayed": False,
+    }
+    run.result_json = json.dumps(response)
+    session.add(run)
+    await _record_platform_audit(
+        session,
+        current_user,
+        action="privacy.visitor_erased",
+        target_type="privacy_operation",
+        target_id=str(run.id),
+        tenant_id=body.tenant_id,
+        changes={
+            "subject_hash_prefix": subject_hash[:12],
+            "deleted_total": sum(erased["deleted"].values()),
+        },
+    )
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Privacy operation conflict") from exc
+    return response
 
 @router.get("/site-templates")
 async def list_site_templates(_: User = Depends(require_superuser)) -> Any:

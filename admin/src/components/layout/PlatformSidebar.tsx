@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ShieldAlert, Building2, Users, Activity, ClipboardCheck, KanbanSquare, ScanSearch, ContactRound, MailCheck,
-  FileStack, ListChecks, ServerCog, BarChart3, ScrollText, ArchiveX,
+  FileStack, ListChecks, ServerCog, BarChart3, ScrollText, ArchiveX, ShieldCheck,
   LogOut, ChevronUp, LayoutDashboard,
 } from "lucide-react";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
@@ -50,6 +50,7 @@ const NAV_GROUPS = [
       { label: "用量", href: "/platform/usage", icon: BarChart3 },
       { label: "平台用戶", href: "/platform/users", icon: Users },
       { label: "操作紀錄", href: "/platform/audit", icon: ScrollText },
+      { label: "隱私與保留", href: "/platform/privacy", icon: ShieldCheck },
       { label: "功能退場稽核", href: "/platform/retirement", icon: ArchiveX },
     ],
   },
