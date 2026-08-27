@@ -307,6 +307,7 @@
 8. 2026-08-28 release scan 發現 `node:20-alpine` runtime 同時包含可升級的 OpenSSL 與不需要的 npm 工具鏈 CVE（含 Critical `node-tar`）：升級 Node 24、執行 `apk upgrade` 並從 runtime 移除 npm／corepack；未以 Trivy ignore 規則或例外清單繞過。
 9. 更新 Trivy DB 後發現舊 `nginx:1.27-alpine` 有 35 個可修補 High／Critical；`nginxinc/nginx-unprivileged:1.28-alpine` 又落後在 1.28.2，`nginx:1.28-alpine` 的客製 modules 會鎖住 Alpine 修補版。Final stage 因此改以純 Alpine security repository 安裝 nginx 1.28.3-r7，保留非 root 與既有 port 80 contract，不混用兩套 package source。
 10. `release-package.yml` 的 tag filter 使用 GitHub 不接受的連續 `?` glob，造成每次 main push 額外產生 0-job failure：改為數字字元類別 pattern，並以 actionlint 對全部 workflows 做 blocking 語法驗證。
+11. 首次把 production API 切換至 UID 10001 後，既有 root-owned `uploads_data` 使 `/health/ready` 唯一出現 `storage:error`；safe-deploy 現在於 migration／API switch 前，以同一已掃描 API image 的 root one-shot 將精確掛載點正規化為 `10001:10001` 與 owner-only 權限。此步驟可安全重播，未使用 `chmod 777`，也不新增未掃描的 init image。
 
 ### 驗證
 

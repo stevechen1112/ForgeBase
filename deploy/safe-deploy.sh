@@ -45,6 +45,12 @@ for service in "${release_services[@]}"; do
   [ "$service" = "api" ] && continue  # migrate and api share forgebase-api
   docker compose --env-file "$repo_dir/.env" -f "$compose_file" build "$service"
 done
+# The uploads volume may have been created by an older root-running API.
+# Normalize it with the already scanned API image before the non-root UID 10001
+# starts; this is replay-safe and avoids weakening the volume to world-writable.
+docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+  run --rm --no-deps --user 0:0 api \
+  sh -c 'chown -R 10001:10001 /app/uploads && chmod -R u+rwX,go-rwx /app/uploads'
 docker compose --env-file "$repo_dir/.env" -f "$compose_file" run --rm migrate
 # Switch the API first and wait for its own health check before touching any
 # server-rendered website. A general `compose up` cannot be used yet because
