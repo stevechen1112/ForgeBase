@@ -440,6 +440,7 @@ def _run_browser_and_api_matrix(
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/visitors": "allowed",
                 "/dashboard/outcomes": "locked",
             },
             "admin": {
@@ -450,6 +451,7 @@ def _run_browser_and_api_matrix(
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/visitors": "allowed",
             },
             "marketing_manager": {
                 "/dashboard": "allowed",
@@ -460,11 +462,13 @@ def _run_browser_and_api_matrix(
                 "/dashboard/users": "denied",
                 "/dashboard/settings/site-profile": "denied",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/visitors": "allowed",
             },
             "sales": {
                 "/dashboard": "allowed",
                 "/dashboard/rfqs": "allowed",
                 "/dashboard/replies": "allowed",
+                "/dashboard/visitors": "allowed",
                 # The content hub is intentionally read-only for Sales and
                 # exposes only product lookup; editor tools remain hidden.
                 "/dashboard/content": "allowed",

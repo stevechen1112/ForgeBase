@@ -54,6 +54,7 @@ SIDEBAR_ROUTES = [
     "/dashboard/rfqs/templates",
     "/dashboard/notifications",
     "/dashboard/intent",
+    "/dashboard/visitors",
     "/dashboard/ml-scoring",
     "/dashboard/intent-rules",
     "/dashboard/content-performance",
