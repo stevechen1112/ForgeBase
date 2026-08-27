@@ -112,7 +112,17 @@ def _tracked_critical_files(root: Path) -> list[str]:
 
 
 def _source_archive(root: Path, destination: Path) -> None:
-    raw_tar = run_git(root, "archive", "--format=tar", "HEAD", binary=True)
+    # Explicitly disable checkout EOL conversion. Otherwise git archive can
+    # emit CRLF on Windows while the same commit emits LF on Linux.
+    raw_tar = run_git(
+        root,
+        "-c",
+        "core.autocrlf=false",
+        "archive",
+        "--format=tar",
+        "HEAD",
+        binary=True,
+    )
     with destination.open("wb") as output, gzip.GzipFile(
         fileobj=output, mode="wb", mtime=0, filename=""
     ) as zipped:
