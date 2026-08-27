@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Index, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
@@ -15,6 +15,16 @@ class OperationalJob(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint(
             "idempotency_key", name="operational_jobs_idempotency_key_key"
+        ),
+        Index(
+            "ix_operational_jobs_ready_claim",
+            "available_at",
+            postgresql_where=text("status IN ('pending', 'retry')"),
+        ),
+        Index(
+            "ix_operational_jobs_stale_claim",
+            "locked_at",
+            postgresql_where=text("status = 'processing'"),
         ),
     )
 

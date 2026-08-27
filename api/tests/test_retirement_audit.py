@@ -2,18 +2,20 @@
 
 import json
 import uuid
+from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy import text
-
+from app.core.datetime import utcnow_naive
 from app.core.security import create_access_token, get_password_hash
 from app.models.operational_job import OperationalJob
-from app.models.retirement import RetirementUsageEvent
+from app.models.retirement import RetirementCandidateObservation, RetirementUsageEvent
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.services import agentOS, operational_outbox
 from app.services.capability_access import resolve_tenant_features
+from sqlalchemy import text
+
 from tests.conftest import _make_engine, requires_db
 
 
@@ -150,6 +152,111 @@ async def test_retirement_report_records_use_and_blocks_early_removal(
             await db.exec(
                 text("DELETE FROM platform_audit_logs WHERE actor_user_id = :id"),
                 params={"id": str(platform_id)},
+            )
+            await db.exec(
+                text("DELETE FROM users WHERE id = :id"),
+                params={"id": str(platform_id)},
+            )
+            await db.commit()
+        await engine.dispose()
+
+
+@requires_db
+@pytest.mark.asyncio
+async def test_removal_approval_requires_governance_evidence(http_client) -> None:
+    engine, factory = _make_engine()
+    platform_id, platform_token = await _create_superuser(factory)
+    candidate_key = f"governance_test_{uuid.uuid4().hex[:12]}"
+    headers = _auth(platform_token)
+    try:
+        async with factory() as db:
+            db.add(
+                RetirementCandidateObservation(
+                    candidate_key=candidate_key,
+                    display_name="Governance gate test candidate",
+                    required_observation_days=30,
+                    code_state="disabled",
+                    status="observing",
+                    started_at=utcnow_naive() - timedelta(days=31),
+                )
+            )
+            await db.commit()
+
+        report = await http_client.get(
+            "/api/v1/admin/retirement-audit", headers=headers
+        )
+        assert report.status_code == 200, report.text
+        assert len(report.json()["report_sha256"]) == 64
+        candidate = next(
+            item
+            for item in report.json()["candidates"]
+            if item["candidate_key"] == candidate_key
+        )
+        assert candidate["technical_removal_ready"] is True
+        assert candidate["removal_ready"] is False
+        assert "telemetry_continuity_unverified" in candidate["blockers"]
+
+        missing = await http_client.put(
+            f"/api/v1/admin/retirement-audit/{candidate_key}/decision",
+            headers=headers,
+            json={
+                "status": "approved_removal",
+                "reason": "The technical window passed but governance evidence is intentionally absent.",
+            },
+        )
+        assert missing.status_code == 409
+        assert "telemetry_evidence_ref" in missing.text
+
+        approved = await http_client.put(
+            f"/api/v1/admin/retirement-audit/{candidate_key}/decision",
+            headers=headers,
+            json={
+                "status": "approved_removal",
+                "reason": "All technical and governance evidence has been independently recorded.",
+                "telemetry_evidence_ref": "evidence://retirement/continuous-31-days",
+                "data_disposition": "not_applicable",
+                "rollback_revision": "a" * 40,
+                "removal_plan_ref": "change://retirement/isolated-removal-plan",
+            },
+        )
+        assert approved.status_code == 200, approved.text
+        payload = approved.json()
+        assert payload["status"] == "approved_removal"
+        assert payload["removal_ready"] is True
+        assert payload["decision"]["telemetry_verified_by"] == str(platform_id)
+        assert payload["decision"]["data_disposition"] == "not_applicable"
+
+        async with factory() as db:
+            stored = await db.get(RetirementCandidateObservation, candidate_key)
+            assert stored
+            stored.telemetry_verified_by = None
+            db.add(stored)
+            await db.commit()
+        no_actor_report = await http_client.get(
+            "/api/v1/admin/retirement-audit", headers=headers
+        )
+        no_actor = next(
+            item
+            for item in no_actor_report.json()["candidates"]
+            if item["candidate_key"] == candidate_key
+        )
+        assert no_actor["removal_ready"] is False
+        assert "telemetry_continuity_unverified" in no_actor["blockers"]
+    finally:
+        async with factory() as db:
+            await db.exec(
+                text(
+                    "DELETE FROM platform_audit_logs "
+                    "WHERE actor_user_id = :id OR target_id = :candidate"
+                ),
+                params={"id": str(platform_id), "candidate": candidate_key},
+            )
+            await db.exec(
+                text(
+                    "DELETE FROM retirement_candidate_observations "
+                    "WHERE candidate_key = :candidate"
+                ),
+                params={"candidate": candidate_key},
             )
             await db.exec(
                 text("DELETE FROM users WHERE id = :id"),

@@ -28,6 +28,11 @@ class RetirementCandidateObservation(SQLModel, table=True):
             "required_observation_days >= 0",
             name="ck_retirement_candidate_days",
         ),
+        CheckConstraint(
+            "data_disposition IS NULL OR data_disposition IN "
+            "('not_applicable', 'retained', 'exported', 'deleted')",
+            name="ck_retirement_candidate_data_disposition",
+        ),
     )
 
     candidate_key: str = Field(primary_key=True, max_length=80)
@@ -44,6 +49,17 @@ class RetirementCandidateObservation(SQLModel, table=True):
         index=True,
     )
     decision_reason: str | None = Field(default=None, max_length=2000)
+    telemetry_verified_at: datetime | None = Field(default=None)
+    telemetry_verified_by: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        index=True,
+    )
+    telemetry_evidence_ref: str | None = Field(default=None, max_length=500)
+    data_disposition: str | None = Field(default=None, max_length=30)
+    rollback_revision: str | None = Field(default=None, max_length=100)
+    removal_plan_ref: str | None = Field(default=None, max_length=500)
     updated_at: datetime = Field(default_factory=utcnow_naive, index=True)
 
 

@@ -13,6 +13,17 @@
 - 保持營運並觀察：Telegram、LINE 通知渠道；只要有啟用設定或送達紀錄就不可核准移除。
 - 明確保留：Copilot 專屬頁、規則式意圖評分、通知核心、人工內容關聯、公司辨識、窗口補全、外聯、回覆、RFQ、歸因及歷史 migration／資料欄位。
 
+### I14 最終複核（2026-08-27）
+
+14 批內部工程完成時重新執行 static／route／feature／telemetry dependency audit，共 14／14 項通過，報告指紋由 `scripts/run_retirement_final_audit.py` 產生。最終處置如下：
+
+- 已移除且再次證明無殘留：`copilot_floating_widget`、`legacy_ip_resolver`；原始 source path 不存在，沒有重新進入 bundle 或 API runtime。
+- 繼續 fail-closed 觀察：`agentos_runtime`、`ml_scoring_runtime`、`relation_recommender`。它們尚未取得 production 30／60 天連續零使用證據，因此本輪**沒有新增刪除**。
+- 保留營運：`notification_telegram`、`notification_line`。渠道程式與 notification preference／delivery evidence 仍存在，不能只因本機沒有流量就刪除。
+- 北極星核心受保護：行為追蹤、規則式意圖評分、公司辨識、窗口補全、旅程個人化、外聯寄送、回覆、真人接手、RFQ 工作台與閉環歸因均未被列為退場候選。`ml_scoring_runtime` 只代表規則式核心之外的可選線上模型層。
+
+0095 migration 進一步修正原退場 Gate 的落差：核准移除除了入口停用、觀察期完成、零使用、零設定依賴外，現在必須同時保存 telemetry 連續性證據、資料處置、可回復 Git revision 與獨立 removal plan；缺任一項即 409。平台報告新增 SHA-256 snapshot，可由後台下載 JSON 證據。
+
 ## 2. 候選逐項決策
 
 | 候選 | 入口／依賴稽核 | 目前處置 | 觀察 Gate | 資料處置與回復 |
@@ -38,7 +49,7 @@
 - `GET /api/v1/admin/retirement-audit`：顯示觀察進度、使用訊號、租戶設定依賴、最後使用、blocker 與資料證據。
 - `PUT /api/v1/admin/retirement-audit/{candidate}/decision`：只能由 superuser 決定保留或核准移除。
 - `/platform/retirement`：平台退場稽核頁；顯示 30／60 天進度與 blocker。
-- 核准移除必須同時滿足：entry disabled、觀察期完成、零使用、零仍啟用設定；決策寫入 `PlatformAuditLog`。
+- 核准移除必須同時滿足：entry disabled、觀察期完成、零使用、零仍啟用設定、telemetry 連續性核驗、資料處置、rollback revision 與獨立 removal plan；決策寫入 `PlatformAuditLog`。
 - `removed` 決策不可由 API 回改；真正移除仍需下一個獨立 code review、forward migration 與部署回復窗口。
 
 ## 4. 觀察起算與不可宣稱事項

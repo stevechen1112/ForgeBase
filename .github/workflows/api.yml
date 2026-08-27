@@ -90,6 +90,10 @@ jobs:
         run: >-
           python scripts/run_privacy_retention_lab.py
           --artifacts-dir ../artifacts/privacy-retention
+      - name: Verify category-four retirement boundaries
+        run: >-
+          python scripts/run_retirement_final_audit.py
+          --output artifacts/retirement-final-audit
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

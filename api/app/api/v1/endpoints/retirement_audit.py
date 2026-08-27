@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime
 from typing import Annotated, Literal
@@ -33,6 +34,12 @@ SuperuserDep = Annotated[User, Depends(require_superuser)]
 class RetirementDecisionIn(BaseModel):
     status: Literal["retained", "approved_removal"]
     reason: str = Field(min_length=20, max_length=2000)
+    telemetry_evidence_ref: str | None = Field(default=None, min_length=5, max_length=500)
+    data_disposition: Literal["not_applicable", "retained", "exported", "deleted"] | None = None
+    rollback_revision: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{7,40}$"
+    )
+    removal_plan_ref: str | None = Field(default=None, min_length=5, max_length=500)
 
 
 def _latest(*values: datetime | None) -> datetime | None:
@@ -143,13 +150,24 @@ async def _candidate_payload(
     recent_usage = telemetry_count + domain_count
     configured_dependencies = int(evidence.get("enabled_preferences", 0))
     window_complete = observed_days >= row.required_observation_days
-    removal_ready = (
+    technical_removal_ready = (
         row.code_state == "disabled"
         and window_complete
         and recent_usage == 0
         and configured_dependencies == 0
         and row.status in {"observing", "approved_removal"}
     )
+    governance_complete = all(
+        (
+            row.telemetry_verified_at,
+            row.telemetry_verified_by,
+            row.telemetry_evidence_ref,
+            row.data_disposition,
+            row.rollback_revision,
+            row.removal_plan_ref,
+        )
+    )
+    removal_ready = technical_removal_ready and governance_complete
     blockers: list[str] = []
     if row.code_state == "active":
         blockers.append("entry_not_disabled")
@@ -161,6 +179,16 @@ async def _candidate_payload(
         blockers.append("configuration_detected")
     if row.status == "retained":
         blockers.append("retained_by_decision")
+    if row.code_state != "removed" and (
+        not row.telemetry_verified_at or not row.telemetry_verified_by
+    ):
+        blockers.append("telemetry_continuity_unverified")
+    if row.code_state != "removed" and not row.data_disposition:
+        blockers.append("data_disposition_missing")
+    if row.code_state != "removed" and not row.rollback_revision:
+        blockers.append("rollback_revision_missing")
+    if row.code_state != "removed" and not row.removal_plan_ref:
+        blockers.append("removal_plan_missing")
     return {
         "candidate_key": row.candidate_key,
         "display_name": row.display_name,
@@ -170,6 +198,7 @@ async def _candidate_payload(
         "required_observation_days": row.required_observation_days,
         "observed_days": observed_days,
         "window_complete": window_complete,
+        "technical_removal_ready": technical_removal_ready,
         "recent_usage_count": recent_usage,
         "tenant_count": max(telemetry_tenants, domain_tenants),
         "last_used_at": (
@@ -189,6 +218,16 @@ async def _candidate_payload(
             "reason": row.decision_reason,
             "decided_at": row.decided_at.isoformat() if row.decided_at else None,
             "decided_by": str(row.decided_by) if row.decided_by else None,
+            "telemetry_verified_at": row.telemetry_verified_at.isoformat()
+            if row.telemetry_verified_at
+            else None,
+            "telemetry_verified_by": str(row.telemetry_verified_by)
+            if row.telemetry_verified_by
+            else None,
+            "telemetry_evidence_ref": row.telemetry_evidence_ref,
+            "data_disposition": row.data_disposition,
+            "rollback_revision": row.rollback_revision,
+            "removal_plan_ref": row.removal_plan_ref,
         },
     }
 
@@ -205,12 +244,19 @@ async def retirement_audit_report(db: DbDep, _: SuperuserDep):
         ).all()
     )
     candidates = [await _candidate_payload(db, row) for row in rows]
+    policy = (
+        "Removal requires a disabled entry, a completed 30/60-day window, "
+        "zero observed usage, verified telemetry continuity, explicit data "
+        "disposition, an immutable rollback revision and a reviewed removal plan."
+    )
+    snapshot = {"policy": policy, "candidates": candidates}
+    report_sha256 = hashlib.sha256(
+        json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     return {
         "generated_at": utcnow_naive().isoformat(),
-        "policy": (
-            "Removal requires a disabled entry, a completed 30/60-day window, "
-            "zero observed usage, data disposition, review and a forward migration."
-        ),
+        "report_sha256": report_sha256,
+        "policy": policy,
         "candidates": candidates,
     }
 
@@ -228,17 +274,40 @@ async def decide_retirement_candidate(
     if row.status == "removed":
         raise HTTPException(status_code=409, detail="Removed decisions are immutable")
     payload = await _candidate_payload(db, row)
-    if body.status == "approved_removal" and not payload["removal_ready"]:
-        raise HTTPException(
-            status_code=409,
-            detail={"message": "Removal gate has not passed", "blockers": payload["blockers"]},
-        )
+    if body.status == "approved_removal":
+        if not payload["technical_removal_ready"]:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Technical removal gate has not passed",
+                    "blockers": payload["blockers"],
+                },
+            )
+        governance = {
+            "telemetry_evidence_ref": body.telemetry_evidence_ref,
+            "data_disposition": body.data_disposition,
+            "rollback_revision": body.rollback_revision,
+            "removal_plan_ref": body.removal_plan_ref,
+        }
+        missing = [key for key, value in governance.items() if not value]
+        if missing:
+            raise HTTPException(
+                status_code=409,
+                detail={"message": "Retirement governance evidence missing", "missing": missing},
+            )
     now = utcnow_naive()
     previous = row.status
     row.status = body.status
     row.decision_reason = body.reason.strip()
     row.decided_by = current_user.id
     row.decided_at = now
+    if body.status == "approved_removal":
+        row.telemetry_verified_at = now
+        row.telemetry_verified_by = current_user.id
+        row.telemetry_evidence_ref = body.telemetry_evidence_ref
+        row.data_disposition = body.data_disposition
+        row.rollback_revision = body.rollback_revision
+        row.removal_plan_ref = body.removal_plan_ref
     row.updated_at = now
     db.add(row)
     db.add(
@@ -256,6 +325,10 @@ async def decide_retirement_candidate(
                         "observed_days": payload["observed_days"],
                         "recent_usage_count": payload["recent_usage_count"],
                         "code_state": payload["code_state"],
+                        "telemetry_evidence_ref": body.telemetry_evidence_ref,
+                        "data_disposition": body.data_disposition,
+                        "rollback_revision": body.rollback_revision,
+                        "removal_plan_ref": body.removal_plan_ref,
                     },
                 }
             ),

@@ -100,6 +100,7 @@ export type RetirementCandidate = {
   required_observation_days: number;
   observed_days: number;
   window_complete: boolean;
+  technical_removal_ready: boolean;
   recent_usage_count: number;
   tenant_count: number;
   last_used_at?: string;
@@ -116,11 +117,18 @@ export type RetirementCandidate = {
     reason?: string;
     decided_at?: string;
     decided_by?: string;
+    telemetry_verified_at?: string;
+    telemetry_verified_by?: string;
+    telemetry_evidence_ref?: string;
+    data_disposition?: "not_applicable" | "retained" | "exported" | "deleted";
+    rollback_revision?: string;
+    removal_plan_ref?: string;
   };
 };
 
 export type RetirementAuditReport = {
   generated_at: string;
+  report_sha256: string;
   policy: string;
   candidates: RetirementCandidate[];
 };
@@ -1485,7 +1493,14 @@ export const platformAdminApi = {
   decideRetirementCandidate: (
     token: string,
     candidateKey: string,
-    body: { status: "retained" | "approved_removal"; reason: string },
+    body: {
+      status: "retained" | "approved_removal";
+      reason: string;
+      telemetry_evidence_ref?: string;
+      data_disposition?: "not_applicable" | "retained" | "exported" | "deleted";
+      rollback_revision?: string;
+      removal_plan_ref?: string;
+    },
   ) =>
     apiClient.put<RetirementCandidate>(
       `/admin/retirement-audit/${encodeURIComponent(candidateKey)}/decision`,

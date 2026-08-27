@@ -21,7 +21,7 @@
 | I11 | Privacy／Retention Operations | 完成 | 通過 | 完成 |
 | I12 | SLO／Monitoring／Incident Console | 完成 | 通過 | 完成 |
 | I13 | Release Package | 完成 | 通過 | 完成 |
-| I14 | 類別四退場報告 | 未開始 | 未開始 | 待辦 |
+| I14 | 類別四退場報告 | 完成 | 通過 | 完成 |
 
 ## I1：完整 North Star E2E Lab
 
@@ -445,3 +445,39 @@
 
 - I13 內部產品化 Gate 與 code review 通過，可進入 I14。
 - 本機已建立的是可重現、可離線驗證的 unsigned internal candidate；只有遠端完整 Gate 成功後的 workflow artifact 才具有六個 container SBOM 與 Sigstore provenance。本批未 push tag、未建立遠端 release、未部署生產環境。
+
+## I14：類別四最終退場報告與治理封板
+
+### 已實作
+
+- 對七個既有退場候選重新執行 route、feature、bundle path、worker、usage telemetry、notification preference 與 North Star dependency audit；自動 runner 產生不含 PII 的 JSON snapshot 與 SHA-256，並接入 API Release Contract。
+- 最終分類：`copilot_floating_widget`、`legacy_ip_resolver` 已移除並再次證明 source path 無殘留；`agentos_runtime`、`ml_scoring_runtime`、`relation_recommender` 繼續 fail-closed 觀察；Telegram／LINE 仍為營運渠道，保留且持續量測。
+- 本輪沒有新增刪除。production 30／60 天觀察尚未完成，零使用也沒有連續外部 telemetry 證據；依既定政策不得用本機或同日測試資料代替。
+- 明確保護行為追蹤、規則式意圖評分、公司辨識、窗口補全、旅程個人化、受控外聯、回覆、真人接手、RFQ 工作台與閉環歸因；`ml_scoring_runtime` 只代表規則式核心之外的可選線上模型層。
+- 新增 0095 retirement governance migration：保存 telemetry 核驗時間／操作者／證據參照、資料處置、rollback Git revision 與獨立 removal plan；資料處置有 DB check constraint，核驗者 FK 刪除後 fail closed。
+- 退場核准 API 現在分為 technical readiness 與 governance completeness；觀察期、零使用、入口停用、零設定依賴、核驗證據、資料處置、rollback 與 removal plan 缺任一項皆拒絕。
+- 平台退場頁顯示新增 blocker，只有 technical Gate 完成才可進入核准輸入；報告加入 deterministic SHA-256 並可下載 JSON snapshot。
+
+### Code review 發現與修正
+
+1. 舊文件要求 telemetry continuity、資料處置及可回復方案，但 API 實際只檢查天數、使用與入口狀態：0095 將三類治理證據正式納入 schema 與 409 Gate，消除文件／runtime 落差。
+2. 若治理核驗者帳號日後刪除，`ON DELETE SET NULL` 會失去責任人；初版 completeness 未檢查 actor：改為 actor 也必須存在，否則已核准列立即回到 `removal_ready=false`。
+3. 退場頁原本以 `removal_ready` 控制核准按鈕，但 governance 只能在核准 request 內提交，形成永遠無法輸入的循環：新增 `technical_removal_ready`，按鈕以 technical Gate 開啟，再於同一交易提交治理證據。
+4. 原稽核沒有可攜、可比對的 snapshot identity：依 policy 與完整 candidates canonical JSON 計算 SHA-256，下載檔名包含指紋前綴。
+5. ML runtime 觀察容易被誤讀為整個意圖評分可刪：static audit 新增核心保護規則，規則式 `intent_scoring` 與 `full_tracking` 不得出現在退場 seed。
+6. 大量猜測式刪除仍有破壞既有租戶、歷史資料與北極星的風險：最終 runner 明確輸出 `new_removals_authorized: []` 與 `external_observation_claimed_complete: false`，未通過證據不得改成綠燈。
+7. 最終 `alembic check` 揭露 I8 已建立的六個 capacity／partial indexes 未宣告在 ORM metadata，會讓未來 autogenerate 誤建「刪除效能索引」migration：把 public product listing、asset gallery、Operational／Knowledge ready 與 stale claim indexes 補回 model metadata，`alembic check` 回到零 drift。
+
+### 驗證
+
+- Category-four static audit：`17/17 passed`；2 項 removed path、3 項 disabled boundary、2 個 active channel 與 10 項 North Star core protection 全數通過。
+- Retirement API 專用回歸：`5 passed`；涵蓋過早核准、治理資料缺漏、完整核准、核驗者失聯後 fail closed 與 PII-minimal usage contract。
+- 完整 PostgreSQL API suite：`320 passed, 3 skipped`；scripts contract：`5 passed`。
+- 0095 migration 完成 `0094 → 0095 → 0094 → 0095` upgrade／downgrade round trip。
+- Alembic 單一 head `0095_retirement_governance_gate`；`alembic check` 回報 `No new upgrade operations detected`。
+- Admin TypeScript、ESLint、production build（75 routes）通過；blocking Ruff、workflow YAML parse 與 `git diff --check` 通過。
+
+### Gate 結論
+
+- I14 內部產品化 Gate 與 code review 通過；14 批內部工程全部完成。
+- 「批次完成」代表退場治理、已核准刪除與技術邊界均已處理到可稽核狀態，不代表等待 production 30／60 天的候選已被刪除。這三項 disabled 候選與兩個 active channel 的未來決策仍必須依真實 production evidence 另開獨立變更集。

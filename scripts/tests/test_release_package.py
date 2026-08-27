@@ -21,8 +21,8 @@ def test_release_version_and_migration_topology_are_unambiguous() -> None:
     version = (ROOT / "release/VERSION").read_text(encoding="utf-8").strip()
     assert VERSION_PATTERN.fullmatch(version)
     topology = migration_topology(ROOT)
-    assert topology["heads"] == ["0094_slo_incident_console"]
-    assert topology["revision_count"] >= 90
+    assert topology["heads"] == ["0095_retirement_governance_gate"]
+    assert topology["revision_count"] >= 97
 
 
 def test_release_spec_keeps_external_gates_explicit() -> None:

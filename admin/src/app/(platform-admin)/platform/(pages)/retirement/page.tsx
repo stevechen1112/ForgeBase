@@ -23,6 +23,10 @@ const BLOCKER_LABELS: Record<string, string> = {
   usage_detected: "觀察期內仍有使用",
   configuration_detected: "仍有租戶啟用設定",
   retained_by_decision: "已有保留決策",
+  telemetry_continuity_unverified: "尚未核驗觀察期間 telemetry 連續性",
+  data_disposition_missing: "尚未記錄資料處置",
+  rollback_revision_missing: "尚未指定可回復 revision",
+  removal_plan_missing: "尚未連結退場變更計畫",
 };
 
 export default function RetirementAuditPage() {
@@ -59,12 +63,34 @@ export default function RetirementAuditPage() {
       `請輸入「${candidate.display_name}」決定${action}的證據與理由（至少 20 字）：`,
     );
     if (!reason || reason.trim().length < 20) return;
+    const governance = status === "approved_removal" ? {
+      telemetry_evidence_ref: window.prompt("Telemetry 連續性證據連結或工單編號：")?.trim(),
+      data_disposition: window.prompt("資料處置（not_applicable／retained／exported／deleted）：")?.trim(),
+      rollback_revision: window.prompt("已驗證可回復的 Git revision（7–40 位小寫 hex）：")?.trim(),
+      removal_plan_ref: window.prompt("獨立退場變更計畫連結或工單編號：")?.trim(),
+    } : {};
+    if (status === "approved_removal" && Object.values(governance).some((value) => !value)) return;
+    const allowedDispositions = ["not_applicable", "retained", "exported", "deleted"] as const;
+    if (
+      status === "approved_removal" &&
+      !allowedDispositions.includes(governance.data_disposition as typeof allowedDispositions[number])
+    ) {
+      setError("資料處置值不合法。");
+      return;
+    }
     setSaving(candidate.candidate_key);
     setError("");
     try {
       await platformAdminApi.decideRetirementCandidate(token, candidate.candidate_key, {
         status,
         reason: reason.trim(),
+        ...governance,
+        data_disposition: governance.data_disposition as
+          | "not_applicable"
+          | "retained"
+          | "exported"
+          | "deleted"
+          | undefined,
       });
       await load();
     } catch (cause) {
@@ -90,6 +116,15 @@ export default function RetirementAuditPage() {
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           重新整理
         </Button>
+        {report && <Button variant="outline" onClick={() => {
+          const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `forgebase-retirement-audit-${report.report_sha256.slice(0, 12)}.json`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }}>下載證據快照</Button>}
       </div>
 
       {error && (
@@ -170,7 +205,7 @@ export default function RetirementAuditPage() {
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!candidate.removal_ready || saving === candidate.candidate_key}
+                  disabled={!candidate.technical_removal_ready || saving === candidate.candidate_key}
                   onClick={() => void decide(candidate, "approved_removal")}
                 >
                   核准移除

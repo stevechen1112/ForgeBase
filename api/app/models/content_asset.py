@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+from sqlalchemy import Index
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.core.datetime import utcnow_naive
@@ -16,6 +17,16 @@ class ContentAsset(SQLModel, table=True):
     Stored in Cloudflare R2; this table keeps metadata.
     """
     __tablename__ = "content_assets"
+    __table_args__ = (
+        Index(
+            "ix_content_assets_product_gallery",
+            "tenant_id",
+            "product_id",
+            "asset_type",
+            "display_order",
+            "created_at",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: uuid.UUID = Field(

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Index, UniqueConstraint, desc
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.core.datetime import utcnow_naive
@@ -31,6 +31,14 @@ class Product(SQLModel, table=True):
         UniqueConstraint(
             "model_number", "locale", "tenant_id",
             name="uq_products_model_number_locale_tenant",
+        ),
+        Index(
+            "ix_products_public_listing",
+            "tenant_id",
+            "locale",
+            "status",
+            desc("display_priority"),
+            "product_name",
         ),
     )
 

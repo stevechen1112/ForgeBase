@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, Computed, Index, Text, UniqueConstraint
+from sqlalchemy import Column, Computed, Index, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
@@ -80,6 +80,16 @@ class KnowledgeSyncJob(SQLModel, table=True):
     __tablename__ = "knowledge_sync_jobs"
     __table_args__ = (
         UniqueConstraint("dedupe_key", name="uq_knowledge_sync_jobs_dedupe_key"),
+        Index(
+            "ix_knowledge_sync_jobs_ready_claim",
+            "available_at",
+            postgresql_where=text("status = 'queued'"),
+        ),
+        Index(
+            "ix_knowledge_sync_jobs_stale_claim",
+            "locked_at",
+            postgresql_where=text("status = 'running'"),
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
