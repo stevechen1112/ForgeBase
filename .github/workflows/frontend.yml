@@ -47,6 +47,9 @@ jobs:
       - run: npm ci
       - run: npm run type-check
       - run: npm run lint
+      - name: Verify public locale packs
+        if: matrix.id == 'web'
+        run: npm run locale:check
       - name: Verify template structure
         if: matrix.id == 'templates'
         run: npm run check:structure

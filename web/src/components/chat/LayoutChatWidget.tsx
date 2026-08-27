@@ -2,13 +2,7 @@
 
 import { usePathname } from "@/i18n/navigation";
 import { ChatWidget } from "@/components/chat/ChatWidget";
-
-function stripLocalePrefix(pathname: string): string {
-  const path = pathname || "/";
-  if (path === "/zh-TW") return "/";
-  if (path.startsWith("/zh-TW/")) return path.slice("/zh-TW".length) || "/";
-  return path;
-}
+import { stripLocalePrefix } from "@/lib/localizedPath";
 
 function pageAlreadyMountsChat(pathname: string): boolean {
   const path = stripLocalePrefix(pathname);

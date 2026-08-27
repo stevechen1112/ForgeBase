@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import NextLink from "next/link";
 import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Menu, Phone, FileText, Globe } from "lucide-react";
@@ -12,6 +11,7 @@ import { useMessageNamespace } from "@/lib/messages";
 import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 type HeaderMessages = {
   rfq: string;
@@ -55,10 +55,6 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
   const copy = useMessageNamespace<HeaderMessages>("header");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scrolled, setScrolled]   = useState(false);
-  const localizedPath = pathname === "/" ? "" : pathname;
-  const localeSwitchHref = locale === "en"
-    ? `/zh-TW${localizedPath}`
-    : (localizedPath || "/");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -124,26 +120,10 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
         {/* ─── Desktop CTAs ─── */}
         <div className="hidden items-center gap-2 md:flex">
           {/* Language switcher */}
-          <Button variant="ghost" size="sm" asChild className="gap-1 text-muted-foreground hover:text-foreground px-2">
-            <NextLink
-              href={localeSwitchHref}
-              hrefLang={locale === "en" ? "zh-TW" : "en"}
-              onClick={(event) => {
-                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                  return;
-                }
-                // The locale provider lives in the root layout. A client-side locale
-                // transition would preserve that layout and leave its messages stale.
-                // Force a document navigation so the server rebuilds the provider for
-                // the destination locale (while NextLink still applies basePath).
-                event.preventDefault();
-                window.location.assign(event.currentTarget.href);
-              }}
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {copy.langSwitch}
-            </NextLink>
-          </Button>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+            <LanguageSwitcher />
+          </div>
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground">
             <Link href={secondaryAction?.href ?? "/rfq"}>
               <FileText className="h-3.5 w-3.5" />
@@ -198,6 +178,13 @@ export function Header({ siteConfig }: { siteConfig: SiteConfig }) {
                   </Link>
                 );
               })}
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="flex items-center gap-2 px-1 text-muted-foreground">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+              <LanguageSwitcher className="flex-1" />
             </div>
 
             <Separator className="my-4" />

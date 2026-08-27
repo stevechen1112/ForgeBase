@@ -36,6 +36,21 @@ def test_apply_copy_keeps_other_locale_and_strips_empty():
     assert extract_locale_overlay(updated, "zh-TW")["home"]["hero"]["titleLine1"] == "繁中"
 
 
+def test_public_locale_overlays_are_isolated_without_cross_language_fallback():
+    existing = {
+        "locales": {
+            "zh-tw": {"home": {"hero": {"titleLine1": "繁中"}}},
+            "ja": {"home": {"hero": {"titleLine1": "日本語"}}},
+            "fr": {"home": {"hero": {"titleLine1": "Français"}}},
+            "ru": {"home": {"hero": {"titleLine1": "Русский"}}},
+        }
+    }
+    assert extract_locale_overlay(existing, "zh-TW")["home"]["hero"]["titleLine1"] == "繁中"
+    for locale, expected in (("ja", "日本語"), ("fr", "Français"), ("ru", "Русский")):
+        assert extract_locale_overlay(existing, locale)["home"]["hero"]["titleLine1"] == expected
+    assert extract_locale_overlay(existing, "en") == {}
+
+
 def test_news_empty_list_hides_default_items():
     updated = apply_copy_overlay({}, "en", {"newsPage": {"items": []}})
     assert serialize_overlay(extract_locale_overlay(updated, "en"))["newsPage"]["items"] == []
@@ -80,10 +95,18 @@ async def test_tenant_can_edit_logo_and_whitelisted_copy(
     assert logo.status_code == 200, logo.text
     assert logo.json()["logo_url"] == "https://cdn.example/logo.webp"
 
+    source_locale = await http_client.put(
+        "/api/v1/site-profile",
+        json={"default_locale": "ja"},
+        headers=headers,
+    )
+    assert source_locale.status_code == 200, source_locale.text
+    assert source_locale.json()["default_locale"] == "ja"
+
     saved = await http_client.put(
         "/api/v1/site-profile/tenant-copy",
         json={
-            "locale": "en",
+            "locale": "fr",
             "copy": {"home": {"hero": {"titleLine1": "Custom hero"}}},
             "assets": {"homeHero": "https://cdn.example/hero.webp"},
             "hidden_blocks": {"productInspection": True},
@@ -92,6 +115,7 @@ async def test_tenant_can_edit_logo_and_whitelisted_copy(
         headers=headers,
     )
     assert saved.status_code == 200, saved.text
+    assert saved.json()["locale"] == "fr"
     assert saved.json()["copy"]["home"]["hero"]["titleLine1"] == "Custom hero"
     assert saved.json()["hidden_blocks"]["productInspection"] is True
     assert saved.json()["logo_url"] == "https://cdn.example/from-copy.webp"

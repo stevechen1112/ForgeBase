@@ -24,7 +24,7 @@ from app.api.v1.deps import (
     resolve_tenant_id,
 )
 from app.core.datetime import utcnow_naive
-from app.core.locale import to_content_locale
+from app.core.locale import LOCALE_CATALOG, to_content_locale, to_route_locale
 from app.db.session import get_session
 from app.models.site_profile import SiteProfile
 from app.models.user import User
@@ -86,10 +86,9 @@ async def update_site_profile(
     update_data = payload.model_dump(exclude_unset=True)
     if "default_locale" in update_data and update_data["default_locale"] is not None:
         locale = to_content_locale(str(update_data["default_locale"]), default="")
-        if locale not in {"en", "zh-tw"}:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="default_locale must be en or zh-TW")
-        # Persist the route/admin form (zh-TW) so existing UI comparisons keep working.
-        update_data["default_locale"] = "zh-TW" if locale == "zh-tw" else "en"
+        if locale not in LOCALE_CATALOG:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported default_locale")
+        update_data["default_locale"] = to_route_locale(locale)
     restricted_fields = sorted(set(update_data) - _TENANT_EDITABLE_PROFILE_FIELDS)
     if restricted_fields:
         raise HTTPException(

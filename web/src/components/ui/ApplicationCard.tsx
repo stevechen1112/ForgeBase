@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { Application } from "@/types/content";
 import { getApplicationImage } from "@/lib/demoAssets";
 import { localizedPath } from "@/lib/localizedPath";
 import { siteConfig as defaultSiteConfig, type SiteConfig } from "@/lib/siteConfig";
+import { useMessageNamespace } from "@/lib/messages";
 
 type Props = {
   application: Application;
@@ -17,7 +20,7 @@ export function ApplicationCard({
 }: Props) {
   const imageUrl = getApplicationImage(application, siteConfig);
   const isIndustrial = siteConfig.layout === "industrial";
-  const learnMoreLabel = locale === "zh-TW" ? "了解更多 →" : "Learn more →";
+  const { appLearnMore } = useMessageNamespace<{ appLearnMore: string }>("applicationDetail");
 
   return (
     <Link
@@ -62,7 +65,7 @@ export function ApplicationCard({
         <span className={isIndustrial
           ? "mt-4 text-xs font-black uppercase tracking-[0.16em] text-primary group-hover:underline"
           : "mt-4 text-sm font-medium text-blue-700 group-hover:underline"}>
-          {learnMoreLabel}
+          {appLearnMore}
         </span>
       </div>
     </Link>

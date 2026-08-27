@@ -1,6 +1,11 @@
 import type { Locale } from "@/i18n/routing";
 import enMessages from "../../messages/en.json";
+import frMessages from "../../messages/fr.json";
+import jaMessages from "../../messages/ja.json";
+import ruMessages from "../../messages/ru.json";
 import zhTWMessages from "../../messages/zh-TW.json";
+import { isPublicLocale } from "@/i18n/routing";
+import { toRouteLocale } from "@/lib/contentLocale";
 
 type NavItem = {
   label: string;
@@ -242,6 +247,9 @@ type SiteCopy = {
 const MESSAGE_MAP = {
   en: enMessages,
   "zh-TW": zhTWMessages,
+  ja: jaMessages,
+  fr: frMessages,
+  ru: ruMessages,
 } as const;
 
 type MessageBundle = typeof enMessages;
@@ -343,7 +351,8 @@ function toSiteCopy(messages: MessageBundle): SiteCopy {
 }
 
 export function resolveLocale(locale?: string): Locale {
-  return locale?.toLowerCase() === "zh-tw" ? "zh-TW" : "en";
+  const resolved = toRouteLocale(locale);
+  return isPublicLocale(resolved) ? resolved : "en";
 }
 
 export function getSiteCopy(locale?: string): SiteCopy {

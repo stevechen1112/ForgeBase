@@ -12,7 +12,7 @@
 | I2 | Browser／RBAC 自動化 | 完成 | 通過 | 完成 |
 | I3 | 完整 Release CI | 完成 | 通過 | 完成 |
 | I4 | Restore／Rollback 自動化 | 完成 | 通過 | 完成 |
-| I5 | 日／法／俄公開網站介面包 | 未開始 | 未開始 | 待辦 |
+| I5 | 日／法／俄公開網站介面包 | 完成 | 通過 | 完成 |
 | I6 | AI／Knowledge Eval | 未開始 | 未開始 | 待辦 |
 | I7 | Fault Injection／Endurance | 未開始 | 未開始 | 待辦 |
 | I8 | Performance／Capacity／Soak | 未開始 | 未開始 | 待辦 |
@@ -155,3 +155,36 @@
 
 - I4 內部產品化 Gate 與 code review 通過，可進入 I5。
 - 本批證明 recovery tooling 與隔離演練可重跑，不宣稱 production RPO／RTO 已達標；正式數字仍須由排程頻率、off-site bucket、真實資料量及 production restore drill evidence 決定。資料庫正式回復維持人工核准，避免自動覆寫客戶資料。
+
+## I5：日／法／俄公開網站介面包
+
+### 已實作
+
+- 公開網站語系由英文／繁中擴充為英文、繁中、日文、法文與俄文；五語共用型別化語系目錄、route/content locale 對應、Next middleware、訊息載入與 tenant 文案覆寫。
+- 新增日／法／俄完整 message tree，涵蓋導覽、頁尾、首頁、產品、應用、認證、能力、比較、FAQ、聯絡、RFQ、法務、AI 顧問與 demo 安全告示；新增 tree parity、表單 value 穩定性、placeholder、品牌／標準與文字字集檢查。
+- 三套公開網站 header／footer 統一使用五語 Language Switcher；切換時保留目前 path、query 與 hash，並支援 base path。手機版仍使用既有選單，不造成水平溢位。
+- SEO canonical、Open Graph locale、hreflang 與 sitemap 擴充為五語；動態內容只為該語系實際已發布的資料建立 URL，不把英文 fallback 偽裝成該語系已發布內容。
+- Tenant Site Profile、Site Copy、平台建租戶與交付設定皆改用同一份五語受控選單；API 的 default locale、公開語系與 tenant copy overlay 契約同步擴充，且不跨語系偷取另一份 overlay。
+- 新增 production-build Chromium 公開語系 Lab，驗證 20 個 desktop 關鍵路由、10 個 mobile 路由、語系切換、HTML `lang`、選單狀態、標題、水平溢位與 console error；JSON、JUnit、server log 與日／法／俄手機 screenshot 由 Release Gate 保存。
+
+### Code review 發現與修正
+
+1. 第一輪只擴充 route messages，tenant `site_copy_json` 仍只認英文／繁中，會使平台客製文案在日／法／俄遺失：tenant copy service、Admin 編輯器與測試改為同一份五語目錄，且取消跨語系 fallback。
+2. 平台 Tenant 詳細頁雖可勾選五語，進階 Site Profile 的預設語系仍是自由文字：改為共用五語受控選單，避免 UI 可送出 API 不接受的值。
+3. 初版 sitemap 若內容 API fallback 英文，可能把 fallback 列列入日／法／俄 URL；缺分類的孤兒產品也可能產生假的 `uncategorised` 路徑，舊邏輯還把認證到期日誤當內容修改日：逐列檢查實際 content locale、略過無同語系分類的產品，且不再使用到期日作 `lastModified`。
+4. 初版語系切換只處理固定中英前綴，且部分 theme header 各自維護：抽成單一 locale-aware path helper 與 Language Switcher，涵蓋三個 theme、query、hash 與 base path。
+5. 翻譯初稿包含不自然的日文導覽與錯譯的 Incoterms：code review 逐項修正核心導覽、RFQ、法務、貿易條件與五語測試聲明，並以受保護 value／品牌／標準 validator 防止日後機械翻譯改壞契約值。
+6. 第一版瀏覽器 Lab 在 mobile viewport 操作 desktop-only 語系選單而 timeout：切換驗證固定在 desktop viewport，mobile 另驗選單按鈕與 overflow；重跑後 34/34 通過。
+
+### 驗證
+
+- 五語 message 契約：`5 complete message trees`，無缺 key、額外 key、未解析 placeholder 或表單 value 漂移。
+- Web TypeScript、ESLint、production build 通過；build 與 sitemap 實際查詢五種 locale。
+- Admin TypeScript、ESLint 通過；API 相關回歸 `9 passed, 5 skipped`，skip 僅為既有外部資料庫條件；blocking Ruff 規則通過。
+- 公開網站 Chromium Lab：`34 passed, 0 failed`；20 個 desktop 路由、10 個 mobile 路由、五語 sitemap、route-preserving switcher、console 與外部連線 gate 全數通過。
+- Codex 內建瀏覽器另行實看日文首頁與五語關鍵頁；五語 HTML `lang`／選取狀態正確，desktop 與 390px mobile 無水平溢位，console `0 error, 0 warning`。
+
+### Gate 結論
+
+- I5 內部產品化 Gate 與 code review 通過，可進入 I6。
+- 本批交付的是完整五語公開網站「介面包」與發布基礎設施；每個租戶的產品／公司內容仍需逐語人工審核發布。未發布內容會明確標示 fallback，不把來源語內容冒充已完成在地化，也不代表已由母語法務或產業譯者完成外部市場驗收。

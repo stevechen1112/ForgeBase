@@ -26,7 +26,9 @@
     "termsOfUse": "Terms of Use",
     "cookiePolicy": "Cookie Policy",
     "localeFallbackTitle": "English fallback content in use",
-    "localeFallbackDescription": "Some records on this page are not translated into Traditional Chinese yet, so the English source content is shown temporarily."
+    "localeFallbackDescription": "Some records are not available in the requested language yet, so the reviewed English source content is shown temporarily.",
+    "demoNoticeLabel": "Test site notice",
+    "demoNotice": "ForgeBase functional test site: the company, products, credentials, and performance figures are fictional and do not represent a real manufacturer or supply capability."
   },
   "header": {
     "rfq": "RFQ",
@@ -35,7 +37,11 @@
     "openMenu": "Open menu",
     "partnerTitle": "ForgeBase functional test site",
     "partnerDescription": "Used to test browsing, RFQ intake, and back-office workflows; it does not represent a manufacturer or supply capability.",
-    "langSwitch": "繁中",
+    "langSwitch": "Language",
+    "navigationLabel": "Primary navigation",
+    "testScenario": "Functional test",
+    "manufacturing": "Manufacturing",
+    "precisionDemo": "Precision / Demo",
     "nav": {
       "products": "Products",
       "applications": "Applications",
@@ -219,7 +225,7 @@
     "reasons": [
       { "label": "General contact form", "desc": "Validate fields, challenge checks, and intake records" },
       { "label": "RFQ form", "desc": "Validate case creation, routing, and back-office workflows" },
-      { "label": "Multilingual content", "desc": "Validate Traditional Chinese and English content presentation" },
+      { "label": "Multilingual content", "desc": "Validate the English, Traditional Chinese, Japanese, French, and Russian public interfaces" },
       { "label": "Visitor events", "desc": "Validate consent-aware website activity collection" }
     ],
     "officesTitle": "Test site notice",
@@ -389,7 +395,7 @@
     "stats": [
       { "value": "TEST", "label": "Fictional company scenario" },
       { "value": "30+", "label": "Core Demo SKUs" },
-      { "value": "2", "label": "Primary languages tested" },
+      { "value": "5", "label": "Public interface languages tested" },
       { "value": "RFQ", "label": "Intake workflow test" }
     ],
     "featured": {
@@ -600,7 +606,12 @@
     "issued": "Issued",
     "expires": "Expires",
     "download": "Download Certificate",
-    "askHow": "Ask how this applies to your program ->"
+    "askHow": "Ask how this applies to your program ->",
+    "validUntil": "Valid until",
+    "expired": "Expired",
+    "testEyebrow": "Test scenario · not a real certification",
+    "testNotice": "Test scenario: this page and the listed credential are not real verification documents.",
+    "testMetadataDescription": "ForgeBase functional-test credential page. This is not a real verification document."
   },
   "capabilities": {
     "metadata": {

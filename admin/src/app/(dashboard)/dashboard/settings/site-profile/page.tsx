@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
 
 type SiteProfile = {
   brand_name: string;
@@ -151,8 +152,7 @@ export default function SiteProfileSettingsPage() {
               value={profile.default_locale === "zh-tw" ? "zh-TW" : profile.default_locale}
               onChange={(event) => setProfile((current) => ({ ...current, default_locale: event.target.value }))}
             >
-              <option value="zh-TW">繁體中文（日常維護正本）</option>
-              <option value="en">English</option>
+              {PUBLIC_SITE_LOCALES.map((locale) => <option key={locale.value} value={locale.value}>{locale.label}</option>)}
             </select>
             <p className="text-xs text-muted-foreground">改了只影響之後的複製與起草，不會重跑全站已上架內容。</p>
           </div>

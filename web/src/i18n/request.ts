@@ -50,7 +50,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
 
   // 如果不在支援清單內，fallback 到預設語言
-  if (!locale || !routing.locales.includes(locale as "en" | "zh-TW")) {
+  if (!locale || !routing.locales.includes(locale as (typeof routing.locales)[number])) {
     locale = routing.defaultLocale;
   }
 

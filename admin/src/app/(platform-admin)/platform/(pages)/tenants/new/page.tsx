@@ -8,6 +8,7 @@ import { platformAdminApi, type SiteTemplate, type TenantProvision } from "@/lib
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
 
 const initialForm: TenantProvision = {
   name: "", slug: "", owner_email: "", owner_full_name: "", temporary_password: "",
@@ -26,6 +27,12 @@ export default function NewTenantPage() {
 
   useEffect(() => { if (token) platformAdminApi.siteTemplates(token).then(setTemplates).catch((e) => setError(e.message)); }, [token]);
   const field = (name: keyof TenantProvision, value: string) => setForm((current) => ({ ...current, [name]: value }));
+  const toggleLocale = (locale: string) => setForm((current) => ({
+    ...current,
+    locales: current.locales.includes(locale)
+      ? current.locales.filter((item) => item !== locale)
+      : [...current.locales, locale],
+  }));
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -62,8 +69,8 @@ export default function NewTenantPage() {
           <Field label="聯絡電話" value={form.contact_phone || ""} onChange={(v) => field("contact_phone", v)} />
           <Field label="完整網站網址" value={form.site_url} onChange={(v) => field("site_url", v)} required />
           <Field label="主要網域" value={form.primary_domain || ""} onChange={(v) => field("primary_domain", v)} placeholder="example.com" />
-        </div><label htmlFor="tenant-enable-zh" className="mt-4 flex items-center gap-2 text-sm"><input id="tenant-enable-zh" type="checkbox" checked={form.locales.includes("zh-TW")} onChange={(e) => setForm((current) => ({ ...current, locales: e.target.checked ? ["en", "zh-TW"] : ["en"] }))} />同時開通繁體中文</label></section>
-        <div className="flex justify-end"><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{saving ? "開通中" : "建立租戶與交付單"}</Button></div>
+        </div><fieldset className="mt-4"><legend className="text-sm font-medium">公開網站語系</legend><p className="mt-1 text-xs text-muted-foreground">只勾選已完成內容檢查、準備對外發布的語系。</p><div className="mt-2 flex flex-wrap gap-4">{PUBLIC_SITE_LOCALES.map((locale) => <label key={locale.value} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.locales.includes(locale.value)} onChange={() => toggleLocale(locale.value)} />{locale.label}</label>)}</div></fieldset></section>
+        <div className="flex justify-end"><Button type="submit" disabled={saving || form.locales.length === 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{saving ? "開通中" : "建立租戶與交付單"}</Button></div>
       </form>
     </div>
   );

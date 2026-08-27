@@ -22,10 +22,11 @@ import { getRuntimeSiteContext } from "@/lib/runtimeSiteConfig";
 import { IndustrialHomePage, PrecisionHomePage } from "@/components/themes";
 import { LocaleFallbackNotice, hasLocaleFallback } from "@/components/ui/LocaleFallbackNotice";
 import { localizedPath } from "@/lib/localizedPath";
+import { isPublicLocale } from "@/i18n/routing";
 import { buildLocalizedMetadata } from "@/lib/seo";
 
 function isSupportedLocale(locale: string): boolean {
-  return locale === "en" || locale === "zh-TW";
+  return isPublicLocale(locale);
 }
 
 const WHY_US_ICONS = [

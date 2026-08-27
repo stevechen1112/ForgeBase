@@ -26,6 +26,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.v1.deps import clear_tenant_host_cache, require_superuser
 from app.core.config import settings
 from app.core.datetime import utcnow_naive
+from app.core.locale import PUBLIC_SITE_LOCALES
 from app.core.security import get_password_hash
 from app.db.session import get_session
 from app.models.platform_audit_log import PlatformAuditLog
@@ -170,8 +171,8 @@ class TenantProvisionIn(BaseModel):
     contact_phone: Optional[str] = Field(default=None, max_length=50)
     site_url: str = Field(min_length=8, max_length=500)
     primary_domain: Optional[str] = Field(default=None, max_length=255)
-    default_locale: str = Field(default="zh-TW", pattern=r"^(en|zh-TW)$")
-    locales: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=2)
+    default_locale: str = Field(default="zh-TW", pattern=r"^(en|zh-TW|ja|fr|ru)$")
+    locales: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=5)
     theme_key: str = Field(default="cobalt", max_length=30)
     layout_key: str = Field(default="classic", max_length=30)
 
@@ -186,8 +187,8 @@ class TenantProvisionIn(BaseModel):
     @classmethod
     def validate_locales(cls, value: list[str]) -> list[str]:
         cleaned = list(dict.fromkeys(value))
-        if any(locale not in {"en", "zh-TW"} for locale in cleaned):
-            raise ValueError("Only en and zh-TW are supported")
+        if any(locale not in PUBLIC_SITE_LOCALES for locale in cleaned):
+            raise ValueError("Unsupported public-site locale")
         return cleaned
 
 
@@ -229,7 +230,7 @@ class SiteBuildUpdate(BaseModel):
 class SiteBuildCreate(BaseModel):
     template_key: str = "handtool-company"
     primary_domain: Optional[str] = Field(default=None, max_length=255)
-    locales: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=2)
+    locales: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=5)
     delivery_stage: str = "intake"
     target_launch_at: Optional[datetime] = None
 
@@ -244,7 +245,7 @@ class SiteBuildCreate(BaseModel):
     @classmethod
     def validate_locales(cls, value: list[str]) -> list[str]:
         cleaned = list(dict.fromkeys(value))
-        if any(locale not in {"en", "zh-TW"} for locale in cleaned):
+        if any(locale not in PUBLIC_SITE_LOCALES for locale in cleaned):
             raise ValueError("Unsupported locales")
         return cleaned
 
@@ -1716,7 +1717,7 @@ async def update_site_build(
         build.primary_domain = normalized_domain
         technical_settings_changed = technical_settings_changed or before["primary_domain"] != build.primary_domain
     if body.locales is not None:
-        if not body.locales or any(locale not in {"en", "zh-TW"} for locale in body.locales):
+        if not body.locales or any(locale not in PUBLIC_SITE_LOCALES for locale in body.locales):
             raise HTTPException(status_code=422, detail="Unsupported locales")
         build.locales_json = json.dumps(list(dict.fromkeys(body.locales)))
         technical_settings_changed = technical_settings_changed or before["locales"] != json.loads(build.locales_json)

@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.core.locale import normalize_locale
+from app.core.locale import PUBLIC_SITE_LOCALES, to_content_locale, to_route_locale
 
-LOCALE_KEYS = ("en", "zh-TW")
+LOCALE_KEYS = PUBLIC_SITE_LOCALES
 ASSET_KEYS = ("homeHero", "aboutHero", "productsHero", "qualityInspection", "customPackaging")
 HIDDEN_BLOCK_KEYS = (
     "productInspection",
@@ -72,8 +72,8 @@ def dump_json(value: dict[str, Any]) -> str:
 
 
 def locale_key(raw: str | None) -> str:
-    normalized = normalize_locale(raw, default="en")
-    return "zh-TW" if normalized.lower().startswith("zh") else "en"
+    normalized = to_route_locale(raw, default="en")
+    return normalized if normalized in LOCALE_KEYS else "en"
 
 
 def _has_path(tree: dict[str, Any], path: str) -> bool:
@@ -192,7 +192,8 @@ def _clean_news_items(value: Any) -> list[dict[str, str]] | None:
 def extract_locale_overlay(site_copy: dict[str, Any], locale: str) -> dict[str, Any]:
     locales = site_copy.get("locales")
     if isinstance(locales, dict):
-        overlay = locales.get(locale_key(locale)) or locales.get("zh-tw") or {}
+        route_locale = locale_key(locale)
+        overlay = locales.get(route_locale) or locales.get(to_content_locale(route_locale)) or {}
         return overlay if isinstance(overlay, dict) else {}
     return {}
 

@@ -6,6 +6,9 @@ const ROUTE_TO_CONTENT: Record<string, string> = {
   "zh-TW": "zh-tw",
   zh_tw: "zh-tw",
   zh_TW: "zh-tw",
+  ja: "ja",
+  fr: "fr",
+  ru: "ru",
 };
 
 export function toContentLocale(raw: string | null | undefined, fallback = "en"): string {
@@ -13,6 +16,12 @@ export function toContentLocale(raw: string | null | undefined, fallback = "en")
   if (ROUTE_TO_CONTENT[raw]) return ROUTE_TO_CONTENT[raw];
   const lowered = raw.trim().toLowerCase().replace(/_/g, "-");
   if (lowered === "zh-tw") return "zh-tw";
-  if (lowered === "en") return "en";
+  if (["en", "ja", "fr", "ru"].includes(lowered)) return lowered;
   return fallback;
+}
+
+export function toRouteLocale(raw: string | null | undefined, fallback = "en"): string {
+  const contentLocale = toContentLocale(raw, "");
+  if (contentLocale === "zh-tw") return "zh-TW";
+  return contentLocale || fallback;
 }

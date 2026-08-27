@@ -32,17 +32,24 @@ type CertificationDetailMessages = {
   expires: string;
   download: string;
   askHow: string;
+  expired: string;
+  testEyebrow: string;
+  testNotice: string;
+  testMetadataDescription: string;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const { siteConfig } = await getRuntimeSiteContext();
-  const certification = await getCertificationBySlug(slug, locale);
+  const [certification, copy] = await Promise.all([
+    getCertificationBySlug(slug, locale),
+    getMessageNamespace<CertificationDetailMessages>("certificationDetail"),
+  ]);
   if (!certification) return { title: "Not Found" };
   if (siteConfig.demoCompanyFolder) {
     return {
-      title: `${certification.cert_name} | Test scenario`,
-      description: "ForgeBase functional-test credential page. This is not a real verification document.",
+      title: `${certification.cert_name} | ${copy.testEyebrow}`,
+      description: copy.testMetadataDescription,
     };
   }
   return {
@@ -69,7 +76,7 @@ export default async function CertificationDetailPage({ params }: Props) {
     ? new Date(certification.expires_at).getTime() < Date.now()
     : false;
   const expiryDisplay = certification.expires_at
-    ? `${new Date(certification.expires_at).toLocaleDateString(resolvedLocale)}${isExpired ? (resolvedLocale === "zh-TW" ? "（已過期）" : " (Expired)") : ""}`
+    ? `${new Date(certification.expires_at).toLocaleDateString(resolvedLocale)}${isExpired ? ` (${copy.expired})` : ""}`
     : "—";
 
   if (isIndustrial) {
@@ -88,7 +95,7 @@ export default async function CertificationDetailPage({ params }: Props) {
               { label: copy.certifications, href: "/certifications" },
               { label: certification.cert_name },
             ]}
-            eyebrow="Test scenario · not a real certification"
+            eyebrow={copy.testEyebrow}
             title={certification.cert_name}
             description={certification.issuer ? `${copy.issuedBy} ${certification.issuer}` : undefined}
           />
@@ -105,7 +112,7 @@ export default async function CertificationDetailPage({ params }: Props) {
               </div>
               <div>
                 <p className="mb-4 border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-950">
-                  {resolvedLocale === "zh-TW" ? "測試情境：此頁與所列證書均非真實驗證文件。" : "Test scenario: this page and the listed credential are not real verification documents."}
+                  {copy.testNotice}
                 </p>
                 <div className="mb-6 border-l-4 border-primary bg-gray-50 p-5">
                   <h2 className="text-base font-black uppercase tracking-wide text-gray-900">{copy.whyTitle}</h2>
@@ -115,7 +122,7 @@ export default async function CertificationDetailPage({ params }: Props) {
                 <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.certificateNo}</dt><dd className="font-medium text-gray-700">{certification.cert_number || "—"}</dd></div>
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.locale}</dt><dd className="font-medium text-gray-700">{certification.locale}</dd></div>
-                  <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString() : "—"}</dd></div>
+                  <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString(resolvedLocale) : "—"}</dd></div>
                   <div className="border border-gray-300 bg-white px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className={`font-medium ${isExpired ? "text-red-600" : "text-gray-700"}`}>{expiryDisplay}</dd></div>
                 </dl>
                 <div className="mt-6 flex flex-wrap gap-4">
@@ -154,7 +161,7 @@ export default async function CertificationDetailPage({ params }: Props) {
           </nav>
           <h1 className="text-3xl font-bold text-gray-800">{certification.cert_name}</h1>
           <p className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
-            {resolvedLocale === "zh-TW" ? "測試情境：此頁與所列證書均非真實驗證文件。" : "Test scenario: this page and the listed credential are not real verification documents."}
+            {copy.testNotice}
           </p>
           {certification.issuer && <p className="mt-2 text-gray-500">{copy.issuedBy} {certification.issuer}</p>}
         </div>
@@ -185,7 +192,7 @@ export default async function CertificationDetailPage({ params }: Props) {
             <dl className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.certificateNo}</dt><dd className="font-medium text-gray-700">{certification.cert_number || "—"}</dd></div>
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.locale}</dt><dd className="font-medium text-gray-700">{certification.locale}</dd></div>
-              <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString() : "—"}</dd></div>
+              <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.issued}</dt><dd className="font-medium text-gray-700">{certification.issued_at ? new Date(certification.issued_at).toLocaleDateString(resolvedLocale) : "—"}</dd></div>
               <div className="rounded-lg bg-gray-50 px-4 py-3"><dt className="text-gray-500">{copy.expires}</dt><dd className={`font-medium ${isExpired ? "text-red-600" : "text-gray-700"}`}>{expiryDisplay}</dd></div>
             </dl>
             {certification.document_url && (

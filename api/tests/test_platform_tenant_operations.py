@@ -103,12 +103,13 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
             json={
                 "template_key": "handtool-company",
                 "primary_domain": f"{tenant_a.slug}.example.test",
-                "locales": ["en", "zh-TW"],
+                "locales": ["en", "zh-TW", "ja", "fr", "ru"],
             },
             headers=_auth(platform_token),
         )
         assert created.status_code == 201, created.text
         assert created.json()["status"] == "draft"
+        assert created.json()["locales"] == ["en", "zh-TW", "ja", "fr", "ru"]
 
         site_profile = await http_client.get(
             f"/api/v1/admin/tenants/{tenant_a.id}/site-profile",

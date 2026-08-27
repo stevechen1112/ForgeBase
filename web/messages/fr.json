@@ -1,0 +1,1045 @@
+{
+  "common": {
+    "home": "Accueil",
+    "brandName": "NorthForge Tools",
+    "faq": "FAQ",
+    "questions": "des questions",
+    "loading": "Chargement...",
+    "noResults": "Aucun résultat trouvé",
+    "backToList": "← Retour",
+    "soldBy": "Vendu par",
+    "modelNumber": "Numéro de modèle.",
+    "category": "Catégorie",
+    "all": "Tous",
+    "search": "Recherche",
+    "searchPlaceholder": "Rechercher des produits...",
+    "relatedProducts": "Produits connexes",
+    "relatedApplications": "Applications associées",
+    "specifications": "Caractéristiques",
+    "downloads": "Téléchargements",
+    "certifications": "Certifications",
+    "capabilities": "Capacités",
+    "comparisons": "Comparaisons",
+    "news": "Nouvelles",
+    "careers": "Carrières",
+    "privacyPolicy": "politique de confidentialité",
+    "termsOfUse": "Conditions d'utilisation",
+    "cookiePolicy": "Politique en matière de cookies",
+    "localeFallbackTitle": "Contenu de secours en anglais utilisé",
+    "localeFallbackDescription": "Certains contenus ne sont pas encore disponibles dans la langue demandée. La version anglaise validée est donc affichée temporairement.",
+    "demoNoticeLabel": "Avis relatif au site de test",
+    "demoNotice": "Site de test fonctionnel ForgeBase : l’entreprise, les produits, les justificatifs et les indicateurs présentés sont fictifs et ne représentent ni un fabricant réel ni une capacité de fourniture réelle."
+  },
+  "header": {
+    "rfq": "RFQ",
+    "submitRfq": "Envoyer une RFQ",
+    "contact": "Contactez-nous",
+    "openMenu": "Ouvrir le menu",
+    "partnerTitle": "ForgeBase site de tests fonctionnels",
+    "partnerDescription": "Utilisé pour tester la navigation, l'admission RFQ et les flux de travail du back-office ; il ne représente pas un fabricant ou une capacité d’approvisionnement.",
+    "langSwitch": "Langue",
+    "navigationLabel": "Navigation principale",
+    "testScenario": "Test fonctionnel",
+    "manufacturing": "Fabrication",
+    "precisionDemo": "Précision / Démonstration",
+    "nav": {
+      "products": "Produits",
+      "applications": "Applications",
+      "certifications": "Certifications",
+      "about": "À propos",
+      "contact": "Contact"
+    }
+  },
+  "footer": {
+    "description": "Il s'agit d'un scénario de test fonctionnel ForgeBase. Les détails de l’entreprise, du produit, des informations d’identification et du fonctionnement sont des données de démonstration fictives.",
+    "builtWithPrecision": "Conçu pour valider le site Web B2B, RFQ et les flux de travail du back-office",
+    "allRightsReserved": "Tous droits réservés.",
+    "certifications": [
+      "Données du scénario de test",
+      "Pas une vraie certification",
+      "Aucun certificat délivré",
+      "Aucune fourniture offerte"
+    ],
+    "footerCta": {
+      "title": "Vous voulez essayer le workflow RFQ ?",
+      "description": "Les informations soumises entrent uniquement dans le système de test ForgeBase ; NorthForge ne fournira pas de réponse commerciale.",
+      "requestQuote": "Soumettre un test RFQ"
+    },
+    "sections": {
+      "products": {
+        "heading": "Produits",
+        "catalog": "Catalogue de produits",
+        "applications": "Par candidature",
+        "rfq": "Demander un devis",
+        "custom": "Solutions personnalisées"
+      },
+      "company": {
+        "heading": "Entreprise",
+        "about": "À propos de nous",
+        "certifications": "Certifications",
+        "news": "Nouvelles et mises à jour",
+        "careers": "Carrières"
+      },
+      "support": {
+        "heading": "Soutien",
+        "faq": "FAQ",
+        "contact": "Contactez-nous",
+        "docs": "Documents techniques",
+        "dealers": "Localisateur de revendeur"
+      },
+      "legal": {
+        "heading": "Légal",
+        "privacy": "politique de confidentialité",
+        "terms": "Conditions d'utilisation",
+        "cookies": "Politique en matière de cookies"
+      }
+    }
+  },
+  "chat": {
+    "desktopButton": "Demandez au conseiller produit",
+    "mobileButton": "Demandez au conseiller",
+    "title": "Conseiller en produits IA",
+    "subtitle": "Réponses rapides aux spécifications, aux questions MOQ, à la certification et à OEM.",
+    "suggestedQuestions": "Questions suggérées",
+    "rfqReady": "RFQ Prêt",
+    "rfqReadyDescription": "Votre demande est suffisamment précise pour passer en devis. Continuez avec un RFQ pré-rempli.",
+    "prepareRfq": "Préparez RFQ",
+    "thinking": "Pensée...",
+    "placeholder": "Renseignez-vous sur le matériel, MOQ, OEM, ou la certification...",
+    "sendMessage": "Envoyer un message",
+    "sessionUnavailable": "Le conseiller est temporairement indisponible. Veuillez réessayer sous peu.",
+    "requestFailed": "Le conseiller n'a pas pu compléter cette demande. Veuillez réessayer ou continuer avec RFQ."
+  },
+  "forms": {
+    "howOptions": [
+      {
+        "value": "",
+        "label": "Comment nous avez-vous trouvé ? (facultatif)"
+      },
+      {
+        "value": "google",
+        "label": "Google Recherche"
+      },
+      {
+        "value": "linkedin",
+        "label": "LinkedIn"
+      },
+      {
+        "value": "trade_show",
+        "label": "Salon / Exposition"
+      },
+      {
+        "value": "referral",
+        "label": "Référence"
+      },
+      {
+        "value": "direct",
+        "label": "Direct / Je le savais déjà"
+      },
+      {
+        "value": "email",
+        "label": "Newsletter par courrier électronique"
+      },
+      {
+        "value": "other",
+        "label": "Autre"
+      }
+    ],
+    "contact": {
+      "successTitle": "Message envoyé !",
+      "successDescription": "Merci de nous avoir contactés. Nous vous répondrons dans un délai d'un jour ouvrable.",
+      "sending": "Envoi...",
+      "submit": "Envoyer une demande",
+      "submitFailed": "La soumission a échoué. Veuillez réessayer.",
+      "unexpectedError": "Une erreur inattendue s'est produite.",
+      "validationFailed": "Veuillez vérifier les champs du formulaire et soumettre à nouveau.",
+      "challengeRefreshed": "La vérification de la page a été actualisée. Veuillez soumettre une fois de plus.",
+      "labels": {
+        "fullName": "Nom",
+        "email": "E-mail",
+        "company": "Entreprise",
+        "country": "Pays",
+        "jobTitle": "Titre d'emploi",
+        "phone": "Téléphone / WhatsApp",
+        "message": "Message",
+        "howFound": "Comment nous avez-vous trouvé ?"
+      },
+      "placeholders": {
+        "fullName": "Votre nom complet",
+        "email": "your@email.com",
+        "company": "Nom du distributeur, de l'importateur, de la marque ou de l'usine",
+        "country": "par ex. États-Unis",
+        "jobTitle": "par ex. Responsable des achats",
+        "phone": "En option, pour un suivi plus rapide",
+        "message": "Dites-nous de quelle gamme d'outils, application, besoin d'emballage ou défi d'approvisionnement vous souhaitez discuter..."
+      }
+    },
+    "rfq": {
+      "howOptions": [
+        {
+          "value": "",
+          "label": "Comment nous avez-vous trouvé ?"
+        },
+        {
+          "value": "google",
+          "label": "Google Recherche"
+        },
+        {
+          "value": "linkedin",
+          "label": "LinkedIn"
+        },
+        {
+          "value": "trade_show",
+          "label": "Salon / Exposition"
+        },
+        {
+          "value": "referral",
+          "label": "Référence"
+        },
+        {
+          "value": "direct",
+          "label": "Direct / Je le savais déjà"
+        },
+        {
+          "value": "email",
+          "label": "Bulletin par courrier électronique"
+        },
+        {
+          "value": "other",
+          "label": "Autre"
+        }
+      ],
+      "timelineOptions": [
+        {
+          "value": "",
+          "label": "Délai de livraison"
+        },
+        {
+          "value": "immediate",
+          "label": "Immédiat"
+        },
+        {
+          "value": "1-3 months",
+          "label": "1-3 mois"
+        },
+        {
+          "value": "3-6 months",
+          "label": "3-6 mois"
+        },
+        {
+          "value": "evaluating",
+          "label": "Évaluation"
+        }
+      ],
+      "incotermOptions": [
+        {
+          "value": "",
+          "label": "Incoterm préféré (facultatif)"
+        },
+        {
+          "value": "EXW",
+          "label": "EXW — Ex Works"
+        },
+        {
+          "value": "FCA",
+          "label": "FCA — Franco transporteur"
+        },
+        {
+          "value": "FAS",
+          "label": "FAS — Franco le long du navire"
+        },
+        {
+          "value": "FOB",
+          "label": "FOB — Franco à bord"
+        },
+        {
+          "value": "CFR",
+          "label": "CFR — Coût et fret"
+        },
+        {
+          "value": "CIF",
+          "label": "CIF — Coût, assurance et fret"
+        },
+        {
+          "value": "CPT",
+          "label": "CPT — Port payé jusqu'à"
+        },
+        {
+          "value": "CIP",
+          "label": "CIP — Transport et assurance payés"
+        },
+        {
+          "value": "DAP",
+          "label": "DAP — Livré sur place"
+        },
+        {
+          "value": "DPU",
+          "label": "DPU — Livré sur place déchargé"
+        },
+        {
+          "value": "DDP",
+          "label": "DDP — Rendu droits acquittés"
+        }
+      ],
+      "tradeSectionTitle": "Conditions commerciales (facultatif – nous aide à coter plus rapidement)",
+      "successTitle": "RFQ Soumis avec succès",
+      "referenceNumber": "Votre numéro de référence :",
+      "successDescription": "Vos informations sont entrées dans le système de test ForgeBase. NorthForge est fictif et ne fournira pas de devis, d'approvisionnement ou de réponse commerciale.",
+      "submitting": "Soumission...",
+      "submit": "Envoyer la RFQ",
+      "footerNote": "En soumettant, vous acceptez l'avis de confidentialité de ce site de test. Les informations sont utilisées uniquement pour les tests fonctionnels et les contrôles de sécurité ForgeBase.",
+      "submitFailed": "La soumission a échoué. Veuillez réessayer.",
+      "unexpectedError": "Une erreur inattendue s'est produite.",
+      "labels": {
+        "fullName": "Nom et prénom",
+        "email": "Courriel professionnel",
+        "company": "Nom de l'entreprise",
+        "phone": "Téléphone / WhatsApp",
+        "country": "Pays/Région",
+        "jobTitle": "Titre d'emploi",
+        "quantity": "Quantité requise",
+        "specifications": "Spécifications techniques/exigences",
+        "timeline": "Calendrier d’achat cible",
+        "message": "Message supplémentaire",
+        "howFound": "Comment nous avez-vous trouvé ?",
+        "consent": "J'accepte la politique de confidentialité et consens au traitement des données de ma demande. *",
+        "incoterm": "Incoterm",
+        "annualVolume": "Volume annuel estimé",
+        "targetPrice": "Prix ​​cible",
+        "trialOrder": "Ceci est une commande d'essai/d'échantillon"
+      },
+      "placeholders": {
+        "quantity": "par ex. 500 pièces, 1200 ensembles, commande globale annuelle",
+        "specifications": "Partagez le type d'outil, le modèle cible, la plage de tailles, le couple requis, la classe d'isolation, la finition, l'emballage, le logo ou tout dessin de référence que vous possédez déjà.",
+        "message": "Parlez-nous de votre marché cible, de votre problème d’approvisionnement actuel, du calendrier des échantillons ou de toute attente en matière d’emballage et de documentation.",
+        "annualVolume": "par ex. 10 000 pièces/an",
+        "targetPrice": "par ex. 5-8 USD / pièce"
+      }
+    }
+  },
+  "contactPage": {
+    "metadata": {
+      "title": "NorthForge tester le formulaire de contact",
+      "description": "Il s'agit d'un formulaire ForgeBase et d'un test de flux de travail back-office, et non d'un canal de contact avec le fabricant."
+    },
+    "breadcrumb": "Contact",
+    "title": "NorthForge tester le formulaire de contact",
+    "description": "Cette page teste un formulaire de contact général, la saisie de données et la gestion du back-office. NorthForge est fictif et ne fournit pas de sources d'approvisionnement, de devis ou de réponses de fourniture.",
+    "reasonsTitle": "Workflows disponibles pour tester",
+    "reasons": [
+      {
+        "label": "Formulaire de contact général",
+        "desc": "Valider les champs, les vérifications de défi et les enregistrements d'admission"
+      },
+      {
+        "label": "Formulaire RFQ",
+        "desc": "Validez les workflows de création, de routage et de back-office des dossiers"
+      },
+      {
+        "label": "Contenu multilingue",
+        "desc": "Valider les interfaces publiques en anglais, chinois traditionnel, japonais, français et russe"
+      },
+      {
+        "label": "Événements visiteurs",
+        "desc": "Valider la collecte d'activités de sites Web prenant en compte le consentement"
+      }
+    ],
+    "officesTitle": "Avis du site de test",
+    "offices": [
+      {
+        "city": "ForgeBase tests fonctionnels",
+        "address": "NorthForge est un scénario de démonstration fictif sans bureau ni site de fabrication.",
+        "phone": "Pas de service téléphonique",
+        "hours": "Aucune réponse commerciale n'est fournie"
+      }
+    ],
+    "responseTitle": "Comment les informations sont utilisées",
+    "responseDescription": "Les informations sont utilisées uniquement à titre d'échantillon pour les tests externes ForgeBase d'admission, de routage et de sécurité. Ne soumettez pas de documents confidentiels, d’engagements d’achat ou de véritables demandes de fournitures.",
+    "formTitle": "Envoyer une demande de test",
+    "formDescription": "La soumission crée uniquement des données de test. Le personnel de NorthForge ne vous contactera pas et ne vous répondra pas.",
+    "quickLinksPrompt": "Vous cherchez quelque chose de spécifique ?",
+    "quickLinks": {
+      "products": "Parcourir les produits",
+      "certifications": "Afficher la page des informations d'identification du test",
+      "rfq": "Testez le workflow RFQ"
+    }
+  },
+  "rfqPage": {
+    "metadata": {
+      "title": "Testez le workflow RFQ",
+      "description": "Soumettez des informations pour valider les étapes d'admission et de flux de travail de vente ForgeBase. Vous ne recevrez ni devis, ni approvisionnement, ni réponse commerciale."
+    },
+    "title": "Testez le workflow RFQ",
+    "description": "Vous pouvez soumettre des données de test non confidentielles pour valider la soumission du formulaire, la création de cas, le routage et la gestion du back-office. NorthForge est fictif et ne cite ni ne fournit de produits.",
+    "builtForTitle": "Ce que valide ce test RFQ",
+    "builtForItems": [
+      "RFQ champs, validation et contrôles anti-abus",
+      "Flux de travail de création de cas, de statut et de propriétaire",
+      "Page source, historique des visiteurs et affichage du contexte d'intention",
+      "Expérience de contenu et de formulaire multilingues",
+      "Règles de sécurité en matière de conservation, de suppression et de tests externes",
+      "Cela n'inclut pas les achats, les devis, les échantillons ou la gestion des NDA."
+    ],
+    "helpTitle": "Avant de tester",
+    "helpDescription": "Ne soumettez pas de données personnelles sensibles, d’engagements d’achat réels, de dessins ou d’autres documents confidentiels. Cette page est destinée uniquement aux tests fonctionnels ForgeBase.",
+    "helpCta": "Consulter le formulaire de contact test →",
+    "responseWindowLabel": "Statut d'admission au test",
+    "responseWindowTime": "Aucune réponse commerciale",
+    "responseWindowHours": "Les informations n’entrent pas dans un véritable workflow de devis ou d’approvisionnement"
+  },
+  "faqPage": {
+    "metadata": {
+      "title": "Foire aux questions",
+      "description": "Trouvez des réponses aux questions courantes sur NorthForge MOQ, les délais de livraison, l'emballage OEM, l'assistance à la conformité, l'échantillonnage et la documentation technique."
+    },
+    "breadcrumb": "FAQ",
+    "title": "Foire aux questions",
+    "description": "Cette FAQ est conçue pour les acheteurs qui ont besoin de réponses plus claires sur le flux de commande, l'échantillonnage, l'emballage, la documentation et l'exécution des commandes répétées avant de nous contacter.",
+    "emptyState": "Aucune FAQ publiée pour l'instant.",
+    "ctaTitle": "Prêt pour la prochaine étape ?",
+    "ctaDescription": "Utilisez la FAQ pour les questions de politique générale, Contact pour les discussions commerciales exploratoires et RFQ lorsque vous avez la portée, la quantité, l'emballage ou les exigences du marché du produit prêts à être envoyés.",
+    "ctaButtons": {
+      "rfq": "Soumettre RFQ ->",
+      "contact": "Poser une question",
+      "applications": "Parcourir par application"
+    },
+    "allCategories": "<- Toutes les catégories de FAQ"
+  },
+  "docsPage": {
+    "metadata": {
+      "title": "Documents techniques",
+      "description": "Documentation technique, fiches techniques et documents de conformité pour les produits NorthForge."
+    },
+    "breadcrumb": "Documents techniques",
+    "title": "Documents techniques",
+    "description": "L'accès à la documentation est organisé autour des pages produits, des pages de conformité et des workflows RFQ afin que les acheteurs puissent demander les bons fichiers au bon moment.",
+    "docs": [
+      {
+        "title": "Fiches techniques des produits",
+        "desc": "Disponible à partir des pages de produits individuelles via le panneau de téléchargement."
+      },
+      {
+        "title": "Certificats de conformité",
+        "desc": "Disponible dans la section certifications, y compris les fichiers de support liés à ISO, RoHS et REACH."
+      },
+      {
+        "title": "OEMdocumentation",
+        "desc": "Partagé pendant RFQ et les étapes d'échantillonnage en fonction des exigences du projet."
+      }
+    ],
+    "noteTitle": "Note d'accès aux documents",
+    "noteDescription": "Certains fichiers ne sont partagés qu'après confirmation de la portée du produit ou de la pertinence de la conformité, en particulier pour les programmes OEM, l'étiquetage spécifique au client ou les demandes sensibles à l'audit."
+  },
+  "careersPage": {
+    "metadata": {
+      "title": "Carrières",
+      "description": "Opportunités de carrière et informations d'embauche pour NorthForge Tools."
+    },
+    "breadcrumb": "Carrières",
+    "title": "Carrières",
+    "description": "NorthForge recrute dans les domaines des ventes, de la qualité, de l'emballage, de la coordination de la fabrication et des opérations d'exportation pour prendre en charge de véritables programmes d'outils B2B.",
+    "rolesTitle": "Rôles ciblés actuels",
+    "openings": [
+      "Responsable des ventes internationales",
+      "Ingénieur Assurance Qualité",
+      "OEM Coordinateur de projet",
+      "Planificateur d'emballage et de logistique"
+    ],
+    "applyTitle": "Postuler par email",
+    "applyDescription": "Envoyez votre CV et votre intérêt pour le poste à careers@northforgetools.com. Incluez les compétences linguistiques, l’expérience en fabrication et l’exposition aux marchés d’exportation, le cas échéant."
+  },
+  "newsPage": {
+    "metadata": {
+      "title": "Nouvelles et mises à jour",
+      "description": "Dernières mises à jour de l'entreprise, étapes de fabrication et actualités sur les produits sur NorthForge Tools."
+    },
+    "breadcrumb": "Nouvelles et mises à jour",
+    "title": "Nouvelles et mises à jour",
+    "description": "Mises à jour récentes sur le développement de produits, le flux de travail de qualité, la capacité d'emballage et l'exécution des exportations pertinentes pour les programmes des acheteurs et des distributeurs.",
+    "items": [
+      {
+        "date": "2026-02-10",
+        "title": "NorthForge étend sa gamme d'outils isolés pour les acheteurs de services publics",
+        "summary": "Nouveaux ensembles isolés VDE-aligned ajoutés pour les entrepreneurs, les services publics et les programmes de marque privée."
+      },
+      {
+        "date": "2025-11-22",
+        "title": "Flux de travail d'étalonnage en usine mis à niveau pour la vérification du couple",
+        "summary": "Points de contrôle d'étalonnage supplémentaires introduits pour améliorer la répétabilité dans les programmes de clés dynamométriques à grand volume."
+      },
+      {
+        "date": "2025-08-15",
+        "title": "NorthForge ajoute un support d'emballage d'exportation mixte-SKU",
+        "summary": "Les flux de travail d'emballage consolidés prennent désormais en charge les assortiments des distributeurs et les programmes d'expédition multi-marchés."
+      }
+    ]
+  },
+  "legal": {
+    "privacy": {
+      "metadata": {
+        "title": "Avis de confidentialité du site de test",
+        "description": "Notice informatique du site de tests fonctionnels ForgeBase NorthForge."
+      },
+      "breadcrumb": "politique de confidentialité",
+      "title": "politique de confidentialité",
+      "paragraphs": [
+        "NorthForge est un scénario de test fonctionnel ForgeBase, et non un site Web de fabricant ou de fournisseur. Les informations du formulaire sont utilisées uniquement pour vérifier les flux de travail d'admission, de routage, de sécurité et de back-office.",
+        "Les informations soumises peuvent inclure votre nom, votre entreprise, votre adresse e-mail, votre numéro de téléphone, votre pays et le contenu du test. Ne soumettez pas de données sensibles, d’engagements d’achat, de dessins ou d’autres documents confidentiels. Nous ne vendons pas de données personnelles à des tiers.",
+        "Les enregistrements de test sont conservés selon les règles de conservation des tests externes ForgeBase et peuvent être supprimés par un administrateur système lorsque les tests l'exigent. Ce site de test ne fournit pas de contact commercial ni de réponses NorthForge."
+      ]
+    },
+    "terms": {
+      "metadata": {
+        "title": "Avis d'utilisation du site de test",
+        "description": "Utilisez l'avis pour le site de test fonctionnel ForgeBase NorthForge."
+      },
+      "breadcrumb": "Conditions d'utilisation",
+      "title": "Conditions d'utilisation",
+      "paragraphs": [
+        "Ce site Web présente le site Web ForgeBase B2B, l'admission RFQ et les flux de travail de back-office. NorthForge Tools, ses produits, ses informations d'identification et ses informations sur l'entreprise sont des données de test fictives.",
+        "Les spécifications, l'approvisionnement, les délais de livraison, les prix, les documents et les coordonnées indiqués ici ne doivent pas être utilisés à des fins d'achat, de vérification ou de décisions commerciales.",
+        "L'utilisation de ce site ne crée aucune fourniture, devis, emploi, agence ou autre relation commerciale. Les soumissions de tests ne reçoivent pas de réponse externe NorthForge."
+      ]
+    },
+    "cookies": {
+      "metadata": {
+        "title": "Politique en matière de cookies",
+        "description": "Politique d'utilisation des cookies pour le site NorthForge Tools."
+      },
+      "breadcrumb": "Politique en matière de cookies",
+      "title": "Politique en matière de cookies",
+      "paragraphs": [
+        "NorthForge Tools utilise des cookies essentiels du site Web et un stockage d'analyse limité pour prendre en charge la navigation, la soumission de formulaires et la mesure des performances de base.",
+        "Les cookies peuvent être utilisés pour mémoriser l’état de l’interface utilisateur, prendre en charge les flux de demandes et comprendre les tendances d’utilisation des pages. Ils ne sont pas utilisés pour vendre des données comportementales à des tiers.",
+        "Vous pouvez gérer les cookies via les paramètres de votre navigateur. La désactivation de certains cookies peut affecter les fonctionnalités du site telles que la persistance des formulaires ou les téléchargements bloqués."
+      ]
+    },
+    "dealers": {
+      "metadata": {
+        "title": "Testez la recherche de revendeurs",
+        "description": "Une page de test fonctionnel ForgeBase NorthForge, pas de véritables informations sur le distributeur."
+      },
+      "breadcrumb": "Localisateur de revendeur",
+      "title": "Testez la recherche de revendeurs",
+      "intro": "Cette page valide uniquement la présentation et la navigation des informations sur le distributeur. Il ne représente pas de véritables partenaires NorthForge ni une couverture d'approvisionnement.",
+      "regionTitle": "Régions de démonstration",
+      "regions": [
+        "Asie de l'Est et Asie du Sud-Est",
+        "Partenaires de distribution européens",
+        "Australie et Océanie",
+        "Programmes d'importateurs de marques privées en Amérique du Nord"
+      ],
+      "asideTitle": "Rappel du site de test",
+      "asideDescription": "Ce site ne propose pas de ventes régionales, de références de distributeurs ou de contacts d'approvisionnement. N’envoyez pas d’informations d’achat ou confidentielles."
+    }
+  },
+  "home": {
+    "metadata": {
+      "title": "NorthForge Tools | ForgeBase B2B test fonctionnel du site web",
+      "description": "Un scénario de test ForgeBase pour le site Web B2B, la navigation dans les produits, les formulaires et les flux de travail du back-office ; il ne représente pas un fabricant, une fourniture de produit ou une certification."
+    },
+    "hero": {
+      "eyebrow": "ForgeBase B2B scénario de test fonctionnel du site Web",
+      "titleLine1": "Testez la façon dont les visiteurs parcourent les produits",
+      "titleLine2": "et laissez un RFQ plus complet",
+      "description": "NorthForge Tools est un scénario de site Web fictif avec un outil manuel utilisé pour valider le contenu du produit, les pages multilingues, l'admission RFQ et les flux de travail du back-office. Il ne s’agit pas d’un véritable fabricant ou d’une véritable capacité d’approvisionnement.",
+      "primaryCta": "Testez le workflow RFQ",
+      "secondaryCta": "Parcourir les produits →"
+    },
+    "stats": [
+      {
+        "value": "TEST",
+        "label": "Scénario d'entreprise fictif"
+      },
+      {
+        "value": "30+",
+        "label": "Démo principale SKUs"
+      },
+      {
+        "value": "5",
+        "label": "Langues d’interface publique testées"
+      },
+      {
+        "value": "RFQ",
+        "label": "Test de flux de travail d'admission"
+      }
+    ],
+    "featured": {
+      "eyebrow": "En vedette",
+      "title": "Lignes d'outils sélectionnées",
+      "description": "Représentant SKUs pour les programmes de couple, d'isolation, d'atelier, de service automobile et de boîte à outils.",
+      "cardCta": "Afficher les détails →",
+      "sectionCta": "Parcourir tous les produits"
+    },
+    "catalogue": {
+      "eyebrow": "Notre catalogue",
+      "title": "Catégories de produits",
+      "description": "Parcourez les principales familles créées par NorthForge pour les programmes de distribution, les lancements de marques privées et les équipes d'achats industriels.",
+      "sectionCta": "Voir le catalogue complet"
+    },
+    "why": {
+      "eyebrow": "Pourquoi NorthForge",
+      "title": "Conçu pour les acheteurs internationaux",
+      "description": "Tout ce que nous faisons est conçu pour rendre votre approvisionnement plus simple, plus sûr et plus rentable.",
+      "items": [
+        {
+          "title": "Commandes répétées stables",
+          "desc": "NorthForge réduit la dérive entre les échantillons approuvés et la production récurrente grâce à un contrôle plus strict des dessins, un flux de travail de vérification et une discipline d'emballage."
+        },
+        {
+          "title": "OEM et exécution de marque privée",
+          "desc": "De l'application de logos aux cartes d'insertion en passant par les étiquettes de codes-barres et les assortiments prêts à être vendus au détail, NorthForge prend en charge les programmes qui nécessitent plus que des outils en vrac dans des cartons."
+        },
+        {
+          "title": "Discipline documentaire",
+          "desc": "Les acheteurs à l’exportation ont besoin de listes de colisage claires, de marques de carton, de codes-barres précis et de documents de conformité. NorthForge traite ces détails dans le cadre du programme produit."
+        },
+        {
+          "title": "Mixte-SKU Flexibilité du programme",
+          "desc": "L'équipe est structurée pour prendre en charge des programmes mixtes récurrents SKU, des versions de boîtes à outils et des assortiments prêts à être distribués sans complexité à l'échelle de l'entreprise."
+        },
+        {
+          "title": "Portée du produit axée sur les outils",
+          "desc": "Le catalogue est construit autour d'outils dynamométriques, d'outils isolés, d'outils d'atelier, d'outils d'entretien automobile et de programmes de kits d'outils personnalisés pour les canaux professionnels."
+        },
+        {
+          "title": "Prêt pour le support de conformité",
+          "desc": "NorthForge prend en charge le flux de travail ISO 9001, la discipline de processus des outils isolés, la documentation RoHS et REACH et la coordination des inspections tierces si nécessaire."
+        }
+      ]
+    },
+    "applications": {
+      "eyebrow": "Secteurs",
+      "title": "Applications en vedette",
+      "description": "NorthForge se concentre sur les programmes où la répétabilité, le contrôle de l'empaquetage et la documentation propre sont autant importants que l'outil lui-même.",
+      "sectionCta": "Voir tous les secteurs →"
+    },
+    "oem": {
+      "eyebrow": "OEM / ODM Flux",
+      "title": "Comment un programme d’outils avance",
+      "description": "Le processus est conçu pour que l'exécution des produits, de l'emballage et de l'expédition soit alignée depuis la première discussion jusqu'aux commandes récurrentes.",
+      "steps": [
+        {
+          "title": "Définir la portée du produit",
+          "desc": "Clarifiez le marché cible, le scénario d’utilisation et si un élément de catalogue standard ou un chemin de personnalisation a plus de sens commercial."
+        },
+        {
+          "title": "Examiner l'image de marque et l'emballage",
+          "desc": "Confirmez l'application du logo, insérez les cartes, les étuis moulés, les étiquettes de codes-barres et les exigences de marquage des cartons avant l'échantillonnage."
+        },
+        {
+          "title": "Approuver les échantillons et les spécifications clés",
+          "desc": "Verrouillez les détails critiques tels que la plage de couple, la classe d’isolation, les objectifs de dureté, la finition, le format d’emballage et les points d’inspection."
+        },
+        {
+          "title": "Passez à la production contrôlée",
+          "desc": "La production, l'emballage, la documentation d'exportation et la préparation à l'expédition sont gérés comme un seul flux de travail afin que le programme reste cohérent après approbation."
+        }
+      ]
+    },
+    "certifications": {
+      "eyebrow": "Assurance qualité",
+      "title": "Certifications et normes",
+      "description": "La prise en charge de la conformité est positionnée comme une partie active de l’exécution de l’exportation, et non comme une revendication de pied de page ajoutée une fois l’outillage terminé.",
+      "sectionCta": "Voir toutes les certifications →"
+    },
+    "finalCta": {
+      "title": "Créez un programme d'outils plus propre et plus fiable",
+      "description": "Que vous ayez besoin d'un approvisionnement récurrent par catalogue, d'un emballage de marque privée ou d'un assortiment de boîtes à outils personnalisées, NorthForge peut vous aider à structurer le programme d'approvisionnement adapté à votre marché.",
+      "primaryCta": "Demander un devis",
+      "secondaryCta": "Contacter le service commercial",
+      "note": "Les soumissions de tests ne reçoivent pas de devis, d'approvisionnement ou de réponse commerciale"
+    }
+  },
+  "products": {
+    "metadata": {
+      "title": "Produits",
+      "description": "Parcourez les catégories d'outils à main NorthForge pour les outils dynamométriques, les outils isolés, les outils d'atelier, les outils d'entretien automobile et les programmes de boîtes à outils."
+    },
+    "breadcrumb": "Produits",
+    "heroTitle": "Catalogue de produits",
+    "heroDescription": "Parcourez les familles d'outils NorthForge utilisées dans les catalogues de distributeurs, les fournitures de maintenance industrielle, les travaux électriques et les programmes de boîtes à outils de marque privée.",
+    "highlights": [
+      {
+        "label": "30+ cœurs SKUs",
+        "desc": "Gamme de catalogue démo"
+      },
+      {
+        "label": "ISO 9001",
+        "desc": "Contrôle qualité basé sur le flux de travail"
+      },
+      {
+        "label": "OEM / ODM",
+        "desc": "Prise en charge des marques privées et des emballages"
+      },
+      {
+        "label": "Kits mixtes-SKU",
+        "desc": "Assortiments et systèmes de tiroirs"
+      }
+    ],
+    "browseLabel": "Parcourir par catégorie",
+    "categoriesTitle": "Toutes les catégories de produits",
+    "contactCta": "Vous ne trouvez pas ce dont vous avez besoin ? ->",
+    "emptyState": "Aucune catégorie publiée n'est encore disponible dans cet environnement.",
+    "emptyCta": "Contactez le service commercial pour obtenir des conseils sur la catégorie ->",
+    "viewProducts": "Voir les produits",
+    "customTitle": "Besoin d'une spécification personnalisée ?",
+    "customDescription": "Notre équipe OEM prend en charge l'examen des spécifications, la stratégie de marque, les boîtiers moulés, les cartes d'insertion et les détails des emballages prêts à l'exportation.",
+    "customCta": "Demander un devis",
+    "talkCta": "Parlez à notre équipe"
+  },
+  "productCategory": {
+    "products": "Produits",
+    "buyerFocusTitle": "Focus acheteur",
+    "buyerFocusDescription": "Les pages de catégories sont destinées à aider les importateurs et les distributeurs à affiner la bonne famille d'outils avant de discuter du mix SKU, de l'emballage et de la documentation.",
+    "typicalQuestionsTitle": "Questions typiques",
+    "typicalQuestionsDescription": "Les acheteurs comparent généralement l’adéquation de l’utilisation, le marché cible, les attentes en matière de contrôle qualité et si l’approvisionnement standard ou la personnalisation est la meilleure voie.",
+    "fasterAnswerTitle": "Besoin d'une réponse plus rapide ?",
+    "fasterAnswerDescription": "Si vous connaissez déjà votre quantité, vos besoins en emballage ou votre marché cible, accédez directement à RFQ et incluez le contexte de la catégorie.",
+    "searchPlaceholder": "Rechercher dans",
+    "productCount": "produit",
+    "productCountPlural": "produits",
+    "matching": "correspondance",
+    "filteredNotice": "Cette vue filtrée n'est pas indexée par les moteurs de recherche.",
+    "viewAllProducts": "Voir tous les produits",
+    "noProducts": "Aucun produit dans cette catégorie pour l'instant.",
+    "noProductsFound": "Aucun produit trouvé pour",
+    "prev": "<- Précédent",
+    "next": "Suivant ->",
+    "page": "Page"
+  },
+  "productDetail": {
+    "products": "Produits",
+    "introBox": "Cette page est structurée pour les acheteurs qui ont besoin d'évaluer l'adéquation du modèle, la clarté des spécifications, les applications associées et les documents justificatifs avant de passer à la discussion sur le devis.",
+    "overview": "Présentation du produit",
+    "inspectionTitle": "Discipline d'inspection",
+    "inspectionDescription": "Pour les commandes répétées, les acheteurs se soucient généralement moins des affirmations de la brochure que de savoir si les points d'inspection, la méthode de mesure et l'alignement de l'échantillon sur la production sont contrôlés de la même manière à chaque fois.",
+    "packagingTitle": "OEM Prise en charge de l'empaquetage",
+    "packagingDescription": "Ce modèle peut être discuté avec des cartes à insérer, un marquage de logo, des étiquettes à code-barres, des étuis moulés et des exigences d'emballage prêt à la vente au détail si le programme va au-delà de l'approvisionnement standard.",
+    "readinessTitle": "Préparation à l'emballage",
+    "readinessDescription": "Utilisez les notes RFQ pour confirmer le contenu de l'étiquette, insérer des cartes, des étuis moulés, des marques de carton et d'autres détails d'emballage de marque privée liés à cet article.",
+    "specControlTitle": "Contrôle des spécifications",
+    "specControlDescription": "Les acheteurs doivent aligner les dimensions critiques, la plage de couple, le matériau, la finition et les points de contrôle d'inspection avant l'approbation de l'échantillon.",
+    "contextTitle": "Contexte du programme",
+    "contextDescription": "Ce SKU peut être discuté comme un élément autonome, une ligne de catalogue récurrente ou une partie d'une boîte à outils mixte SKU ou d'un programme de tiroirs.",
+    "specsTitle": "Caractéristiques",
+    "faqTitle": "Foire aux questions",
+    "appTitle": "Scénarios d'application",
+    "appLearnMore": "En savoir plus ->",
+    "certTitle": "Certifications et conformité",
+    "beforeRfqTitle": "Avant de soumettre votre RFQ",
+    "beforeRfqDescription": "La préparation de ces détails aide NorthForge à répondre avec des prix, une faisabilité et une portée de documentation précis dans la première réponse.",
+    "rfqItems": [
+      {
+        "label": "Quantité par SKU",
+        "detail": "Commande initiale et estimation du volume annuel"
+      },
+      {
+        "label": "OEM portée",
+        "detail": "Marquage du logo, format d'emballage, code-barres, fiches d'insertion"
+      },
+      {
+        "label": "Marché cible et conformité",
+        "detail": "Pays, canal et normes requises (ISO, RoHS, REACH, CE)"
+      },
+      {
+        "label": "Spécifications clés",
+        "detail": "Classe de couple, matériau, état de surface, variantes de taille"
+      },
+      {
+        "label": "Échantillon ou commande directe",
+        "detail": "Flux d'échantillon en premier ou ordre de production direct"
+      },
+      {
+        "label": "Type de programme",
+        "detail": "Programme de kit autonome SKU, ligne de catalogue récurrente ou mixte-SKU"
+      }
+    ],
+    "submitRfq": "Soumettez RFQ pour ce produit ->",
+    "askFirst": "Posez d'abord une question"
+  },
+  "applications": {
+    "metadata": {
+      "title": "Applications industrielles",
+      "description": "Explorez les pages d'application NorthForge pour le service automobile, la maintenance industrielle, les travaux électriques, les programmes d'outils de marque privée et les boîtes à outils de service sur le terrain."
+    },
+    "breadcrumb": "Applications",
+    "title": "Applications industrielles",
+    "description": "Ces pages sont conçues pour aider les acheteurs à relier les cas d'utilisation réels aux familles d'outils manuels, aux formats d'emballage et aux problèmes d'approvisionnement appropriés avant de passer à RFQ.",
+    "emptyState": "Aucune candidature publiée pour l'instant.",
+    "fallbackIndustry": "Autre"
+  },
+  "applicationDetail": {
+    "applications": "Applications",
+    "prompts": [
+      "À quel environnement d'exploitation l'outil doit-il survivre",
+      "Que l'acheteur ait besoin d'un approvisionnement standard ou d'un assortiment de marque privée",
+      "Quel emballage, étiquetage ou documentation doit accompagner la commande"
+    ],
+    "challenge": "Le défi",
+    "solution": "Notre solution",
+    "verificationTitle": "Vérification avant la mise à l'échelle",
+    "verificationDescription": "Les acheteurs évaluant cette application ont généralement besoin d'être assurés que les performances d'utilisation répétée, les points de contrôle d'inspection et les critères d'approbation des échantillons sont contrôlés avant le début de la production de masse.",
+    "packagingTitle": "Emballage et ajustement du programme",
+    "packagingDescription": "Si ce cas d'utilisation nécessite des cartons de marque privée, des étuis moulés, des étiquettes à code-barres ou une planification d'assortiment, NorthForge les traite comme faisant partie du programme d'approvisionnement plutôt qu'après coup.",
+    "sourcingTitle": "Ce que les acheteurs confirment généralement avant RFQ",
+    "sourcingDescription": "Avoir cette portée prête aide NorthForge à réagir plus rapidement et à adapter la bonne combinaison de produits à votre programme.",
+    "sourcingItems": [
+      {
+        "label": "Exigences de performances des outils",
+        "detail": "Plage de couple, classe d'isolation, dureté du matériau ou finition de préhension liée à l'environnement d'exploitation."
+      },
+      {
+        "label": "Fourniture standard ou OEM/private-label",
+        "detail": "Qu'il s'agisse de l'estampage de logo, d'un emballage personnalisé, d'étiquettes à code-barres ou de cartes à insérer font partie de ce programme."
+      },
+      {
+        "label": "Mixte-SKU ou portée de l'assortiment",
+        "detail": "S'il s'agit d'une boîte à outils, d'un kit de service ou d'un assortiment de marque, incluez le nombre cible SKU et la plage de tailles commune."
+      },
+      {
+        "label": "Marché cible et documents de conformité",
+        "detail": "Pays, type de canal et normes spécifiques requises : ISO, support CE, RoHS / REACH ou rapports de tests tiers."
+      }
+    ],
+    "quoteCta": "Demander un devis spécifique à une application",
+    "planCta": "Plan OEM / Portée de la marque privée",
+    "allApplications": "<- Toutes les applications",
+    "relatedProductsTitle": "Familles de produits recommandées",
+    "relatedProductsDescription": "Ces articles liés constituent des points de départ pertinents pour les acheteurs évaluant l'adéquation, la portée de l'échantillon ou la planification de l'assortiment pour cette application.",
+    "viewProduct": "Voir le produit ->",
+    "faqTitle": "Foire aux questions"
+  },
+  "certifications": {
+    "metadata": {
+      "title": "Certifications et qualité",
+      "description": "Examinez le support qualité et conformité de NorthForge, y compris le flux de travail ISO, RoHS et REACH, la gestion de la documentation et la coordination des inspections."
+    },
+    "breadcrumb": "Certifications",
+    "title": "Qualité et certifications",
+    "description": "Cette section est destinée aux acheteurs qui doivent vérifier comment NorthForge gère la qualité du flux de travail, la conformité des matériaux et la prise en charge des documents lors de l'exécution de l'exportation.",
+    "emptyState": "Aucune certification publiée pour l'instant.",
+    "overviewTitle": "Disponibilité des documents en un coup d'œil",
+    "overviewDescription": "Les acheteurs demandent fréquemment quels documents sont disponibles, quand et dans quelles conditions. Vous trouverez ci-dessous un résumé pratique.",
+    "items": [
+      {
+        "type": "Certifications du système",
+        "detail": "Les certifications au niveau de l'installation (par exemple ISO 9001) sont disponibles sous forme de copie PDF sur demande et peuvent être incluses dans la documentation de votre commande.",
+        "note": "Disponible pour tous les programmes"
+      },
+      {
+        "type": "Documents sur la conformité des produits",
+        "detail": "Les déclarations RoHS, les déclarations REACH, les rapports de tests de matériaux et les documents d'assistance CE sont générés par SKU ou par famille de produits en fonction du marché de destination.",
+        "note": "Généré par périmètre de commande"
+      },
+      {
+        "type": "Documents d'exportation",
+        "detail": "Les listes de colisage, les marques de carton, le contrôle de l'exactitude des codes-barres et la coordination des certificats d'origine font partie du programme d'exportation standard.",
+        "note": "Inclus dans l'export standard"
+      }
+    ],
+    "availabilityNote": "La portée du document varie selon la famille de produits et le marché de destination.",
+    "availabilityCta": "Contactez-nous pour confirmer la disponibilité de votre SKU et de votre marché.",
+    "commitmentTitle": "Notre engagement envers la qualité",
+    "commitmentDescription": "NorthForge traite la qualité et la conformité comme un support opérationnel pour les commandes réelles : contrôles entrants, vérification des performances sélectionnées, contrôle de l'emballage, exactitude des documents et coordination des inspections par des tiers lorsque les programmes l'exigent.",
+    "commitmentCta": "Demander de la documentation qualité"
+  },
+  "certificationDetail": {
+    "certifications": "Certifications",
+    "issuedBy": "Délivré par",
+    "noBadge": "Aucune image de badge",
+    "whyTitle": "Pourquoi les acheteurs demandent cela",
+    "whyDescription": "Les certifications et les dossiers de conformité aident les importateurs, les distributeurs et les marques privées à confirmer si un fournisseur peut répondre aux exigences du marché cible, aux audits des clients et aux documents d'expédition.",
+    "fallbackDescription": "Les détails de la certification seront bientôt mis à jour.",
+    "certificateNo": "Numéro de certificat",
+    "locale": "Lieu",
+    "issued": "Émis",
+    "expires": "Expire",
+    "download": "Télécharger le certificat",
+    "askHow": "Demandez comment cela s'applique à votre programme ->",
+    "validUntil": "Valide jusqu’au",
+    "expired": "Expiré",
+    "testEyebrow": "Scénario de test · certification fictive",
+    "testNotice": "Scénario de test : cette page et le justificatif présenté ne sont pas de véritables documents de vérification.",
+    "testMetadataDescription": "Page de justificatif du test fonctionnel ForgeBase. Il ne s’agit pas d’un véritable document de vérification."
+  },
+  "capabilities": {
+    "metadata": {
+      "title": "Capacités de fabrication",
+      "description": "Explorez les fonctionnalités de NorthForge, notamment le développement OEM, l'emballage sous marque privée, l'inspection du couple, l'assemblage de kits et la prise en charge de la documentation d'exportation."
+    },
+    "breadcrumb": "Capacités",
+    "title": "Capacités de fabrication",
+    "description": "Ces pages expliquent les atouts opérationnels du catalogue NorthForge afin que les acheteurs puissent juger si le fournisseur correspond à leur flux de travail commercial, et pas seulement à leur liste d'outils.",
+    "tags": [
+      "OEM développement",
+      "Emballage de marque privée",
+      "Vérification du couple",
+      "Assemblage des kits",
+      "Documents d'exportation"
+    ],
+    "ctaTitle": "Vous ne savez pas quelle fonctionnalité est la plus importante pour votre programme ?",
+    "ctaDescription": "Décrivez votre scénario d'approvisionnement, la création de votre boîte à outils, le lancement de votre marque privée ou l'approvisionnement récurrent de votre distributeur, et NorthForge pourra identifier les fonctionnalités les plus pertinentes pour votre flux d'exécution.",
+    "ctaPrimary": "Discutez de votre programme",
+    "ctaSecondary": "Soumettre RFQ",
+    "buyerBenefit": {
+      "engineering": "Réduit les cycles de révision entre les spécifications de l’acheteur et la production.",
+      "quality": "Offre aux acheteurs de commandes répétées une base d’inspection cohérente.",
+      "packaging": "Prend en charge les formats de livraison OEM, de marque privée et prêts pour la vente au détail.",
+      "assembly": "Permet des kits et des programmes de boîtes à outils mixtes SKU sans complexité d'entreprise.",
+      "export": "Assure l’exactitude des documents d’expédition pour les marchés cibles.",
+      "testing": "Fournit une vérification traçable du couple et des performances par lot."
+    }
+  },
+  "capabilityDetail": {
+    "capabilities": "Capacités",
+    "commercialBenefit": "Avantage commercial",
+    "commercialBenefitDescription": "Cette capacité est importante car elle affecte la cohérence avec laquelle un acheteur peut passer de l'échantillon approuvé à la production répétée, à la documentation d'expédition et à la livraison par le canal en aval.",
+    "snapshot": "Aperçu des capacités",
+    "focusArea": "Zone de mise au point",
+    "relevantAt": "Pertinent à",
+    "appliesTo": "S'applique à",
+    "general": "Général",
+    "relevantValue": "RFQ et exemple d'étape",
+    "appliesValue": "Tous les programmes d'exportation",
+    "discussionDescription": "Utilisez cette fonctionnalité comme point de discussion lorsque vous avez besoin d’une exécution d’emballage plus claire, d’une meilleure révision des spécifications ou d’un contrôle plus stable des commandes répétées.",
+    "discuss": "Discutez de cette capacité"
+  },
+  "comparisons": {
+    "metadata": {
+      "title": "Comparaisons de produits",
+      "description": "Guides de comparaison pour les acheteurs d'outils manuels évaluant les compromis en matière de matériaux, de formats et d'approvisionnement avant la sélection du produit ou RFQ."
+    },
+    "breadcrumb": "Comparaisons",
+    "title": "Comparaisons de produits",
+    "description": "Ces guides sont rédigés pour les acheteurs qui ont besoin d'une aide à la décision plus rapide concernant le format des outils, les matériaux, la conformité et l'aspect pratique de l'approvisionnement.",
+    "emptyState": "Aucune comparaison publiée pour l'instant.",
+    "readMore": "Lire la comparaison ->"
+  },
+  "comparisonDetail": {
+    "comparisons": "Comparaisons",
+    "dimension": "Dimension",
+    "optionA": "Option A",
+    "optionB": "Option B",
+    "detailsTitle": "Détails de la comparaison",
+    "takeawayTitle": "À retenir pour l'acheteur",
+    "recommendedTitle": "Recommandé pour",
+    "recommendedDescription": "Les acheteurs qui ont restreint les options de format et qui ont besoin d'une base plus claire pour les discussions avec les fournisseurs, l'alignement des spécifications ou la planification de programmes de marque privée. Utilisez cette comparaison comme point de référence lors du briefing de votre équipe ou de la création d'une portée RFQ.",
+    "rfqTitle": "Quand passer à RFQ",
+    "rfqDescription": "Une fois que vous avez une direction préférée à partir de cette comparaison, incluez les paramètres clés dans votre RFQ : quantité cible, OEM portée, marché préféré et norme de conformité requise. NorthForge peut présélectionner le bon SKU ou les spécifications matérielles à partir de là.",
+    "submitRfq": "Soumettez votre RFQ ->",
+    "askQuestion": "Posez une question d'approvisionnement",
+    "allComparisons": "<- Toutes les comparaisons"
+  },
+  "about": {
+    "metadata": {
+      "title": "À propos de NorthForge Tools | OEM Fabricant d'outils à main à Taiwan",
+      "description": "Découvrez NorthForge Tools, un fabricant d'outils manuels basé à Taiwan OEM/ODM axé sur le contrôle qualité, l'exécution prête à l'exportation et les programmes d'outils de marque privée."
+    },
+    "breadcrumb": "À propos",
+    "heroTitle": "À propos de NorthForge Tools",
+    "heroDescription": "Conçu pour les acheteurs qui ont besoin de plus qu'un fournisseur. NorthForge prend en charge les programmes d'outils manuels professionnels avec un contrôle de processus plus fort, une préparation aux marques privées et une communication fiable.",
+    "stats": [
+      {
+        "value": "20+",
+        "label": "Années dans l'outillage d'exportation"
+      },
+      {
+        "value": "5",
+        "label": "Familles de produits de base"
+      },
+      {
+        "value": "40+",
+        "label": "Pays desservis"
+      },
+      {
+        "value": "OEM / ODM",
+        "label": "Prêt pour les marques privées"
+      }
+    ],
+    "ourStory": "Notre histoire",
+    "storyTitle": "Conçu pour les acheteurs qui ont besoin de plus qu'une usine",
+    "talkTeam": "Parlez à notre équipe",
+    "whatWeMake": "Ce que nous faisons",
+    "productLinesTitle": "Lignes d'outils professionnels pour les programmes répétés",
+    "ourJourney": "Notre voyage",
+    "milestones": "Jalons",
+    "strengthsEyebrow": "Forces opérationnelles",
+    "strengthsTitle": "Comment NorthForge réduit les frictions des acheteurs",
+    "capabilitiesEyebrow": "Ce que nous faisons",
+    "capabilitiesTitle": "Capacités de fabrication",
+    "certificationsEyebrow": "Assurance qualité",
+    "certificationsTitle": "Certifications",
+    "ctaTitle": "Prêt à travailler ensemble ?",
+    "ctaDescription": "Si vous créez une gamme d'outils manuels professionnels, un assortiment d'outils de service ou un programme de boîte à outils de marque privée, NorthForge peut vous aider à structurer un flux de travail d'approvisionnement plus propre, de la sélection des produits à l'exécution de l'expédition.",
+    "contactTeam": "Contactez notre équipe",
+    "browseProducts": "Parcourir les produits",
+    "productLines": [
+      {
+        "title": "Outils dynamométriques",
+        "desc": "Clés dynamométriques, tournevis dynamométriques, multiplicateurs de couple et outils dynamométriques de type poutre pour un serrage de précision dans les programmes automobiles, industriels et utilitaires."
+      },
+      {
+        "title": "Outils isolés",
+        "desc": "Outils manuels VDE-rated pour les travaux électriques sous tension, la maintenance des services publics et les programmes d'installation nécessitant la conformité IEC 60900 et une identification de sécurité par code couleur."
+      },
+      {
+        "title": "Atelier et outils à main",
+        "desc": "Cliquets, douilles, clés, pinces, tournevis et clés hexagonales pour programmes d'atelier professionnels, kits de maintenance et assortiments de distributeurs mixtes-SKU."
+      },
+      {
+        "title": "Programmes d'outils personnalisés",
+        "desc": "Constructions de boîtes à outils de marque privée, assortiments de services de marque, configurations de tiroirs et programmes OEM nécessitant une documentation, un emballage et un alignement des spécifications."
+      }
+    ],
+    "timeline": [
+      {
+        "year": "2004",
+        "event": "Fondée en mettant l'accent sur OEM la fabrication de couples et d'outils manuels pour les marchés d'exportation"
+      },
+      {
+        "year": "2008",
+        "event": "Certification ISO 9001 obtenue ; gestion de la qualité formalisée pour les programmes de commandes répétées"
+      },
+      {
+        "year": "2012",
+        "event": "Lancement d'une gamme d'outils isolés avec des contrôles de processus VDE-aligned pour les canaux de services publics et électriques"
+      },
+      {
+        "year": "2016",
+        "event": "Capacité étendue d'emballage de marque privée, y compris des étuis moulés, un étiquetage de codes-barres et des cartes à insérer"
+      },
+      {
+        "year": "2019",
+        "event": "Introduction de la capacité d'assemblage de kits mixtes SKU et de programme d'ensemble de tiroirs pour les canaux de distribution"
+      },
+      {
+        "year": "2023",
+        "event": "Flux de travail de documentation d'exportation mis à niveau pour prendre en charge la conformité multi-marchés et la coordination des inspections par des tiers"
+      }
+    ],
+    "operationalStrengths": [
+      {
+        "title": "Cohérence des commandes répétées",
+        "desc": "Le contrôle des dessins, la vérification de l'emballage et l'alignement des points de contrôle qualité sont maintenus tout au long des cycles de production afin de réduire les écarts entre l'échantillon approuvé et le produit livré."
+      },
+      {
+        "title": "Marque privée et exécution OEM",
+        "desc": "Le marquage de logos, les cartes à insérer, les étuis moulés, les étiquettes à code-barres et les programmes de cartons prêts à la vente au détail sont pris en charge en tant que partie standard de la configuration du programme et non comme module complémentaire."
+      },
+      {
+        "title": "Assistance à la conformité et à la documentation",
+        "desc": "Le flux de travail ISO 9001, la documentation RoHS et REACH, les fichiers de support CE et la coordination des inspections par des tiers sont disponibles pour les acheteurs ayant des exigences du marché de destination."
+      },
+      {
+        "title": "Mixte-SKU et assemblage de kits",
+        "desc": "Les constructions de boîtes à outils, les configurations de jeux de tiroirs et les programmes d'assortiment de marque sont pris en charge sans complexité au niveau de l'entreprise, ce qui rend NorthForge pratique pour les canaux de distribution de taille moyenne."
+      }
+    ],
+    "storyParagraphs": [
+      "NorthForge a été fondée pour servir les acheteurs qui ont besoin de plus d'un fournisseur que de l'outil lui-même : une qualité de production constante, une documentation fiable et un flux de travail d'emballage qui ne s'effondre pas lorsque la commande évolue.",
+      "La plupart de nos premiers programmes étaient construits autour d’outils dynamométriques et d’outils manuels isolés destinés aux marchés d’exportation aux spécifications exigeantes. Au fil du temps, nous nous sommes étendus pour prendre en charge les programmes de marque privée, les constructions de boîtes à outils mixtes et les assortiments de tiroirs à mesure que les attentes des acheteurs augmentaient.",
+      "Nous avons construit nos processus opérationnels autour du principe que les éléments sur lesquels les acheteurs comptent réellement (prévisibilité des commandes répétées, listes de colisage précises et documents de conformité impeccables) ne sont pas des extras facultatifs. Ils sont le programme."
+    ]
+  }
+}

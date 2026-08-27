@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { siteConfig, type SiteConfig } from "@/lib/siteConfig";
+import { PUBLIC_LOCALES } from "@/i18n/routing";
+import { toRouteLocale } from "@/lib/contentLocale";
 
 export function getSiteUrl(config: SiteConfig = siteConfig) {
   return config.siteUrl;
@@ -8,7 +10,8 @@ export function getSiteUrl(config: SiteConfig = siteConfig) {
 export function buildCanonicalUrl(path: string, locale?: string, config: SiteConfig = siteConfig) {
   const siteUrl = getSiteUrl(config);
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const localePrefix = locale && locale !== "en" ? `/${locale}` : "";
+  const routeLocale = toRouteLocale(locale);
+  const localePrefix = routeLocale !== "en" ? `/${routeLocale}` : "";
   return `${siteUrl}${localePrefix}${cleanPath}`;
 }
 
@@ -20,7 +23,8 @@ export function buildLocaleAlternates(
   const canonical = buildCanonicalUrl(path, undefined, config);
   const languages: Record<string, string> = { "x-default": canonical, en: canonical };
   for (const variant of locales) {
-    languages[variant.locale] = buildCanonicalUrl(path, variant.locale, config);
+    const routeLocale = toRouteLocale(variant.locale);
+    languages[routeLocale] = buildCanonicalUrl(path, routeLocale, config);
   }
   return Object.keys(languages).length > 2 ? languages : undefined;
 }
@@ -79,8 +83,19 @@ export function buildTwitterMeta(opts: {
 
 export function buildCoreLocaleAlternates(path: string, config: SiteConfig = siteConfig): Record<string, string> {
   const english = buildCanonicalUrl(path, "en", config);
-  return { "x-default": english, en: english, "zh-TW": buildCanonicalUrl(path, "zh-TW", config) };
+  return Object.fromEntries([
+    ["x-default", english],
+    ...PUBLIC_LOCALES.map((locale) => [locale, buildCanonicalUrl(path, locale, config)]),
+  ]);
 }
+
+const OPEN_GRAPH_LOCALES: Record<string, string> = {
+  en: "en_US",
+  "zh-TW": "zh_TW",
+  ja: "ja_JP",
+  fr: "fr_FR",
+  ru: "ru_RU",
+};
 
 export function buildLocalizedMetadata(
   base: Metadata,
@@ -96,6 +111,6 @@ export function buildLocalizedMetadata(
     ...base,
     title,
     alternates: { ...base.alternates, canonical, languages: buildCoreLocaleAlternates(path, config) },
-    openGraph: { ...base.openGraph, url: canonical, locale: locale === "zh-TW" ? "zh_TW" : "en_US" },
+    openGraph: { ...base.openGraph, url: canonical, locale: OPEN_GRAPH_LOCALES[toRouteLocale(locale)] ?? "en_US" },
   };
 }

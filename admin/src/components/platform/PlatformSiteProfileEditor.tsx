@@ -6,6 +6,7 @@ import { platformAdminApi, type PlatformSiteProfile } from "@/lib/api/platform-a
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
 
 type Props = { token: string; tenantId: string };
 type LinkItem = { label: string; href: string };
@@ -166,7 +167,17 @@ export function PlatformSiteProfileEditor({ token, tenantId }: Props) {
           <summary className="cursor-pointer text-sm font-medium">網址、版型與資產路徑</summary>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="完整網站網址" value={profile.site_url} onChange={(value) => field("site_url", value)} />
-            <Field label="預設語系" value={profile.default_locale} onChange={(value) => field("default_locale", value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="platform-site-default-locale">預設語系</Label>
+              <select
+                id="platform-site-default-locale"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                value={profile.default_locale === "zh-tw" ? "zh-TW" : profile.default_locale}
+                onChange={(event) => field("default_locale", event.target.value)}
+              >
+                {PUBLIC_SITE_LOCALES.map((locale) => <option key={locale.value} value={locale.value}>{locale.label}</option>)}
+              </select>
+            </div>
             <Field label="Logo 圖片網址" value={profile.logo_url || ""} onChange={(value) => field("logo_url", value)} />
             <Field label="網站圖示網址" value={profile.favicon_url || ""} onChange={(value) => field("favicon_url", value)} />
             <Field label="主題代號" value={profile.theme_key} onChange={(value) => field("theme_key", value)} />

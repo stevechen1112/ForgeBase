@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { PlatformSiteProfileEditor } from "@/components/platform/PlatformSiteProfileEditor";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
 const DELIVERY_STAGE_OPTIONS: { value: DeliveryStage; label: string; description: string }[] = [
   { value: "intake", label: "需求確認", description: "正在確認客戶、範本與交付範圍" },
   { value: "content", label: "內容準備", description: "蒐集與整理品牌、產品與素材" },
@@ -419,7 +420,7 @@ export default function TenantDetailPage() {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
           <span className="text-xs font-medium">公開語系</span>
-          {["en", "zh-TW"].map((locale) => <label key={locale} className="flex items-center gap-2"><input type="checkbox" checked={editLocales.includes(locale)} onChange={() => toggleLocale(locale)} />{locale}</label>)}
+          {PUBLIC_SITE_LOCALES.map((locale) => <label key={locale.value} className="flex items-center gap-2"><input type="checkbox" checked={editLocales.includes(locale.value)} onChange={() => toggleLocale(locale.value)} />{locale.label}</label>)}
           <Button size="sm" variant="outline" disabled={saving || !siteSettingsChanged || editLocales.length === 0} onClick={saveSiteSettings}>{siteBuild ? "儲存交付設定" : "建立交付單"}</Button>
           {selectedTemplate?.demo_url && <a className="inline-flex items-center gap-1 text-sm text-primary hover:underline" href={selectedTemplate.demo_url} target="_blank" rel="noreferrer">查看範本 <ExternalLink className="h-3.5 w-3.5" /></a>}
         </div>

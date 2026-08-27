@@ -7,6 +7,7 @@
     "build": "node ../scripts/run-next-build.mjs .",
     "postbuild": "node ../scripts/prepare-next-standalone.mjs .",
     "start": "next start --port 3000",
+    "locale:check": "node scripts/check-locale-packs.mjs",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },

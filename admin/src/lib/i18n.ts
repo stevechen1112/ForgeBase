@@ -12,6 +12,14 @@ export const SUPPORTED_LOCALES = [
   { value: "ru", label: "Русский" },
 ] as const;
 
+export const PUBLIC_SITE_LOCALES = [
+  { value: "en", label: "English" },
+  { value: "zh-TW", label: "繁體中文" },
+  { value: "ja", label: "日本語" },
+  { value: "fr", label: "Français" },
+  { value: "ru", label: "Русский" },
+] as const;
+
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]["value"];
 
 /** Normalize UI / route tags to CMS canonical locale (zh-TW → zh-tw). */

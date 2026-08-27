@@ -12,10 +12,8 @@ export function rewriteLegacyPublicPath(href: string): string {
     return href;
   }
   const [pathWithLocale, query] = href.split("?");
-  let path = pathWithLocale;
-  if (path === "/zh-TW" || path.startsWith("/zh-TW/")) {
-    path = path === "/zh-TW" ? "/" : path.slice("/zh-TW".length);
-  }
+  const path = stripLocalePrefix(pathWithLocale);
   const canonical = LEGACY_PUBLIC_PATHS[path] ?? path;
   return query ? `${canonical}?${query}` : canonical;
 }
+import { stripLocalePrefix } from "@/lib/localizedPath";

@@ -42,7 +42,7 @@ export default async function RootLayout({
         {/* GA4 — only injected when NEXT_PUBLIC_GA_MEASUREMENT_ID is set */}
         <NextIntlClientProvider locale={locale} messages={messages}>
           {isPrecision ? <PrecisionHeader siteConfig={runtimeSiteConfig} /> : isIndustrial ? <IndustrialHeader siteConfig={runtimeSiteConfig} /> : <Header siteConfig={runtimeSiteConfig} />}
-          <DemoEnvironmentNotice locale={locale} />
+          <DemoEnvironmentNotice />
           <main className="flex-1">{children}</main>
           {isPrecision ? <PrecisionFooter siteConfig={runtimeSiteConfig} /> : isIndustrial ? <IndustrialFooter siteConfig={runtimeSiteConfig} /> : <Footer siteConfig={runtimeSiteConfig} />}
           <LayoutChatWidget />

@@ -26,7 +26,9 @@
     "termsOfUse": "使用條款",
     "cookiePolicy": "Cookie 政策",
     "localeFallbackTitle": "此頁部分內容暫以英文顯示",
-    "localeFallbackDescription": "這些資料目前尚未建立繁體中文版本，因此系統暫時顯示英文原文。"
+    "localeFallbackDescription": "部分資料尚未提供目前所選語言的版本，因此暫時顯示已確認的英文原文。",
+    "demoNoticeLabel": "測試網站說明",
+    "demoNotice": "ForgeBase 功能測試網站：公司、產品、證書與成效數字皆為測試情境，不代表真實製造商或供貨能力。"
   },
   "header": {
     "rfq": "詢價",
@@ -35,7 +37,11 @@
     "openMenu": "開啟選單",
     "partnerTitle": "ForgeBase 功能測試網站",
     "partnerDescription": "用於測試網站瀏覽、詢價收件與後台流程；不代表實際供貨或製造能力。",
-    "langSwitch": "EN",
+    "langSwitch": "語言",
+    "navigationLabel": "主要導覽",
+    "testScenario": "功能測試",
+    "manufacturing": "專業製造",
+    "precisionDemo": "精密製造／展示",
     "nav": {
       "products": "產品",
       "applications": "應用",
@@ -219,7 +225,7 @@
     "reasons": [
       { "label": "一般聯絡表單", "desc": "驗證欄位、驗證碼與收件紀錄" },
       { "label": "RFQ 詢價表單", "desc": "驗證案件建立、分流與後台工作流程" },
-      { "label": "多語內容呈現", "desc": "驗證繁中與英文的內容及介面切換" },
+      { "label": "多語內容呈現", "desc": "驗證英文、繁中、日文、法文與俄文的公開網站介面" },
       { "label": "訪客事件紀錄", "desc": "驗證可同意的網站行為資料蒐集" }
     ],
     "officesTitle": "測試網站說明",
@@ -389,7 +395,7 @@
     "stats": [
       { "value": "TEST", "label": "虛構公司情境" },
       { "value": "30+", "label": "核心示範 SKU" },
-      { "value": "2", "label": "主要語系測試" },
+      { "value": "5", "label": "已測試公開介面語系" },
       { "value": "RFQ", "label": "收件流程測試" }
     ],
     "featured": {
@@ -600,7 +606,12 @@
     "issued": "核發日期",
     "expires": "到期日期",
     "download": "下載證書",
-    "askHow": "詢問此認證如何套用到你的專案 ->"
+    "askHow": "詢問此認證如何套用到你的專案 ->",
+    "validUntil": "有效至",
+    "expired": "已過期",
+    "testEyebrow": "測試情境・非真實認證",
+    "testNotice": "測試情境：此頁與所列證書均非真實驗證文件。",
+    "testMetadataDescription": "ForgeBase 功能測試認證頁；這不是真實驗證文件。"
   },
   "capabilities": {
     "metadata": {

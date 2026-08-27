@@ -6,9 +6,14 @@ export type ChatUiCopy = {
   thinking: string;
   placeholder: string;
   sendMessage: string;
+  blockedRequest: string;
+  limitedAnswer: string;
+  claimConfirmation: string;
 };
 
-const copies: Record<string, ChatUiCopy> = {
+type ChatUiBaseCopy = Omit<ChatUiCopy, "blockedRequest" | "limitedAnswer" | "claimConfirmation">;
+
+const copies: Record<string, ChatUiBaseCopy> = {
   en: { rfqReady: "RFQ Ready", rfqReadyDescription: "Your request is specific enough to continue with a prefilled RFQ.", prepareRfq: "Prepare RFQ", relatedSource: "Related source", thinking: "Thinking...", placeholder: "Ask about material, MOQ, OEM, or certification...", sendMessage: "Send message" },
   zh: { rfqReady: "可進入詢價", rfqReadyDescription: "您的需求已足夠明確，可以帶入預填資料繼續詢價。", prepareRfq: "準備 RFQ", relatedSource: "相關資料", thinking: "思考中...", placeholder: "可詢問材質、MOQ、OEM、認證或包裝需求...", sendMessage: "送出訊息" },
   ja: { rfqReady: "見積依頼の準備完了", rfqReadyDescription: "ご要望が明確になりました。入力済みの内容で見積依頼に進めます。", prepareRfq: "RFQを作成", relatedSource: "関連資料", thinking: "回答を作成中...", placeholder: "材質、MOQ、OEM、認証についてご質問ください...", sendMessage: "メッセージを送信" },
@@ -40,13 +45,45 @@ const copies: Record<string, ChatUiCopy> = {
   ro: { rfqReady: "Cererea de ofertă este pregătită", rfqReadyDescription: "Solicitarea este suficient de clară pentru a continua cu un formular precompletat.", prepareRfq: "Pregătește cererea", relatedSource: "Sursă asociată", thinking: "Se pregătește răspunsul...", placeholder: "Întrebați despre material, MOQ, OEM sau certificare...", sendMessage: "Trimite mesajul" },
 };
 
+const safetyCopies: Record<string, Pick<ChatUiCopy, "blockedRequest" | "limitedAnswer" | "claimConfirmation">> = {
+  en: {
+    blockedRequest: "This request was blocked by the safety rules.",
+    limitedAnswer: "Published site data is insufficient, so this reply avoids unverified specifications or commitments.",
+    claimConfirmation: "Pricing, lead time, and compliance terms still require sales confirmation against formal documents.",
+  },
+  zh: {
+    blockedRequest: "這則要求已被安全規則阻擋。",
+    limitedAnswer: "網站資料不足，這則回覆不包含未經證實的規格或承諾。",
+    claimConfirmation: "價格、交期或合規條件仍須由業務依正式文件確認。",
+  },
+  ja: {
+    blockedRequest: "このリクエストは安全規則によりブロックされました。",
+    limitedAnswer: "公開済みのサイト情報が不足しているため、未確認の仕様や約束は回答に含めていません。",
+    claimConfirmation: "価格、納期、適合条件は、正式文書に基づく営業担当者の確認が必要です。",
+  },
+  fr: {
+    blockedRequest: "Cette demande a été bloquée par les règles de sécurité.",
+    limitedAnswer: "Les données publiées sont insuffisantes ; cette réponse évite donc toute spécification ou promesse non vérifiée.",
+    claimConfirmation: "Les prix, délais et conditions de conformité doivent encore être confirmés par l’équipe commerciale à partir des documents officiels.",
+  },
+  ru: {
+    blockedRequest: "Этот запрос заблокирован правилами безопасности.",
+    limitedAnswer: "Опубликованных данных недостаточно, поэтому ответ не содержит непроверенных характеристик или обещаний.",
+    claimConfirmation: "Цена, сроки и условия соответствия должны быть подтверждены отделом продаж по официальным документам.",
+  },
+};
+
 export function chatLanguage(locale?: string): string {
   const normalized = (locale || "en").trim().toLowerCase().replace("_", "-");
   return normalized.startsWith("zh") ? "zh" : normalized.split("-")[0];
 }
 
 export function getChatUiCopy(locale?: string): ChatUiCopy {
-  return copies[chatLanguage(locale)] || copies.en;
+  const language = chatLanguage(locale);
+  return {
+    ...(copies[language] || copies.en),
+    ...(safetyCopies[language] || safetyCopies.en),
+  };
 }
 
 export function chatDirection(locale?: string): "ltr" | "rtl" {

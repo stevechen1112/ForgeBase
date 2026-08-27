@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { getChatUiCopy } from "@/components/chat/chat-ui-copy";
 import { cn } from "@/lib/utils";
+import { localizedPath } from "@/lib/localizedPath";
 
 export interface ChatMessageSource {
   type: string;
@@ -28,12 +29,10 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isAssistant = message.role === "assistant";
   const responseCopy = getChatUiCopy(message.locale);
-  const isZh = typeof document !== "undefined" && document.documentElement.lang.toLowerCase().startsWith("zh");
+  const documentLocale = typeof document !== "undefined" ? document.documentElement.lang : "en";
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const sourceHref = (url: string) => {
-    const localizedUrl = isZh && url.startsWith("/") && url !== "/zh-TW" && !url.startsWith("/zh-TW/")
-      ? `/zh-TW${url}`
-      : url;
+    const localizedUrl = url.startsWith("/") ? localizedPath(documentLocale, url) : url;
     return localizedUrl.startsWith("/") && basePath && !localizedUrl.startsWith(`${basePath}/`)
       ? `${basePath}${localizedUrl}`
       : localizedUrl;
@@ -54,13 +53,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isAssistant && message.groundingStatus && message.groundingStatus !== "grounded" && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
             {message.groundingStatus === "blocked"
-              ? (isZh ? "這則要求已被安全規則阻擋。" : "This request was blocked by the safety rules.")
-              : (isZh ? "網站資料不足，這則回覆不包含未經證實的規格或承諾。" : "Published site data is insufficient, so this reply avoids unverified specifications or commitments.")}
+              ? responseCopy.blockedRequest
+              : responseCopy.limitedAnswer}
           </p>
         )}
         {isAssistant && message.groundingStatus === "grounded" && message.claimWarnings && message.claimWarnings.length > 0 && (
           <p className="mt-3 text-xs leading-5 text-amber-700">
-            {isZh ? "價格、交期或合規條件仍須由業務依正式文件確認。" : "Pricing, lead time, and compliance terms still require sales confirmation against formal documents."}
+            {responseCopy.claimConfirmation}
           </p>
         )}
         {isAssistant && message.sources && message.sources.length > 0 && (

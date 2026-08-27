@@ -113,7 +113,7 @@ export function IndustrialFooter({ siteConfig }: { siteConfig: SiteConfig }) {
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed">{copy.description}</p>
             {isTestScenario ? (
-              <p className="mt-5 text-sm text-amber-300">{locale === "zh-TW" ? "測試情境，不提供 NorthForge 業務聯繫或供貨服務。" : "Test scenario; NorthForge does not provide sales contact or supply service."}</p>
+              <p className="mt-5 text-sm text-amber-300">{copy.description}</p>
             ) : (
               <div className="mt-5 space-y-2 text-sm">
                 <p className="text-white">{siteConfig.contactEmail}</p>

@@ -1,6 +1,6 @@
 import createMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
-import { routing } from "./i18n/routing";
+import { PREFIXED_LOCALES, routing } from "./i18n/routing";
 import { withTenantHost } from "./lib/tenant";
 
 const intlMiddleware = createMiddleware(routing);
@@ -61,12 +61,14 @@ export async function proxy(request: NextRequest) {
   const redirectResponse = await resolveRedirect(request);
   if (redirectResponse) return redirectResponse;
 
-  // Only run next-intl middleware for non-default locale (zh-TW) paths.
+  // Only run next-intl middleware for non-default locale paths.
   // Default locale (English) pages are served directly from non-prefixed
   // routes (e.g. /products → products/page.tsx) without rewriting to
   // /en/products, which avoids the 307 redirect loop caused by the
   // conflict between products/page.tsx and [locale]/products/page.tsx.
-  if (pathname.startsWith("/zh-TW")) {
+  if (PREFIXED_LOCALES.some(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
+  )) {
     return intlMiddleware(request);
   }
 

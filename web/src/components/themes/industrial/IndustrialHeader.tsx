@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import NextLink from "next/link";
 import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Menu, X, Globe, ArrowRight } from "lucide-react";
@@ -8,6 +7,7 @@ import { useMessageNamespace } from "@/lib/messages";
 import { resolveLocalizedText, type SiteAction, type SiteConfig, type SiteNavItem } from "@/lib/siteConfig";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 type HeaderMessages = {
   rfq: string;
@@ -17,6 +17,8 @@ type HeaderMessages = {
   partnerTitle: string;
   partnerDescription: string;
   langSwitch: string;
+  testScenario: string;
+  manufacturing: string;
   nav: {
     products: string;
     applications: string;
@@ -52,10 +54,6 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
   const copy = useMessageNamespace<HeaderMessages>("header");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const localizedPath = pathname === "/" ? "" : pathname;
-  const localeSwitchHref = locale === "en"
-    ? `/zh-TW${localizedPath}`
-    : (localizedPath || "/");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -76,24 +74,11 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
       {/* ─── Top utility bar ─── */}
       <div className="bg-gray-950 text-gray-400 text-xs">
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <span>{isTestScenario ? (locale === "zh-TW" ? "ForgeBase 功能測試網站・不提供業務聯繫" : "ForgeBase functional test site · no sales contact") : `${siteConfig.contactEmail} | ${siteConfig.contactPhone}`}</span>
-          <NextLink
-            href={localeSwitchHref}
-            hrefLang={locale === "en" ? "zh-TW" : "en"}
-            className="flex items-center gap-1 hover:text-white transition-colors"
-            onClick={(event) => {
-              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                return;
-              }
-              // Keep the root-level next-intl provider in sync when changing locale.
-              // NextLink supplies basePath; a full navigation rebuilds the root layout.
-              event.preventDefault();
-              window.location.assign(event.currentTarget.href);
-            }}
-          >
-            <Globe className="h-3 w-3" />
-            {copy.langSwitch}
-          </NextLink>
+          <span>{isTestScenario ? copy.partnerTitle : `${siteConfig.contactEmail} | ${siteConfig.contactPhone}`}</span>
+          <span className="flex items-center gap-1 hover:text-white transition-colors">
+            <Globe className="h-3 w-3" aria-hidden="true" />
+            <LanguageSwitcher />
+          </span>
         </div>
       </div>
 
@@ -115,7 +100,7 @@ export function IndustrialHeader({ siteConfig }: { siteConfig: SiteConfig }) {
                 {siteName}
               </span>
               <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-gray-500">
-                {isTestScenario ? (locale === "zh-TW" ? "功能測試情境" : "Functional test") : (locale === "zh-TW" ? "專業製造" : "Manufacturing")}
+                {isTestScenario ? copy.testScenario : copy.manufacturing}
               </span>
             </div>
           </Link>

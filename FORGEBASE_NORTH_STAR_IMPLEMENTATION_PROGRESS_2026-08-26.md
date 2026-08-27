@@ -3,6 +3,8 @@
 > 日期：2026-08-26（持續更新至 2026-08-27）\
 > 依據：`FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md`\
 > 原則：每一批必須完成實作、測試、code review、修正審查發現，才可進入下一批。功能完成不代表營運 Gate 自動通過；需要真實樣本或外部合約的 Gate 維持關閉。
+>
+> 多語現況註記：本文批次 11 所載「公開介面僅英／繁中」是 2026-08-26 當時狀態；2026-08-27 內部產品化 I5 已完成日／法／俄介面包，現況以 `FORGEBASE_INTERNAL_PRODUCTIZATION_14_BATCH_PROGRESS_2026-08-27.md` 為準。
 
 ## 批次狀態
 

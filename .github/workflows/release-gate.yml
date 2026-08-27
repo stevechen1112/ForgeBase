@@ -123,9 +123,49 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  public-locale-browser:
+    name: Five-locale public website browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3105
+      NEXT_PUBLIC_SITE_NAME: ForgeBase Locale Lab
+      FORGEBASE_STRICT_BUILD_API: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements-ui-scan.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install website browser dependencies
+        run: |
+          pip install -r scripts/requirements-ui-scan.txt
+          python -m playwright install --with-deps chromium
+          npm ci --prefix web
+      - name: Build the production website
+        run: npm run build --prefix web
+      - name: Exercise every public locale in Chromium
+        run: python scripts/run_public_locale_lab.py
+      - name: Upload public locale evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-locale-browser-evidence
+          path: artifacts/public-locale-lab/
+          if-no-files-found: error
+          retention-days: 14
+
   production-images:
     name: Production image / ${{ matrix.label }}
-    needs: [api, frontend, admin-browser-rbac, recovery-drill]
+    needs: [api, frontend, admin-browser-rbac, recovery-drill, public-locale-browser]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

@@ -81,7 +81,7 @@ export function Footer({ siteConfig }: { siteConfig: SiteConfig }) {
             <p className="mt-3 text-sm leading-relaxed">{copy.description}</p>
 
             {isTestScenario ? (
-              <p className="mt-5 max-w-sm text-sm leading-relaxed text-amber-200">{locale === "zh-TW" ? "這是 ForgeBase 功能測試情境；不提供 NorthForge 業務聯繫、報價或供貨服務。" : "This is a ForgeBase functional test scenario; NorthForge does not provide sales contact, quotations, or supply service."}</p>
+              <p className="mt-5 max-w-sm text-sm leading-relaxed text-amber-200">{copy.description}</p>
             ) : (
               <ul className="mt-5 space-y-1.5 text-sm">
                 <li className="flex items-center gap-2">

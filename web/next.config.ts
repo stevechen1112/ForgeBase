@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { PREFIXED_LOCALES } from "./src/i18n/routing";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const configuredBasePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim();
@@ -22,7 +23,11 @@ const nextConfig: NextConfig = {
     ] as const;
     return legacyPaths.flatMap(([from, to]) => [
       { source: from, destination: to, permanent: true },
-      { source: `/zh-TW${from}`, destination: `/zh-TW${to}`, permanent: true },
+      ...PREFIXED_LOCALES.map((locale) => ({
+        source: `/${locale}${from}`,
+        destination: `/${locale}${to}`,
+        permanent: true,
+      })),
     ]);
   },
 

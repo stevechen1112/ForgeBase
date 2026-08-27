@@ -17,7 +17,7 @@ _CJK_RE = re.compile(r"[\u3400-\u9fff]")
 
 
 def profile_to_content_locale(raw: str | None) -> str:
-    """Site profile stores en / zh-TW; CMS rows use en / zh-tw."""
+    """Convert a public route locale to the normalized CMS locale key."""
     return to_content_locale(raw, default="zh-tw")
 
 

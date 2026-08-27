@@ -1,4 +1,5 @@
 import { useMessages } from "next-intl";
+import { toContentLocale, toRouteLocale } from "@/lib/contentLocale";
 
 type MessageTree = Record<string, unknown>;
 
@@ -15,8 +16,10 @@ export function resolveSiteCopyOverlay(
   const legacy = Object.fromEntries(
     Object.entries(typedSiteCopy).filter(([key]) => key !== "locales" && key !== "hiddenBlocks"),
   );
-  const normalized = locale.toLowerCase().startsWith("zh") ? "zh-TW" : "en";
-  const localeOverlay = locales?.[normalized] ?? locales?.[locale] ?? locales?.["zh-tw"];
+  const normalized = toRouteLocale(locale);
+  const localeOverlay = locales?.[normalized]
+    ?? locales?.[toContentLocale(normalized)]
+    ?? locales?.[locale];
   const merged = mergeMessageTrees(legacy, localeOverlay);
   return Object.keys(merged).length ? merged : undefined;
 }

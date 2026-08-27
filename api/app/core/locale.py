@@ -10,10 +10,8 @@ LOCALE_CATALOG = {
     "ru": {"route": "ru", "label": "Russian", "native_label": "Русский"},
 }
 
-# Public website chrome currently ships complete message packs for these route locales.
-# Other catalog locales are fully available for CMS drafts and review, but must not be
-# represented as a complete public-site shell until their message pack is delivered.
-PUBLIC_SITE_LOCALES = ("en", "zh-TW")
+# Public website chrome ships complete message packs for these route locales.
+PUBLIC_SITE_LOCALES = ("en", "zh-TW", "ja", "fr", "ru")
 SUPPORTED_LOCALES = set(PUBLIC_SITE_LOCALES)
 # Fallback when a request omits locale. Tenant source locale comes from site_profiles.default_locale.
 SOURCE_LOCALE = "en"

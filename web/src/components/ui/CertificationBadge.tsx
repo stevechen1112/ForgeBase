@@ -5,33 +5,34 @@ import type { Certification } from "@/types/content";
 import { trackSpecDownload } from "@/lib/analytics";
 import { withBasePath } from "@/lib/basePath";
 import { siteConfig } from "@/lib/siteConfig";
+import { localizedPath } from "@/lib/localizedPath";
+import { useMessageNamespace } from "@/lib/messages";
+import { isPublicLocale } from "@/i18n/routing";
+import { toRouteLocale } from "@/lib/contentLocale";
 
 type Props = { certification: Certification; locale?: string };
 
 const CERT_BADGE_VERSION = "20260318a";
 
-function resolveLocale(locale: string) {
-  return locale === "zh-TW" ? "zh-TW" : "en";
-}
-
 function buildDetailHref(locale: string, slug: string) {
-  const localeKey = resolveLocale(locale);
-  // localePrefix is "as-needed": English has no /en prefix
-  const prefix = localeKey === "zh-TW" ? "/zh-TW" : "";
-  return `${prefix}/certifications/${slug}`;
+  return localizedPath(locale, `/certifications/${slug}`);
 }
 
 export function CertificationBadge({ certification, locale }: Props) {
-  const localeKey = resolveLocale(locale ?? certification.locale);
+  const candidateLocale = toRouteLocale(locale ?? certification.locale);
+  const localeKey = isPublicLocale(candidateLocale) ? candidateLocale : "en";
   const isTestScenario = process.env.NEXT_PUBLIC_BASE_PATH === "/northforge-tools";
   const detailHref = buildDetailHref(localeKey, certification.slug);
   const isIndustrial = siteConfig.layout === "industrial";
+  const copy = useMessageNamespace<{
+    validUntil: string;
+    expired: string;
+    download: string;
+    testEyebrow: string;
+  }>("certificationDetail");
   const badgeImageSrc = certification.badge_image_url
     ? `${withBasePath(certification.badge_image_url)}?v=${CERT_BADGE_VERSION}`
     : null;
-  const validUntilLabel = localeKey === "zh-TW" ? "有效至" : "Valid until";
-  const expiredLabel = localeKey === "zh-TW" ? "已過期" : "Expired";
-  const downloadLabel = localeKey === "zh-TW" ? "下載證書" : "Download Certificate";
   const isExpired = certification.expires_at
     ? new Date(certification.expires_at).getTime() < Date.now()
     : false;
@@ -76,12 +77,12 @@ export function CertificationBadge({ certification, locale }: Props) {
       )}
       {isTestScenario && (
         <p className="mt-2 border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-900">
-          {localeKey === "zh-TW" ? "測試情境・非真實認證" : "Test scenario · not a real certification"}
+          {copy.testEyebrow}
         </p>
       )}
       {certification.expires_at && (
         <p className={`mt-1 text-xs ${isExpired ? "font-semibold text-red-600" : "text-gray-400"}`}>
-          {isExpired ? expiredLabel : `${validUntilLabel} ${new Date(certification.expires_at).getFullYear()}`}
+          {isExpired ? copy.expired : `${copy.validUntil} ${new Date(certification.expires_at).getFullYear()}`}
         </p>
       )}
       {certification.document_url && (
@@ -94,7 +95,7 @@ export function CertificationBadge({ certification, locale }: Props) {
             : "mt-3 text-xs font-medium text-blue-600 hover:underline"}
           onClick={() => trackSpecDownload(certification.id, certification.cert_name)}
         >
-          {downloadLabel}
+          {copy.download}
         </a>
       )}
     </div>

@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
 
-type LocaleKey = "en" | "zh-TW";
+type LocaleKey = (typeof PUBLIC_SITE_LOCALES)[number]["value"];
 type StatRow = { value: string; label: string };
 type TimelineRow = { year: string; event: string };
 type NewsRow = { date: string; title: string; summary: string };
@@ -184,8 +185,7 @@ export default function SiteCopySettingsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <select className="h-9 rounded-md border px-3 text-sm" value={locale} onChange={(event) => setLocale(event.target.value as LocaleKey)}>
-            <option value="en">English</option>
-            <option value="zh-TW">繁體中文</option>
+            {PUBLIC_SITE_LOCALES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading || saving}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理</Button>
           <Button size="sm" onClick={() => void save()} disabled={loading || saving || !token}><Save className="h-4 w-4" />{saving ? "儲存中…" : "儲存文案"}</Button>

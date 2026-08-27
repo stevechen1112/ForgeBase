@@ -24,7 +24,7 @@ def test_source_locale_helpers():
     assert to_content_locale("ja") == "ja"
     assert to_route_locale("zh-tw") == "zh-TW"
     assert {row["content_locale"] for row in locale_catalog_payload()} == {"en", "zh-tw", "ja", "fr", "ru"}
-    assert {row["content_locale"] for row in locale_catalog_payload() if row["public_shell_ready"]} == {"en", "zh-tw"}
+    assert {row["content_locale"] for row in locale_catalog_payload() if row["public_shell_ready"]} == {"en", "zh-tw", "ja", "fr", "ru"}
     assert contains_cjk("工業扭力扳手")
     assert not contains_cjk("Torque wrench")
 
@@ -242,7 +242,7 @@ async def test_locale_batch_creates_bounded_french_drafts_without_publishing(
     settings = await http_client.get("/api/v1/content/locale-settings", headers=headers)
     assert settings.status_code == 200
     french = next(row for row in settings.json()["content_locales"] if row["content_locale"] == "fr")
-    assert french["public_shell_ready"] is False
+    assert french["public_shell_ready"] is True
     coverage = await http_client.get(
         "/api/v1/content/locale-coverage?target_locale=fr", headers=headers
     )
