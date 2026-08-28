@@ -1,7 +1,7 @@
 # ForgeBase 外部供應商 POC 決策與啟用紀錄
 
 日期：2026-08-27
-狀態：程式接入、內部 adapter POC 與 code review 已完成；production 外部資料與寄送仍維持 fail closed
+狀態：程式接入、內部 adapter POC、真實 internal mail 與 provider 設定已完成；production 外部資料、自動外聯與 inbound processing 仍維持 fail closed
 
 ## 1. 明確結論
 
@@ -24,6 +24,9 @@ Apollo 不在本輪申請、採購或啟用。只有 PDL 與 Hunter 在目標市
 | PDL API 認證 | 通過 | Sandbox 查詢成功；尚未作 production 資料 POC |
 | Hunter API 認證 | 通過 | Free 帳號可用；查詢與驗證額度可讀取 |
 | Adapter 極小量實測 | 通過 | PDL Sandbox 與 Hunter 自有公司網域請求皆正常處理；0 筆候選，不輸出個資 |
+| Resend 真實 internal delivery | 通過 | provider accepted、delivered 與 sent／delivered webhook 均確認；只寄 internal allowlist |
+| Resend webhook | 通過 | outbound 事件完整，並已加入 `email.received`；既有事件未被覆蓋 |
+| Resend inbound domain | 部分通過 | `replies.premierbiz.com.tw` receiving-only；MX verified，DKIM pending，未啟用 production inbound processing |
 | API 完整回歸 | 通過 | 乾淨 PostgreSQL：324 passed、3 skipped、0 failed |
 | 寄件顯示名稱 | 已指定 | `ForgeBase Business Team` |
 | 寄件 Email | 已指定 | `steve_chen@premierbiz.com.tw` |
@@ -62,7 +65,7 @@ EMAIL_INTERNAL_RECIPIENT_ALLOWLIST=steve_chen@premierbiz.com.tw
 
 `RESEND_API_KEY`、`PDL_API_KEY`、`HUNTER_API_KEY` 只可由 secret store／主機 secret 檔安全注入，以上範例刻意不含任何 key。
 
-目前三組 key 已存入 GitHub repository secrets；寄件與真人接手資料已存入 repository variables。因外部資料授權、正式單位成本、Resend webhook 與 inbound DNS 尚未完成，本批不把它們同步進 production `deploy/api.env`，避免「憑證已存在」被誤認為「功能已核准啟用」。
+目前三組 key 已存入 GitHub repository secrets；production 只注入 adapter／transport 前置憑證，寄件與真人接手資料也已對齊。外部資料授權、正式單位成本與品質 Gate 未通過，因此 `*_DATA_USE_APPROVED`、外部寄送、自動外聯及 inbound processing 仍為 false；「憑證存在」不等於「功能核准啟用」。
 
 ## 4. 第一輪 POC 流程
 
@@ -98,8 +101,16 @@ Hunter Email Verifier／供應商既有驗證訊號
 
 1. 向 PDL 與 Hunter 確認 ForgeBase 多租戶情境的展示、保存、刪除、外聯與跨境處理權利。
 2. 權利通過後設定實際單位成本，才可在 production 開啟 `review_only` Shadow POC；仍不得寄信。
-3. 建立 Resend webhook signing secret 與專用 inbound 子網域，完成只寄給內部 allowlist 的測試信。
-4. 完成 SPF／DKIM／DMARC、bounce／complaint／unsubscribe、回覆分類及真人接手測試後，才評估極小量人工核准寄送。
+3. Resend webhook signing、專用 inbound 子網域、`email.received` 訂閱與 internal allowlist 真實信已完成；目前只剩 inbound 子網域 DKIM 在供應商端 pending，production inbound secret 尚未注入。
+4. 等 inbound DKIM verified 後完成真實回覆分類與真人接手；一般外寄仍須以 bounce／complaint／unsubscribe、reputation 與法遵證據通過後，才評估極小量人工核准寄送。
+
+## 6.1 去識別化盲測計分工具（2026-08-28）
+
+- 新增 `scripts/score_growth_provider_poc.py` 與 `config/growth-provider-poc.template.json`，將 A 公司辨識與 B 聯絡窗口的 case-level 盲測資料轉為不含個案、公司、domain、IP、姓名或 Email 的聚合報告。
+- A 會分 provider／市場計算 eligible coverage、高信心 precision、conflict、排除網路誤配、成本與延遲；B 會計算 query coverage、Persona relevance、verified business email、新鮮度、不安全候選、成本與延遲。
+- 每個 provider 必須各自覆蓋至少兩個市場；公司高信心與聯絡人 reviewed sample 每市場至少 50，並使用 90% precision／70% relevance 既有 Gate。
+- 重複 case/provider、無法成立的 count、負數或 NaN／Infinity、PII 欄位與未附 evidence reference 的資料權批准一律拒絕。
+- 工具已完成且納入 API CI；目前範本權利值全為 false、樣本為空，因此不宣稱 PDL／Hunter 已通過品質或商用權利 Gate。
 
 ## 7. 不需要使用者再提供的項目
 

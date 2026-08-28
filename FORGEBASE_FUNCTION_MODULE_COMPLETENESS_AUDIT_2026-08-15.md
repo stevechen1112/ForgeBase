@@ -4,7 +4,7 @@
 >
 > 本次完整更新：2026-08-28
 >
-> 評估基準：Git commit `2a8bc2cf91c09a3f78b6f346d943d1376478a186`、正式部署、production 只讀稽核、完整 Release Gate、14 批內部產品化、商用前內部強化及實際瀏覽器證據
+> 評估基準：正式部署 SHA `2a8bc2cf91c09a3f78b6f346d943d1376478a186`、後續營運控制 commit 至 `0b3d470`、production 只讀稽核、完整 Release Gate、14 批內部產品化、商用前內部強化及實際瀏覽器證據
 >
 > 北極星：匿名訪客 → 行為追蹤 → 意圖評分 → 推測公司 → 尋找公司相關聯絡窗口 → 依旅程產生個人化信件 → 寄送與追蹤 → 對方回覆 → 真人業務接手 → RFQ／成交
 
@@ -19,6 +19,7 @@
 - 北極星程式閉環、資料模型、後台工作台、權限、稽核、重試安全、隱私保留及 Release Gate 已完成。
 - 正式環境的 IP → 公司推測已由真實 People Data Labs `pdl_ip` provider 執行，兩個 active tenant 均為 `shadow`；production 不再使用 mock 作公司辨識。
 - Hunter Domain Search／Email Verifier 與 Resend 已安裝至 production 並可由受控 adapter 使用；但「provider 可用」不等於聯絡人資料品質、真人信箱 deliverability 或市場成效已通過。
+- Resend 已完成 public unsubscribe origin／簽章 secret、寄件身分、internal allowlist、真實內部信 provider acceptance＋delivered webhook；outbound 與 inbound webhook 事件目前都完整。專用 `replies.premierbiz.com.tw` MX 已 verified，DKIM 仍在 Resend pending，因此 inbound production secret、開關與真人回信測試尚未啟用。
 - 自動外聯仍刻意關閉。系統目前只允許符合政策、人工確認與核准的受控路徑；沒有把「自動大量寄信」當成完成條件。
 - 類別四沒有為了追求乾淨而猜測式刪除。`copilot_floating_widget`、`legacy_ip_resolver` 已移除；AgentOS、可選 ML runtime、relation recommender、LINE／Telegram 仍依正式觀察與治理 Gate 處理。
 - 正式站外 synthetic monitor 已每 15 分鐘由 GitHub-hosted runner 執行，失敗會建立／更新單一 incident issue、恢復後自動結案；這證明站外檢查與 repository 告警路由，不等於真人通知必達或既定 SLA。
@@ -48,8 +49,8 @@
 | 推測公司 | 工程完成，production Shadow | PDL `pdl_ip` 已在兩個 active tenant 啟用；quota、成本、國家、privacy 與信心 Gate 生效 | 高信心 precision、match rate、APAC 表現尚無真實樣本統計 |
 | 尋找公司相關聯絡窗口 | 工程完成，等待品質驗證 | Hunter Domain Search／Verifier adapter、Persona policy、候選審核、遮罩、重驗證、轉 Contact、成本與 circuit breaker | production tenant 仍不得因 provider 存在而自動補全；需真實 Persona／Email 品質樣本與資料權利 |
 | 依旅程產生個人化信件 | 已完成，Review Only | 不可變 journey snapshot、grounded evidence、草稿／重生／核准／拒絕、unsupported-claim gate | 需真實業務核准率、修改量與品牌／法遵審查 |
-| 寄送與追蹤 | 工程完成，受控關閉 | Resend adapter、人工核准、冪等寄送、delivery／bounce／complaint／unsubscribe、suppression、頻率與 kill switch | 未開放一般外寄；真人 deliverability、domain reputation、DNS 與退信／申訴門檻待驗證 |
-| 對方回覆 | 工程完成，外部入口受控 | inbound webhook/mailbox adapter、簽章、大小限制、清理、分類、thread 關聯與 replay safety | 正式 inbound domain／mailbox 的真人來信驗收與各語言分類品質 |
+| 寄送與追蹤 | 工程完成，受控關閉 | Resend adapter、人工核准、冪等寄送、delivery／bounce／complaint／unsubscribe、suppression、頻率與 kill switch；一封 internal allowlist 真實信已 delivered 且 webhook 入庫 | 未開放一般外寄；仍缺真人外部樣本的 reputation、bounce／complaint／unsubscribe 分布 |
+| 對方回覆 | 工程完成，外部入口受控 | inbound webhook/mailbox adapter、簽章、大小限制、清理、分類、thread 關聯與 replay safety；`email.received` webhook 與專用子網域 MX 已完成 | Resend DKIM 仍 pending；production inbound secret／switch 與真人來信分類驗收尚未執行 |
 | 真人業務接手 | 已完成 | SalesHandoff、SLA、指派、timeline、建立 RFQ、wrong-person／unsubscribe／close | 真實業務團隊的回應 SLA 與操作採用率 |
 | RFQ／成交 | 已完成 | RFQ workspace、狀態／指派／跟進／品質、outcome、won/lost、完整 attribution chain | 至少一個非測試 pilot 完成 reply → RFQ → won/lost；商業轉換率尚未證明 |
 
@@ -317,7 +318,9 @@
 **尚未完成的商用 Gate**
 
 - production 外部寄送與自動外聯保持關閉；金鑰存在不會自動聯絡訪客或候選。
-- 尚未完成真人收件匣 deliverability、正式寄件網域 reputation、bounce／complaint／unsubscribe 門檻及真實 inbound reply 回歸。
+- 已完成一封 internal allowlist 真實信的 provider accepted、delivered 與 webhook 閉環；這不等於一般外寄的 deliverability 或 reputation 已證明。
+- 專用 inbound MX 與 `email.received` 訂閱已完成，但 Resend DKIM 仍 pending；尚未注入 inbound route secret、開啟受控 tenant policy 或執行真實 reply → handoff。
+- 尚未取得足量 bounce／complaint／unsubscribe／reply 樣本以判斷營運門檻。
 - 第一階段只應開 `APPROVAL_SEND`，且每封人工核准；`CONTROLLED_AUTO` 必須等待公司／聯絡品質、法遵與寄送信譽穩定。
 
 ### 15. 外部 CRM／廣告／搜尋整合 — 61%
@@ -429,6 +432,9 @@
 | Production retirement `33140492663` | success | 已移除項無殘留、關閉項 fail closed、無新刪除 | 30／60 天觀察已到期 |
 | External uptime `33144986004` | success，8／8 | GitHub-hosted runner 的公網、API readiness、兩展示站與 asset probe；monitor 已登錄 readiness | 真人告警必達、商務流程或 SLA |
 | Commercial readiness `33145033057` | success（guarded） | PDL／Hunter／Resend registry、tenant policy、transport switch 與 activation blockers；無外部呼叫、無寄信、無政策修改 | provider 品質、資料權、寄達率、回覆或成交 |
+| Controlled production email `33149263859` | success | internal allowlist 真實信由 Resend 接受、delivered，且 sent／delivered webhook 入庫；全域 delivery／outreach switch 仍關閉 | 一般外部收件品質、退信／申訴率或自動外聯 |
+| Resend account audit `33153202238` | success | 寄件網域 verified，outbound webhook 完整，`email.received` inbound webhook 已啟用 | inbound 子網域 DKIM 或真人回覆已完成 |
+| Resend inbound DNS `33153648940` | partial external state | `replies.premierbiz.com.tw` receiving-only；MX verified、sending disabled、receiving enabled；TXT 與三個公開 resolver 逐字一致 | Resend DKIM 仍 pending，故不啟用 production reply loop |
 | Recovery／browser `33145064129` | success | 最新 off-site recovery point、隔離復原、48 小時內備份／15 分鐘內演練證據、演練後公網 8／8 與 Platform Admin Chromium | 正式事故 RPO／RTO 保證或 live DB 覆寫演練 |
 
 核心參考文件：
@@ -467,11 +473,11 @@
 
 不應再以擴增內部 TODO 或新增非核心 connector 來追求百分比。下一步依序為：
 
-1. 建立 company-identification ground-truth 樣本，分台灣／日本／其他目標市場量測 high-confidence precision、match rate、false positive 與成本。
-2. 對同一批已知公司平行評估 Hunter 候選，量測 Persona relevance、任職新鮮度、verified business email、coverage 與每個可用窗口成本。
+1. 使用已完成的去識別化 POC scorecard 與範本建立 company-identification ground-truth 樣本，分台灣／日本／其他目標市場量測 high-confidence precision、match rate、false positive 與成本；工具完成不代表樣本已取得。
+2. 對同一批已知公司平行評估 PDL Person／Hunter 候選，量測 Persona relevance、任職新鮮度、verified business email、coverage 與每個可用窗口成本；每個 provider 必須各自覆蓋至少兩個市場且每市場樣本達 Gate。
 3. 向 PDL／Hunter 取得 ForgeBase 多租戶展示、保存、外聯、刪除及 OEM／Reseller／Solution Provider 書面權利；未通過則維持 Shadow／Review Only 或更換 provider。
-4. 補齊目前 production audit 明列缺少的 public unsubscribe origin 與 unsubscribe signing secret，核對寄件網域 DNS／reputation、allowlist／suppression，並以真人測試收件匣驗收後才開小量 `APPROVAL_SEND`。
-5. 補齊目前 production audit 明列缺少的 inbound domain 與 inbound signing secret，再做真人回信驗收：positive／question／RFQ／wrong-person／not-now／negative／auto-reply 及跨租戶隔離。
+4. Public unsubscribe origin／signing secret、寄件身分、allowlist、suppression 與一封真實 internal delivered probe 已完成；下一步仍須以明確的小量名單、人工核准及法遵條件驗收後才可開 `APPROVAL_SEND`。
+5. 等 Resend 專用 inbound 子網域 DKIM 由 pending 轉為 verified，再注入 inbound signing secret，維持全域 switch 關閉完成 audit，最後才以單一受控 tenant 驗收 positive／question／RFQ／wrong-person／not-now／negative／auto-reply 及跨租戶隔離。
 6. 導入第一個非測試 pilot tenant，以不可混入 synthetic data 的方式走完整 reply → handoff → RFQ → won/lost。
 7. 只有 precision、候選品質、bounce、complaint、unsubscribe、SLA 與成本持續在門檻內，才考慮白名單式 `CONTROLLED_AUTO`。
 8. 到達正式 30／60 天觀察期限後，逐一處理 AgentOS、ML runtime、relation recommender、LINE／Telegram；每一項另立 removal change、資料處置與 rollback revision。

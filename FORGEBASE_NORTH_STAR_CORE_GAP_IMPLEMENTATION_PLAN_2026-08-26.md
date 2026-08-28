@@ -1617,8 +1617,37 @@ ForgeBase 應保存的自有衍生資料：
 
 1. 公司辨識與窗口候選的真實 precision、coverage、Persona relevance、任職新鮮度及市場別成本。
 2. PDL／Hunter 的多租戶展示、保存、刪除、外聯與 OEM／Reseller 書面權利。
-3. production 尚缺 public unsubscribe origin、unsubscribe signing secret、inbound domain 與 inbound signing secret；補齊並完成人工測試前，`APPROVAL_SEND`／reply loop 不得啟用。
-4. 真人寄達、退信、申訴、退訂、回覆分類與第一個非 synthetic reply → handoff → RFQ → won／lost pilot。
+3. Public unsubscribe origin／secret、寄件身分與 internal allowlist 已完成；專用 inbound domain 的 MX 已 verified、DKIM 仍 pending，inbound signing secret 尚未注入。完成前 `APPROVAL_SEND`／reply loop 不得啟用。
+4. 一封 internal allowlist 真實信已完成 accepted → delivered → webhook；仍缺足量真人寄達、退信、申訴、退訂、回覆分類與第一個非 synthetic reply → handoff → RFQ → won／lost pilot。
 5. 告警目前能證明 GitHub issue 路由與自動恢復結案，不能宣稱特定真人、簡訊或電話 on-call 必達。
 
 因此，本計畫的**可在內部完成部分已完成**；產品仍維持「受控 production／pilot-ready」，不能改稱「商業成效已驗證」或「全自動獲客已完成」。
+
+---
+
+## 26. 商用外部 Gate 推進補充（2026-08-28）
+
+### 26.1 Resend outbound 實證
+
+- `configure-production-growth-mail` 已原子化對齊寄件身分、internal allowlist、sales／manager handoff、public unsubscribe origin 與簽章 secret；所有 delivery／outreach／inbound switch 保持 false。
+- Controlled production probe `33149263859` 只寄指定 internal allowlist，確認 provider accepted、provider delivered 及 production sent／delivered webhook 入庫；不保存收件地址或 provider message id 於 evidence。
+- Read-only account audit `33153202238` 再次確認 sending domain、outbound webhook 與 inbound `email.received` webhook 全部 ready。
+
+### 26.2 Resend inbound 進度與邊界
+
+- 建立 receiving-only `replies.premierbiz.com.tw`，sending disabled、receiving enabled，不改動根網域 Google Workspace MX。
+- GoDaddy 新增 DKIM TXT 與 priority 10 MX；權威 DNS、1.1.1.1、8.8.8.8 對 TXT 的長度、內容及 SHA-256 完全一致，MX 指向 Resend ap-northeast-1 inbound SMTP。
+- Resend per-record 狀態目前為 MX verified／DKIM pending；經一般 verify 與一次明確 Restart 後仍等待供應商刷新。production inbound domain／secret、tenant policy、全域 switch 與真人回信測試均不在 pending 狀態下提前啟用。
+
+### 26.3 Provider POC 證據治理
+
+- `1792300` 新增去識別化 POC scorecard 與空白範本；輸入只接受 opaque case id、provider、market、分類與 aggregate count／成本／延遲，不接受 IP、公司、domain、姓名或 Email。
+- 每個 provider 必須各自覆蓋至少兩市場；公司／聯絡層都必須有證據，每市場樣本與 precision／relevance／不安全候選 Gate 必須通過。
+- 資料使用權不能只設 boolean；任何 approved 狀態必須附可稽核 evidence reference。當前範本全部維持未核准，不會因工具完成就誤判採購或 production 啟用。
+
+### 26.4 本輪仍待外部完成
+
+1. Resend 將 inbound DKIM 由 pending 更新為 verified。
+2. Verified 後才配置 production inbound secret，維持 switch 關閉完成 audit，再開單一受控 tenant 做真人 reply loop。
+3. PDL／Hunter 提供多租戶展示、保存、刪除、外聯與跨境權利書面文件，並取得合法 ground-truth 樣本填入 scorecard。
+4. 一般外寄、reply → handoff → RFQ → won/lost、bounce／complaint／unsubscribe 與商業成效仍須真實 pilot，不能由內部測試代替。
