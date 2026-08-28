@@ -1,0 +1,64 @@
+name: Provision Resend Inbound Domain
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: provision-resend-inbound-domain
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    name: Prepare receiving-only subdomain for DNS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Idempotently prepare Resend receiving domain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RESEND_API_KEY"
+          mkdir -p artifacts/resend-inbound
+          python scripts/provision_resend_inbound_domain.py \
+            --inbound-domain replies.premierbiz.com.tw \
+            --root-domain premierbiz.com.tw \
+            --output artifacts/resend-inbound/report.json
+
+      - name: Verify receiving-only boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/resend-inbound/report.json").read_text())
+          assert report["domain"] == "replies.premierbiz.com.tw"
+          assert report["capabilities"] == {
+              "sending": "disabled",
+              "receiving": "enabled",
+          }
+          assert report["assessment"]["ready_for_dns_configuration"] is True
+          assert not any(report["privacy"].values())
+          print(
+              "Receiving-only Resend subdomain prepared; "
+              f"operation={report['operation']} records={len(report['dns_records'])}"
+          )
+          PY
+
+      - name: Upload private DNS requirements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resend-inbound-dns-requirements
+          path: artifacts/resend-inbound/
+          if-no-files-found: error
+          retention-days: 30
