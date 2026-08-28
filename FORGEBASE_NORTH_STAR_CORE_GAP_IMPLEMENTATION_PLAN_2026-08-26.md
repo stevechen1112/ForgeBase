@@ -1586,3 +1586,39 @@ ForgeBase 應保存的自有衍生資料：
 - 自動聯絡或寄送：關閉。
 
 事後只讀 audit（GitHub Actions `33141722766`）再次確認兩個 production 租戶皆為 `ready=true`、`shadow / pdl_ip`，且 `changed_tenants=[]`。因此目前 production 的 IP → 公司推測已使用真實 PDL provider；後續是否產生公司候選，仍取決於訪客同意分析、意圖分數達標、公開非 bot／VPN／hosting IP、quota／成本 Gate 與 PDL 實際 match，不能保證每一個 IP 都能辨識出公司。
+
+---
+
+## 25. 商用前最後內部強化與正式驗收（2026-08-28）
+
+本輪依「每一批完整開發 → 測試 → code review → 修正 → 下一批」完成四個批次；每批均獨立提交，最終部署 SHA 為 `2a8bc2c`。
+
+### 25.1 四個批次
+
+1. **後台 AI 證據治理**（`a0ea21c`）：回答明確區分「資料事實／系統推論／建議」，移除未有資料支持的勝率、銷售週期、地區刻板印象與 ML 描述；所有建議保留人工決策邊界。
+2. **商用 readiness 稽核**（`82b7fe9`）：新增 production 只讀 audit，分離 provider registry、tenant policy、outbound／inbound 前置條件、kill switch 與 Controlled Auto 禁止條件；不呼叫 provider、不寄信、不改政策、不輸出憑證或聯絡資料。
+3. **文件權威治理**（`f5e2910`）：建立文件權威索引、歷史警示與 CI 契約，避免舊百分比、舊 TODO 或舊兩階段方案被誤作現況。
+4. **站外監控與還原證據**（`cbf7e00`，fixture 修正 `2a8bc2c`）：GitHub-hosted runner 每 15 分鐘檢查 8 個正式端點，單一 incident issue 去重／恢復結案；正式還原演練匯出安全摘要、檢查證據時效，演練後重跑公網監控並保存 Chromium 證據。
+
+### 25.2 Code review 與 release 結果
+
+- Review 修正大型 HTML 被 64 KB 上限誤判、operational test 未接入 Release Gate、跨主機時鐘微幅偏差及測試 fixture 被 secret scanner 視為候選等問題。
+- 本機：monitor `4 passed`；monitor／deployment／recovery 合併 `16 passed`；Ruff、compileall、shell syntax、YAML parse、文件契約及 8／8 正式端點通過。
+- Security Gate：dependency vulnerabilities `0`、SAST medium／high `0`、unreviewed secret candidates `0`。
+- Complete Release Gate／Deploy `33144552515` 成功；SHA `2a8bc2c` 已部署至 production。
+
+### 25.3 Production 驗收證據
+
+- External Uptime `33144986004`：8／8 通過；monitor 已登錄 production readiness；失敗 incident 建立邏輯本輪沒有以破壞 production 的方式刻意觸發。
+- Commercial Readiness `33145033057`：guarded audit 通過；`pdl_ip`、`hunter_domain`、`hunter` 與 Resend 設定存在；兩個外寄 kill switch、inbound switch 與 Controlled Auto 維持關閉，沒有寄出訊息。
+- Recovery／Browser `33145064129`：最新 off-site 備份完成隔離 restore、驗證與一次性 DB 刪除；演練後公網 8／8；Platform Admin 真實 Chromium 登入、`/backend/platform/resources` 可見且 console error 為 0；一次性操作員已移除。
+
+### 25.4 現在仍不能由內部開發取代的 Gate
+
+1. 公司辨識與窗口候選的真實 precision、coverage、Persona relevance、任職新鮮度及市場別成本。
+2. PDL／Hunter 的多租戶展示、保存、刪除、外聯與 OEM／Reseller 書面權利。
+3. production 尚缺 public unsubscribe origin、unsubscribe signing secret、inbound domain 與 inbound signing secret；補齊並完成人工測試前，`APPROVAL_SEND`／reply loop 不得啟用。
+4. 真人寄達、退信、申訴、退訂、回覆分類與第一個非 synthetic reply → handoff → RFQ → won／lost pilot。
+5. 告警目前能證明 GitHub issue 路由與自動恢復結案，不能宣稱特定真人、簡訊或電話 on-call 必達。
+
+因此，本計畫的**可在內部完成部分已完成**；產品仍維持「受控 production／pilot-ready」，不能改稱「商業成效已驗證」或「全自動獲客已完成」。

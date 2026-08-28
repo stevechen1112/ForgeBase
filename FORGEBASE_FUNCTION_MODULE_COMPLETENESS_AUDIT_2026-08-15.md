@@ -4,7 +4,7 @@
 >
 > 本次完整更新：2026-08-28
 >
-> 評估基準：Git commit `0539149693d90bb044d5e225c33c0dac8c2ae7e6`、正式部署、production 只讀稽核、完整 Release Gate、14 批內部產品化及實際瀏覽器證據
+> 評估基準：Git commit `2a8bc2cf91c09a3f78b6f346d943d1376478a186`、正式部署、production 只讀稽核、完整 Release Gate、14 批內部產品化、商用前內部強化及實際瀏覽器證據
 >
 > 北極星：匿名訪客 → 行為追蹤 → 意圖評分 → 推測公司 → 尋找公司相關聯絡窗口 → 依旅程產生個人化信件 → 寄送與追蹤 → 對方回覆 → 真人業務接手 → RFQ／成交
 
@@ -21,6 +21,7 @@
 - Hunter Domain Search／Email Verifier 與 Resend 已安裝至 production 並可由受控 adapter 使用；但「provider 可用」不等於聯絡人資料品質、真人信箱 deliverability 或市場成效已通過。
 - 自動外聯仍刻意關閉。系統目前只允許符合政策、人工確認與核准的受控路徑；沒有把「自動大量寄信」當成完成條件。
 - 類別四沒有為了追求乾淨而猜測式刪除。`copilot_floating_widget`、`legacy_ip_resolver` 已移除；AgentOS、可選 ML runtime、relation recommender、LINE／Telegram 仍依正式觀察與治理 Gate 處理。
+- 正式站外 synthetic monitor 已每 15 分鐘由 GitHub-hosted runner 執行，失敗會建立／更新單一 incident issue、恢復後自動結案；這證明站外檢查與 repository 告警路由，不等於真人通知必達或既定 SLA。
 
 ### 1.2 92.7% 代表什麼
 
@@ -354,12 +355,12 @@
 - Docker／Caddy／PostgreSQL、deep readiness、safe deploy、migration、image manifest、rollback、資料庫備份、off-site 加密流程與隔離 restore lab 完成。
 - Operational／Knowledge queues 具 retry、stale recovery、fault isolation、idempotency、監控、SLO evidence 與 incident console。
 - 完整 Release Gate 覆蓋 API、migration、North Star、AI、fault、capacity、privacy、retirement、Admin RBAC、五語公開站、四前端、六個 production image、SAST、secrets、dependency、SBOM 與 recovery。
-- 最新 release run `33141795688` 與部署成功；最新 production PDL 只讀 audit `33142199489` 成功。
+- 最新 release／deploy run `33144552515`（SHA `2a8bc2c`）、站外監控 `33144986004`、商用只讀稽核 `33145033057` 與正式隔離還原／瀏覽器驗收 `33145064129` 全部成功。
 
 **保留邊界**
 
 - 隔離 restore RTO、短 soak 或 CI capacity 是 regression baseline，不是 production SLA。
-- 站外 synthetic monitoring、真實長時間壓力、跨區災難復原、外部滲透測試與 on-call 到達演練仍應依營運規模補齊。
+- 站外 synthetic monitoring 已完成；真實長時間壓力、跨區災難復原、外部滲透測試、GitHub issue 以外的 on-call 到達演練與正式 SLA 仍應依營運規模補齊。
 
 ---
 
@@ -416,9 +417,8 @@
 
 | 證據 | 最新結果 | 能證明什麼 | 不能證明什麼 |
 |---|---|---|---|
-| Complete Release Gate `33141795688` | success，SHA `0539149` | API、migration、North Star、AI、fault、capacity、privacy、retirement、RBAC、五語、前端、images、security、SBOM、recovery 全通過 | 真實市場成效、長期 SLA |
-| Deploy to Linode | success | 同一 SHA 已部署、health check 通過 | 跨區 HA 或永久無故障 |
-| API 完整 PostgreSQL suite | 352 passed、3 skipped、1 deselected、0 failed | 核心資料與整合回歸 | 外部 provider 資料品質 |
+| Complete Release Gate／Deploy `33144552515` | success，SHA `2a8bc2c` | API、migration、North Star、AI、fault、capacity、privacy、retirement、RBAC、五語、前端、images、security、SBOM、recovery 與部署全通過 | 真實市場成效、長期 SLA |
+| API 完整 PostgreSQL suite | 358 passed、3 skipped、1 deselected、0 failed | 核心資料與整合回歸 | 外部 provider 資料品質 |
 | North Star E2E Lab | 全鏈通過；provider 使用 deterministic fake | 真實 DB、狀態機、權限、稽核、冪等、歸因閉環 | PDL／Hunter／Resend 的真實成效 |
 | Admin Browser／RBAC | Chromium matrix 通過 | 實際登入、選單、權限、deep link、關鍵操作 | 每種人員日常使用習慣 |
 | Five-locale browser | 英／繁中／日／法／俄通過 | production build 路由、lang、切換、mobile、console | 母語產業內容與法務校對 |
@@ -427,7 +427,9 @@
 | PDL final audit `33142199489` | success | 兩 active tenant 均 `ready=true`、`shadow/pdl_ip`、無 mock policy | precision ≥ 90% 或找得到訪客本人 |
 | Production data quality `33138620002` | success | 2 active tenant identity 正確、8 筆 RFQ 均標記為測試 | 已有真實客戶或真實成交 |
 | Production retirement `33140492663` | success | 已移除項無殘留、關閉項 fail closed、無新刪除 | 30／60 天觀察已到期 |
-| Recovery／browser `33136513984` | success | production recovery point、隔離復原與 Platform Admin 瀏覽器證據 | 正式事故 RPO／RTO 保證 |
+| External uptime `33144986004` | success，8／8 | GitHub-hosted runner 的公網、API readiness、兩展示站與 asset probe；monitor 已登錄 readiness | 真人告警必達、商務流程或 SLA |
+| Commercial readiness `33145033057` | success（guarded） | PDL／Hunter／Resend registry、tenant policy、transport switch 與 activation blockers；無外部呼叫、無寄信、無政策修改 | provider 品質、資料權、寄達率、回覆或成交 |
+| Recovery／browser `33145064129` | success | 最新 off-site recovery point、隔離復原、48 小時內備份／15 分鐘內演練證據、演練後公網 8／8 與 Platform Admin Chromium | 正式事故 RPO／RTO 保證或 live DB 覆寫演練 |
 
 核心參考文件：
 
@@ -468,8 +470,8 @@
 1. 建立 company-identification ground-truth 樣本，分台灣／日本／其他目標市場量測 high-confidence precision、match rate、false positive 與成本。
 2. 對同一批已知公司平行評估 Hunter 候選，量測 Persona relevance、任職新鮮度、verified business email、coverage 與每個可用窗口成本。
 3. 向 PDL／Hunter 取得 ForgeBase 多租戶展示、保存、外聯、刪除及 OEM／Reseller／Solution Provider 書面權利；未通過則維持 Shadow／Review Only 或更換 provider。
-4. 完成寄件網域 DNS、reputation、allowlist、unsubscribe／suppression 與真人測試收件匣驗收，先開小量 `APPROVAL_SEND`。
-5. 完成正式 inbound domain／mailbox 回信驗收，測試 positive／question／RFQ／wrong-person／not-now／negative／auto-reply 及跨租戶隔離。
+4. 補齊目前 production audit 明列缺少的 public unsubscribe origin 與 unsubscribe signing secret，核對寄件網域 DNS／reputation、allowlist／suppression，並以真人測試收件匣驗收後才開小量 `APPROVAL_SEND`。
+5. 補齊目前 production audit 明列缺少的 inbound domain 與 inbound signing secret，再做真人回信驗收：positive／question／RFQ／wrong-person／not-now／negative／auto-reply 及跨租戶隔離。
 6. 導入第一個非測試 pilot tenant，以不可混入 synthetic data 的方式走完整 reply → handoff → RFQ → won/lost。
 7. 只有 precision、候選品質、bounce、complaint、unsubscribe、SLA 與成本持續在門檻內，才考慮白名單式 `CONTROLLED_AUTO`。
 8. 到達正式 30／60 天觀察期限後，逐一處理 AgentOS、ML runtime、relation recommender、LINE／Telegram；每一項另立 removal change、資料處置與 rollback revision。
@@ -486,7 +488,7 @@
 | 日／法／俄只是未完成語系 | 五語公開介面包與 Chromium Release Gate 已完成；租戶內容仍需逐語審核 |
 | 北極星能力列為第二層 roadmap | 取消兩階段產品概念，北極星全鏈為同一核心產品 |
 | 類別四尚未系統化處理 | 兩項已移除，五項有 fail-closed、telemetry、30／60 天及 governance Gate；目前無新刪除授權 |
-| 部署與測試證據零散 | 完整 Release Gate、六 image SBOM、資安、復原、瀏覽器、資料品質與 production provider 稽核已制度化 |
+| 部署與測試證據零散 | 完整 Release Gate、六 image SBOM、資安、站外監控、復原、瀏覽器、資料品質與 production provider／transport 稽核已制度化 |
 
 ---
 
