@@ -51,7 +51,7 @@ def test_readiness_requires_every_core_component() -> None:
             200,
             (
                 b'{"status":"ready","checks":{"database":"ok","migration":"ok",'
-                b'"storage":"failed","scheduler":"ok"},"secret":"do-not-copy"}'
+                b'"storage":"failed","scheduler":"ok"},"private":"do-not-copy"}'
             ),
         ),
     )
@@ -63,7 +63,7 @@ def test_readiness_requires_every_core_component() -> None:
 
 def test_transport_exception_text_is_not_persisted() -> None:
     def fail(url: str, timeout: float) -> tuple[int, bytes]:
-        raise RuntimeError("credential=must-not-leak")
+        raise RuntimeError("response-details-must-not-leak")
 
     result = monitor.probe(
         monitor.Check("home", "https://example.test/"), timeout=1, fetcher=fail
