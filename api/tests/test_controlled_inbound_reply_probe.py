@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from app.core.config import settings
@@ -90,3 +91,79 @@ def test_report_can_still_be_written_to_a_file(tmp_path) -> None:
     probe._write_report(report, str(output))
 
     assert json.loads(output.read_text(encoding="utf-8")) == report
+
+
+@pytest.mark.parametrize(
+    ("actor", "expected"),
+    [
+        (None, False),
+        (SimpleNamespace(is_active=False, is_superuser=True, role="admin"), False),
+        (SimpleNamespace(is_active=True, is_superuser=False, role="sales"), False),
+        (SimpleNamespace(is_active=True, is_superuser=False, role="admin"), True),
+        (SimpleNamespace(is_active=True, is_superuser=False, role="owner"), True),
+        (SimpleNamespace(is_active=True, is_superuser=True, role="sales"), True),
+    ],
+)
+def test_controlled_actor_must_be_an_active_privileged_operator(
+    actor, expected: bool
+) -> None:
+    assert probe._actor_is_authorized(actor) is expected
+
+
+class _SingleResult:
+    def __init__(self, row) -> None:
+        self.row = row
+
+    def one_or_none(self):
+        return self.row
+
+
+class _TenantLookup:
+    def __init__(self, row) -> None:
+        self.row = row
+        self.get_calls = []
+        self.exec_calls = 0
+
+    async def get(self, model, row_id):
+        self.get_calls.append((model, row_id))
+        return self.row
+
+    async def exec(self, _query):
+        self.exec_calls += 1
+        return _SingleResult(self.row)
+
+
+@pytest.mark.asyncio
+async def test_controlled_tenant_prefers_actor_membership(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "public-tenant")
+    tenant = SimpleNamespace(is_active=True)
+    db = _TenantLookup(tenant)
+    actor = SimpleNamespace(tenant_id="actor-tenant-id")
+
+    assert await probe._resolve_controlled_tenant(db, actor) is tenant
+    assert db.get_calls == [(probe.Tenant, "actor-tenant-id")]
+    assert db.exec_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_system_admin_uses_configured_public_tenant(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "public-tenant")
+    tenant = SimpleNamespace(is_active=True)
+    db = _TenantLookup(tenant)
+    actor = SimpleNamespace(tenant_id=None)
+
+    assert await probe._resolve_controlled_tenant(db, actor) is tenant
+    assert db.exec_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_system_admin_without_public_tenant_fails_closed(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "")
+    db = _TenantLookup(None)
+    actor = SimpleNamespace(tenant_id=None)
+
+    with pytest.raises(
+        probe.ControlledInboundProbeError,
+        match="controlled_public_tenant_not_configured",
+    ):
+        await probe._resolve_controlled_tenant(db, actor)

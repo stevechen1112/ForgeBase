@@ -49,7 +49,6 @@ from scripts.run_controlled_email_probe import (
 
 SCHEMA_VERSION = 1
 PROBE_ID = re.compile(r"^[A-Za-z0-9._:-]{1,120}$")
-TENANT_SLUG = "default-tenant"
 ACTOR_EMAIL = "admin@forgebase.com"
 ROOT_DOMAIN = "premierbiz.com.tw"
 INBOUND_DOMAIN = "replies.premierbiz.com.tw"
@@ -101,6 +100,29 @@ def _set_mode(row, mode: str, now: datetime) -> None:
     row.updated_at = now
 
 
+def _actor_is_authorized(actor: User | None) -> bool:
+    return bool(
+        actor
+        and actor.is_active
+        and (actor.is_superuser or actor.role in {"admin", "owner"})
+    )
+
+
+async def _resolve_controlled_tenant(db, actor: User) -> Tenant:
+    if actor.tenant_id:
+        tenant = await db.get(Tenant, actor.tenant_id)
+    else:
+        public_slug = settings.PUBLIC_TENANT_SLUG.strip()
+        if not public_slug:
+            raise ControlledInboundProbeError("controlled_public_tenant_not_configured")
+        tenant = (
+            await db.exec(select(Tenant).where(Tenant.slug == public_slug))
+        ).one_or_none()
+    if not tenant or not tenant.is_active:
+        raise ControlledInboundProbeError("controlled_tenant_missing_or_inactive")
+    return tenant
+
+
 async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
     send_key = f"forgebase-inbound-probe:{probe_id}"
     async with get_session_ctx() as db:
@@ -114,20 +136,17 @@ async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
         if existing:
             return existing
 
-        tenant = (
-            await db.exec(select(Tenant).where(Tenant.slug == TENANT_SLUG))
-        ).one_or_none()
         actor = (
             await db.exec(
                 select(User).where(
                     User.email == ACTOR_EMAIL,
-                    User.is_superuser.is_(True),
                     User.is_active.is_(True),
                 )
             )
         ).one_or_none()
-        if not tenant or not tenant.is_active or not actor:
-            raise ControlledInboundProbeError("controlled_tenant_or_actor_missing")
+        if not _actor_is_authorized(actor):
+            raise ControlledInboundProbeError("controlled_actor_missing_or_unauthorized")
+        tenant = await _resolve_controlled_tenant(db, actor)
 
         draft_policy = await db.get(OutreachDraftPolicy, tenant.id)
         delivery_policy = await db.get(OutreachDeliveryPolicy, tenant.id)
