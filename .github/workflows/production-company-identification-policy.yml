@@ -1,0 +1,132 @@
+name: Production Company Identification Policy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Audit only, or apply real PDL Shadow Mode to the explicit tenants
+        required: true
+        default: audit
+        type: choice
+        options:
+          - audit
+          - apply
+      tenant_slugs:
+        description: Comma-separated active tenant slugs; broad wildcards are not accepted
+        required: true
+        default: northforge-tools,axisform-precision
+        type: string
+
+concurrency:
+  group: production-company-identification-policy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  govern:
+    name: Audit or enable real PDL Shadow Mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate explicit inputs
+        env:
+          POLICY_ACTION: ${{ inputs.action }}
+          TENANT_SLUGS: ${{ inputs.tenant_slugs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$POLICY_ACTION" = audit -o "$POLICY_ACTION" = apply
+          python - <<'PY'
+          import os
+          import re
+
+          value = os.environ["TENANT_SLUGS"]
+          slugs = [item.strip() for item in value.split(",") if item.strip()]
+          assert slugs
+          assert len(slugs) <= 20
+          assert all(re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) for slug in slugs)
+          PY
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run governed production policy operation
+        env:
+          POLICY_ACTION: ${{ inputs.action }}
+          TENANT_SLUGS: ${{ inputs.tenant_slugs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/company-identification
+          actor_email="github-actions-company-policy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@forgebase.com"
+          {
+            printf '%s\n' "$POLICY_ACTION"
+            printf '%s\n' "$TENANT_SLUGS"
+            printf '%s\n' "$actor_email"
+          } | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            IFS= read -r policy_action
+            IFS= read -r tenant_slugs
+            IFS= read -r actor_email
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e COMPANY_POLICY_ACTOR_EMAIL="$actor_email" \
+              -e PYTHONPATH=/app \
+              api python scripts/manage_company_identification_policy.py \
+                --action "$policy_action" \
+                --tenant-slugs "$tenant_slugs"
+          ' > artifacts/company-identification/report.json
+
+      - name: Validate privacy-minimised evidence
+        env:
+          POLICY_ACTION: ${{ inputs.action }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/company-identification/report.json").read_text())
+          assert report["schema_version"] == 1
+          assert report["real_provider"] == "pdl_ip"
+          assert "pdl_ip" in report["provider_registry"]
+          assert report["privacy"] == {
+              "visitor_ip_used_for_probe": False,
+              "raw_ip_in_report": False,
+              "provider_payload_in_report": False,
+              "mode": "shadow",
+              "automatic_contact_or_send": False,
+          }
+          if os.environ["POLICY_ACTION"] == "apply":
+              assert report["status"] == "passed"
+              assert report["real_provider_probe"]["authenticated_request_completed"] is True
+              assert all(row["ready"] for row in report["tenants"])
+          print(f"Production company-identification {report['action']}: {report['status']}")
+          PY
+
+      - name: Upload private provider-policy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-company-identification-policy-evidence
+          path: artifacts/company-identification/
+          if-no-files-found: error
+          retention-days: 30
