@@ -110,6 +110,8 @@ jobs:
           scripts/tests/test_provision_resend_inbound_domain.py
           scripts/tests/test_configure_resend_inbound_readiness.py
           scripts/tests/test_score_growth_provider_poc.py
+          scripts/tests/test_set_controlled_inbound_window.py
+          tests/test_controlled_inbound_reply_probe.py
           -q
       - name: Upload API release evidence
         if: always()

@@ -1,0 +1,191 @@
+name: Controlled Production Inbound Reply Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Prepare one internal Reply-To probe or inspect an existing probe
+        required: true
+        default: prepare
+        type: choice
+        options:
+          - prepare
+          - status
+      probe_id:
+        description: Prepare leaves this blank; status requires the prepare workflow run id
+        required: false
+        type: string
+
+concurrency:
+  group: controlled-production-inbound-reply-probe
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Send or audit one allowlisted inbound reply probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      RECIPIENT: ${{ vars.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST }}
+      MODE: ${{ inputs.mode }}
+      INPUT_PROBE_ID: ${{ inputs.probe_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate explicit controlled operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MODE" = prepare -o "$MODE" = status
+          if [ "$MODE" = prepare ]; then
+            test -z "$INPUT_PROBE_ID"
+            test -n "$RECIPIENT"
+            test "$RECIPIENT" = "${{ vars.EMAIL_FROM }}"
+            case "$RECIPIENT" in *,*) exit 1 ;; esac
+          else
+            test -n "$INPUT_PROBE_ID"
+            case "$INPUT_PROBE_ID" in *[!A-Za-z0-9._:-]*) exit 1 ;; esac
+          fi
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Open inbound-only window and send one internal Reply-To probe
+        if: inputs.mode == 'prepare'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/inbound-reply-probe
+          printf '%s\n%s\n' "$RECIPIENT" "$GITHUB_RUN_ID" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r recipient
+              IFS= read -r probe_id
+              cd /opt/forgebase
+              backup=$(mktemp /tmp/forgebase-api-env.XXXXXX)
+              install -m 600 deploy/api.env "$backup"
+              restore() {
+                trap - ERR
+                set +e
+                install -m 600 "$backup" deploy/api.env
+                docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+                rm -f -- "$backup"
+              }
+              trap restore ERR
+              python3 deploy/set-controlled-inbound-window.py \
+                --env-file deploy/api.env --state open >/dev/null
+              docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+              status=""
+              for attempt in $(seq 1 12); do
+                status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | \
+                  python3 -c "import json,sys; print(json.load(sys.stdin).get(\"status\", \"\"))" \
+                  2>/dev/null || true)
+                [ "$status" = ready ] && break
+                sleep 5
+              done
+              [ "$status" = ready ]
+              set +e
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e EMAIL_EXTERNAL_DELIVERY_ENABLED=true \
+                -e OUTREACH_SEND_ENABLED=true \
+                -e INBOUND_REPLY_ENABLED=true \
+                -e PYTHONPATH=/app api \
+                python scripts/run_controlled_inbound_reply_probe.py \
+                  --mode prepare --probe-id "$probe_id" --recipient "$recipient" \
+                  --output /tmp/inbound-reply-probe.json
+              probe_status=$?
+              set -e
+              docker compose -f docker-compose.prod.yml exec -T api \
+                sh -c "cat /tmp/inbound-reply-probe.json && rm -f /tmp/inbound-reply-probe.json"
+              [ "$probe_status" -eq 0 ]
+              trap - ERR
+              rm -f -- "$backup"
+            ' > artifacts/inbound-reply-probe/report.json
+
+      - name: Inspect existing inbound reply probe
+        if: inputs.mode == 'status'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/inbound-reply-probe
+          printf '%s\n' "$INPUT_PROBE_ID" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r probe_id
+              cd /opt/forgebase
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e PYTHONPATH=/app api \
+                python scripts/run_controlled_inbound_reply_probe.py \
+                  --mode status --probe-id "$probe_id" \
+                  --output /tmp/inbound-reply-probe.json
+              docker compose -f docker-compose.prod.yml exec -T api \
+                sh -c "cat /tmp/inbound-reply-probe.json && rm -f /tmp/inbound-reply-probe.json"
+            ' > artifacts/inbound-reply-probe/report.json
+
+      - name: Verify redacted probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/inbound-reply-probe/report.json").read_text())
+          assert not any(report["privacy"].values())
+          if "${{ inputs.mode }}" == "prepare":
+              assert report["assessment"]["status"] == "passed"
+              assert report["assessment"]["ready_for_human_reply"] is True
+              assert report["assessment"]["reply_route_issued"] is True
+              assert report["controls"]["automatic_outreach_used"] is False
+              assert report["controls"]["tenant_outbound_policy_restored_off"] is True
+          else:
+              assert report["assessment"]["status"] in {"waiting", "passed"}
+          PY
+
+      - name: Audit production switches after prepare
+        if: inputs.mode == 'prepare'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app api python scripts/audit_growth_commercial_readiness.py
+          ' > artifacts/inbound-reply-probe/readiness.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/inbound-reply-probe/readiness.json").read_text())
+          transport = report["transport"]
+          assert report["assessment"]["status"] == "passed"
+          assert transport["external_delivery_enabled"] is False
+          assert transport["outreach_send_enabled"] is False
+          assert transport["inbound_reply_enabled"] is True
+          assert transport["inbound_prerequisites_ready"] is True
+          assert report["assessment"]["configuration_ready_for_reply_loop"] is True
+          PY
+
+      - name: Upload private controlled reply evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-controlled-inbound-reply-probe-evidence
+          path: artifacts/inbound-reply-probe/
+          if-no-files-found: error
+          retention-days: 30
