@@ -36,7 +36,7 @@ from app.services.email_governance import (
     mask_email,
     normalize_email,
 )
-from app.services.outreach.content_guard import canonical_cta
+from app.services.outreach.content_guard import canonical_cta, validate_content
 from app.services.outreach.delivery import run_outreach_send_job
 from sqlmodel import col, select
 
@@ -98,6 +98,17 @@ def _validate_prepare(recipient: str, probe_id: str) -> str:
 def _set_mode(row, mode: str, now: datetime) -> None:
     row.mode = mode
     row.updated_at = now
+
+
+def _probe_content() -> tuple[str, str, str]:
+    subject = "ForgeBase 真人回信閉環驗收（請回覆）"
+    body = "這是 ForgeBase 受控內部收件路由、分類與真人接手驗收。"
+    validate_content(subject=subject, body_without_cta=body)
+    text_body = f"{body}\n\n{canonical_cta('zh-TW')}"
+    html_body = "".join(
+        f"<p>{html.escape(part)}</p>" for part in text_body.split("\n\n")
+    )
+    return subject, text_body, html_body
 
 
 def _actor_is_authorized(actor: User | None) -> bool:
@@ -300,12 +311,7 @@ async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
         db.add(snapshot)
         await db.flush()
 
-        subject = "ForgeBase 真人回信閉環驗收（請回覆）"
-        body = "這是 ForgeBase 受控內部 Reply-To、回信分類與真人接手驗收。"
-        text_body = f"{body}\n\n{canonical_cta('zh-TW')}"
-        html_body = "".join(
-            f"<p>{html.escape(part)}</p>" for part in text_body.split("\n\n")
-        )
+        subject, text_body, html_body = _probe_content()
         content_hash = hashlib.sha256(
             f"{subject}\n{text_body}\n{html_body}".encode()
         ).hexdigest()

@@ -46,6 +46,17 @@ def test_prepare_validation_accepts_only_exact_internal_controlled_address(
         probe._validate_prepare("external@example.com", "33155399573")
 
 
+def test_controlled_probe_content_passes_the_real_outreach_guard() -> None:
+    subject, text_body, html_body = probe._probe_content()
+    cta = probe.canonical_cta("zh-TW")
+
+    assert subject == "ForgeBase 真人回信閉環驗收（請回覆）"
+    assert text_body.endswith(cta)
+    assert text_body.count(cta) == 1
+    assert "Reply-To" not in text_body
+    assert html_body.count("<p>") == 2
+
+
 @pytest.mark.parametrize(
     ("setting", "value", "reason"),
     [
