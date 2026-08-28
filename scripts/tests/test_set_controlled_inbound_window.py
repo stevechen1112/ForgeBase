@@ -69,3 +69,19 @@ def test_fails_closed_for_unsafe_prerequisites(
     path.write_text("\n".join(rows) + "\n", encoding="utf-8")
     with pytest.raises(module.WindowError, match=reason):
         module.configure(path, enabled=True)
+
+
+def test_probe_workflow_preserves_failure_report_across_api_restore() -> None:
+    workflow = (
+        Path(__file__).parents[2]
+        / ".github"
+        / "workflows"
+        / "controlled-production-inbound-reply-probe.yml"
+    ).read_text(encoding="utf-8")
+
+    assert "trap cleanup EXIT" in workflow
+    assert '--output - >"$report"' in workflow
+    assert 'if [ ! -s "$report" ]; then' in workflow
+    assert "probe_process_produced_no_report" in workflow
+    assert "trap restore ERR" not in workflow
+    assert "--output /tmp/inbound-reply-probe.json" not in workflow

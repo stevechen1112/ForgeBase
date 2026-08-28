@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from app.core.config import settings
 
@@ -71,3 +73,20 @@ def test_failure_report_never_contains_contact_or_credentials() -> None:
         "blockers": ["safe_failure"],
     }
     assert not any(report["privacy"].values())
+
+
+def test_report_can_be_streamed_without_container_temp_file(capsys) -> None:
+    report = probe._failure_report("status", "safe_failure")
+
+    probe._write_report(report, "-")
+
+    assert json.loads(capsys.readouterr().out) == report
+
+
+def test_report_can_still_be_written_to_a_file(tmp_path) -> None:
+    report = probe._failure_report("status", "safe_failure")
+    output = tmp_path / "probe.json"
+
+    probe._write_report(report, str(output))
+
+    assert json.loads(output.read_text(encoding="utf-8")) == report

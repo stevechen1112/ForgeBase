@@ -492,12 +492,24 @@ def _failure_report(operation: str, reason: str) -> dict:
     }
 
 
+def _write_report(report: dict, output: str) -> None:
+    payload = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+    if output == "-":
+        print(payload, end="")
+        return
+    Path(output).write_text(payload, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", required=True, choices=("prepare", "status"))
     parser.add_argument("--probe-id", required=True)
     parser.add_argument("--recipient", default="")
-    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Write redacted JSON to this path, or '-' for stdout",
+    )
     args = parser.parse_args()
     try:
         report = asyncio.run(
@@ -509,9 +521,7 @@ def main() -> int:
         report = _failure_report(args.mode, str(exc))
     except Exception:  # noqa: BLE001 -- never disclose provider or contact data
         report = _failure_report(args.mode, "unexpected_probe_failure")
-    args.output.write_text(
-        json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    _write_report(report, args.output)
     return 0 if report["assessment"]["status"] in {"passed", "waiting"} else 1
 
 

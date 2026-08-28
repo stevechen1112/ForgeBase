@@ -77,15 +77,24 @@ jobs:
               IFS= read -r probe_id
               cd /opt/forgebase
               backup=$(mktemp /tmp/forgebase-api-env.XXXXXX)
+              report=$(mktemp /tmp/forgebase-inbound-report.XXXXXX)
               install -m 600 deploy/api.env "$backup"
-              restore() {
-                trap - ERR
+              restore_needed=true
+              cleanup() {
+                rc=$?
+                trap - EXIT
                 set +e
-                install -m 600 "$backup" deploy/api.env
-                docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+                rm -f -- "$report"
+                if [ "$restore_needed" = true ]; then
+                  if [ -f "$backup" ]; then
+                    install -m 600 "$backup" deploy/api.env
+                    docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+                  fi
+                fi
                 rm -f -- "$backup"
+                exit "$rc"
               }
-              trap restore ERR
+              trap cleanup EXIT
               python3 deploy/set-controlled-inbound-window.py \
                 --env-file deploy/api.env --state open >/dev/null
               docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
@@ -106,13 +115,17 @@ jobs:
                 -e PYTHONPATH=/app api \
                 python scripts/run_controlled_inbound_reply_probe.py \
                   --mode prepare --probe-id "$probe_id" --recipient "$recipient" \
-                  --output /tmp/inbound-reply-probe.json
+                  --output - >"$report"
               probe_status=$?
               set -e
-              docker compose -f docker-compose.prod.yml exec -T api \
-                sh -c "cat /tmp/inbound-reply-probe.json && rm -f /tmp/inbound-reply-probe.json"
+              if [ ! -s "$report" ]; then
+                printf '%s\n' '{"schema_version":1,"operation":"prepare","assessment":{"status":"failed","blockers":["probe_process_produced_no_report"]},"privacy":{"recipient_in_report":false,"credential_values_in_report":false,"message_content_in_report":false}}' >"$report"
+                probe_status=1
+              fi
+              cat "$report"
               [ "$probe_status" -eq 0 ]
-              trap - ERR
+              restore_needed=false
+              rm -f -- "$report"
               rm -f -- "$backup"
             ' > artifacts/inbound-reply-probe/report.json
 
@@ -131,9 +144,7 @@ jobs:
                 -e PYTHONPATH=/app api \
                 python scripts/run_controlled_inbound_reply_probe.py \
                   --mode status --probe-id "$probe_id" \
-                  --output /tmp/inbound-reply-probe.json
-              docker compose -f docker-compose.prod.yml exec -T api \
-                sh -c "cat /tmp/inbound-reply-probe.json && rm -f /tmp/inbound-reply-probe.json"
+                  --output -
             ' > artifacts/inbound-reply-probe/report.json
 
       - name: Verify redacted probe evidence
