@@ -434,7 +434,8 @@
 | Commercial readiness `33145033057` | success（guarded） | PDL／Hunter／Resend registry、tenant policy、transport switch 與 activation blockers；無外部呼叫、無寄信、無政策修改 | provider 品質、資料權、寄達率、回覆或成交 |
 | Controlled production email `33149263859` | success | internal allowlist 真實信由 Resend 接受、delivered，且 sent／delivered webhook 入庫；全域 delivery／outreach switch 仍關閉 | 一般外部收件品質、退信／申訴率或自動外聯 |
 | Resend account audit `33153202238` | success | 寄件網域 verified，outbound webhook 完整，`email.received` inbound webhook 已啟用 | inbound 子網域 DKIM 或真人回覆已完成 |
-| Resend inbound DNS `33153648940` | partial external state | `replies.premierbiz.com.tw` receiving-only；MX verified、sending disabled、receiving enabled；TXT 與三個公開 resolver 逐字一致 | Resend DKIM 仍 pending，故不啟用 production reply loop |
+| Resend inbound DNS `33154309882` | partial external state | `replies.premierbiz.com.tw` receiving-only；MX verified、sending disabled、receiving enabled；TXT 與三個公開 resolver 逐字一致，Resend 官方 `dns.email` 亦可讀取完整 DKIM，Tokyo receiving MX 顯示 Valid | Resend DKIM 仍 pending，故不啟用 production reply loop；官方文件允許 DNS 全球傳播最長 72 小時 |
+| API Release Contract `33153986188` | success | blocking lint、全部 migration／API、schema、AI、North Star full-chain、fault injection、效能容量、tenant delivery factory、privacy／retention、retirement、文件權威與 operational contract 全數通過 | 不替代外部 provider 品質、資料權、真人寄達／回覆與成交成效 |
 | Recovery／browser `33145064129` | success | 最新 off-site recovery point、隔離復原、48 小時內備份／15 分鐘內演練證據、演練後公網 8／8 與 Platform Admin Chromium | 正式事故 RPO／RTO 保證或 live DB 覆寫演練 |
 
 核心參考文件：

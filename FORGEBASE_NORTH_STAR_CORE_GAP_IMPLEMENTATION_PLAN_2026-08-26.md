@@ -1637,7 +1637,8 @@ ForgeBase 應保存的自有衍生資料：
 
 - 建立 receiving-only `replies.premierbiz.com.tw`，sending disabled、receiving enabled，不改動根網域 Google Workspace MX。
 - GoDaddy 新增 DKIM TXT 與 priority 10 MX；權威 DNS、1.1.1.1、8.8.8.8 對 TXT 的長度、內容及 SHA-256 完全一致，MX 指向 Resend ap-northeast-1 inbound SMTP。
-- Resend per-record 狀態目前為 MX verified／DKIM pending；經一般 verify 與一次明確 Restart 後仍等待供應商刷新。production inbound domain／secret、tenant policy、全域 switch 與真人回信測試均不在 pending 狀態下提前啟用。
+- Resend 官方 `dns.email` 已能讀取完整 DKIM，Tokyo receiving MX 顯示 Valid；最新 provider 證據 `33154309882` 仍為 MX verified／DKIM pending。經一般 verify 與一次明確 Restart 後仍等待供應商刷新；官方文件說明 DNS 變更偶爾可耗時最長 72 小時。production inbound domain／secret、tenant policy、全域 switch 與真人回信測試均不在 pending 狀態下提前啟用。
+- 完整 API Release Contract `33153986188` 已通過 lint、migration、完整 API、North Star full-chain、fault injection、效能容量、tenant delivery factory、privacy／retention、retirement、文件權威及 operational contracts；這證明本輪工程沒有新增回歸，不替代外部商用 Gate。
 
 ### 26.3 Provider POC 證據治理
 

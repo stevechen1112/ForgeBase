@@ -101,7 +101,7 @@ Hunter Email Verifier／供應商既有驗證訊號
 
 1. 向 PDL 與 Hunter 確認 ForgeBase 多租戶情境的展示、保存、刪除、外聯與跨境處理權利。
 2. 權利通過後設定實際單位成本，才可在 production 開啟 `review_only` Shadow POC；仍不得寄信。
-3. Resend webhook signing、專用 inbound 子網域、`email.received` 訂閱與 internal allowlist 真實信已完成；目前只剩 inbound 子網域 DKIM 在供應商端 pending，production inbound secret 尚未注入。
+3. Resend webhook signing、專用 inbound 子網域、`email.received` 訂閱與 internal allowlist 真實信已完成；官方 `dns.email` 可讀取完整 DKIM 且 Tokyo receiving MX 為 Valid，但最新 provider 證據 `33154309882` 的 DKIM 仍 pending。官方文件允許 DNS 全球傳播最長 72 小時，production inbound secret 尚未注入。
 4. 等 inbound DKIM verified 後完成真實回覆分類與真人接手；一般外寄仍須以 bounce／complaint／unsubscribe、reputation 與法遵證據通過後，才評估極小量人工核准寄送。
 
 ## 6.1 去識別化盲測計分工具（2026-08-28）
