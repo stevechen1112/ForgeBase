@@ -1,0 +1,129 @@
+name: Production Commercial Readiness Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_mode:
+        description: Expected production transport posture; this workflow never changes it
+        required: true
+        default: guarded
+        type: choice
+        options:
+          - guarded
+          - approval_send
+
+concurrency:
+  group: production-commercial-readiness-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit providers, tenant policies, and transport switches
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      EXPECTED_MODE: ${{ inputs.expected_mode }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate explicit mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_MODE" = guarded -o "$EXPECTED_MODE" = approval_send
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run read-only production audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/commercial-readiness
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app \
+              api python scripts/audit_growth_commercial_readiness.py
+          ' > artifacts/commercial-readiness/report.json
+
+      - name: Validate privacy and expected posture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(
+              Path("artifacts/commercial-readiness/report.json").read_text()
+          )
+          assert report["schema_version"] == 1
+          assert report["assessment"]["status"] == "passed"
+          assert report["assessment"]["automatic_outreach_enabled"] is False
+          assert report["privacy"] == {
+              "external_provider_calls": False,
+              "messages_sent": False,
+              "policies_mutated": False,
+              "credential_values_in_report": False,
+              "contact_data_in_report": False,
+          }
+          assert "pdl_ip" in report["providers"]["company_identification"]
+          assert "hunter_domain" in report["providers"]["contact_search"]
+          assert "hunter" in report["providers"]["email_verification"]
+
+          transport = report["transport"]
+          if os.environ["EXPECTED_MODE"] == "guarded":
+              assert report["assessment"]["safe_guardrails_engaged"] is True
+              assert transport["external_delivery_enabled"] is False
+              assert transport["outreach_send_enabled"] is False
+          else:
+              assert report["assessment"][
+                  "configuration_ready_for_approval_send"
+              ] is True
+              assert report["assessment"][
+                  "configuration_ready_for_reply_loop"
+              ] is True
+              assert transport["external_delivery_enabled"] is True
+              assert transport["outreach_send_enabled"] is True
+              assert transport["dry_run"] is False
+              assert report["assessment"]["active_approval_send_tenants"]
+
+          serialized = json.dumps(report)
+          forbidden_fragments = (
+              "resend-sensitive-value",
+              "webhook-sensitive-value",
+              "unsubscribe-sensitive-value",
+              "inbound-sensitive-value",
+          )
+          assert not any(value in serialized for value in forbidden_fragments)
+          print(
+              "Production commercial readiness audit: "
+              f"{report['assessment']['status']} ({os.environ['EXPECTED_MODE']})"
+          )
+          PY
+
+      - name: Upload private readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-commercial-readiness-evidence
+          path: artifacts/commercial-readiness/
+          if-no-files-found: error
+          retention-days: 30
