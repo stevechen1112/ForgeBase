@@ -6,6 +6,7 @@ from datetime import timedelta
 
 import pytest
 
+from app.core.config import settings
 from app.core.datetime import utcnow_naive
 from app.models.company_identification import (
     CompanyIdentification,
@@ -16,13 +17,16 @@ from app.models.company_identification import (
     ProviderUsage,
 )
 from app.models.tenant import Tenant
+from app.services.capability_access import resolve_tenant_features
 from app.services.company_identification.jobs import enqueue_company_identification_job
 from app.services.company_identification.providers import (
     CompanyCandidate,
     CompanyLookupContext,
     MockCompanyIdentificationProvider,
+    UnsupportedCompanyIdentificationProvider,
+    available_provider_names,
+    get_company_identification_provider,
 )
-from app.services.capability_access import resolve_tenant_features
 
 
 class _CollectingSession:
@@ -144,6 +148,20 @@ async def test_mock_provider_obeys_stable_adapter_contract() -> None:
     assert result.units == 0
     assert result.metadata == {"mock": True}
     assert await provider.healthcheck() is True
+
+
+def test_production_registry_cannot_resolve_mock_provider(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+    monkeypatch.setattr(settings, "PDL_DATA_USE_APPROVED", False)
+    monkeypatch.setattr(settings, "PDL_API_KEY", "")
+    monkeypatch.setattr(settings, "PDL_IP_ENRICH_ESTIMATED_COST", 0)
+
+    assert "mock" not in available_provider_names()
+    with pytest.raises(
+        UnsupportedCompanyIdentificationProvider,
+        match="is not configured",
+    ):
+        get_company_identification_provider("mock")
 
 
 def test_candidate_rejects_invalid_confidence() -> None:

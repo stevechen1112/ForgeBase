@@ -21,7 +21,7 @@ class UnsupportedCompanyIdentificationProvider(ValueError):
 
 
 def available_provider_names() -> tuple[str, ...]:
-    providers = ["mock"]
+    providers = [] if settings.is_production else ["mock"]
     if (
         settings.PDL_DATA_USE_APPROVED
         and settings.PDL_API_KEY.strip()
@@ -33,7 +33,7 @@ def available_provider_names() -> tuple[str, ...]:
 
 def get_company_identification_provider(name: str) -> CompanyIdentificationProvider:
     normalized = name.strip().lower()
-    if normalized == "mock":
+    if normalized == "mock" and not settings.is_production:
         return MockCompanyIdentificationProvider()
     if normalized == "pdl_ip" and normalized in available_provider_names():
         return PeopleDataLabsIPProvider()

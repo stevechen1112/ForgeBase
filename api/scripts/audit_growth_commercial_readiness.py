@@ -13,6 +13,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlmodel import col, select
+
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.company_identification import GrowthAutomationPolicy
@@ -24,7 +26,6 @@ from app.services.contact_enrichment.providers import (
     available_contact_provider_names,
     available_verification_provider_names,
 )
-from sqlmodel import col, select
 
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
@@ -124,6 +125,13 @@ def evaluate_report(report: dict[str, Any]) -> dict[str, Any]:
     transport = report["transport"]
     violations: list[str] = []
     warnings: list[str] = []
+
+    if "mock" in company_registry:
+        violations.append("production_company_registry_exposes_mock")
+    if "mock" in contact_registry:
+        violations.append("production_contact_registry_exposes_mock")
+    if "mock" in verification_registry:
+        violations.append("production_verification_registry_exposes_mock")
 
     approval_send_tenants: list[str] = []
     review_contact_tenants: list[str] = []

@@ -60,7 +60,7 @@ def _tenant_row(**overrides):
 def _report(transport, tenants):
     report = {
         "providers": {
-            "company_identification": ["mock", "pdl_ip"],
+            "company_identification": ["pdl_ip"],
             "contact_search": ["hunter_domain"],
             "email_verification": ["hunter"],
         },
@@ -101,6 +101,23 @@ def test_guarded_production_state_passes_without_claiming_send_readiness():
     assert "inbound_reply_kill_switch_closed" in assessment[
         "reply_activation_blockers"
     ]
+
+
+def test_production_registry_rejects_any_mock_adapter():
+    report = _report(
+        transport_snapshot(_config()),
+        [_tenant_row()],
+    )
+    report["providers"]["company_identification"].append("mock")
+    report["providers"]["contact_search"].append("mock")
+    report["providers"]["email_verification"].append("mock")
+
+    assessment = evaluate_report(report)
+
+    assert assessment["status"] == "failed"
+    assert "production_company_registry_exposes_mock" in assessment["violations"]
+    assert "production_contact_registry_exposes_mock" in assessment["violations"]
+    assert "production_verification_registry_exposes_mock" in assessment["violations"]
 
 
 def test_unsafe_provider_and_switch_drift_fails_closed():
