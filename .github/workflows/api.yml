@@ -108,6 +108,8 @@ jobs:
           scripts/tests/test_configure_growth_mail_env.py
           scripts/tests/test_audit_resend_account.py
           scripts/tests/test_provision_resend_inbound_domain.py
+          scripts/tests/test_configure_resend_inbound_readiness.py
+          scripts/tests/test_score_growth_provider_poc.py
           -q
       - name: Upload API release evidence
         if: always()
