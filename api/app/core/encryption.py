@@ -24,8 +24,23 @@ logger = logging.getLogger(__name__)
 _fernet: Fernet | None = None
 
 
+def normalize_fernet_key(raw: str | bytes) -> bytes:
+    """Return a canonical Fernet key, accepting omitted base64 padding."""
+    key = raw.strip().encode() if isinstance(raw, str) else raw.strip()
+    if not key:
+        raise ValueError("Encryption key is empty")
+    padded = key + (b"=" * (-len(key) % 4))
+    try:
+        decoded = base64.b64decode(padded, altchars=b"-_", validate=True)
+    except Exception as exc:
+        raise ValueError("Encryption key is not valid URL-safe base64") from exc
+    if len(decoded) != 32:
+        raise ValueError("Encryption key must decode to exactly 32 bytes")
+    return base64.urlsafe_b64encode(decoded)
+
+
 def _get_fernet() -> Fernet:
-    global _fernet  # noqa: PLW0603
+    global _fernet
     if _fernet is not None:
         return _fernet
 
@@ -33,7 +48,7 @@ def _get_fernet() -> Fernet:
 
     raw = settings.ENCRYPTION_MASTER_KEY
     if raw:
-        key = raw.encode() if isinstance(raw, str) else raw
+        key = normalize_fernet_key(raw)
     else:
         if settings.is_production:
             raise RuntimeError(

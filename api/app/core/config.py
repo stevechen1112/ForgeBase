@@ -228,12 +228,21 @@ def _validate_production_settings() -> None:
             details.append(f"dev CORS origins in production: {', '.join(invalid_origins)}")
         raise RuntimeError("Invalid production settings — " + "; ".join(details))
 
-    # Ensure ENCRYPTION_MASTER_KEY is set — fail early instead of at first encrypt/decrypt call
+    # Ensure ENCRYPTION_MASTER_KEY is usable — fail before the first encrypted write.
     if not settings.ENCRYPTION_MASTER_KEY:
         raise RuntimeError(
             "ENCRYPTION_MASTER_KEY must be set in production. "
             'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
         )
+    from app.core.encryption import normalize_fernet_key
+
+    try:
+        normalize_fernet_key(settings.ENCRYPTION_MASTER_KEY)
+    except ValueError as exc:
+        raise RuntimeError(
+            "ENCRYPTION_MASTER_KEY must be a URL-safe base64-encoded 32-byte key. "
+            'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+        ) from exc
 
     # Ensure Telegram webhook secret is set when bot token is configured
     if settings.TELEGRAM_BOT_TOKEN and not settings.TELEGRAM_WEBHOOK_SECRET:

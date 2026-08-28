@@ -6,8 +6,10 @@ from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
 import pytest
+from app.core import encryption
 from app.core.config import settings
 from app.models.user import User
+from cryptography.fernet import Fernet
 
 from scripts import run_controlled_inbound_reply_probe as probe
 from tests.conftest import _make_engine, requires_db
@@ -194,7 +196,12 @@ async def test_prepare_rows_persist_complete_controlled_journey(
     probe_id = f"integration-{uuid.uuid4().hex[:16]}"
     monkeypatch.setattr(probe, "ACTOR_EMAIL", actor_email)
     monkeypatch.setattr(probe, "get_session_ctx", _session_context(factory))
-    monkeypatch.setattr(probe, "encrypt", lambda value: f"cipher:{len(value)}")
+    monkeypatch.setattr(
+        settings,
+        "ENCRYPTION_MASTER_KEY",
+        Fernet.generate_key().decode().rstrip("="),
+    )
+    monkeypatch.setattr(encryption, "_fernet", None)
     try:
         async with factory() as db:
             db.add(

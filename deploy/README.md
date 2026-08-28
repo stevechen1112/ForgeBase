@@ -72,7 +72,7 @@ nano .env
 | `SECRET_KEY` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `OPENAI_API_KEY` | OpenAI API key |
 | `PUBLIC_TENANT_SLUG` | 公開網站使用的租戶 slug（啟用 AI 客服時必填，例如 `default-tenant`） |
-| `ENCRYPTION_MASTER_KEY` | 同上方式產生（production 必填，沒設 API 會拒絕啟動） |
+| `ENCRYPTION_MASTER_KEY` | `python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`（production 必填；須為 URL-safe base64 編碼的 32-byte Fernet key，遺漏尾端 padding 時系統會安全正規化） |
 | `WEB_REVALIDATE_SECRET` | **必須與 .env 的 `REVALIDATE_SECRET` 完全相同** |
 
 > `DATABASE_URL`、`FRONTEND_URL`、`ALLOWED_ORIGINS` 等由 compose 依 `DOMAIN`、`POSTGRES_*` 自動組裝，不用手填。
