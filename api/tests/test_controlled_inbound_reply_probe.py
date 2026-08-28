@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import uuid
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
 import pytest
 from app.core.config import settings
+from app.models.user import User
 
 from scripts import run_controlled_inbound_reply_probe as probe
+from tests.conftest import _make_engine, requires_db
 
 
 def _ready(monkeypatch) -> None:
@@ -167,3 +171,63 @@ async def test_system_admin_without_public_tenant_fails_closed(monkeypatch) -> N
         match="controlled_public_tenant_not_configured",
     ):
         await probe._resolve_controlled_tenant(db, actor)
+
+
+def _session_context(factory):
+    @asynccontextmanager
+    async def context():
+        async with factory() as session:
+            yield session
+
+    return context
+
+
+@requires_db
+@pytest.mark.asyncio
+async def test_prepare_rows_persist_complete_controlled_journey(
+    two_tenants, monkeypatch
+) -> None:
+    tenant, _other = two_tenants
+    engine, factory = _make_engine()
+    actor_email = f"controlled-{uuid.uuid4().hex[:10]}@test.invalid"
+    recipient = f"reviewer-{uuid.uuid4().hex[:10]}@premierbiz.com.tw"
+    probe_id = f"integration-{uuid.uuid4().hex[:16]}"
+    monkeypatch.setattr(probe, "ACTOR_EMAIL", actor_email)
+    monkeypatch.setattr(probe, "get_session_ctx", _session_context(factory))
+    monkeypatch.setattr(probe, "encrypt", lambda value: f"cipher:{len(value)}")
+    try:
+        async with factory() as db:
+            db.add(
+                User(
+                    email=actor_email,
+                    hashed_password="test",  # pragma: allowlist secret
+                    role="admin",
+                    is_active=True,
+                    tenant_id=tenant.id,
+                )
+            )
+            await db.commit()
+
+        message = await probe._prepare_rows(recipient, probe_id)
+
+        assert message.tenant_id == tenant.id
+        assert message.send_idempotency_key == f"forgebase-inbound-probe:{probe_id}"
+        assert message.status == "queued"
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_prepare_reports_only_safe_stage_and_exception_type(monkeypatch) -> None:
+    _ready(monkeypatch)
+
+    async def fail_rows(_recipient: str, _probe_id: str):
+        raise ValueError("must not appear in evidence: private@example.test")
+
+    monkeypatch.setattr(probe, "_prepare_rows", fail_rows)
+    with pytest.raises(
+        probe.ControlledInboundProbeError,
+        match="prepare_rows_unexpected_ValueError",
+    ) as exc_info:
+        await probe.prepare("reviewer@premierbiz.com.tw", "safe-probe")
+    assert "private@example.test" not in str(exc_info.value)

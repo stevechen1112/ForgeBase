@@ -371,27 +371,53 @@ async def _restore_outbound_policy(tenant_id) -> None:
 
 async def prepare(recipient: str, probe_id: str) -> dict:
     normalized = _validate_prepare(recipient, probe_id)
-    message = await _prepare_rows(normalized, probe_id)
     try:
-        await run_outreach_send_job(message.id)
-    finally:
-        await _restore_outbound_policy(message.tenant_id)
+        message = await _prepare_rows(normalized, probe_id)
+    except ControlledInboundProbeError:
+        raise
+    except Exception as exc:
+        raise ControlledInboundProbeError(
+            f"prepare_rows_unexpected_{type(exc).__name__}"
+        ) from exc
+    try:
+        try:
+            await run_outreach_send_job(message.id)
+        finally:
+            await _restore_outbound_policy(message.tenant_id)
+    except ControlledInboundProbeError:
+        raise
+    except Exception as exc:
+        raise ControlledInboundProbeError(
+            f"delivery_unexpected_{type(exc).__name__}"
+        ) from exc
 
-    async with get_session_ctx() as db:
-        current = await db.get(OutreachMessage, message.id)
-        if not current or not current.provider_message_id or not current.sent_reply_to:
-            raise ControlledInboundProbeError("provider_send_or_reply_route_missing")
-        if not current.sent_reply_to.endswith(f"@{INBOUND_DOMAIN}"):
-            raise ControlledInboundProbeError("reply_route_domain_mismatch")
-        provider_message_id = current.provider_message_id
+    try:
+        async with get_session_ctx() as db:
+            current = await db.get(OutreachMessage, message.id)
+            if not current or not current.provider_message_id or not current.sent_reply_to:
+                raise ControlledInboundProbeError("provider_send_or_reply_route_missing")
+            if not current.sent_reply_to.endswith(f"@{INBOUND_DOMAIN}"):
+                raise ControlledInboundProbeError("reply_route_domain_mismatch")
+            provider_message_id = current.provider_message_id
+    except ControlledInboundProbeError:
+        raise
+    except Exception as exc:
+        raise ControlledInboundProbeError(
+            f"delivery_receipt_unexpected_{type(exc).__name__}"
+        ) from exc
 
     provider_event = None
     webhook_events: set[str] = set()
     for attempt in range(31):
-        provider_event, webhook_events = await asyncio.gather(
-            _provider_last_event(provider_message_id),
-            _webhook_events(provider_message_id),
-        )
+        try:
+            provider_event, webhook_events = await asyncio.gather(
+                _provider_last_event(provider_message_id),
+                _webhook_events(provider_message_id),
+            )
+        except Exception as exc:
+            raise ControlledInboundProbeError(
+                f"delivery_confirmation_unexpected_{type(exc).__name__}"
+            ) from exc
         if provider_event in SUCCESS_EVENTS | FAILURE_EVENTS and webhook_events & (
             SUCCESS_EVENTS | FAILURE_EVENTS
         ):
