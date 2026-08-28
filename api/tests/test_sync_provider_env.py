@@ -23,7 +23,10 @@ def _credentials(path: Path, content: str) -> Path:
 def test_render_replaces_managed_values_without_touching_unrelated_settings() -> None:
     rendered = sync_provider_env.render_updated_env(
         "DATABASE_URL=postgres://example\nPDL_API_KEY=old\nHUNTER_DATA_USE_APPROVED=false\n",
-        {"PDL_API_KEY": "new-pdl", "HUNTER_API_KEY": "new-hunter"},
+        {
+            "PDL_API_KEY": "new-pdl",  # pragma: allowlist secret -- test fixture
+            "HUNTER_API_KEY": "new-hunter",  # pragma: allowlist secret -- test fixture
+        },
     )
 
     assert "DATABASE_URL=postgres://example" in rendered
@@ -38,12 +41,16 @@ def test_render_replaces_managed_values_without_touching_unrelated_settings() ->
 
 def test_secret_file_rejects_unknown_or_missing_keys(tmp_path: Path) -> None:
     unknown = _credentials(
-        tmp_path / "unknown.env", "PDL_API_KEY=pdl\nOTHER_KEY=value\n"
+        tmp_path / "unknown.env",
+        "PDL_API_KEY=pdl\nOTHER_KEY=value\n",  # pragma: allowlist secret
     )
     with pytest.raises(sync_provider_env.ProviderEnvError, match="Unexpected"):
         sync_provider_env._parse_secret_file(unknown)
 
-    missing = _credentials(tmp_path / "missing.env", "PDL_API_KEY=pdl\n")
+    missing = _credentials(
+        tmp_path / "missing.env",
+        "PDL_API_KEY=pdl\n",  # pragma: allowlist secret
+    )
     with pytest.raises(sync_provider_env.ProviderEnvError, match="Missing"):
         sync_provider_env._parse_secret_file(missing)
 
@@ -54,7 +61,8 @@ def test_sync_is_atomic_and_does_not_leave_temporary_files(tmp_path: Path) -> No
     env_file.chmod(0o640)
     credentials = _credentials(
         tmp_path / "providers.env",
-        "PDL_API_KEY=pdl-secret\nHUNTER_API_KEY=hunter-secret\n",
+        # Deliberately non-routable fixtures.
+        "PDL_API_KEY=pdl-secret\nHUNTER_API_KEY=hunter-secret\n",  # pragma: allowlist secret
     )
 
     sync_provider_env.sync_provider_env(env_file, credentials)
