@@ -61,11 +61,22 @@ def main() -> None:
         )
         page.goto(
             f"{base_url}/backend/platform/login",
-            wait_until="domcontentloaded",
+            wait_until="networkidle",
             timeout=60_000,
         )
-        page.get_by_label("Email").fill(email)
-        page.get_by_label("密碼").fill(password)
+        # The form is visible before Next.js finishes hydration. Submitting in
+        # that gap triggers a native reload instead of the React login handler.
+        page.wait_for_timeout(1_000)
+        email_input = page.get_by_label("Email")
+        password_input = page.get_by_label("密碼")
+        email_input.fill(email)
+        password_input.fill(password)
+        if email_input.input_value() != email:
+            raise RuntimeError("Platform Admin email did not reach the hydrated form")
+        if len(password_input.input_value()) != len(password):
+            raise RuntimeError(
+                "Platform Admin password did not reach the hydrated form"
+            )
         page.get_by_role("button", name="登入平台管理").click()
         try:
             page.wait_for_url("**/backend/platform/overview", timeout=20_000)
