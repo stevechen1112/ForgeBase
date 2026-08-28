@@ -1,0 +1,141 @@
+name: Configure Production Growth Mail
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Configure prerequisites without enabling delivery switches
+        required: true
+        default: outbound
+        type: choice
+        options:
+          - audit
+          - outbound
+          - inbound
+      inbound_domain:
+        description: Domain already prepared for Resend receiving; required for inbound mode
+        required: false
+        type: string
+
+concurrency:
+  group: production-growth-mail-configuration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    name: Configure fail-closed production mail prerequisites
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      MODE: ${{ inputs.mode }}
+      INBOUND_DOMAIN: ${{ inputs.inbound_domain }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate explicit operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MODE" = audit -o "$MODE" = outbound -o "$MODE" = inbound
+          if [ "$MODE" = inbound ]; then
+            test -n "$INBOUND_DOMAIN"
+          else
+            test -z "$INBOUND_DOMAIN"
+          fi
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Atomically configure prerequisites and restart API
+        if: inputs.mode != 'audit'
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n%s\n' "$MODE" "$INBOUND_DOMAIN" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r mode
+              IFS= read -r inbound_domain
+              cd /opt/forgebase
+              backup=$(mktemp /tmp/forgebase-api-env.XXXXXX)
+              install -m 600 deploy/api.env "$backup"
+              restore() {
+                trap - ERR
+                set +e
+                install -m 600 "$backup" deploy/api.env
+                docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+                rm -f -- "$backup"
+              }
+              trap restore ERR
+              args=(
+                --env-file /opt/forgebase/deploy/api.env
+                --public-base-url https://pcbrm.tw
+              )
+              if [ "$mode" = inbound ]; then
+                args+=(--inbound-domain "$inbound_domain")
+              fi
+              python3 deploy/configure-growth-mail-env.py "${args[@]}"
+              docker compose -f docker-compose.prod.yml up -d --force-recreate api
+              for attempt in $(seq 1 12); do
+                status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | \
+                  python3 -c "import json,sys; print(json.load(sys.stdin).get(\"status\", \"\"))" \
+                  2>/dev/null || true)
+                [ "$status" = ready ] && break
+                sleep 5
+              done
+              [ "$status" = ready ]
+              trap - ERR
+              rm -f -- "$backup"
+            '
+
+      - name: Audit prerequisites without sending or enabling switches
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/growth-mail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app api \
+              python scripts/audit_growth_commercial_readiness.py
+          ' > artifacts/growth-mail/report.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/growth-mail/report.json").read_text())
+          transport = report["transport"]
+          assert report["assessment"]["status"] == "passed"
+          assert transport["external_delivery_enabled"] is False
+          assert transport["outreach_send_enabled"] is False
+          assert transport["inbound_reply_enabled"] is False
+          if "${{ inputs.mode }}" in {"outbound", "inbound"}:
+              assert transport["outbound_prerequisites_ready"] is True
+          if "${{ inputs.mode }}" == "inbound":
+              assert transport["inbound_prerequisites_ready"] is True
+          print("Growth mail prerequisites verified; all delivery switches remain closed")
+          PY
+
+      - name: Upload private configuration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-growth-mail-configuration-evidence
+          path: artifacts/growth-mail/
+          if-no-files-found: error
+          retention-days: 30
