@@ -30,6 +30,7 @@ export default function PlatformRFQsPage() {
   const [attention, setAttention] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [classifyingId, setClassifyingId] = useState("");
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -52,6 +53,21 @@ export default function PlatformRFQsPage() {
     const timer = window.setTimeout(() => void load(), 200);
     return () => window.clearTimeout(timer);
   }, [load]);
+  async function classify(item: PlatformRFQItem, kind: "test" | "spam") {
+    if (!token) return;
+    const label = kind === "test" ? "測試資料" : "垃圾詢價";
+    if (!window.confirm(`確認將 ${item.rfq_number} 標記為${label}？此動作會留下操作紀錄。`)) return;
+    setClassifyingId(item.id); setError("");
+    try {
+      await platformAdminApi.classifyRfq(token, item.id, {
+        ...(kind === "test" ? { is_test_data: true } : { is_spam: true }),
+        reason: `平台人員從全平台詢價頁人工標記為${label}`,
+      });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "RFQ 分類失敗");
+    } finally { setClassifyingId(""); }
+  }
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -101,7 +117,7 @@ export default function PlatformRFQsPage() {
           共 {total} 筆
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[1040px] text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-3">詢價</th>
@@ -110,6 +126,7 @@ export default function PlatformRFQsPage() {
                 <th className="px-4 py-3">狀態</th>
                 <th className="px-4 py-3">負責人</th>
                 <th className="px-4 py-3">時間</th>
+                <th className="px-4 py-3">資料治理</th>
               </tr>
             </thead>
             <tbody>
@@ -147,12 +164,18 @@ export default function PlatformRFQsPage() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(item.created_at).toLocaleString("zh-TW")}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" disabled={classifyingId === item.id} onClick={() => void classify(item, "test")}>標記測試</Button>
+                      <Button size="sm" variant="outline" disabled={classifyingId === item.id} onClick={() => void classify(item, "spam")}>標記垃圾</Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {!loading && !items.length && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     沒有符合條件的詢價。

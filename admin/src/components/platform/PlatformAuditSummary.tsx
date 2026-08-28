@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<string, string> = {
   "site_build.publish_blocked": "發布被上線條件阻擋",
   "site_build.published": "標記網站發布",
   "site_profile.updated": "更新網站資料",
+  "rfq.classified": "分類詢價資料",
 };
 
 const TARGET_LABELS: Record<string, string> = {
@@ -27,6 +28,7 @@ const TARGET_LABELS: Record<string, string> = {
   privacy_operation: "隱私作業",
   site_build: "網站交付單",
   site_profile: "網站資料",
+  rfq: "詢價",
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -48,6 +50,9 @@ const FIELD_LABELS: Record<string, string> = {
   readiness: "上線條件",
   before: "執行前",
   after: "執行後",
+  is_test_data: "測試資料",
+  is_spam: "垃圾詢價",
+  reason: "原因",
 };
 
 const VALUE_LABELS: Record<string, string> = {

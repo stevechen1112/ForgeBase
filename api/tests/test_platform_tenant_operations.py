@@ -5,6 +5,7 @@ import uuid
 import pytest
 from app.core.security import create_access_token, get_password_hash
 from app.models.user import User
+from app.models.rfq_request import RFQRequest
 from sqlalchemy import text
 
 from tests.conftest import _make_engine, requires_db
@@ -214,6 +215,28 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
             response = await http_client.get(endpoint, headers=_auth(platform_token))
             assert response.status_code == 200, response.text
 
+        engine, factory = _make_engine()
+        try:
+            async with factory() as session:
+                rfq = RFQRequest(
+                    tenant_id=tenant_a.id,
+                    rfq_number=f"RFQ-TEST-{uuid.uuid4().hex[:8]}",
+                    form_data='{"email":"buyer@example.com"}',
+                )
+                session.add(rfq)
+                await session.commit()
+                await session.refresh(rfq)
+                rfq_id = rfq.id
+        finally:
+            await engine.dispose()
+        classified = await http_client.patch(
+            f"/api/v1/admin/rfqs/{rfq_id}/classification",
+            json={"is_test_data": True, "reason": "Synthetic integration fixture cleanup"},
+            headers=_auth(platform_token),
+        )
+        assert classified.status_code == 200, classified.text
+        assert classified.json()["is_test_data"] is True
+
         blocked_publish = await http_client.post(
             f"/api/v1/admin/tenants/{tenant_a.id}/site-build/publish",
             json={},
@@ -248,6 +271,7 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
             "site_build.publish_blocked",
             "site_profile.updated",
             "tenant.updated",
+            "rfq.classified",
         }.issubset(actions)
 
         dashboard = await http_client.get("/api/v1/admin/dashboard", headers=_auth(platform_token))

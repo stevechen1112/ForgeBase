@@ -9,6 +9,8 @@ def test_expected_ephemeral_email_is_exactly_scoped_to_the_workflow_run() -> Non
     email = expected_ephemeral_email("33134643328", "2")
     assert email == "production-browser-33134643328-2@forgebase.com"
     assert TypeAdapter(EmailStr).validate_python(email) == email
+    data_quality_email = expected_ephemeral_email("33134643328", "2", "data-quality")
+    assert data_quality_email == "production-data-quality-33134643328-2@forgebase.com"
 
 
 @pytest.mark.parametrize(
@@ -20,3 +22,8 @@ def test_expected_ephemeral_email_rejects_unscoped_values(
 ) -> None:
     with pytest.raises(ValueError):
         expected_ephemeral_email(run_id, run_attempt)
+
+
+def test_expected_ephemeral_email_rejects_unknown_purpose() -> None:
+    with pytest.raises(ValueError):
+        expected_ephemeral_email("123", "1", "arbitrary")

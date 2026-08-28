@@ -1,4 +1,4 @@
-"""Remove the exact one-run Platform Admin browser verifier account."""
+"""Remove an exact, allow-listed one-run Platform Admin operator account."""
 
 from __future__ import annotations
 
@@ -9,12 +9,19 @@ import re
 from app.core.config import settings
 
 
-def expected_ephemeral_email(run_id: str, run_attempt: str) -> str:
+_PURPOSES = {"browser", "data-quality"}
+
+
+def expected_ephemeral_email(
+    run_id: str, run_attempt: str, purpose: str = "browser"
+) -> str:
     if not re.fullmatch(r"[1-9][0-9]*", run_id):
         raise ValueError("Invalid workflow run id")
     if not re.fullmatch(r"[1-9][0-9]*", run_attempt):
         raise ValueError("Invalid workflow run attempt")
-    return f"production-browser-{run_id}-{run_attempt}@forgebase.com"
+    if purpose not in _PURPOSES:
+        raise ValueError("Invalid ephemeral operator purpose")
+    return f"production-{purpose}-{run_id}-{run_attempt}@forgebase.com"
 
 
 async def remove() -> None:
@@ -24,6 +31,7 @@ async def remove() -> None:
     expected = expected_ephemeral_email(
         os.environ.get("EPHEMERAL_OPERATOR_RUN_ID", ""),
         os.environ.get("EPHEMERAL_OPERATOR_RUN_ATTEMPT", ""),
+        os.environ.get("EPHEMERAL_OPERATOR_PURPOSE", "browser"),
     )
     if email != expected:
         raise RuntimeError("Refusing to remove an unexpected platform operator")

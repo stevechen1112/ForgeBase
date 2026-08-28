@@ -39,6 +39,7 @@ from app.models.observability import (
 )
 from app.models.platform_audit_log import PlatformAuditLog
 from app.models.privacy_operation import PrivacyOperation
+from app.models.rfq_request import RFQRequest
 from app.models.site_build import SiteBuild
 from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
@@ -244,6 +245,12 @@ class RetentionRunIn(BaseModel):
     reason: str = Field(min_length=10, max_length=500)
 
 
+class RFQClassificationIn(BaseModel):
+    is_test_data: Optional[bool] = None
+    is_spam: Optional[bool] = None
+    reason: str = Field(min_length=10, max_length=500)
+
+
 class IncidentActionIn(BaseModel):
     action: str = Field(pattern=r"^(acknowledge|resolve)$")
     note: str = Field(min_length=10, max_length=1000)
@@ -411,6 +418,7 @@ async def _record_platform_audit(
     session.add(
         PlatformAuditLog(
             actor_user_id=actor.id,
+            actor_email=actor.email,
             tenant_id=tenant_id,
             action=action,
             target_type=target_type,
@@ -849,6 +857,50 @@ async def platform_rfqs(
             is_spam=bool(row["is_spam"]), is_test_data=bool(row["is_test_data"]),
         ))
     return PlatformRFQList(data=data, total=int((count_row.mappings().first() or {}).get("total", 0)))
+
+
+@router.patch("/rfqs/{rfq_id}/classification")
+async def classify_platform_rfq(
+    rfq_id: UUID,
+    body: RFQClassificationIn,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    """Classify an RFQ without deleting it; every change remains auditable."""
+    rfq = await session.get(RFQRequest, rfq_id)
+    if not rfq:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+
+    before = {"is_test_data": rfq.is_test_data, "is_spam": rfq.is_spam}
+    if body.is_test_data is not None:
+        rfq.is_test_data = body.is_test_data
+    if body.is_spam is not None:
+        rfq.is_spam = body.is_spam
+        rfq.spam_reason = body.reason.strip() if body.is_spam else None
+        rfq.spam_marked_at = utcnow_naive() if body.is_spam else None
+        rfq.spam_marked_by = current_user.id if body.is_spam else None
+    after = {"is_test_data": rfq.is_test_data, "is_spam": rfq.is_spam}
+    changes = {
+        key: {"from": before[key], "to": value}
+        for key, value in after.items()
+        if before[key] != value
+    }
+    if not changes:
+        raise HTTPException(status_code=422, detail="No RFQ classification changes supplied")
+
+    rfq.updated_at = utcnow_naive()
+    session.add(rfq)
+    await _record_platform_audit(
+        session,
+        current_user,
+        action="rfq.classified",
+        target_type="rfq",
+        target_id=str(rfq.id),
+        tenant_id=rfq.tenant_id,
+        changes={**changes, "reason": body.reason.strip()},
+    )
+    await session.commit()
+    return {"id": str(rfq.id), **after}
 
 
 # ═══════════════════════════════════════════
@@ -1605,9 +1657,9 @@ async def platform_audit_log(
     rows = await session.exec(
         text(f"""
             SELECT pal.id, pal.action, pal.target_type, pal.target_id, pal.changes_json,
-                   pal.created_at, u.email AS actor_email
+                   pal.created_at, COALESCE(pal.actor_email, u.email, '已刪除帳號') AS actor_email
             FROM platform_audit_logs pal
-            JOIN users u ON u.id = pal.actor_user_id
+            LEFT JOIN users u ON u.id = pal.actor_user_id
             {where_sql}
             ORDER BY pal.created_at DESC LIMIT :limit
         """),
@@ -2095,9 +2147,10 @@ async def tenant_audit_log(
     rows = await session.exec(
         text("""
             SELECT pal.id, pal.action, pal.target_type, pal.target_id,
-                   pal.changes_json, pal.created_at, u.email AS actor_email
+                   pal.changes_json, pal.created_at,
+                   COALESCE(pal.actor_email, u.email, '已刪除帳號') AS actor_email
             FROM platform_audit_logs pal
-            JOIN users u ON u.id = pal.actor_user_id
+            LEFT JOIN users u ON u.id = pal.actor_user_id
             WHERE pal.tenant_id = :tenant_id
             ORDER BY pal.created_at DESC
             LIMIT :limit

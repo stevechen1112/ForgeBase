@@ -50,6 +50,17 @@ def synthetic_signals(form_data: Any, test_run_id: str | None) -> list[str]:
     return signals
 
 
+def tenant_identity_matches(name: str, brand_name: str | None) -> bool:
+    if not brand_name:
+        return True
+    normalized_name = " ".join(name.lower().split())
+    normalized_brand = " ".join(brand_name.lower().split())
+    # Demo is an operational lifecycle qualifier, not part of the public brand.
+    if normalized_name.endswith(" demo"):
+        normalized_name = normalized_name.removesuffix(" demo").strip()
+    return normalized_name == normalized_brand
+
+
 async def build_platform_data_quality_report(session: AsyncSession) -> dict[str, Any]:
     tenant_rows = await session.execute(
         text(
@@ -67,7 +78,7 @@ async def build_platform_data_quality_report(session: AsyncSession) -> dict[str,
     )
     tenants = []
     for row in tenant_rows.mappings().all():
-        mismatch = bool(row["brand_name"] and row["name"].strip() != row["brand_name"].strip())
+        mismatch = not tenant_identity_matches(row["name"], row["brand_name"])
         tenants.append(
             {
                 "id": str(row["id"]),

@@ -1031,6 +1031,15 @@ export const platformAdminApi = {
       : "";
     return apiClient.get<PlatformRFQList>(`/admin/rfqs${qs}`, token);
   },
+  classifyRfq: (
+    token: string,
+    id: string,
+    body: { is_test_data?: boolean; is_spam?: boolean; reason: string },
+  ) => apiClient.patch<{ id: string; is_test_data: boolean; is_spam: boolean }>(
+    `/admin/rfqs/${id}/classification`,
+    body,
+    token,
+  ),
 
   resourceStatus: (token: string) =>
     apiClient.get<PlatformResourceStatus>("/admin/resources/status", token),
