@@ -19,8 +19,6 @@ jobs:
     timeout-minutes: 15
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      FORGEBASE_PLATFORM_EMAIL: ${{ secrets.PLATFORM_OPERATOR_EMAIL }}
-      FORGEBASE_PLATFORM_PASSWORD: ${{ secrets.PLATFORM_OPERATOR_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -83,11 +81,55 @@ jobs:
           python -m pip install -r scripts/requirements-ui-scan.txt
           python -m playwright install --with-deps chromium
 
+      - name: Create one-run Platform Admin browser verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          operator_email="production-browser-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@forgebase.invalid"
+          operator_password=$(python -c 'import secrets; print(secrets.token_urlsafe(48))')
+          echo "::add-mask::$operator_password"
+          printf 'FORGEBASE_PLATFORM_EMAIL=%s\n' "$operator_email" >> "$GITHUB_ENV"
+          printf 'FORGEBASE_PLATFORM_PASSWORD=%s\n' "$operator_password" >> "$GITHUB_ENV"
+          {
+            printf '%s\n' "$operator_email"
+            printf '%s\n' "$operator_password"
+          } | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            IFS= read -r operator_email
+            IFS= read -r operator_password
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e ADMIN_EMAIL="$operator_email" \
+              -e ADMIN_PASSWORD="$operator_password" \
+              -e ADMIN_IS_SUPERUSER=true \
+              -e PYTHONPATH=/app \
+              api python scripts/seed_admin_bcrypt.py
+          '
+
       - name: Verify recovery evidence in the real Platform Admin UI
         env:
           FORGEBASE_PRODUCTION_URL: https://pcbrm.tw
           FORGEBASE_BROWSER_EVIDENCE_DIR: artifacts/production-admin
         run: python scripts/verify_production_platform_resources.py
+
+      - name: Remove one-run Platform Admin browser verifier
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${FORGEBASE_PLATFORM_EMAIL:-}"
+          printf '%s\n' "$FORGEBASE_PLATFORM_EMAIL" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r operator_email
+              cd /opt/forgebase
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e EPHEMERAL_OPERATOR_EMAIL="$operator_email" \
+                -e EPHEMERAL_OPERATOR_RUN_ID="'"$GITHUB_RUN_ID"'" \
+                -e EPHEMERAL_OPERATOR_RUN_ATTEMPT="'"$GITHUB_RUN_ATTEMPT"'" \
+                -e PYTHONPATH=/app \
+                api python scripts/remove_ephemeral_platform_operator.py
+            '
 
       - name: Upload production browser evidence
         if: always()
