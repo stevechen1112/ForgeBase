@@ -1,5 +1,8 @@
 # ForgeBase 第一階段 P0 對外測試與申請導入 TODO
 
+> [!WARNING]
+> **歷史兩階段 TODO。** ForgeBase 現已取消把產品拆成第一／第二階段的方案；北極星全鏈屬同一核心產品。本文只保留當時的封閉測試與公開申請安全條件，不可用「第二階段未包含」推定目前功能缺口。最新狀態請讀 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 與 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md`。
+
 日期：2026-08-16\
 適用範圍：第一階段「由 ForgeBase 團隊製作與交付網站，客戶交付後從後台維護內容」\
 不包含：DIY 拖拉建站、Legacy Site Intake、AI 自動產文、公開價格、免費試用、固定建站時程承諾、第二階段公司辨識供應商正式串接

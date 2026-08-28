@@ -1,5 +1,8 @@
 # ForgeBase Master Roadmap：全套計畫執行總表
 
+> [!WARNING]
+> **舊 roadmap，已不再是唯一執行總表。** 本文保留 2026-08-03 的 ContentFlow 與五階段工作線背景；目前產品北極星、四分類、完成度與剩餘 Gate，請以 `FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md`、`FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 及 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md` 為準。
+
 文件日期：2026-08-03  
 狀態：FB 範圍 Phase 1/3/4/5 完成；Phase 2a（FB 接收端）完成；待 CF 端開工與部署
 

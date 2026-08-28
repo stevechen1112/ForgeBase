@@ -1,5 +1,8 @@
 # ForgeBase 公司辨識與相關聯絡人候選方案
 
+> [!WARNING]
+> **歷史方案／已被北極星計畫取代。** 本文的 15%、優先序與尚未串接敘述只代表 2026-08-16。現況為 PDL production Shadow、Hunter provider registry 與完整受控北極星工程鏈；最新邊界請讀 `FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md`、`FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 與 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md`。
+
 **文件日期**：2026-08-16\
 **文件狀態**：架構、接洽時點與測試方向均已確認；待第一階段上線、供應商資格確認與 Shadow Mode 實測\
 **目前優先序**：第二優先（正式外部測試安全與觀測封板之後）\

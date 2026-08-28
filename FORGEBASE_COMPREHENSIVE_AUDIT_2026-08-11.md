@@ -1,5 +1,8 @@
 # ForgeBase 產品全面稽核報告
 
+> [!WARNING]
+> **歷史稽核。** 本文保留 2026-08-11 的架構與風險快照，不可用來判定目前完成度或 production readiness。最新結論請讀 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 與 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md`。
+
 稽核日期：2026-08-11\
 稽核基準：`main` / `c69c7d4b2a1ee04f0885db3b6db0b1dfd64ad8e3`\
 產品定位：外銷製造商 B2B 官網、訪客意圖、RFQ 與成長營運平台\

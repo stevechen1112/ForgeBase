@@ -1,5 +1,8 @@
 # ForgeBase 正式外部測試安全與觀測封板報告
 
+> [!WARNING]
+> **歷史 hardening 快照。** 本文的 `EMAIL_DRY_RUN`、外部資源與 readiness 狀態只代表 2026-08-16。現況請以 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md`、`FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md` 及最新 production commercial-readiness audit 為準；本文的 fail-closed 原則仍有效。
+
 日期：2026-08-16\
 正式環境：`https://pcbrm.tw`\
 結論：**程式與部署層封板已完成並上線；正式外部測試閘門仍為 BLOCKED，不應視為已取得未知公開流量的放行。**

@@ -1,5 +1,8 @@
 # ForgeBase 方案 B：NorthForge 公開 Reference Site TODO 盤點
 
+> [!WARNING]
+> **歷史 Reference Site TODO。** 本文保留 NorthForge 早期透明展示與零對外聯繫決策，不代表目前 backlog、產品分階段或 production provider 狀態。最新狀態請讀 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 與 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md`。
+
 文件日期：2026-08-11\
 文件狀態：待執行\
 決策：採用「透明 Reference Site＋真實公開流量＋真實需求提交＋零對外銷售回覆」\

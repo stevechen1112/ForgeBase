@@ -1,5 +1,8 @@
 # ForgeBase 產品宣稱與實作差距稽核紀錄
 
+> [!WARNING]
+> **歷史基線／已被取代。** 本文記錄 2026-08-26 當時的差距，不代表目前 production 狀態。最新 17 模組分數、北極星實作、PDL／Hunter／Resend 與對外承諾邊界，請以 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 的 2026-08-28 更新版及 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md` 為準。
+
 **稽核日期：** 2026-08-26\
 **文件版本：** v1.0\
 **稽核基準：** 本工作目錄當下的未提交工作樹\

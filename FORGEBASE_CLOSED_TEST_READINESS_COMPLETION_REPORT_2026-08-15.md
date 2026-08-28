@@ -1,5 +1,8 @@
 # ForgeBase 封閉測試就緒完成報告
 
+> [!WARNING]
+> **歷史完成度快照。** 本文的第一／第二層分數與當時外部服務狀態已被 2026-08-28 的單一產品北極星盤點取代。請以 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 與 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md` 為準。
+
 - 完成日期：2026-08-15
 - 正式環境：Linode `172.233.64.5`
 - ForgeBase 官網：`https://pcbrm.tw/`

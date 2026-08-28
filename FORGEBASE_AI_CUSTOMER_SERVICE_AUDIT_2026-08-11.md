@@ -1,5 +1,8 @@
 # ForgeBase 前台 AI 客服與相關配置檢視報告
 
+> [!WARNING]
+> **歷史稽核。** 本文保留 2026-08-11 當時的 AI Chat 差距與測試證據；目前前台 Product Advisor、後台 AI 業務助理、五語介面與 grounding 邊界，請以 `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md`、`FORGEBASE_AI_ADVISOR_IMPLEMENTATION_RECORD_2026-08-18.md` 及 `FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md` 為準。
+
 日期：2026-08-11\
 檢視範圍：前台 Chat Widget、公開 Chat API、回答策略、知識來源、RFQ handoff、租戶隔離、方案與環境配置、管理後台、通知、品質與成本可觀測性\
 檢視方式：程式碼審查、桌機／手機實機操作、英文／繁中介面驗證、針對性單元測試與前端型別檢查\
