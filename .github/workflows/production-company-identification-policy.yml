@@ -14,7 +14,7 @@ on:
       tenant_slugs:
         description: Comma-separated active tenant slugs; broad wildcards are not accepted
         required: true
-        default: northforge-tools,axisform-precision
+        default: default-tenant,axisform-precision
         type: string
 
 concurrency:

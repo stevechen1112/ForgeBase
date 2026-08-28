@@ -1542,3 +1542,47 @@ ForgeBase 應保存的自有衍生資料：
 - LINE／Telegram 個別渠道：自本批 production migration 起各 60 天。
 
 觀察期結束後只能逐項決策；任何使用訊號都會阻擋移除。通知核心不在刪除候選內。
+
+---
+
+## 24. Production 真實 IP 公司辨識補強（2026-08-28）
+
+### 24.1 發現的差距
+
+先前 production provider 同步已安裝 PDL 金鑰，並確認 `pdl_ip` 出現在 provider registry；但該流程刻意不修改租戶政策，因此「provider 可供選擇」不等於「所有現有租戶的事件已使用真實 provider」。本輪依使用者要求，不再以 mock 或 registry presence 作為完成證據。
+
+切換前只讀 audit（GitHub Actions `33141652770`）確認：
+
+- `axisform-precision`：既有政策已為 `shadow / pdl_ip`，每日 lookup quota 3、成本上限 3。
+- `default-tenant`（NorthForge Tools）：尚未建立政策，實際狀態為 `off / mock`。
+- 第一次 audit `33141599754` 使用了公開網站路徑 `northforge-tools` 作為租戶 slug，因目標不存在而 fail-closed；production 沒有任何政策變更。確認正式租戶 slug 為 `default-tenant` 後才重跑。
+
+### 24.2 實作與安全邊界
+
+- 新增 `api/scripts/manage_company_identification_policy.py`，只接受明確列出的啟用租戶 slug，不接受 wildcard 或全租戶隱式切換。
+- `apply` 會先使用固定公開 DNS 位址完成一次真實 PDL request；認證、連線或 upstream 檢查失敗時，不得寫入租戶政策。
+- 探測不使用訪客 IP，不輸出 API key、原始 IP、provider payload 或候選公司內容。
+- 租戶只切到 `Shadow Mode`；不自動確認公司、不尋找聯絡人、不產生寄送，也不啟用自動外聯。
+- 既有租戶 quota、成本上限、國家與信心門檻均保留；只有缺少政策的 NorthForge 使用模型的保守預設值。
+- 每次實際政策變更寫入不可變 `PlatformAuditLog`，包含 actor email snapshot、before／after 與原因。
+- 新增 `Production Company Identification Policy` 工作流程，分為 `audit` 與 `apply`，並上傳不含個資的 private evidence artifact。
+
+### 24.3 Code review 與測試
+
+- Code review 修正政策切換順序：真實 PDL 探測必須先成功，才可 commit production policy，避免「政策已開但 provider 不可用」。
+- 明確區分租戶 slug 與公開網站路徑，並把 workflow 預設目標修正為 `default-tenant,axisform-precision`。
+- 本機 targeted suite：`18 passed / 3 skipped`；Ruff 與 `git diff --check` 通過。
+- 正式 release gate `33141166899` 通過完整 API、North Star、RBAC、五語系瀏覽器、資安、SBOM、備份還原、production image 與健康檢查。
+
+### 24.4 Production 完成證據
+
+正式 apply（GitHub Actions `33141690665`）結果：
+
+- 真實 provider：`pdl_ip`。
+- PDL authenticated request：完成；結果為合法 `no_match`、0 units，證明不是 mock，也沒有為驗證捏造公司候選。
+- 實際變更租戶：只有 `default-tenant`。
+- NorthForge Tools：`shadow / pdl_ip`、最低意圖分數 40、保留 30 天、每日 lookup quota 100、每日成本上限 10。
+- AxisForm Precision：維持既有 `shadow / pdl_ip` 與既有 quota／國家政策，沒有被覆寫。
+- 自動聯絡或寄送：關閉。
+
+事後只讀 audit（GitHub Actions `33141722766`）再次確認兩個 production 租戶皆為 `ready=true`、`shadow / pdl_ip`，且 `changed_tenants=[]`。因此目前 production 的 IP → 公司推測已使用真實 PDL provider；後續是否產生公司候選，仍取決於訪客同意分析、意圖分數達標、公開非 bot／VPN／hosting IP、quota／成本 Gate 與 PDL 實際 match，不能保證每一個 IP 都能辨識出公司。

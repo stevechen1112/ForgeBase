@@ -12,8 +12,8 @@ from scripts.manage_company_identification_policy import (
 
 
 def test_parse_tenant_slugs_is_explicit_normalized_and_deduplicated() -> None:
-    assert parse_tenant_slugs("NorthForge-Tools, axisform-precision,northforge-tools") == [
-        "northforge-tools",
+    assert parse_tenant_slugs("Default-Tenant, axisform-precision,default-tenant") == [
+        "default-tenant",
         "axisform-precision",
     ]
 
