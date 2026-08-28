@@ -106,6 +106,7 @@ jobs:
           python -m pytest
           scripts/tests/test_run_external_uptime_monitor.py
           scripts/tests/test_configure_growth_mail_env.py
+          scripts/tests/test_audit_resend_account.py
           -q
       - name: Upload API release evidence
         if: always()

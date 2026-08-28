@@ -1,0 +1,65 @@
+name: Audit Production Resend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Read-only Resend domain and webhook audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read provider configuration without exposing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RESEND_API_KEY"
+          mkdir -p artifacts/resend
+          python scripts/audit_resend_account.py \
+            --expected-sending-domain premierbiz.com.tw \
+            --expected-webhook-endpoint https://pcbrm.tw/api/v1/webhooks/resend \
+            --output artifacts/resend/report.json
+
+      - name: Verify redaction contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/resend/report.json").read_text())
+          assert report["operation"] == "read_only"
+          assert not any(report["privacy"].values())
+          assert report["privacy"] == {
+              "api_key_in_report": False,
+              "dns_record_values_in_report": False,
+              "email_addresses_in_report": False,
+              "provider_ids_in_report": False,
+          }
+          assessment = report["assessment"]
+          print(
+              "Resend read-only audit complete: "
+              f"status={assessment['status']} "
+              f"sending_domain_ready={assessment['sending_domain_ready']} "
+              f"outbound_webhook_ready={assessment['outbound_webhook_ready']} "
+              f"inbound_webhook_ready={assessment['inbound_webhook_ready']}"
+          )
+          PY
+
+      - name: Upload private Resend evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-resend-readiness-evidence
+          path: artifacts/resend/
+          if-no-files-found: error
+          retention-days: 30
