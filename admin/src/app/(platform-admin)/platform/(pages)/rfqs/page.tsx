@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
   assigned: "已指派",
   in_progress: "處理中",
   quoted: "已報價",
+  negotiation: "議價中",
   won: "成交",
   lost: "失單",
   expired: "逾期",

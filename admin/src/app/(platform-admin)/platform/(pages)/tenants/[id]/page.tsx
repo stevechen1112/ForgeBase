@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlatformSiteProfileEditor } from "@/components/platform/PlatformSiteProfileEditor";
+import { PlatformAuditSummary, platformAuditActionLabel } from "@/components/platform/PlatformAuditSummary";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
@@ -42,16 +43,6 @@ const READINESS_LABELS: Record<string, string> = {
   cms_adapter_connected: "CMS 串接確認",
 };
 
-const AUDIT_LABELS: Record<string, string> = {
-  "tenant.provisioned": "建立租戶",
-  "tenant.updated": "更新租戶設定",
-  "site_build.created": "建立網站交付單",
-  "site_build.updated": "更新網站交付設定",
-  "site_build.validated": "檢查上線條件",
-  "site_build.publish_blocked": "發布被上線條件阻擋",
-  "site_build.published": "標記網站發布",
-};
-
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -79,6 +70,7 @@ export default function TenantDetailPage() {
   const [editHandoffAt, setEditHandoffAt] = useState("");
   const [editAcceptanceStatus, setEditAcceptanceStatus] = useState<AcceptanceStatus>("pending");
   const [editInternalNote, setEditInternalNote] = useState("");
+  const [editTenantName, setEditTenantName] = useState("");
 
   useEffect(() => {
     if (!token || !id) return;
@@ -98,6 +90,7 @@ export default function TenantDetailPage() {
       })
       .then(([t, build, siteTemplates, audit, users, catalog, manifest]) => {
         setTenant(t);
+        setEditTenantName(t.name);
         setEditFeatureOverrides(t.feature_overrides || {});
         setFeatureCatalog(catalog);
         setSiteBuild(build);
@@ -135,6 +128,22 @@ export default function TenantDetailPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function saveTenantName() {
+    if (!token || !tenant) return;
+    const name = editTenantName.trim().replace(/\s+/g, " ");
+    if (name.length < 2 || name === tenant.name) return;
+    setSaving(true); setError(null);
+    try {
+      await platformAdminApi.updateTenant(token, tenant.id, { name });
+      const refreshed = await platformAdminApi.tenant(token, tenant.id);
+      setTenant(refreshed);
+      setEditTenantName(refreshed.name);
+      setAuditLog(await platformAdminApi.tenantAuditLog(token, tenant.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "租戶名稱儲存失敗");
+    } finally { setSaving(false); }
   }
 
   function effectiveFeature(item: FeatureCatalogItem) {
@@ -326,6 +335,23 @@ export default function TenantDetailPage() {
           <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => setConfirmStatusChange(false)}>取消</Button><Button variant={tenant.is_active ? "destructive" : "default"} size="sm" disabled={saving} onClick={toggleActive}>{saving ? "處理中..." : tenant.is_active ? "確認停用" : "確認啟用"}</Button></div>
         </div>
       )}
+
+      <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[260px] flex-1 text-sm font-medium">
+            租戶顯示名稱
+            <Input className="mt-2" value={editTenantName} maxLength={200} onChange={(event) => setEditTenantName(event.target.value)} />
+          </label>
+          <Button
+            size="sm"
+            disabled={saving || editTenantName.trim().replace(/\s+/g, " ").length < 2 || editTenantName.trim().replace(/\s+/g, " ") === tenant.name}
+            onClick={saveTenantName}
+          >
+            {saving ? "儲存中..." : "儲存名稱"}
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">更名會立即反映於平台後台並寫入操作紀錄；網址識別 slug 不會改變。</p>
+      </section>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -571,7 +597,7 @@ export default function TenantDetailPage() {
           <div className="divide-y divide-border">
             {auditLog.map((item) => (
               <div key={item.id} className="flex flex-wrap items-start justify-between gap-3 px-5 py-3">
-                <div><p className="text-sm font-medium">{AUDIT_LABELS[item.action] || item.action}</p><p className="mt-0.5 text-xs text-muted-foreground">{item.actor_email} · {Object.keys(item.changes).join("、") || "無欄位異動"}</p></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium">{platformAuditActionLabel(item.action)}</p><p className="mt-0.5 text-xs text-muted-foreground">{item.actor_email}</p><div className="mt-2"><PlatformAuditSummary changes={item.changes} /></div></div>
                 <time className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("zh-TW")}</time>
               </div>
             ))}

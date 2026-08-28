@@ -223,10 +223,11 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
 
         suspended = await http_client.put(
             f"/api/v1/admin/tenants/{tenant_a.id}",
-            json={"is_active": False},
+            json={"name": "  Renamed   Tenant  ", "is_active": False},
             headers=_auth(platform_token),
         )
         assert suspended.status_code == 200, suspended.text
+        assert suspended.json()["name"] == "Renamed Tenant"
         assert suspended.json()["is_active"] is False
 
         audit = await http_client.get(
@@ -235,6 +236,11 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
         )
         assert audit.status_code == 200, audit.text
         actions = {item["action"] for item in audit.json()}
+        tenant_update = next(item for item in audit.json() if item["action"] == "tenant.updated")
+        assert tenant_update["changes"]["name"] == {
+            "from": tenant_a.name,
+            "to": "Renamed Tenant",
+        }
         assert {
             "site_build.created",
             "site_build.updated",

@@ -8,6 +8,11 @@ import {
   platformAdminApi,
   type PlatformAuditItem,
 } from "@/lib/api/platform-admin";
+import {
+  PlatformAuditSummary,
+  platformAuditActionLabel,
+  platformAuditTargetLabel,
+} from "@/components/platform/PlatformAuditSummary";
 
 export default function PlatformAuditPage() {
   const { state } = usePlatformAuth();
@@ -78,12 +83,13 @@ export default function PlatformAuditPage() {
                     {new Date(item.created_at).toLocaleString("zh-TW")}
                   </td>
                   <td className="px-4 py-3">{item.actor_email}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{item.action}</td>
-                  <td className="px-4 py-3">{item.target_type}</td>
+                  <td className="px-4 py-3">
+                    <p>{platformAuditActionLabel(item.action)}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">{item.action}</p>
+                  </td>
+                  <td className="px-4 py-3">{platformAuditTargetLabel(item.target_type)}</td>
                   <td className="max-w-[360px] px-4 py-3">
-                    <code className="block truncate text-xs text-muted-foreground">
-                      {JSON.stringify(item.changes)}
-                    </code>
+                    <PlatformAuditSummary changes={item.changes} />
                   </td>
                 </tr>
               ))}

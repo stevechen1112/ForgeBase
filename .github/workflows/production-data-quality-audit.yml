@@ -1,0 +1,70 @@
+name: Production Data Quality Audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-data-quality-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Build read-only production data-quality evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Generate privacy-minimised report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/production-data-quality
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app \
+              api python scripts/audit_platform_data_quality.py
+          ' > artifacts/production-data-quality/report.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/production-data-quality/report.json").read_text())
+          assert report["schema_version"] == 1
+          assert report["policy"] == "read_only_review_required"
+          summary = report["summary"]
+          print(
+              "Data-quality report ready: "
+              f"{summary['tenant_count']} tenants, "
+              f"{summary['rfq_count']} RFQs, "
+              f"{summary['rfq_manual_review_count']} RFQs require review"
+          )
+          PY
+
+      - name: Upload private audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-data-quality-evidence
+          path: artifacts/production-data-quality/report.json
+          if-no-files-found: error
+          retention-days: 7

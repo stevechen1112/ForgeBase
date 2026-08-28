@@ -159,8 +159,19 @@ class SystemHealth(BaseModel):
 
 
 class TenantUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=200)
     feature_overrides: Optional[dict[str, bool]] = None
     is_active: Optional[bool] = None
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise ValueError("Tenant name must contain at least 2 characters")
+        return normalized
 
     @field_validator("feature_overrides")
     @classmethod
@@ -600,7 +611,7 @@ async def platform_workspace(
                  WHERE status != 'published' OR delivery_stage != 'live') AS delivery_open,
                 (SELECT COUNT(*) FROM rfq_requests
                  WHERE is_test_data = FALSE AND is_spam = FALSE
-                   AND status IN ('new', 'assigned', 'in_progress', 'quoted')
+                   AND status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation')
                    AND (assigned_to IS NULL OR sla_breached = TRUE)) AS rfq_attention,
                 (SELECT COUNT(*) FROM operational_jobs WHERE status = 'failed') AS failed_jobs
         """)
@@ -659,7 +670,7 @@ async def platform_workspace(
             FROM rfq_requests r
             LEFT JOIN tenants t ON t.id = r.tenant_id
             WHERE r.is_test_data = FALSE AND r.is_spam = FALSE
-              AND r.status IN ('new', 'assigned', 'in_progress', 'quoted')
+              AND r.status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation')
               AND (r.assigned_to IS NULL OR r.sla_breached = TRUE)
             ORDER BY r.sla_breached DESC, r.created_at ASC
             LIMIT 10
@@ -793,7 +804,10 @@ async def platform_rfqs(
     if not include_test:
         filters.append("r.is_test_data = FALSE")
     if needs_attention:
-        filters.append("(r.assigned_to IS NULL OR r.sla_breached = TRUE)")
+        filters.append(
+            "(r.status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation') "
+            "AND (r.assigned_to IS NULL OR r.sla_breached = TRUE))"
+        )
     if search:
         filters.append("(r.rfq_number ILIKE :search OR t.name ILIKE :search OR r.form_data ILIKE :search)")
         params["search"] = f"%{search.strip()}%"
@@ -1069,15 +1083,19 @@ async def update_tenant(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_superuser),
 ) -> Any:
-    """Update tenant status and governed capability overrides."""
+    """Update tenant identity, status, and governed capability overrides."""
     tenant = await session.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
     before = {
+        "name": tenant.name,
         "feature_overrides": tenant.feature_overrides or {},
         "is_active": tenant.is_active,
     }
+    if body.name is not None:
+        tenant.name = body.name
+
     if body.feature_overrides is not None:
         tenant.feature_overrides = dict(body.feature_overrides)
 
@@ -1085,6 +1103,7 @@ async def update_tenant(
         tenant.is_active = body.is_active
 
     after = {
+        "name": tenant.name,
         "feature_overrides": tenant.feature_overrides or {},
         "is_active": tenant.is_active,
     }

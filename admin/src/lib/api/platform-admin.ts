@@ -134,6 +134,7 @@ export type RetirementAuditReport = {
 };
 
 export type TenantUpdate = {
+  name?: string;
   feature_overrides?: Record<string, boolean>;
   is_active?: boolean;
 };
