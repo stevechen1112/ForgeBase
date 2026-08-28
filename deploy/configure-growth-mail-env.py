@@ -146,6 +146,12 @@ def configure(
         "EMAIL_INTERNAL_RECIPIENT_ALLOWLIST": internal_recipient,
         "SALES_NOTIFY_EMAIL": sales_notify_email,
         "MANAGER_EMAIL": manager_email,
+        # Readiness configuration must always fail closed.  Controlled probes
+        # may open one of these switches temporarily, but replaying this
+        # command is also the recovery path after an interrupted probe.
+        "EMAIL_EXTERNAL_DELIVERY_ENABLED": "false",
+        "OUTREACH_SEND_ENABLED": "false",
+        "INBOUND_REPLY_ENABLED": "false",
         "OUTREACH_PUBLIC_BASE_URL": public_base_url,
         "OUTREACH_UNSUBSCRIBE_SECRET": unsubscribe_secret,
     }
@@ -183,6 +189,7 @@ def configure(
         "sender_identity_configured": True,
         "internal_recipient_aligned": True,
         "sales_handoff_recipient_aligned": True,
+        "delivery_switches_closed": True,
         "unsubscribe_secret_configured": True,
         "unsubscribe_secret_generated": unsubscribe_rotated,
         "inbound_domain_configured": inbound_domain is not None,

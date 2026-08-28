@@ -31,7 +31,14 @@ def test_configures_outbound_atomically_without_changing_unrelated_values(
     tmp_path: Path,
 ) -> None:
     env_file = tmp_path / "api.env"
-    env_file.write_text("OTHER=keep\nOUTREACH_PUBLIC_BASE_URL=\n", encoding="utf-8")
+    env_file.write_text(
+        "OTHER=keep\n"
+        "OUTREACH_PUBLIC_BASE_URL=\n"
+        "EMAIL_EXTERNAL_DELIVERY_ENABLED=true\n"
+        "OUTREACH_SEND_ENABLED=true\n"
+        "INBOUND_REPLY_ENABLED=true\n",
+        encoding="utf-8",
+    )
 
     result = module.configure(
         env_file,
@@ -47,8 +54,12 @@ def test_configures_outbound_atomically_without_changing_unrelated_values(
     assert values["EMAIL_INTERNAL_RECIPIENT_ALLOWLIST"] == IDENTITY["sender_email"]
     assert values["SALES_NOTIFY_EMAIL"] == IDENTITY["sender_email"]
     assert values["MANAGER_EMAIL"] == IDENTITY["sender_email"]
+    assert values["EMAIL_EXTERNAL_DELIVERY_ENABLED"] == "false"
+    assert values["OUTREACH_SEND_ENABLED"] == "false"
+    assert values["INBOUND_REPLY_ENABLED"] == "false"
     assert len(values["OUTREACH_UNSUBSCRIBE_SECRET"]) >= 32
     assert result["unsubscribe_secret_generated"] is True
+    assert result["delivery_switches_closed"] is True
     if sys.platform != "win32":
         assert stat.S_IMODE(env_file.stat().st_mode) == 0o600
 
@@ -78,6 +89,9 @@ def test_replay_preserves_existing_signing_secrets(tmp_path: Path) -> None:
     assert values["OUTREACH_UNSUBSCRIBE_SECRET"] == existing_unsubscribe
     assert values["OUTREACH_INBOUND_SECRET"] == existing_inbound
     assert values["OUTREACH_INBOUND_DOMAIN"] == "replies.premierbiz.com.tw"
+    assert values["EMAIL_EXTERNAL_DELIVERY_ENABLED"] == "false"
+    assert values["OUTREACH_SEND_ENABLED"] == "false"
+    assert values["INBOUND_REPLY_ENABLED"] == "false"
     assert result["unsubscribe_secret_generated"] is False
     assert result["inbound_secret_generated"] is False
 

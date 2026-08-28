@@ -111,6 +111,14 @@ jobs:
                 args+=(--inbound-domain "$inbound_domain")
               fi
               python3 deploy/configure-growth-mail-env.py "${args[@]}"
+              # Defense in depth for hosts that have not yet received the
+              # latest configure script. This existing helper also refuses to
+              # operate unless both outbound switches are closed.
+              if [ "$mode" = inbound ]; then
+                python3 deploy/set-controlled-inbound-window.py \
+                  --env-file /opt/forgebase/deploy/api.env \
+                  --state closed
+              fi
               docker compose -f docker-compose.prod.yml up -d --force-recreate api
               for attempt in $(seq 1 12); do
                 status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | \
