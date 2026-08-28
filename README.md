@@ -7,6 +7,25 @@ ForgeBase 是專為外銷製造商打造的 RFQ 成長系統。
 
 ---
 
+## 目前產品狀態（2026-08-28）
+
+**ForgeBase 已可在正式環境使用，適合開始導入首批租戶與受控商用試營運。** 官網、內容、多語、AI 客服、訪客追蹤、意圖評分、公司推測、聯絡窗口審核、個人化草稿、詢價、買家管線、真人接手與 RFQ／成交管理均已有 production 實作；平台權限、稽核、備份、復原、監控與部署 Gate 亦已到位。
+
+「可使用」不等於已開啟無人監督的陌生開發。一般外寄、真人 inbound reply loop 與租戶自動外聯政策目前刻意維持 fail closed，必須在資料權利、法遵、指定測試對象及人工核准條件齊備後才可受控開啟。
+
+| 範圍 | 目前狀態 |
+|------|----------|
+| 官網、內容、多語、AI 客服、RFQ 與後台營運 | **正式可用** |
+| 訪客行為、意圖評分與公司推測 | **正式可用**；公司結果是推測，不代表識別訪客本人 |
+| 聯絡窗口候選與個人化信件 | **人工審核／Review Only** |
+| Resend outbound／inbound prerequisites | **配置完成**；專用收信網域 MX／DKIM verified，domain、webhook 與高熵 route secret 已就緒 |
+| 自動外寄與真人回信處理 | **受控關閉**；三個全域 kill switch 均為 `false` |
+| 商業成效 | **等待首批真實 pilot**；不得以內部或 synthetic 測試宣稱寄達率、回覆率或成交率 |
+
+目前建議使用方式：先導入官網、AI 客服、追蹤、詢價及人工審核流程；外寄與真人回信另以單一租戶、指定收件人及明確授權逐步驗收。
+
+---
+
 ## 產品核心四層
 
 ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
@@ -16,7 +35,7 @@ ForgeBase 把官網從展示型網站，升級成可運作的詢價漏斗：
 | **Capture** | 買家找得到你嗎？ | SEO 基礎設施、多語言內容、人工維護的產品與信任內容 |
 | **Intent** | 誰只是逛逛、誰在評估？ | 15 種行為追蹤、Intent Score 2.0 採購面向（facets）評分、「為何 Hot」解釋、ML 意圖評分、訪客分眾、GeoIP、Facet 驅動 Dynamic CTA、AI 業務顧問 |
 | **Conversion** | 高意圖訪客有被推進到詢價嗎？ | RFQ 表單、AI RFQ 分析與草擬回覆、Chat → RFQ handoff、品質分數、時區感知 SLA、即時通知、自動專業回覆、RFQ 事件審計 |
-| **Outcomes** | 詢價有變成訂單嗎？沒有立即詢價的呢？ | 成交漏斗（流量→成交七層）、客戶成果儀表板、內容→成交歸因、內容成效分析、顧問任務佇列；未轉換訪客以分眾＋Email 培育序列養回來再成交 |
+| **Outcomes** | 詢價有變成訂單嗎？沒有立即詢價的呢？ | 成交漏斗（流量→成交七層）、客戶成果儀表板、內容→成交歸因、內容成效分析、顧問任務佇列；未轉換訪客可進入分眾、人工審核與受控 Email 培育流程 |
 
 ---
 
@@ -80,7 +99,7 @@ ForgeBase 採單一產品，不再區分 Starter／Professional 或第一／第�
 | **Chat → RFQ Handoff** | AI 對話中判定購買意圖後，自動導向預填 RFQ（含可詢價需求摘要）|
 | **RFQ 品質分數** | 規則式 v1：貿易術語、年採購量、時程、認證需求等維度，0–100 分 |
 | **時區感知 SLA** | 依租戶營業時區計算首次回應期限，APScheduler 自動掃描逾期 |
-| **即時通知 & 自動回覆** | 高品質 RFQ 即時推播 Telegram／LINE；可選自動寄出專業確認信 |
+| **即時通知 & 受控回覆** | 高品質 RFQ 可依已配置通道通知；專業確認信必須同時通過租戶政策、收件範圍及全域寄送開關 |
 | **RFQ 事件審計** | RFQ 生命週期完整紀錄，含狀態變更、指派、首次回覆、報價等事件時間軸 |
 | **AgentOS 工作流（退場觀察）** | runtime 與 tenantless job 均鎖定關閉；歷史 `agent_run_id`／writeback 欄位暫留以支援資料回查與可回復性 |
 
@@ -234,7 +253,15 @@ Admin 端至 `/backend/dashboard/settings/notifications` 輸入 Telegram chat_id
 
 ForgeBase 不再區分 Starter／Professional，也不以兩階段方案切割產品。產品以同一條北極星流程交付：匿名訪客 → 行為追蹤 → 意圖評分 → 公司與窗口候選 → 個人化外聯 → 回覆 → 真人業務接手 → RFQ／成交。
 
-固定核心能力對所有租戶開啟；仍在建置、試行、等待第三方資源或退場觀察的能力，則由平台營運方透過 capability override 管理。Admin 使用 `CapabilityProvider`／`CapabilityGate` 對齊後端 `RequireFeature`，此機制是營運安全與成熟度治理，不是付費分級或升級牆。
+所有租戶共用同一套核心產品模型，不以方案等級切割；實際可操作範圍仍受角色權限、外部資料權利、供應商 readiness 與商用安全 Gate 約束。仍在試行、等待第三方資源或退場觀察的能力，由平台營運方透過 capability override 管理。Admin 使用 `CapabilityProvider`／`CapabilityGate` 對齊後端 `RequireFeature`，此機制是營運安全與成熟度治理，不是付費分級或升級牆。
+
+### 商用郵件安全邊界
+
+- `replies.premierbiz.com.tw` 為 receiving-only 專用子網域，不改動根網域既有郵件服務。
+- MX／DKIM、Resend `email.received` webhook、`OUTREACH_INBOUND_DOMAIN` 與高熵 route secret 已配置完成。
+- `EMAIL_EXTERNAL_DELIVERY_ENABLED=false`、`OUTREACH_SEND_ENABLED=false`、`INBOUND_REPLY_ENABLED=false` 是目前 production 基線。
+- Readiness 配置會原子地關閉三個開關；即使受控測試中斷，再執行配置也會恢復 fail-closed 狀態。
+- 未經另行授權，不啟用租戶寄送政策、不寄送外部信件，也不進行真人回信測試。
 
 ### 平台營運層（ForgeBase 營運方專用）
 
@@ -329,6 +356,11 @@ ForgeBase/
 | **NorthForge 參考站** | https://pcbrm.tw/northforge-tools/ |
 | **後台** | https://pcbrm.tw/backend/login |
 | **API** | https://pcbrm.tw/api/v1/ |
+| **Readiness** | `https://pcbrm.tw/health/ready`：database、migration、storage、scheduler 均為 ready |
+| **產品狀態** | 受控商用可用；一般外寄與 inbound reply loop 維持關閉 |
+| **狀態基線完整部署** | GitHub Actions [33166382928](https://github.com/stevechen1112/ForgeBase/actions/runs/33166382928)，success |
+| **Resend inbound readiness** | [33165982978](https://github.com/stevechen1112/ForgeBase/actions/runs/33165982978)，MX／DKIM verified，正常輪詢未 Restart verification |
+| **部署後郵件唯讀稽核** | [33167190285](https://github.com/stevechen1112/ForgeBase/actions/runs/33167190285)，outbound／inbound prerequisites ready，三個全域開關均為 `false` |
 | **伺服器** | Linode Ubuntu 24.04，IP `172.233.64.5` |
 | **部署目錄** | `/opt/forgebase` |
 | **SSH** | `ssh -i ~/.ssh/mitselect_linode_ed25519 root@172.233.64.5` |
@@ -472,6 +504,18 @@ bash deploy/test-chat.sh   # 建 session → 跨品類提問 → 模糊需求追
 ---
 
 ## 版本更新紀錄
+
+### v1.4 — 受控商用可用與北極星收斂（2026-08-28）
+
+| 類別 | 變更 |
+|------|------|
+| **產品定位** | 收斂為單一 B2B 北極星流程，不再拆 Starter／Professional 或兩階段產品方案 |
+| **後台 UX** | 重構核心選單與內容／買家／成長工作區；深層頁面提供確定性返回、麵包屑與未儲存離開保護 |
+| **北極星能力** | 匿名訪客、行為、意圖、公司推測、窗口候選、個人化草稿、寄送追蹤、回覆、接手、RFQ／成交的工程閉環與治理 Gate 完成 |
+| **真實供應商** | Production 使用 PDL、Hunter 與 Resend 受控 adapter；公司辨識不使用 mock，聯絡窗口維持人工審核 |
+| **Inbound readiness** | `replies.premierbiz.com.tw` MX／DKIM verified，inbound domain、webhook 與高熵 route secret 已配置；API 與雙向 prerequisites 通過 |
+| **Fail closed** | 修正受控 probe 中斷可能遺留 inbound 開關的缺口；readiness 配置現在固定關閉三個全域開關並由 workflow 複驗 |
+| **驗證** | 最新完整部署、瀏覽器／RBAC、API、SAST、映像、備份復原及部署後郵件唯讀稽核均通過 |
 
 ### v1.3 — 內容可靠性優先（2026-08-11）
 
