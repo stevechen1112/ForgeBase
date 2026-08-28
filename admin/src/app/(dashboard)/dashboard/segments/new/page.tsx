@@ -267,7 +267,7 @@ export default function NewSegmentPage() {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {saving ? "儲存中…" : "建立分群"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>取消</Button>
+          <Button type="button" variant="outline" onClick={() => router.push("/dashboard/segments")}>取消</Button>
         </div>
       </form>
     </div>

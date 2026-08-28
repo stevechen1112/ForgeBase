@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PUBLIC_SITE_LOCALES } from "@/lib/i18n";
+import { useUnsavedChanges } from "@/lib/hooks/useUnsavedChanges";
 
 type LocaleKey = (typeof PUBLIC_SITE_LOCALES)[number]["value"];
 type StatRow = { value: string; label: string };
@@ -26,6 +27,15 @@ type TenantCopy = {
   hidden_blocks: Record<string, boolean>;
   logo_url?: string;
 };
+
+function copySignature(value: Pick<TenantCopy, "copy" | "assets" | "hidden_blocks" | "logo_url">) {
+  return JSON.stringify({
+    copy: value.copy,
+    assets: value.assets,
+    hidden_blocks: value.hidden_blocks,
+    logo_url: value.logo_url || "",
+  });
+}
 
 function getString(tree: Record<string, unknown>, path: string): string {
   const value = path.split(".").reduce<unknown>((current, key) => (
@@ -96,6 +106,10 @@ export default function SiteCopySettingsPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [savedSignature, setSavedSignature] = useState("");
+  const currentSignature = copySignature({ copy, assets, hidden_blocks: hidden, logo_url: logoUrl });
+  const isDirty = Boolean(savedSignature) && currentSignature !== savedSignature;
+  useUnsavedChanges(isDirty);
 
   const load = useCallback(async (nextLocale = locale) => {
     if (!token) return;
@@ -110,6 +124,12 @@ export default function SiteCopySettingsPage() {
       setAssets(payload.assets || {});
       setHidden(payload.hidden_blocks || {});
       setLogoUrl(payload.logo_url || "");
+      setSavedSignature(copySignature({
+        copy: payload.copy || {},
+        assets: payload.assets || {},
+        hidden_blocks: payload.hidden_blocks || {},
+        logo_url: payload.logo_url || "",
+      }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "載入網站文案失敗");
     } finally {
@@ -133,6 +153,12 @@ export default function SiteCopySettingsPage() {
       setAssets(payload.assets || {});
       setHidden(payload.hidden_blocks || {});
       setLogoUrl(payload.logo_url || "");
+      setSavedSignature(copySignature({
+        copy: payload.copy || {},
+        assets: payload.assets || {},
+        hidden_blocks: payload.hidden_blocks || {},
+        logo_url: payload.logo_url || "",
+      }));
       setSuccess("網站文案已更新。空白欄位會繼續使用系統預設。");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "儲存失敗");
@@ -176,6 +202,17 @@ export default function SiteCopySettingsPage() {
   const timeline = getList<TimelineRow>(copy, "about.timeline");
   const news = getList<NewsRow>(copy, "newsPage.items");
 
+  function changeLocale(nextLocale: LocaleKey) {
+    if (nextLocale === locale) return;
+    if (isDirty && !window.confirm("目前語系尚有未儲存的變更。確定要切換語系並放棄變更嗎？")) return;
+    setLocale(nextLocale);
+  }
+
+  function reloadCurrentLocale() {
+    if (isDirty && !window.confirm("確定要放棄尚未儲存的變更並重新載入嗎？")) return;
+    void load();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -184,11 +221,12 @@ export default function SiteCopySettingsPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">修改首頁、關於我們、產品信任區塊與新聞的文字圖片。不能重組版面或增刪選單網址。</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <select className="h-9 rounded-md border px-3 text-sm" value={locale} onChange={(event) => setLocale(event.target.value as LocaleKey)}>
+          {isDirty && <span className="inline-flex h-9 items-center rounded-md bg-amber-50 px-3 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200">尚未儲存</span>}
+          <select aria-label="網站內容語系" className="h-9 rounded-md border px-3 text-sm" value={locale} onChange={(event) => changeLocale(event.target.value as LocaleKey)}>
             {PUBLIC_SITE_LOCALES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading || saving}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理</Button>
-          <Button size="sm" onClick={() => void save()} disabled={loading || saving || !token}><Save className="h-4 w-4" />{saving ? "儲存中…" : "儲存文案"}</Button>
+          <Button variant="outline" size="sm" onClick={reloadCurrentLocale} disabled={loading || saving}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理</Button>
+          <Button size="sm" onClick={() => void save()} disabled={loading || saving || !token || !isDirty}><Save className="h-4 w-4" />{saving ? "儲存中…" : "儲存文案"}</Button>
         </div>
       </div>
 

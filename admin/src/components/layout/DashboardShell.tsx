@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { ContextNavigation, resolveDashboardTrail } from "@/components/layout/context-navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth/store";
@@ -11,6 +12,7 @@ import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
   const { state } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [tenantBrand, setTenantBrand] = useState({ name: "ForgeBase", mark: "FB" });
@@ -18,6 +20,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMobileNavOpen(false);
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
 
   useEffect(() => {
@@ -78,7 +81,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 p-4 pb-24 sm:p-6 sm:pb-24">
+        <main ref={mainRef} className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 p-4 pb-24 sm:p-6 sm:pb-24">
+          <ContextNavigation trail={resolveDashboardTrail(pathname)} />
           {children}
         </main>
       </div>

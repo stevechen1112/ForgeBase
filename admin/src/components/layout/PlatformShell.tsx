@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, ShieldAlert } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { PlatformSidebar } from "@/components/layout/PlatformSidebar";
+import { ContextNavigation, resolvePlatformTrail } from "@/components/layout/context-navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     setMobileNavOpen(false);
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
 
   return (
@@ -53,7 +56,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 p-4 sm:p-6">
+        <main ref={mainRef} className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 p-4 sm:p-6">
+          <ContextNavigation trail={resolvePlatformTrail(pathname)} />
           {children}
         </main>
       </div>

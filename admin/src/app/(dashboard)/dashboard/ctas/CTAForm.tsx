@@ -154,7 +154,7 @@ export default function CTAForm({ initial, id }: Props) {
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {saving ? "儲存中…" : "儲存"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>取消</Button>
+        <Button type="button" variant="outline" onClick={() => router.push("/dashboard/ctas")}>取消</Button>
       </div>
     </form>
   );

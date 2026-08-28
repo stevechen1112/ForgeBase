@@ -185,7 +185,7 @@ export default function CapabilityForm({ initial, id, aiDraft }: Props) {
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {saving ? "儲存中…" : "儲存"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>取消</Button>
+        <Button type="button" variant="outline" onClick={() => router.push("/dashboard/capabilities")}>取消</Button>
       </div>
     </form>
   );

@@ -398,6 +398,17 @@ def _run_browser_and_api_matrix(
                 raise LabFailure(f"{path} did not render the capability lock state")
         else:
             raise LabFailure(f"Unknown route expectation: {expectation}")
+        if expectation == "denied":
+            page.get_by_role("link", name="返回每日營運總覽").wait_for(
+                state="visible", timeout=30_000
+            )
+        elif path != "/dashboard":
+            page.get_by_role("navigation", name="頁面階層").wait_for(
+                state="visible", timeout=30_000
+            )
+            back_link = page.locator('a[aria-label^="返回"]')
+            if back_link.count() < 1:
+                raise LabFailure(f"{path} did not expose a deterministic parent link")
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -439,6 +450,8 @@ def _run_browser_and_api_matrix(
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
+                "/dashboard/settings/site-copy": "allowed",
+                "/dashboard/products/new": "allowed",
                 "/dashboard/rfqs": "allowed",
                 "/dashboard/visitors": "allowed",
                 "/dashboard/outcomes": "locked",
@@ -450,6 +463,7 @@ def _run_browser_and_api_matrix(
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
+                "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
                 "/dashboard/visitors": "allowed",
             },
@@ -461,6 +475,7 @@ def _run_browser_and_api_matrix(
                 "/dashboard/pages": "denied",
                 "/dashboard/users": "denied",
                 "/dashboard/settings/site-profile": "denied",
+                "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
                 "/dashboard/visitors": "allowed",
             },
@@ -549,11 +564,23 @@ def _run_browser_and_api_matrix(
             text = body_text(platform_page)
             if "403" in text or platform_page.url.endswith("/platform/login"):
                 raise LabFailure("Platform superuser did not reach platform overview")
+            platform_page.goto(
+                f"{admin_base}/platform/tenants/new", wait_until="domcontentloaded"
+            )
+            platform_page.get_by_role("navigation", name="頁面階層").wait_for(
+                state="visible", timeout=30_000
+            )
+            platform_page.get_by_role("link", name="返回租戶管理").wait_for(
+                state="visible", timeout=30_000
+            )
 
         record("ui.platform.login_separation", platform_login, platform_page)
         platform_context.close()
 
-        for role, path in (("owner", "/dashboard"), ("sales", "/dashboard/rfqs")):
+        for role, path in (
+            ("owner", "/dashboard/settings/site-copy"),
+            ("sales", "/dashboard/rfqs"),
+        ):
             context = new_context(
                 locale="zh-TW", viewport={"width": 390, "height": 844}
             )

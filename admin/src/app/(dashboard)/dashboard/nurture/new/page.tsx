@@ -96,7 +96,7 @@ export default function NewSequencePage() {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {saving ? "建立中…" : "建立序列"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>取消</Button>
+          <Button type="button" variant="outline" onClick={() => router.push("/dashboard/nurture")}>取消</Button>
         </div>
       </form>
     </div>
