@@ -26,7 +26,7 @@ Apollo 不在本輪申請、採購或啟用。只有 PDL 與 Hunter 在目標市
 | Adapter 極小量實測 | 通過 | PDL Sandbox 與 Hunter 自有公司網域請求皆正常處理；0 筆候選，不輸出個資 |
 | Resend 真實 internal delivery | 通過 | provider accepted、delivered 與 sent／delivered webhook 均確認；只寄 internal allowlist |
 | Resend webhook | 通過 | outbound 事件完整，並已加入 `email.received`；既有事件未被覆蓋 |
-| Resend inbound domain | 部分通過 | `replies.premierbiz.com.tw` receiving-only；MX verified，DKIM pending，未啟用 production inbound processing |
+| Resend inbound domain | 通過（配置完成、受控關閉） | `replies.premierbiz.com.tw` receiving-only；MX／DKIM verified，`email.received` webhook、production route secret 與 inbound domain 已配置；三個全域開關維持關閉，未執行真人回信 |
 | API 完整回歸 | 通過 | 乾淨 PostgreSQL：324 passed、3 skipped、0 failed |
 | 寄件顯示名稱 | 已指定 | `ForgeBase Business Team` |
 | 寄件 Email | 已指定 | `steve_chen@premierbiz.com.tw` |
@@ -101,8 +101,8 @@ Hunter Email Verifier／供應商既有驗證訊號
 
 1. 向 PDL 與 Hunter 確認 ForgeBase 多租戶情境的展示、保存、刪除、外聯與跨境處理權利。
 2. 權利通過後設定實際單位成本，才可在 production 開啟 `review_only` Shadow POC；仍不得寄信。
-3. Resend webhook signing、專用 inbound 子網域、`email.received` 訂閱與 internal allowlist 真實信已完成；官方 `dns.email` 可讀取完整 DKIM 且 Tokyo receiving MX 為 Valid，但最新 provider 證據 `33154309882` 的 DKIM 仍 pending。官方文件允許 DNS 全球傳播最長 72 小時，production inbound secret 尚未注入。
-4. 等 inbound DKIM verified 後完成真實回覆分類與真人接手；一般外寄仍須以 bounce／complaint／unsubscribe、reputation 與法遵證據通過後，才評估極小量人工核准寄送。
+3. Resend webhook signing、專用 inbound 子網域、`email.received` 訂閱與 internal allowlist 真實信已完成；`Configure Resend Inbound Readiness` run `33165982978` 確認 MX／DKIM verified、sending disabled、receiving enabled，且一般輪詢沒有 Restart verification。
+4. `Configure Production Growth Mail` run `33166145171` 已以 inbound 模式配置 `OUTREACH_INBOUND_DOMAIN` 與至少 32 字元的 route secret，API ready、outbound／inbound prerequisites 均通過；`EMAIL_EXTERNAL_DELIVERY_ENABLED`、`OUTREACH_SEND_ENABLED`、`INBOUND_REPLY_ENABLED` 仍全部為 `false`。下一步仍是另行授權的單一受控真人 reply loop；一般外寄須等 bounce／complaint／unsubscribe、reputation 與法遵證據通過後才評估。
 
 ## 6.1 去識別化盲測計分工具（2026-08-28）
 

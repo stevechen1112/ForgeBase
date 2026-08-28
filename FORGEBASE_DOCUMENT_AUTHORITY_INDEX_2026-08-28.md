@@ -37,6 +37,8 @@
 | Complete Release Gate／Deploy `33144552515` | SHA `2a8bc2c` 完整 Gate、六個 production image 與正式部署成功 |
 | External Uptime `33144986004` | GitHub-hosted 站外 synthetic 8／8 通過，monitor 已登錄 production readiness；只證明可用性與 declared health |
 | Commercial Readiness `33145033057` | production 只讀 audit 通過；PDL／Hunter／Resend 已安裝，外寄及 inbound kill switch 維持關閉 |
+| Resend Inbound Readiness `33165982978` | `replies.premierbiz.com.tw` MX／DKIM verified、receiving enabled、sending disabled，webhook outbound／inbound events ready；正常輪詢未 Restart verification |
+| Production Growth Mail Inbound `33166145171` | inbound domain 與高熵 route secret 已配置、API ready、outbound／inbound prerequisites 通過；三個全域開關均為 `false`，未寄信、未修改 tenant policy |
 | Recovery／Browser `33145064129` | 最新 off-site 備份隔離 restore、證據時效、演練後 8／8 公網檢查及 Platform Admin Chromium 通過 |
 | Production Company Identification `33142199489` | 兩個 active tenant 均為 `shadow/pdl_ip/ready=true`，無政策變更 |
 | Provider Sync `33132485016` | production registry 已具 `pdl_ip`、`hunter_domain`、`hunter` |

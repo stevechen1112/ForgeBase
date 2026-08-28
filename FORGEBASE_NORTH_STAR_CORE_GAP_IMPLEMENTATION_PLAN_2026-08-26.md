@@ -1617,7 +1617,7 @@ ForgeBase 應保存的自有衍生資料：
 
 1. 公司辨識與窗口候選的真實 precision、coverage、Persona relevance、任職新鮮度及市場別成本。
 2. PDL／Hunter 的多租戶展示、保存、刪除、外聯與 OEM／Reseller 書面權利。
-3. Public unsubscribe origin／secret、寄件身分與 internal allowlist 已完成；專用 inbound domain 的 MX 已 verified、DKIM 仍 pending，inbound signing secret 尚未注入。完成前 `APPROVAL_SEND`／reply loop 不得啟用。
+3. Public unsubscribe origin／secret、寄件身分與 internal allowlist 已完成；專用 inbound domain 的 MX／DKIM 已 verified，production inbound domain 與高熵 signing secret 已注入。`APPROVAL_SEND`／reply loop 仍維持關閉，須另行受控授權才可啟用。
 4. 一封 internal allowlist 真實信已完成 accepted → delivered → webhook；仍缺足量真人寄達、退信、申訴、退訂、回覆分類與第一個非 synthetic reply → handoff → RFQ → won／lost pilot。
 5. 告警目前能證明 GitHub issue 路由與自動恢復結案，不能宣稱特定真人、簡訊或電話 on-call 必達。
 
@@ -1637,7 +1637,9 @@ ForgeBase 應保存的自有衍生資料：
 
 - 建立 receiving-only `replies.premierbiz.com.tw`，sending disabled、receiving enabled，不改動根網域 Google Workspace MX。
 - GoDaddy 新增 DKIM TXT 與 priority 10 MX；權威 DNS、1.1.1.1、8.8.8.8 對 TXT 的長度、內容及 SHA-256 完全一致，MX 指向 Resend ap-northeast-1 inbound SMTP。
-- Resend 官方 `dns.email` 已能讀取完整 DKIM，Tokyo receiving MX 顯示 Valid；最新 provider 證據 `33154309882` 仍為 MX verified／DKIM pending。經一般 verify 與一次明確 Restart 後仍等待供應商刷新；官方文件說明 DNS 變更偶爾可耗時最長 72 小時。production inbound domain／secret、tenant policy、全域 switch 與真人回信測試均不在 pending 狀態下提前啟用。
+- `Configure Resend Inbound Readiness` run `33165982978` 以一般輪詢（`restart_pending=false`）確認 MX／DKIM verified、sending disabled、receiving enabled，webhook outbound／inbound events 均 ready。
+- `Configure Production Growth Mail` run `33166145171` 以 inbound 模式配置 production inbound domain 與至少 32 字元 route secret，重啟後 API ready，outbound／inbound prerequisites 均通過；三個全域開關維持 `false`，未修改 tenant policy、未寄信、未進行真人回覆測試。
+- 首次重跑在 run `33166009929` 揭露先前受控 probe 遺留 `INBOUND_REPLY_ENABLED=true`；commit `3bd64bf` 將 readiness 配置改為每次原子關閉三個全域開關，workflow 另以既有 close helper 防禦舊主機版本。26 項專項測試與 diff review 通過後，`33166145171` 證實 fail-closed 復原成功。
 - 完整 API Release Contract `33153986188` 已通過 lint、migration、完整 API、North Star full-chain、fault injection、效能容量、tenant delivery factory、privacy／retention、retirement、文件權威及 operational contracts；這證明本輪工程沒有新增回歸，不替代外部商用 Gate。
 
 ### 26.3 Provider POC 證據治理
@@ -1648,7 +1650,6 @@ ForgeBase 應保存的自有衍生資料：
 
 ### 26.4 本輪仍待外部完成
 
-1. Resend 將 inbound DKIM 由 pending 更新為 verified。
-2. Verified 後才配置 production inbound secret，維持 switch 關閉完成 audit，再開單一受控 tenant 做真人 reply loop。
-3. PDL／Hunter 提供多租戶展示、保存、刪除、外聯與跨境權利書面文件，並取得合法 ground-truth 樣本填入 scorecard。
-4. 一般外寄、reply → handoff → RFQ → won/lost、bounce／complaint／unsubscribe 與商業成效仍須真實 pilot，不能由內部測試代替。
+1. PDL／Hunter 提供多租戶展示、保存、刪除、外聯與跨境權利書面文件，並取得合法 ground-truth 樣本填入 scorecard。
+2. 在另行明確授權與指定受控收件人的前提下，開單一受控 tenant 做真人 reply loop；目前全域開關與 tenant delivery policy 都維持關閉。
+3. 一般外寄、reply → handoff → RFQ → won/lost、bounce／complaint／unsubscribe 與商業成效仍須真實 pilot，不能由內部測試代替。
