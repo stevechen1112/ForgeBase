@@ -65,11 +65,11 @@ def test_reports_verified_sender_and_complete_webhook_without_secrets() -> None:
                             "email.complained",
                             "email.received",
                         ],
-                        "signing_secret": "secret-provider-value",
+                        "signing_secret": "fixture-redacted",  # pragma: allowlist secret
                     },
                     {
                         "id": "other-id",
-                        "endpoint": "https://hooks.example.com/secret-token?key=value",
+                        "endpoint": "https://hooks.example.com/private-route?opaque=value",
                         "status": "enabled",
                         "events": ["email.sent"],
                     }
@@ -80,7 +80,7 @@ def test_reports_verified_sender_and_complete_webhook_without_secrets() -> None:
     )
 
     report = module.build_report(
-        api_key="secret-api-key",
+        api_key="configured",
         expected_sending_domain="PremierBiz.com.tw.",
         expected_webhook_endpoint="https://pcbrm.tw/api/v1/webhooks/resend/",
         get_json=get_json,
@@ -92,11 +92,11 @@ def test_reports_verified_sender_and_complete_webhook_without_secrets() -> None:
     assert report["assessment"]["outbound_webhook_ready"] is True
     assert report["assessment"]["inbound_webhook_ready"] is True
     assert all("limit=100" in call for call in calls)
-    assert "secret-api-key" not in rendered
+    assert "configured" not in rendered
     assert "sensitive-dkim-value" not in rendered
     assert "provider-id" not in rendered
-    assert "secret-provider-value" not in rendered
-    assert "secret-token" not in rendered
+    assert "fixture-redacted" not in rendered
+    assert "private-route" not in rendered
     assert "private-tenant.example" not in rendered
     assert report["domains"]["total_count"] == 2
     assert report["domains"]["nonmatching_count"] == 1
