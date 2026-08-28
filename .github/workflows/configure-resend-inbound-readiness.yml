@@ -1,0 +1,67 @@
+name: Configure Resend Inbound Readiness
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: configure-resend-inbound-readiness
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    name: Verify inbound domain and webhook subscription
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify domain and align webhook events
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RESEND_API_KEY"
+          mkdir -p artifacts/resend-inbound-readiness
+          python scripts/configure_resend_inbound_readiness.py \
+            --inbound-domain replies.premierbiz.com.tw \
+            --root-domain premierbiz.com.tw \
+            --webhook-endpoint https://pcbrm.tw/api/v1/webhooks/resend \
+            --output artifacts/resend-inbound-readiness/report.json
+
+      - name: Verify production-safe boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path("artifacts/resend-inbound-readiness/report.json").read_text()
+          )
+          assert report["assessment"]["status"] == "passed"
+          assert report["assessment"]["domain_verified"] is True
+          assert report["assessment"]["outbound_webhook_ready"] is True
+          assert report["assessment"]["inbound_webhook_ready"] is True
+          assert report["domain"]["sending"] == "disabled"
+          assert report["domain"]["receiving"] == "enabled"
+          assert not any(report["privacy"].values())
+          print(
+              "Resend inbound readiness configured; "
+              f"operations={','.join(report['operation'])}"
+          )
+          PY
+
+      - name: Upload redacted readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resend-inbound-readiness
+          path: artifacts/resend-inbound-readiness/
+          if-no-files-found: error
+          retention-days: 30
