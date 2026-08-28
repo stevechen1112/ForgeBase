@@ -80,7 +80,7 @@ def test_reports_verified_sender_and_complete_webhook_without_secrets() -> None:
     )
 
     report = module.build_report(
-        api_key="configured",
+        api_key="configured",  # pragma: allowlist secret
         expected_sending_domain="PremierBiz.com.tw.",
         expected_webhook_endpoint="https://pcbrm.tw/api/v1/webhooks/resend/",
         get_json=get_json,
@@ -131,7 +131,7 @@ def test_reports_specific_readiness_gaps() -> None:
     )
 
     report = module.build_report(
-        api_key="configured",
+        api_key="configured",  # pragma: allowlist secret
         expected_sending_domain="premierbiz.com.tw",
         expected_webhook_endpoint="https://pcbrm.tw/api/v1/webhooks/resend",
         get_json=get_json,
@@ -212,7 +212,7 @@ def test_provider_client_does_not_follow_redirects(monkeypatch) -> None:
 def test_rejects_unsafe_expectations(domain, endpoint) -> None:
     with pytest.raises(ValueError):
         module.build_report(
-            api_key="configured",
+            api_key="configured",  # pragma: allowlist secret
             expected_sending_domain=domain,
             expected_webhook_endpoint=endpoint,
             get_json=lambda _path: {"data": [], "has_more": False},
