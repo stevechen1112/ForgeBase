@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import secrets
 import tempfile
 from pathlib import Path
 from urllib.parse import urlsplit
 
 SECRET_LENGTH = 48
+EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+$")
 
 
 def _parse(lines: list[str]) -> dict[str, str]:
@@ -81,10 +83,39 @@ def _valid_domain(value: str) -> bool:
     )
 
 
+def _normalize_email(value: str) -> str:
+    normalized = value.strip().lower()
+    local, separator, domain = normalized.partition("@")
+    if (
+        not normalized.isascii()
+        or len(normalized) > 254
+        or not separator
+        or not local
+        or not EMAIL_PATTERN.fullmatch(normalized)
+        or not _valid_domain(domain)
+    ):
+        raise ValueError("growth mail identity email is invalid")
+    return normalized
+
+
+def _validate_sender_name(value: str) -> str:
+    if any(char in value for char in "\r\n="):
+        raise ValueError("growth mail sender name is invalid")
+    normalized = " ".join(value.strip().split())
+    if not 1 <= len(normalized) <= 100:
+        raise ValueError("growth mail sender name is invalid")
+    return normalized
+
+
 def configure(
     env_path: Path,
     *,
     public_base_url: str,
+    sender_email: str,
+    sender_name: str,
+    internal_recipient: str,
+    sales_notify_email: str,
+    manager_email: str,
     inbound_domain: str | None = None,
 ) -> dict[str, bool]:
     public_base_url = public_base_url.rstrip("/")
@@ -94,6 +125,13 @@ def configure(
         inbound_domain = inbound_domain.rstrip(".").lower()
         if not _valid_domain(inbound_domain):
             raise ValueError("inbound domain is invalid")
+    sender_email = _normalize_email(sender_email)
+    sender_name = _validate_sender_name(sender_name)
+    internal_recipient = _normalize_email(internal_recipient)
+    sales_notify_email = _normalize_email(sales_notify_email)
+    manager_email = _normalize_email(manager_email)
+    if len({sender_email, internal_recipient, sales_notify_email, manager_email}) != 1:
+        raise ValueError("growth mail internal identities must match exactly")
 
     lines = env_path.read_text(encoding="utf-8").splitlines()
     existing = _parse(lines)
@@ -103,6 +141,11 @@ def configure(
         unsubscribe_secret = secrets.token_urlsafe(SECRET_LENGTH)
 
     updates = {
+        "EMAIL_FROM": sender_email,
+        "EMAIL_FROM_NAME": sender_name,
+        "EMAIL_INTERNAL_RECIPIENT_ALLOWLIST": internal_recipient,
+        "SALES_NOTIFY_EMAIL": sales_notify_email,
+        "MANAGER_EMAIL": manager_email,
         "OUTREACH_PUBLIC_BASE_URL": public_base_url,
         "OUTREACH_UNSUBSCRIBE_SECRET": unsubscribe_secret,
     }
@@ -137,6 +180,9 @@ def configure(
 
     return {
         "public_base_url_configured": True,
+        "sender_identity_configured": True,
+        "internal_recipient_aligned": True,
+        "sales_handoff_recipient_aligned": True,
         "unsubscribe_secret_configured": True,
         "unsubscribe_secret_generated": unsubscribe_rotated,
         "inbound_domain_configured": inbound_domain is not None,
@@ -149,11 +195,21 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", required=True, type=Path)
     parser.add_argument("--public-base-url", required=True)
+    parser.add_argument("--sender-email", required=True)
+    parser.add_argument("--sender-name", required=True)
+    parser.add_argument("--internal-recipient", required=True)
+    parser.add_argument("--sales-notify-email", required=True)
+    parser.add_argument("--manager-email", required=True)
     parser.add_argument("--inbound-domain")
     args = parser.parse_args()
     result = configure(
         args.env_file.resolve(),
         public_base_url=args.public_base_url,
+        sender_email=args.sender_email,
+        sender_name=args.sender_name,
+        internal_recipient=args.internal_recipient,
+        sales_notify_email=args.sales_notify_email,
+        manager_email=args.manager_email,
         inbound_domain=args.inbound_domain,
     )
     for key, value in result.items():

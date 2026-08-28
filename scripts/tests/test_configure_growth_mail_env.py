@@ -14,6 +14,14 @@ module = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = module
 SPEC.loader.exec_module(module)
 
+IDENTITY = {
+    "sender_email": "steve_chen@premierbiz.com.tw",
+    "sender_name": "ForgeBase Business Team",
+    "internal_recipient": "steve_chen@premierbiz.com.tw",
+    "sales_notify_email": "steve_chen@premierbiz.com.tw",
+    "manager_email": "steve_chen@premierbiz.com.tw",
+}
+
 
 def _values(path: Path) -> dict[str, str]:
     return module._parse(path.read_text(encoding="utf-8").splitlines())
@@ -28,11 +36,17 @@ def test_configures_outbound_atomically_without_changing_unrelated_values(
     result = module.configure(
         env_file,
         public_base_url="https://pcbrm.tw/",
+        **IDENTITY,
     )
     values = _values(env_file)
 
     assert values["OTHER"] == "keep"
     assert values["OUTREACH_PUBLIC_BASE_URL"] == "https://pcbrm.tw"
+    assert values["EMAIL_FROM"] == "steve_chen@premierbiz.com.tw"
+    assert values["EMAIL_FROM_NAME"] == "ForgeBase Business Team"
+    assert values["EMAIL_INTERNAL_RECIPIENT_ALLOWLIST"] == IDENTITY["sender_email"]
+    assert values["SALES_NOTIFY_EMAIL"] == IDENTITY["sender_email"]
+    assert values["MANAGER_EMAIL"] == IDENTITY["sender_email"]
     assert len(values["OUTREACH_UNSUBSCRIBE_SECRET"]) >= 32
     assert result["unsubscribe_secret_generated"] is True
     if sys.platform != "win32":
@@ -57,6 +71,7 @@ def test_replay_preserves_existing_signing_secrets(tmp_path: Path) -> None:
         env_file,
         public_base_url="https://pcbrm.tw",
         inbound_domain="Replies.PremierBiz.com.tw.",
+        **IDENTITY,
     )
     values = _values(env_file)
 
@@ -83,7 +98,7 @@ def test_rejects_unsafe_public_origins(tmp_path: Path, url: str) -> None:
     env_file.write_text("OTHER=keep\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="origin-only HTTPS"):
-        module.configure(env_file, public_base_url=url)
+        module.configure(env_file, public_base_url=url, **IDENTITY)
 
     assert env_file.read_text(encoding="utf-8") == "OTHER=keep\n"
 
@@ -108,6 +123,7 @@ def test_rejects_invalid_inbound_domains(tmp_path: Path, domain: str) -> None:
             env_file,
             public_base_url="https://pcbrm.tw",
             inbound_domain=domain,
+            **IDENTITY,
         )
 
     assert env_file.read_text(encoding="utf-8") == "OTHER=keep\n"
@@ -122,9 +138,34 @@ def test_collapses_duplicate_managed_keys(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    module.configure(env_file, public_base_url="https://pcbrm.tw")
+    module.configure(env_file, public_base_url="https://pcbrm.tw", **IDENTITY)
 
     lines = env_file.read_text(encoding="utf-8").splitlines()
     assert lines.count("OUTREACH_PUBLIC_BASE_URL=https://pcbrm.tw") == 1
     assert not any("old.example.com" in line for line in lines)
     assert not any("duplicate.example.com" in line for line in lines)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"sender_email": "not-an-email"},
+        {"sender_name": "Bad\nName"},
+        {"internal_recipient": "other@premierbiz.com.tw"},
+        {"sales_notify_email": "other@premierbiz.com.tw"},
+        {"manager_email": "other@premierbiz.com.tw"},
+    ],
+)
+def test_rejects_invalid_or_misaligned_identity(tmp_path: Path, overrides) -> None:
+    env_file = tmp_path / "api.env"
+    env_file.write_text("OTHER=keep\n", encoding="utf-8")
+    identity = {**IDENTITY, **overrides}
+
+    with pytest.raises(ValueError, match="growth mail"):
+        module.configure(
+            env_file,
+            public_base_url="https://pcbrm.tw",
+            **identity,
+        )
+
+    assert env_file.read_text(encoding="utf-8") == "OTHER=keep\n"

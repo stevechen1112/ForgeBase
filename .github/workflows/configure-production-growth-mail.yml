@@ -33,6 +33,11 @@ jobs:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       MODE: ${{ inputs.mode }}
       INBOUND_DOMAIN: ${{ inputs.inbound_domain }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+      EMAIL_FROM_NAME: ${{ vars.EMAIL_FROM_NAME }}
+      INTERNAL_RECIPIENT: ${{ vars.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST }}
+      SALES_NOTIFY_EMAIL: ${{ vars.SALES_NOTIFY_EMAIL }}
+      MANAGER_EMAIL: ${{ vars.MANAGER_EMAIL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +47,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$MODE" = audit -o "$MODE" = outbound -o "$MODE" = inbound
+          test -n "$EMAIL_FROM"
+          test -n "$EMAIL_FROM_NAME"
+          test "$EMAIL_FROM" = "$INTERNAL_RECIPIENT"
+          test "$EMAIL_FROM" = "$SALES_NOTIFY_EMAIL"
+          test "$EMAIL_FROM" = "$MANAGER_EMAIL"
           if [ "$MODE" = inbound ]; then
             test -n "$INBOUND_DOMAIN"
           else
@@ -65,11 +75,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s\n%s\n' "$MODE" "$INBOUND_DOMAIN" | \
+          printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n' \
+            "$MODE" "$INBOUND_DOMAIN" "$EMAIL_FROM" "$EMAIL_FROM_NAME" \
+            "$INTERNAL_RECIPIENT" "$SALES_NOTIFY_EMAIL" "$MANAGER_EMAIL" | \
             ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
               set -euo pipefail
               IFS= read -r mode
               IFS= read -r inbound_domain
+              IFS= read -r sender_email
+              IFS= read -r sender_name
+              IFS= read -r internal_recipient
+              IFS= read -r sales_notify_email
+              IFS= read -r manager_email
               cd /opt/forgebase
               backup=$(mktemp /tmp/forgebase-api-env.XXXXXX)
               install -m 600 deploy/api.env "$backup"
@@ -84,6 +101,11 @@ jobs:
               args=(
                 --env-file /opt/forgebase/deploy/api.env
                 --public-base-url https://pcbrm.tw
+                --sender-email "$sender_email"
+                --sender-name "$sender_name"
+                --internal-recipient "$internal_recipient"
+                --sales-notify-email "$sales_notify_email"
+                --manager-email "$manager_email"
               )
               if [ "$mode" = inbound ]; then
                 args+=(--inbound-domain "$inbound_domain")
