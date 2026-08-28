@@ -230,3 +230,11 @@ PR／release 使用 `bash deploy/restore-rollback-lab.sh` 在獨立 Compose proj
 - **上傳素材**存於 `uploads_data` volume（`/uploads` 由 api 容器提供）；要長期營運建議改接 Cloudflare R2（`deploy/api.env` 的 `R2_*`）。
 - **Let's Encrypt 有速率限制**：DOMAIN 沒指好前不要反覆 `up`，避免短時間大量申請失敗被暫鎖。
 - **secrets 不要 commit**：`.env` 與 `deploy/api.env` 都在 `.gitignore` 範圍內，請確認沒被追蹤。
+
+### 生產資料供應商金鑰
+
+PDL 與 Hunter 金鑰由 GitHub Actions 的 `Sync Production Data Providers` 手動流程安裝。流程只接受
+`PDL_API_KEY`、`HUNTER_API_KEY` 兩個白名單 Secret，透過 mode `0600` 的短效檔案傳送，並以同目錄
+atomic replace 更新 `/opt/forgebase/deploy/api.env`；紀錄只輸出鍵名，不輸出值。完成後會重建 API
+容器，並在容器內確認 `pdl_ip`、`hunter_domain`、`hunter` 三個 Provider 已註冊。此流程只讓
+Provider 可供選擇，不會修改租戶政策，也不會開啟外聯寄送。

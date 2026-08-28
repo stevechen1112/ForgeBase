@@ -1,0 +1,107 @@
+name: Sync Production Data Providers
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-provider-configuration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Install PDL and Hunter configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      PDL_API_KEY: ${{ secrets.PDL_API_KEY }}
+      HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate protected inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$PDL_API_KEY"
+          test -n "$HUNTER_API_KEY"
+          test "$PDL_API_KEY" != "$HUNTER_API_KEY"
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Build short-lived credential file
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          {
+            printf 'PDL_API_KEY=%s\n' "$PDL_API_KEY"
+            printf 'HUNTER_API_KEY=%s\n' "$HUNTER_API_KEY"
+          } > "$RUNNER_TEMP/forgebase-provider-credentials.env"
+          test "$(stat -c '%a' "$RUNNER_TEMP/forgebase-provider-credentials.env")" = 600
+
+      - name: Upload and atomically install provider configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_secret="/tmp/forgebase-provider-credentials-$GITHUB_RUN_ID.env"
+          trap 'ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" "rm -f $remote_secret" >/dev/null 2>&1 || true' EXIT
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            "$RUNNER_TEMP/forgebase-provider-credentials.env" \
+            root@"$DEPLOY_HOST":"$remote_secret"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" "
+            set -euo pipefail
+            chmod 600 '$remote_secret'
+            cd /opt/forgebase
+            python3 deploy/sync-provider-env.py \\
+              --env-file /opt/forgebase/deploy/api.env \\
+              --credentials-file '$remote_secret'
+            rm -f '$remote_secret'
+            docker compose -f docker-compose.prod.yml up -d --force-recreate api
+          "
+
+      - name: Verify provider registry and production readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            for attempt in $(seq 1 12); do
+              status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | python3 -c "import json,sys; print(json.load(sys.stdin).get(\"status\", \"\"))" 2>/dev/null || true)
+              [ "$status" = ready ] && break
+              sleep 5
+            done
+            [ "$status" = ready ]
+            docker compose -f docker-compose.prod.yml exec -T api python - <<"PY"
+          from app.services.company_identification.providers import available_provider_names
+          from app.services.contact_enrichment.providers import (
+              available_contact_provider_names,
+              available_verification_provider_names,
+          )
+
+          assert "pdl_ip" in available_provider_names()
+          assert "hunter_domain" in available_contact_provider_names()
+          assert "hunter" in available_verification_provider_names()
+          print("Provider registry ready: pdl_ip, hunter_domain, hunter")
+          PY
+          '
+
+      - name: Remove runner credential file
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/forgebase-provider-credentials.env"
