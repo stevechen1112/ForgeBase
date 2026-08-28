@@ -19,8 +19,17 @@ jobs:
     timeout-minutes: 15
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      FORGEBASE_PLATFORM_EMAIL: ${{ secrets.PLATFORM_OPERATOR_EMAIL }}
+      FORGEBASE_PLATFORM_PASSWORD: ${{ secrets.PLATFORM_OPERATOR_PASSWORD }}
 
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements-ui-scan.txt
+
       - name: Setup SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -68,3 +77,23 @@ jobs:
           print("Production recovery evidence verified")
           PY
           '
+
+      - name: Install production browser verifier
+        run: |
+          python -m pip install -r scripts/requirements-ui-scan.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Verify recovery evidence in the real Platform Admin UI
+        env:
+          FORGEBASE_PRODUCTION_URL: https://pcbrm.tw
+          FORGEBASE_BROWSER_EVIDENCE_DIR: artifacts/production-admin
+        run: python scripts/verify_production_platform_resources.py
+
+      - name: Upload production browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-recovery-browser-evidence
+          path: artifacts/production-admin/
+          if-no-files-found: error
+          retention-days: 30
