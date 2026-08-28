@@ -2,6 +2,12 @@ name: Configure Resend Inbound Readiness
 
 on:
   workflow_dispatch:
+    inputs:
+      restart_pending:
+        description: Explicitly restart a pending domain verification once
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: configure-resend-inbound-readiness
@@ -22,16 +28,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Verify domain and align webhook events
+        env:
+          RESTART_PENDING: ${{ inputs.restart_pending }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "$RESEND_API_KEY"
           mkdir -p artifacts/resend-inbound-readiness
-          python scripts/configure_resend_inbound_readiness.py \
-            --inbound-domain replies.premierbiz.com.tw \
-            --root-domain premierbiz.com.tw \
-            --webhook-endpoint https://pcbrm.tw/api/v1/webhooks/resend \
+          args=(
+            --inbound-domain replies.premierbiz.com.tw
+            --root-domain premierbiz.com.tw
+            --webhook-endpoint https://pcbrm.tw/api/v1/webhooks/resend
             --output artifacts/resend-inbound-readiness/report.json
+          )
+          if [ "$RESTART_PENDING" = true ]; then
+            args+=(--restart-pending)
+          fi
+          python scripts/configure_resend_inbound_readiness.py "${args[@]}"
 
       - name: Verify production-safe boundary
         shell: bash

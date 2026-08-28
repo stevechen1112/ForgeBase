@@ -195,6 +195,60 @@ def test_reports_pending_domain_after_bounded_polling() -> None:
     assert report["assessment"]["blockers"] == ["inbound_domain_not_verified"]
 
 
+def test_explicit_restart_pending_triggers_one_verification_request() -> None:
+    methods = []
+
+    def request(method, path, payload=None):
+        methods.append((method, path))
+        if path == "/domains?limit=100":
+            return {
+                "data": [
+                    {
+                        "id": "domain-id",
+                        "name": "replies.premierbiz.com.tw",
+                        "status": "pending",
+                        "capabilities": {"sending": "disabled", "receiving": "enabled"},
+                    }
+                ],
+                "has_more": False,
+            }
+        if path == "/domains/domain-id/verify":
+            return {"id": "domain-id"}
+        if path == "/domains/domain-id":
+            return {
+                "name": "replies.premierbiz.com.tw",
+                "status": "verified" if methods.count(("GET", path)) > 1 else "pending",
+                "capabilities": {"sending": "disabled", "receiving": "enabled"},
+            }
+        if path == "/webhooks?limit=100":
+            return {
+                "data": [
+                    {
+                        "id": "webhook-id",
+                        "endpoint": "https://pcbrm.tw/api/v1/webhooks/resend",
+                        "status": "enabled",
+                        "events": sorted(module.REQUIRED_OUTBOUND_EVENTS | {"email.received"}),
+                    }
+                ],
+                "has_more": False,
+            }
+        raise AssertionError((method, path, payload))
+
+    report = module.configure(
+        api_key="configured",  # pragma: allowlist secret
+        inbound_domain="replies.premierbiz.com.tw",
+        root_domain="premierbiz.com.tw",
+        webhook_endpoint="https://pcbrm.tw/api/v1/webhooks/resend",
+        restart_pending=True,
+        request=request,
+        sleep=lambda _seconds: None,
+    )
+
+    assert methods.count(("POST", "/domains/domain-id/verify")) == 1
+    assert report["operation"] == ["domain_verification_triggered"]
+    assert report["assessment"]["status"] == "passed"
+
+
 def test_fails_closed_when_provider_does_not_apply_domain_capabilities() -> None:
     def request(method, path, payload=None):
         if path == "/domains?limit=100":

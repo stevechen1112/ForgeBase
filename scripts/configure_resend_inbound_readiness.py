@@ -122,6 +122,7 @@ def configure(
     webhook_endpoint: str,
     attempts: int = 24,
     poll_seconds: float = 5,
+    restart_pending: bool = False,
     request: Callable[..., dict[str, Any]] | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -164,7 +165,7 @@ def configure(
         raise ConfigureError("Resend returned the wrong inbound domain")
     capabilities = details.get("capabilities") or {}
     status = str(details.get("status") or "unknown")
-    if status not in {"verified", "pending"}:
+    if status != "verified" and (status != "pending" or restart_pending):
         call("POST", f"/domains/{quote(domain_id, safe='')}/verify")
         operations.append("domain_verification_triggered")
     if status != "verified":
@@ -273,6 +274,7 @@ def main() -> int:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--attempts", type=int, default=24)
     parser.add_argument("--poll-seconds", type=float, default=5)
+    parser.add_argument("--restart-pending", action="store_true")
     args = parser.parse_args()
     report = configure(
         api_key=os.environ.get("RESEND_API_KEY", ""),
@@ -281,6 +283,7 @@ def main() -> int:
         webhook_endpoint=args.webhook_endpoint,
         attempts=args.attempts,
         poll_seconds=args.poll_seconds,
+        restart_pending=args.restart_pending,
     )
     args.output.write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
