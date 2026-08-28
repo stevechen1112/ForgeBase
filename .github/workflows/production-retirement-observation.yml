@@ -1,0 +1,128 @@
+name: Production Retirement Observation Audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-retirement-observation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Verify disabled entries, evidence ledger and Platform Admin UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements-ui-scan.txt
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Generate privacy-minimised retirement snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/production-retirement
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app \
+              api python scripts/audit_retirement_observation.py
+          ' > artifacts/production-retirement/report.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/production-retirement/report.json").read_text())
+          assert report["schema_version"] == 1
+          assert report["status"] == "passed"
+          assert report["new_removals_authorized"] == []
+          assert report["notification_core_retained"] is True
+          print("Production retirement snapshot passed")
+          PY
+
+      - name: Install production browser verifier
+        run: |
+          python -m pip install -r scripts/requirements-ui-scan.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Create one-run Platform Admin verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          operator_email="production-retirement-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@forgebase.com"
+          operator_password=$(python -c 'import secrets; print(secrets.token_urlsafe(48))')
+          echo "::add-mask::$operator_password"
+          printf 'FORGEBASE_PLATFORM_EMAIL=%s\n' "$operator_email" >> "$GITHUB_ENV"
+          printf 'FORGEBASE_PLATFORM_PASSWORD=%s\n' "$operator_password" >> "$GITHUB_ENV"
+          {
+            printf '%s\n' "$operator_email"
+            printf '%s\n' "$operator_password"
+          } | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            IFS= read -r operator_email
+            IFS= read -r operator_password
+            cd /opt/forgebase
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e ADMIN_EMAIL="$operator_email" \
+              -e ADMIN_PASSWORD="$operator_password" \
+              -e ADMIN_IS_SUPERUSER=true \
+              -e PYTHONPATH=/app \
+              api python scripts/seed_admin_bcrypt.py
+          '
+
+      - name: Verify the real Platform Admin retirement page
+        env:
+          FORGEBASE_PRODUCTION_URL: https://pcbrm.tw
+          FORGEBASE_BROWSER_EVIDENCE_DIR: artifacts/production-retirement
+        run: python scripts/verify_production_retirement_observation.py
+
+      - name: Remove one-run Platform Admin verifier
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${FORGEBASE_PLATFORM_EMAIL:-}"
+          printf '%s\n' "$FORGEBASE_PLATFORM_EMAIL" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r operator_email
+              cd /opt/forgebase
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e EPHEMERAL_OPERATOR_EMAIL="$operator_email" \
+                -e EPHEMERAL_OPERATOR_RUN_ID="'"$GITHUB_RUN_ID"'" \
+                -e EPHEMERAL_OPERATOR_RUN_ATTEMPT="'"$GITHUB_RUN_ATTEMPT"'" \
+                -e EPHEMERAL_OPERATOR_PURPOSE=retirement \
+                -e PYTHONPATH=/app \
+                api python scripts/remove_ephemeral_platform_operator.py
+            '
+
+      - name: Upload private retirement evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-retirement-observation-evidence
+          path: artifacts/production-retirement/
+          if-no-files-found: error
+          retention-days: 30

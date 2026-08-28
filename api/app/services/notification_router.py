@@ -30,18 +30,17 @@ from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.notification_log import NotificationLog
 from app.models.notification_preference import NotificationPreference
-from app.services.channels.line import LineChannel
-from app.services.channels.telegram import TelegramChannel
+from app.services.notification_channel_policy import retirement_candidate_for_channel
+from app.services.retirement_observability import record_retirement_usage
 
 logger = logging.getLogger(__name__)
 
 # Rate-limit: same (event_type, event_ref_id) → 5-minute cooldown
 _RATE_LIMIT_MINUTES = 5
 
-_CHANNEL_MAP = {
-    "telegram": TelegramChannel(),
-    "line": LineChannel(),
-}
+# No external delivery channel is active while LINE/Telegram complete their
+# evidence window. The notification event/history core remains operational.
+_CHANNEL_MAP = {}
 
 # Maps event_type → preference column name on NotificationPreference
 _EVENT_PREF_COL = {
@@ -165,6 +164,21 @@ async def send_notification(
         prefs = result.all()
 
         for pref in prefs:
+            retired_candidate = retirement_candidate_for_channel(pref.channel)
+            if retired_candidate:
+                await record_retirement_usage(
+                    session,
+                    candidate_key=retired_candidate,
+                    event_name="enabled_preference_dispatch_blocked",
+                    tenant_id=tenant_id,
+                    source="notification_router",
+                )
+                logger.warning(
+                    "Retired notification channel %s was still enabled; dispatch blocked",
+                    pref.channel,
+                )
+                continue
+
             # Check per-event toggle
             if pref_col and not getattr(pref, pref_col, True):
                 continue

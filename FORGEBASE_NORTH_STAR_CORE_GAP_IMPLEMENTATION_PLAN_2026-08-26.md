@@ -1499,3 +1499,46 @@ ForgeBase 應保存的自有衍生資料：
 6. 才比較開發便利、UI 完整或品牌知名度。
 
 任何供應商若未通過前四項，即使試用介面最好或資料庫宣稱最大，也不應成為 ForgeBase 的正式依賴。
+
+---
+
+## 23. 依現況執行記錄（2026-08-28）
+
+本計畫已依「每一完整批次實作、code review、測試，再進入下一批」完成四批內部產品化工作。核心北極星能力未被列入退場候選，也未因精簡功能而刪除。
+
+### 23.1 已完成批次
+
+1. **供應商與 production 設定**：公司辨識／聯絡補全 provider 設定、同步、可用性與 fail-closed 邊界完成；外聯維持關閉，沒有因金鑰存在而自動寄信。
+2. **復原與瀏覽器證據**：production recovery point、隔離還原演練、Platform Admin 顯示與真實 Chromium 驗證完成。
+3. **資料品質治理**：租戶識別修正、RFQ 測試資料分類、不可變平台稽核、一次性操作員安全移除及 correction replay safety 完成；正式資料不以刪除方式掩蓋。
+4. **非核心入口退場**：ML scoring runtime／UI、AgentOS runtime、AI relation 推薦介面維持停用觀察；LINE／Telegram 在零使用、零啟用設定的前提下停止新綁定與派送，開始 60 天觀察。通知事件、歷史與通知核心保留。
+
+### 23.2 第四批實作邊界
+
+- 新增共用通知渠道政策；LINE／Telegram 的建立、更新、刪除、綁定、verified webhook 與派送路徑全部 fail-closed。
+- 被阻擋的使用只寫入 PII-free retirement usage event，不保存 webhook body、訊息、chat id 或聯絡資訊。
+- 新增向前 migration，停用既有渠道並保存原始 enabled 狀態、設定及停用時間；downgrade 只還原原始狀態。
+- 兩個通知候選改為 `disabled / observing / 60 days`；不清空既有人工決策證據。
+- 租戶後台移除 LINE／Telegram 綁定表單，保留通知中心、歷史管道與明確退場說明。
+- ML／AgentOS 入口不再於 capability 載入期間閃現，直接網址顯示「已停用並進入退場觀察」，不再誤導可由管理員臨時開通。
+- Platform retirement decision audit 會保存 actor email snapshot，確保一次性操作員刪除後仍可追溯。
+- 新增 production 只讀退場快照及一次性 Platform Admin Chromium 驗收工作流；驗收不得核准任何新刪除。
+
+### 23.3 Code review 與本機驗證
+
+- Code review 已修正：遷移不得清空既有人工決策、downgrade 必須精確回復原 enabled 狀態、tenantless webhook 測試證據不得污染後續測試、Copilot 共用 `timedelta` 匯入不得誤刪。
+- Admin：type-check、ESLint、production build 通過。
+- API：全新空白暫存資料庫由 migration zero 升到 head 後，`349 passed / 3 skipped / 0 failed`。
+- Scripts／governance：`23 passed`；退場靜態稽核 `17 / 17` 通過。
+- Migration：`0097 → 0096 → 0097` upgrade／downgrade smoke test 通過。
+
+### 23.4 尚未到期，不得宣稱已刪除
+
+本批完成的是「關閉入口並開始正式觀察」，不是提前完成 30／60 天觀察。下列候選在期限到達、使用量與設定皆為零、telemetry 連續性經核驗、資料處置／rollback revision／獨立 removal plan 齊備前，不得移除：
+
+- AgentOS runtime：30 天。
+- ML scoring 線上 runtime／UI：30 天。
+- AI relation 推薦介面：60 天。
+- LINE／Telegram 個別渠道：自本批 production migration 起各 60 天。
+
+觀察期結束後只能逐項決策；任何使用訊號都會阻擋移除。通知核心不在刪除候選內。

@@ -6,16 +6,18 @@ from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
+from sqlalchemy import select, text
+
 from app.core.datetime import utcnow_naive
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import create_access_token, decode_token, get_password_hash
+from app.models.notification_preference import NotificationPreference
 from app.models.operational_job import OperationalJob
 from app.models.retirement import RetirementCandidateObservation, RetirementUsageEvent
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.services import agentOS, operational_outbox
 from app.services.capability_access import resolve_tenant_features
-from sqlalchemy import text
-
+from app.services.notification_router import send_notification
 from tests.conftest import _make_engine, requires_db
 
 
@@ -77,6 +79,50 @@ async def test_tenantless_agentos_job_cannot_bypass_locked_feature(monkeypatch) 
 
 @requires_db
 @pytest.mark.asyncio
+async def test_retired_notification_dispatch_is_fail_closed_and_observed(
+    two_tenants,
+    admin_token_for_tenant,
+) -> None:
+    tenant, _ = two_tenants
+    token = await admin_token_for_tenant(tenant.id)
+    user_id = uuid.UUID(decode_token(token)["sub"])
+    engine, factory = _make_engine()
+    try:
+        async with factory() as db:
+            db.add(
+                NotificationPreference(
+                    user_id=user_id,
+                    tenant_id=tenant.id,
+                    channel="telegram",
+                    channel_config='{"chat_id":"should-not-send"}',
+                    enabled=True,
+                )
+            )
+            await db.commit()
+
+        sent = await send_notification(
+            tenant_id=tenant.id,
+            event_type="new_rfq",
+            message="This must remain inside the retirement gate.",
+        )
+        assert sent == 0
+
+        async with factory() as db:
+            event = (
+                await db.exec(
+                    select(RetirementUsageEvent)
+                    .where(RetirementUsageEvent.tenant_id == tenant.id)
+                    .where(RetirementUsageEvent.candidate_key == "notification_telegram")
+                    .where(RetirementUsageEvent.event_name == "enabled_preference_dispatch_blocked")
+                )
+            ).first()
+            assert event is not None
+    finally:
+        await engine.dispose()
+
+
+@requires_db
+@pytest.mark.asyncio
 async def test_retirement_report_records_use_and_blocks_early_removal(
     http_client,
     two_tenants,
@@ -127,6 +173,11 @@ async def test_retirement_report_records_use_and_blocks_early_removal(
         } <= set(candidates)
         assert candidates["copilot_floating_widget"]["status"] == "removed"
         assert candidates["legacy_ip_resolver"]["status"] == "removed"
+        for channel_candidate in ("notification_telegram", "notification_line"):
+            assert candidates[channel_candidate]["code_state"] == "disabled"
+            assert candidates[channel_candidate]["status"] == "observing"
+            assert candidates[channel_candidate]["evidence"]["enabled_preferences"] == 0
+            assert "observation_window_incomplete" in candidates[channel_candidate]["blockers"]
         assert candidates["ml_scoring_runtime"]["recent_usage_count"] >= 1
         assert "usage_detected" in candidates["ml_scoring_runtime"]["blockers"]
         assert candidates["ml_scoring_runtime"]["removal_ready"] is False

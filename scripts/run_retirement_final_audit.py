@@ -85,14 +85,29 @@ def run_audit() -> dict:
 
     for channel in ("telegram", "line"):
         _check(
-            f"retained:notification_{channel}",
+            f"disabled:notification_{channel}",
             (ROOT / f"api/app/services/channels/{channel}.py").is_file()
             and _contains(
-                "api/app/api/v1/endpoints/retirement_audit.py",
-                f'"notification_{channel}": "{channel}"',
-                "enabled_preferences",
+                "api/app/services/notification_channel_policy.py",
+                'RETIRED_NOTIFICATION_CHANNELS = frozenset({"telegram", "line"})',
+            )
+            and _contains(
+                "api/app/api/v1/endpoints/copilot.py",
+                "_block_retired_channel",
+                "record_retirement_usage",
+            )
+            and _contains(
+                "api/app/services/notification_router.py",
+                "retirement_candidate_for_channel",
+                "dispatch blocked",
+                "_CHANNEL_MAP = {}",
+            )
+            and _contains(
+                "api/app/db/migrations/versions/0097_disable_unused_notification_channels.py",
+                f"notification_{channel}",
+                "code_state = 'disabled'",
             ),
-            f"active {channel} channel remains protected by usage and configuration evidence",
+            f"{channel} entry and dispatch are disabled while implementation remains reversible",
             checks,
         )
 
@@ -126,13 +141,15 @@ def run_audit() -> dict:
             "agentos_runtime",
             "ml_scoring_runtime",
             "relation_recommender",
+            "notification_telegram",
+            "notification_line",
         ],
-        "retain_operational": ["notification_telegram", "notification_line"],
+        "retain_operational": ["notification_core"],
         "new_removals_authorized": [],
     }
     digest_payload = {"checks": checks, "decisions": decisions}
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "failed" if failed else "passed",
         "checks_passed": len(checks) - len(failed),
         "checks_total": len(checks),

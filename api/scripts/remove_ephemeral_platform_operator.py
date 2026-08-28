@@ -8,8 +8,7 @@ import re
 
 from app.core.config import settings
 
-
-_PURPOSES = {"browser", "data-quality"}
+_PURPOSES = {"browser", "data-quality", "retirement"}
 
 
 def expected_ephemeral_email(

@@ -313,6 +313,7 @@ async def decide_retirement_candidate(
     db.add(
         PlatformAuditLog(
             actor_user_id=current_user.id,
+            actor_email=current_user.email,
             action="retirement_candidate_decided",
             target_type="retirement_candidate",
             target_id=candidate_key,

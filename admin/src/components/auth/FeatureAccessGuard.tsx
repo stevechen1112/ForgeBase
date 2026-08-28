@@ -45,6 +45,7 @@ export function FeatureAccessGuard({ children }: { children: React.ReactNode }) 
     );
   }
   if (hasFeature(requirement.feature)) return <>{children}</>;
+  const retirementObservation = ["ml_scoring", "automation_runs", "ai_relation_recommendations"].includes(requirement.feature);
 
   return (
     <div className="flex min-h-[65vh] flex-col items-center justify-center gap-4 px-6 text-center">
@@ -52,9 +53,11 @@ export function FeatureAccessGuard({ children }: { children: React.ReactNode }) 
         <Lock className="h-6 w-6 text-muted-foreground" />
       </div>
       <div>
-        <h1 className="text-xl font-semibold">此租戶尚未開通這項功能</h1>
+        <h1 className="text-xl font-semibold">{retirementObservation ? "此入口已停用" : "此租戶尚未開通這項功能"}</h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          {featureLabel(requirement.feature)}不在目前的導入範圍；如需展示或測試，可由 ForgeBase 系統管理員開通。
+          {retirementObservation
+            ? `${featureLabel(requirement.feature)}已進入正式退場觀察，不接受租戶或系統管理員臨時開通。核心資料契約與既有成果仍會保留。`
+            : `${featureLabel(requirement.feature)}不在目前的導入範圍；如需展示或測試，可由 ForgeBase 系統管理員開通。`}
         </p>
       </div>
       <Button asChild variant="outline"><Link href="/dashboard">返回每日營運總覽</Link></Button>

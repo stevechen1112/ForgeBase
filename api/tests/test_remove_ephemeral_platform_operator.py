@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 from pydantic import EmailStr, TypeAdapter
+
 from scripts.remove_ephemeral_platform_operator import expected_ephemeral_email
 
 
@@ -11,6 +12,8 @@ def test_expected_ephemeral_email_is_exactly_scoped_to_the_workflow_run() -> Non
     assert TypeAdapter(EmailStr).validate_python(email) == email
     data_quality_email = expected_ephemeral_email("33134643328", "2", "data-quality")
     assert data_quality_email == "production-data-quality-33134643328-2@forgebase.com"
+    retirement_email = expected_ephemeral_email("33134643328", "2", "retirement")
+    assert retirement_email == "production-retirement-33134643328-2@forgebase.com"
 
 
 @pytest.mark.parametrize(

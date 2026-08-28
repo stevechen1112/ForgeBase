@@ -48,7 +48,7 @@ export function WorkspaceHub({
   const role = state.status === "authenticated" ? state.user.role : null;
   const visibleItems = items.filter((item) => {
     if (item.allowedRoles && (!role || !item.allowedRoles.includes(role))) return false;
-    return !item.feature || isLoading || hasFeature(item.feature);
+    return !item.feature || (!isLoading && hasFeature(item.feature));
   });
 
   return (
@@ -69,7 +69,7 @@ export function WorkspaceHub({
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {flow.map((step, index) => {
-              const enabled = !step.feature || isLoading || hasFeature(step.feature);
+              const enabled = !step.feature || (!isLoading && hasFeature(step.feature));
               return (
                 <div key={step.label} className="flex shrink-0 items-center gap-2">
                   <div className={cn(

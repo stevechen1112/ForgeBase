@@ -45,5 +45,10 @@ class NotificationPreference(SQLModel, table=True):
     binding_code: Optional[str] = Field(default=None, max_length=10, index=True)
     binding_code_expires_at: Optional[datetime] = Field(default=None)
 
+    # Set when a delivery channel is disabled for a formal retirement window.
+    # Configuration stays available for rollback/audit until disposition approval.
+    retirement_disabled_at: Optional[datetime] = Field(default=None, index=True)
+    retirement_previous_enabled: Optional[bool] = Field(default=None)
+
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)

@@ -16,8 +16,6 @@ Endpoints:
 """
 import json
 import logging
-import random
-import string
 import uuid
 from datetime import timedelta
 from typing import Optional
@@ -25,11 +23,9 @@ from typing import Optional
 import httpx
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     Header,
     HTTPException,
-    Request,
     status,
 )
 from pydantic import BaseModel
@@ -45,15 +41,19 @@ from app.models.notification_log import NotificationLog
 from app.models.notification_preference import NotificationPreference
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.services.channels.telegram import TelegramChannel
 from app.services.capability_access import tenant_has_feature
+from app.services.channels.telegram import TelegramChannel
+from app.services.notification_channel_policy import (
+    ACTIVE_NOTIFICATION_CHANNELS,
+    retirement_candidate_for_channel,
+)
+from app.services.retirement_observability import record_retirement_usage
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/copilot", tags=["Copilot"])
 _telegram = TelegramChannel()
 
-_BINDING_CODE_EXPIRY_MINUTES = 10
-_VALID_CHANNELS = {"telegram", "line", "email", "in_app"}
+_VALID_CHANNELS = ACTIVE_NOTIFICATION_CHANNELS
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -94,10 +94,6 @@ class TelegramBindVerify(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _generate_code(length: int = 6) -> str:
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
-
-
 async def _get_preference(
     pref_id: uuid.UUID,
     db: AsyncSession,
@@ -109,6 +105,28 @@ async def _get_preference(
     if pref.user_id != user.id:
         raise HTTPException(status_code=403, detail="Access denied")
     return pref
+
+
+async def _block_retired_channel(
+    db: AsyncSession,
+    *,
+    channel: str,
+    event_name: str,
+    tenant_id: uuid.UUID | None,
+) -> None:
+    candidate_key = retirement_candidate_for_channel(channel)
+    if not candidate_key:
+        return
+    await record_retirement_usage(
+        db,
+        candidate_key=candidate_key,
+        event_name=event_name,
+        tenant_id=tenant_id,
+    )
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=f"{channel.upper()} 通知入口已停用並進入退場觀察；通知核心仍正常保留。",
+    )
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -139,6 +157,11 @@ async def list_preferences(
                 "notify_content_suggestion": p.notify_content_suggestion,
                 "quiet_hours_start": p.quiet_hours_start,
                 "quiet_hours_end": p.quiet_hours_end,
+                "retirement_disabled_at": (
+                    p.retirement_disabled_at.isoformat()
+                    if p.retirement_disabled_at
+                    else None
+                ),
                 "created_at": p.created_at.isoformat(),
             }
             for p in prefs
@@ -152,13 +175,20 @@ async def create_preference(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    if body.channel not in _VALID_CHANNELS:
+    normalized_channel = body.channel.strip().lower()
+    await _block_retired_channel(
+        db,
+        channel=normalized_channel,
+        event_name="preference_create_blocked",
+        tenant_id=current_user.tenant_id,
+    )
+    if normalized_channel not in _VALID_CHANNELS:
         raise HTTPException(status_code=400, detail=f"Invalid channel. Allowed: {_VALID_CHANNELS}")
 
     pref = NotificationPreference(
         user_id=current_user.id,
         tenant_id=current_user.tenant_id,
-        channel=body.channel,
+        channel=normalized_channel,
         channel_config=json.dumps(body.channel_config),
         enabled=body.enabled,
         notify_new_rfq=body.notify_new_rfq,
@@ -184,6 +214,12 @@ async def update_preference(
     current_user: User = Depends(get_current_user),
 ):
     pref = await _get_preference(pref_id, db, current_user)
+    await _block_retired_channel(
+        db,
+        channel=pref.channel,
+        event_name="preference_update_blocked",
+        tenant_id=current_user.tenant_id,
+    )
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(pref, field, value)
     pref.updated_at = utcnow_naive()
@@ -199,6 +235,12 @@ async def delete_preference(
     current_user: User = Depends(get_current_user),
 ):
     pref = await _get_preference(pref_id, db, current_user)
+    await _block_retired_channel(
+        db,
+        channel=pref.channel,
+        event_name="preference_delete_blocked",
+        tenant_id=current_user.tenant_id,
+    )
     await db.delete(pref)
     await db.commit()
 
@@ -249,54 +291,13 @@ async def telegram_bind_start(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Step 1: Admin provides their Telegram chat_id.
-    We generate a time-limited code and send it via the bot.
-    """
-    chat_id = body.telegram_chat_id.strip()
-    if not chat_id:
-        raise HTTPException(status_code=400, detail="Telegram chat_id 不可為空")
-
-    # Find or create a telegram preference row (pending binding)
-    result = await db.exec(
-        select(NotificationPreference)
-        .where(NotificationPreference.user_id == current_user.id)
-        .where(NotificationPreference.channel == "telegram")
+    """Record attempted use while the Telegram entry is disabled."""
+    await _block_retired_channel(
+        db,
+        channel="telegram",
+        event_name="binding_start_blocked",
+        tenant_id=current_user.tenant_id,
     )
-    pref = result.first()
-
-    code = _generate_code(6)
-    expires_at = utcnow_naive() + timedelta(minutes=_BINDING_CODE_EXPIRY_MINUTES)
-
-    if pref:
-        pref.channel_config = json.dumps({"chat_id": chat_id})
-        pref.enabled = False
-        pref.binding_code = code
-        pref.binding_code_expires_at = expires_at
-        pref.updated_at = utcnow_naive()
-    else:
-        pref = NotificationPreference(
-            user_id=current_user.id,
-            tenant_id=current_user.tenant_id,
-            channel="telegram",
-            channel_config=json.dumps({"chat_id": chat_id}),
-            enabled=False,  # not active until verified
-            binding_code=code,
-            binding_code_expires_at=expires_at,
-        )
-
-    db.add(pref)
-    await db.commit()
-
-    # Send verification code via Telegram Bot
-    sent = await _telegram.send_binding_code(chat_id, code)
-    if not sent:
-        raise HTTPException(
-            status_code=502,
-            detail="無法發送 Telegram 驗證碼，請確認 Bot Token 是否設定，以及 chat_id 是否正確",
-        )
-
-    return {"message": f"驗證碼已發送至 Telegram，請在 {_BINDING_CODE_EXPIRY_MINUTES} 分鐘內完成驗證"}
 
 
 @router.post("/telegram/bind-verify", dependencies=[Depends(RequireFeature("notifications"))])
@@ -305,94 +306,35 @@ async def telegram_bind_verify(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Step 2: Admin enters the 6-char code received on Telegram.
-    If valid, the preference becomes enabled.
-    """
-    code = body.code.strip().upper()
-    if not code:
-        raise HTTPException(status_code=400, detail="驗證碼不可為空")
-
-    result = await db.exec(
-        select(NotificationPreference)
-        .where(NotificationPreference.user_id == current_user.id)
-        .where(NotificationPreference.channel == "telegram")
-        .where(NotificationPreference.binding_code == code)
+    """Record attempted use while the Telegram entry is disabled."""
+    await _block_retired_channel(
+        db,
+        channel="telegram",
+        event_name="binding_verify_blocked",
+        tenant_id=current_user.tenant_id,
     )
-    pref = result.first()
-
-    if not pref:
-        raise HTTPException(status_code=400, detail="驗證碼不正確")
-    if pref.binding_code_expires_at and utcnow_naive() > pref.binding_code_expires_at:
-        raise HTTPException(status_code=400, detail="驗證碼已過期，請重新發送")
-
-    pref.enabled = True
-    pref.binding_code = None
-    pref.binding_code_expires_at = None
-    pref.updated_at = utcnow_naive()
-    db.add(pref)
-    await db.commit()
-
-    return {"message": "Telegram 通知綁定成功！"}
 
 
 # ── Telegram Incoming Webhook (public) ───────────────────────────────────────
 
 @router.post("/webhook/telegram", include_in_schema=False)
 async def telegram_webhook(
-    request: Request,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_session),
     x_telegram_bot_api_secret_token: Optional[str] = Header(default=None),
 ):
     """
-    Receives incoming messages from Telegram (set via setWebhook).
-    Validated by HMAC secret — intentionally unauthenticated.
-    Routes to full LLM Copilot engine with persistent conversation history.
-    Returns 200 immediately; reply is sent asynchronously.
+    Validate the provider secret, record PII-free use, and perform no processing
+    while the channel is in retirement observation.
     """
     if not _telegram.verify_webhook_secret(x_telegram_bot_api_secret_token or ""):
         raise HTTPException(status_code=403, detail="Invalid webhook secret")
 
-    body = await request.json()
-    message = body.get("message") or body.get("edited_message")
-    if not message:
-        return {"ok": True}  # Telegram expects 200
-
-    chat_id = str(message.get("chat", {}).get("id", ""))
-    text = (message.get("text") or "").strip()
-
-    if not chat_id or not text:
-        return {"ok": True}
-
-    # Find bound preference for this chat_id
-    # Use Python-side JSON comparison to avoid substring false positives
-    # (e.g. chat_id "123" must not match "1234567")
-    result = await db.exec(
-        select(NotificationPreference)
-        .where(NotificationPreference.channel == "telegram")
-        .where(NotificationPreference.enabled == True)
-    )
-    pref = next(
-        (p for p in result.all()
-         if json.loads(p.channel_config or "{}").get("chat_id") == chat_id),
-        None,
-    )
-
-    if not pref:
-        await _telegram.send(
-            {"chat_id": chat_id},
-            "⚠️ 此 Telegram 帳號尚未綁定 ForgeBase。\n請至後台 <b>通知設定</b> 頁面完成 Telegram 綁定。",
-        )
-        return {"ok": True}
-
-    # Fire and forget — process in background so Telegram doesn't timeout
-    background_tasks.add_task(
-        _process_copilot_message,
-        chat_id=chat_id,
-        text=text,
-        tenant_id=pref.tenant_id,
-        user_id=pref.user_id,
+    await record_retirement_usage(
+        db,
+        candidate_key="notification_telegram",
+        event_name="verified_webhook_blocked",
+        tenant_id=None,
+        source="webhook",
     )
     return {"ok": True}
 

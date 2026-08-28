@@ -1,24 +1,25 @@
-import json
 import os
 import uuid
 from datetime import timedelta
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
+from sqlalchemy import text
 from sqlmodel import select
 
+from app.api.v1.endpoints import copilot as copilot_endpoints
 from app.core.datetime import utcnow_naive
 from app.core.security import decode_token
 from app.models.contact import Contact
 from app.models.copilot_conversation import CopilotConversation
 from app.models.notification_preference import NotificationPreference
 from app.models.nurture import NurtureOutbox
+from app.models.retirement import RetirementUsageEvent
 from app.models.rfq_event import RFQEvent
 from app.models.rfq_request import RFQRequest
-from app.services.copilot import action_tools
-from app.services.copilot import chat_engine
+from app.services.copilot import action_tools, chat_engine
 from app.services.copilot.chat_engine import CopilotEngine
-from app.api.v1.endpoints import copilot as copilot_endpoints
 from tests.conftest import _make_engine, requires_db
 
 
@@ -130,7 +131,7 @@ async def test_copilot_engine_runs_tool_loop_and_persists_history(monkeypatch):
 
 @requires_db
 @pytest.mark.asyncio
-async def test_telegram_bind_start_updates_existing_chat_id_and_disables_binding(
+async def test_retired_notification_bind_and_preference_creation_are_blocked_and_observed(
     http_client,
     two_tenants,
     admin_token_for_tenant,
@@ -142,48 +143,85 @@ async def test_telegram_bind_start_updates_existing_chat_id_and_disables_binding
     engine, factory = _make_engine()
 
     try:
-        async with factory() as session:
-            session.add(
-                NotificationPreference(
-                    user_id=user_id,
-                    tenant_id=tenant_a.id,
-                    channel="telegram",
-                    channel_config=json.dumps({"chat_id": "old-chat"}),
-                    enabled=True,
-                )
-            )
-            await session.commit()
-
-        async def fake_send_binding_code(chat_id: str, code: str) -> bool:
-            assert chat_id == "@new_chat_id"
-            assert len(code) == 6
-            return True
-
-        monkeypatch.setattr(copilot_endpoints._telegram, "send_binding_code", fake_send_binding_code)
-
-        response = await http_client.post(
+        telegram_response = await http_client.post(
             "/api/v1/copilot/telegram/bind-start",
             headers={"Authorization": f"Bearer {token}"},
             json={"telegram_chat_id": "  @new_chat_id  "},
         )
+        line_response = await http_client.post(
+            "/api/v1/copilot/preferences",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"channel": "line", "channel_config": {"line_user_id": "U123"}},
+        )
+        telegram_send = AsyncMock()
+        monkeypatch.setattr(copilot_endpoints._telegram, "send", telegram_send)
+        monkeypatch.setattr(
+            copilot_endpoints._telegram,
+            "verify_webhook_secret",
+            lambda _secret: True,
+        )
+        webhook_response = await http_client.post(
+            "/api/v1/copilot/webhook/telegram",
+            headers={"X-Telegram-Bot-Api-Secret-Token": "valid-test-secret"},
+            json={"message": {"chat": {"id": "sensitive-chat"}, "text": "sensitive text"}},
+        )
 
-        assert response.status_code == 200
+        assert telegram_response.status_code == 410
+        assert line_response.status_code == 410
+        assert webhook_response.status_code == 200
+        telegram_send.assert_not_awaited()
+        assert "通知核心仍正常保留" in telegram_response.text
 
         async with factory() as session:
-            pref = (
+            prefs = list(
+                (
+                    await session.exec(
+                        select(NotificationPreference).where(
+                            NotificationPreference.user_id == user_id
+                        )
+                    )
+                ).all()
+            )
+            events = list(
+                (
+                    await session.exec(
+                        select(RetirementUsageEvent)
+                        .where(RetirementUsageEvent.tenant_id == tenant_a.id)
+                        .where(
+                            RetirementUsageEvent.candidate_key.in_(
+                                ["notification_telegram", "notification_line"]
+                            )
+                        )
+                    )
+                ).all()
+            )
+            webhook_event = (
                 await session.exec(
-                    select(NotificationPreference)
-                    .where(NotificationPreference.user_id == user_id)
-                    .where(NotificationPreference.channel == "telegram")
+                    select(RetirementUsageEvent)
+                    .where(RetirementUsageEvent.candidate_key == "notification_telegram")
+                    .where(RetirementUsageEvent.event_name == "verified_webhook_blocked")
                 )
             ).first()
 
-            assert pref is not None
-            assert json.loads(pref.channel_config) == {"chat_id": "@new_chat_id"}
-            assert pref.enabled is False
-            assert pref.binding_code is not None
-            assert pref.binding_code_expires_at is not None
+            assert prefs == []
+            assert {(event.candidate_key, event.event_name) for event in events} == {
+                ("notification_telegram", "binding_start_blocked"),
+                ("notification_line", "preference_create_blocked"),
+            }
+            assert webhook_event is not None
+            assert webhook_event.tenant_id is None
+            assert webhook_event.source == "webhook"
     finally:
+        async with factory() as session:
+            await session.exec(
+                text(
+                    "DELETE FROM retirement_usage_events "
+                    "WHERE tenant_id IS NULL "
+                    "AND candidate_key = 'notification_telegram' "
+                    "AND event_name = 'verified_webhook_blocked'"
+                )
+            )
+            await session.commit()
         await engine.dispose()
 
 

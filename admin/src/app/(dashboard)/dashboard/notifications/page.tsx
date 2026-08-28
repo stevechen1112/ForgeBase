@@ -194,15 +194,7 @@ export default function NotificationCenterPage() {
         <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
           <Bell className="h-8 w-8 mx-auto mb-3 opacity-30" />
           <p className="text-sm">尚無通知記錄</p>
-          {!visibleLogs.length && (
-            <p className="text-xs mt-1">
-              請先至{" "}
-              <Link href="/dashboard/settings/notifications" className="underline underline-offset-2">
-                通知設定
-              </Link>{" "}
-              綁定 Telegram 並啟用通知。
-            </p>
-          )}
+          {!visibleLogs.length && <p className="mt-1 text-xs">新 RFQ、客戶回覆與真人接手等系統事件發生後，記錄會顯示於此。</p>}
         </div>
       ) : (
         <div className="max-w-full overflow-x-auto rounded-lg border">

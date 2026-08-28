@@ -12,4 +12,12 @@ def test_final_retirement_static_audit_passes_without_new_removals() -> None:
         "copilot_floating_widget",
         "legacy_ip_resolver",
     }
+    assert set(report["decisions"]["continue_observation"]) == {
+        "agentos_runtime",
+        "ml_scoring_runtime",
+        "relation_recommender",
+        "notification_telegram",
+        "notification_line",
+    }
+    assert report["decisions"]["retain_operational"] == ["notification_core"]
     assert report["external_observation_claimed_complete"] is False
