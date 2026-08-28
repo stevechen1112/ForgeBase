@@ -101,6 +101,8 @@ jobs:
           --output artifacts/retirement-final-audit
       - name: Verify product document authority boundaries
         run: python scripts/verify_document_authority.py
+      - name: Test the external uptime monitor contract
+        run: python -m pytest scripts/tests/test_run_external_uptime_monitor.py -q
       - name: Upload API release evidence
         if: always()
         uses: actions/upload-artifact@v4

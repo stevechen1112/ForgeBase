@@ -1,0 +1,163 @@
+name: Production External Uptime
+
+on:
+  workflow_dispatch:
+    inputs:
+      register_readiness:
+        description: Register this monitor in production readiness after a passing run
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: "*/15 * * * *"
+
+concurrency:
+  group: production-external-uptime
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    name: Check public production endpoints from a GitHub-hosted runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run privacy-minimized synthetic monitor
+        id: monitor
+        continue-on-error: true
+        run: |
+          python scripts/run_external_uptime_monitor.py \
+            --json-output artifacts/external-uptime/report.json \
+            --junit-output artifacts/external-uptime/junit.xml
+
+      - name: Upload monitor evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-external-uptime-evidence
+          path: artifacts/external-uptime/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Setup SSH for an explicitly requested readiness registration
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.register_readiness &&
+          steps.monitor.outcome == 'success'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Register the verified monitor in production readiness
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.register_readiness &&
+          steps.monitor.outcome == 'success'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'GitHub Actions Production External Uptime' | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r monitor_name
+              cd /opt/forgebase
+              printf "%s\n" "$monitor_name" | python3 deploy/set-env-value-from-stdin.py \
+                /opt/forgebase/deploy/api.env EXTERNAL_MONITOR_NAME
+              docker compose -f docker-compose.prod.yml up -d --force-recreate api
+              for attempt in $(seq 1 12); do
+                status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | \
+                  python3 -c "import json,sys; print(json.load(sys.stdin).get(\"status\", \"\"))" \
+                  2>/dev/null || true)
+                [ "$status" = ready ] && break
+                sleep 5
+              done
+              [ "$status" = ready ]
+              docker compose -f docker-compose.prod.yml exec -T api python - <<"PY"
+          from app.core.config import settings
+
+          assert settings.EXTERNAL_MONITOR_NAME == "GitHub Actions Production External Uptime"
+          print("External monitor registration verified")
+          PY
+            '
+
+      - name: Open or update one production incident issue
+        if: steps.monitor.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '[Production Monitor] ForgeBase public endpoints failing';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+            const body = `The off-host synthetic monitor failed. Review the private workflow artifact and run logs: ${runUrl}`;
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            }
+
+      - name: Close the monitor incident after recovery
+        if: steps.monitor.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '[Production Monitor] ForgeBase public endpoints failing';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            for (const issue of issues.filter(item => !item.pull_request && item.title === title)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `The off-host synthetic monitor recovered: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }
+
+      - name: Preserve failing workflow status
+        if: steps.monitor.outcome == 'failure'
+        run: exit 1

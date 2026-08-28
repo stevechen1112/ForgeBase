@@ -44,6 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p artifacts/production-recovery
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
             set -euo pipefail
             cd /opt/forgebase
@@ -75,6 +76,45 @@ jobs:
           print("Production recovery evidence verified")
           PY
           '
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            root@"$DEPLOY_HOST":/opt/forgebase/backups/recovery-evidence/status.json \
+            artifacts/production-recovery/recovery-status.json
+
+      - name: Validate exported recovery evidence and backup age
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path = Path("artifacts/production-recovery/recovery-status.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["schema_version"] == 1
+          assert payload["evidence_status"] == "verified"
+          backup_at = datetime.fromisoformat(payload["last_backup_at"].replace("Z", "+00:00"))
+          restore_at = datetime.fromisoformat(payload["last_restore_drill_at"].replace("Z", "+00:00"))
+          now = datetime.now(timezone.utc)
+          backup_age = (now - backup_at).total_seconds()
+          restore_age = (now - restore_at).total_seconds()
+          assert -5 * 60 <= backup_age <= 48 * 60 * 60
+          assert -5 * 60 <= restore_age <= 15 * 60
+          assert set(payload) == {
+              "schema_version",
+              "last_backup_at",
+              "last_backup_offsite_status",
+              "last_restore_drill_at",
+              "evidence_status",
+          }
+          print("Recovery evidence is current and contains only approved fields")
+          PY
+
+      - name: Verify public endpoints after the isolated drill
+        run: |
+          python scripts/run_external_uptime_monitor.py \
+            --json-output artifacts/production-recovery/external-uptime.json \
+            --junit-output artifacts/production-recovery/external-uptime.xml
 
       - name: Install production browser verifier
         run: |
@@ -131,11 +171,13 @@ jobs:
                 api python scripts/remove_ephemeral_platform_operator.py
             '
 
-      - name: Upload production browser evidence
+      - name: Upload production recovery evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: production-recovery-browser-evidence
-          path: artifacts/production-admin/
+          name: production-recovery-evidence
+          path: |
+            artifacts/production-admin/
+            artifacts/production-recovery/
           if-no-files-found: error
           retention-days: 30
