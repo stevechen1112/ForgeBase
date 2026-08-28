@@ -164,9 +164,10 @@ def configure(
         raise ConfigureError("Resend returned the wrong inbound domain")
     capabilities = details.get("capabilities") or {}
     status = str(details.get("status") or "unknown")
-    if status != "verified":
+    if status not in {"verified", "pending"}:
         call("POST", f"/domains/{quote(domain_id, safe='')}/verify")
         operations.append("domain_verification_triggered")
+    if status != "verified":
         for attempt in range(attempts):
             details = call("GET", f"/domains/{quote(domain_id, safe='')}")
             status = str(details.get("status") or "unknown")

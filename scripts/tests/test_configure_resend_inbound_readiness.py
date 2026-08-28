@@ -140,9 +140,11 @@ def test_already_aligned_is_idempotent() -> None:
 
 def test_reports_pending_domain_after_bounded_polling() -> None:
     reads = 0
+    methods = []
 
     def request(method, path, payload=None):
         nonlocal reads
+        methods.append((method, path))
         if path == "/domains?limit=100":
             return {
                 "data": [
@@ -155,8 +157,6 @@ def test_reports_pending_domain_after_bounded_polling() -> None:
                 ],
                 "has_more": False,
             }
-        if path == "/domains/domain-id/verify":
-            return {"id": "domain-id"}
         if path == "/domains/domain-id":
             reads += 1
             return {
@@ -190,6 +190,7 @@ def test_reports_pending_domain_after_bounded_polling() -> None:
     )
 
     assert reads == 3
+    assert ("POST", "/domains/domain-id/verify") not in methods
     assert report["assessment"]["status"] == "attention_required"
     assert report["assessment"]["blockers"] == ["inbound_domain_not_verified"]
 
