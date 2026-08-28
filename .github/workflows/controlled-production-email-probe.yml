@@ -1,0 +1,96 @@
+name: Controlled Production Email Probe
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: controlled-production-email-probe
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Send once to the exact internal allowlist and verify delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      RECIPIENT: ${{ vars.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate fixed internal recipient
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RECIPIENT"
+          test "$RECIPIENT" = "${{ vars.EMAIL_FROM }}"
+          case "$RECIPIENT" in
+            *,*) exit 1 ;;
+          esac
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Send one controlled internal probe and wait for webhook
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/email-probe
+          printf '%s\n%s\n' "$RECIPIENT" "$GITHUB_RUN_ID" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r recipient
+              IFS= read -r probe_id
+              cd /opt/forgebase
+              set +e
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e CONTROLLED_EMAIL_PROBE_RECIPIENT="$recipient" \
+                -e CONTROLLED_EMAIL_PROBE_ID="$probe_id" \
+                -e PYTHONPATH=/app api \
+                python scripts/run_controlled_email_probe.py --output /tmp/email-probe.json
+              probe_status=$?
+              set -e
+              docker compose -f docker-compose.prod.yml exec -T api \
+                sh -c "cat /tmp/email-probe.json && rm -f /tmp/email-probe.json"
+              exit "$probe_status"
+            ' > artifacts/email-probe/report.json
+
+      - name: Verify delivery evidence remains redacted
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/email-probe/report.json").read_text())
+          assert report["assessment"]["status"] == "passed"
+          assert report["assessment"]["provider_delivery_confirmed"] is True
+          assert report["assessment"]["delivery_webhook_confirmed"] is True
+          assert report["controls"]["external_delivery_switch_closed"] is True
+          assert report["controls"]["outreach_send_switch_closed"] is True
+          assert not any(report["privacy"].values())
+          print("Controlled internal email delivery and webhook confirmed")
+          PY
+
+      - name: Upload private controlled-delivery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-controlled-email-probe-evidence
+          path: artifacts/email-probe/
+          if-no-files-found: error
+          retention-days: 30
