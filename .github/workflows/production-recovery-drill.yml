@@ -1,0 +1,70 @@
+name: Production Recovery Drill
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 3 1 * *"
+
+concurrency:
+  group: production-recovery-drill
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: Restore latest production recovery point into a disposable database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+    steps:
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run isolated restore drill and publish evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            latest_manifest=$(find backups -maxdepth 1 -type f -name "database-*.manifest.json" -print | sort | tail -n 1)
+            test -n "$latest_manifest"
+            offsite_object_key=$(python3 - "$latest_manifest" <<"PY"
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["schema_version"] == 1
+          assert payload["status"] == "passed"
+          assert payload["offsite_status"] == "passed"
+          print(payload["offsite_object_key"])
+          PY
+            )
+            test -n "$offsite_object_key"
+            bash deploy/restore-drill.sh --offsite "$offsite_object_key"
+            python3 - <<"PY"
+          import json
+          from pathlib import Path
+
+          evidence = json.loads(Path("backups/recovery-evidence/status.json").read_text(encoding="utf-8"))
+          assert evidence["schema_version"] == 1
+          assert evidence["evidence_status"] == "verified"
+          assert evidence["last_backup_at"]
+          assert evidence["last_restore_drill_at"]
+          print("Production recovery evidence verified")
+          PY
+          '

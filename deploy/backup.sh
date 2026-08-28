@@ -202,12 +202,19 @@ payload["offsite_status"] = sys.argv[3]
 path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 PY
   if [ "$offsite_status" != "passed" ]; then
+    python3 "$repo_dir/deploy/publish-recovery-evidence.py" \
+      --backup-dir "$backup_dir" \
+      --output "$backup_dir/recovery-evidence/status.json"
     printf 'Configured off-site backup upload failed; local recovery point remains valid.\n' >&2
     exit 1
   fi
 else
   printf 'Off-site backup skipped: BACKUP_S3_BUCKET_NAME is not configured.\n' >&2
 fi
+
+python3 "$repo_dir/deploy/publish-recovery-evidence.py" \
+  --backup-dir "$backup_dir" \
+  --output "$backup_dir/recovery-evidence/status.json"
 
 printf 'Backup passed: %s (sha256=%s, tables=%s, alembic=%s)\n' \
   "$database_file" "$checksum" "$table_count" "$schema_head"

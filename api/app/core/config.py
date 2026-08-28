@@ -130,6 +130,7 @@ class Settings(BaseSettings):
     BACKUP_S3_SECRET_ACCESS_KEY: str = ""
     BACKUP_S3_BUCKET_NAME: str = ""
     BACKUP_ENCRYPTION_KEY: str = ""
+    RECOVERY_EVIDENCE_FILE: str = "/recovery-evidence/status.json"
 
     # Google Search Console
     GSC_SERVICE_ACCOUNT_KEY_JSON: str = ""   # JSON string of service account credentials

@@ -468,9 +468,9 @@ export type PlatformResourceStatus = {
   };
   backups: {
     offsite_configured: boolean;
-    last_backup_at?: string;
-    last_restore_drill_at?: string;
-    evidence_status: string;
+    last_backup_at: string | null;
+    last_restore_drill_at: string | null;
+    evidence_status: "verified" | "backup_only" | "not_recorded";
   };
   monitoring: {
     incident_alert_configured: boolean;

@@ -85,6 +85,34 @@ if [ "$mode" = "local" ]; then
   fi
 else
   backup_file="$downloaded_file"
+  manifest_file="$(python3 - "$backup_dir" "$source_value" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+backup_dir = Path(sys.argv[1])
+object_key = sys.argv[2]
+matches = []
+for path in backup_dir.glob("database-*.manifest.json"):
+    try:
+        if path.is_symlink() or path.stat().st_size > 1_000_000:
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        continue
+    if (
+        payload.get("schema_version") == 1
+        and payload.get("status") == "passed"
+        and payload.get("offsite_status") == "passed"
+        and payload.get("offsite_object_key") == object_key
+    ):
+        matches.append(path)
+if len(matches) != 1:
+    raise SystemExit("Expected exactly one local manifest for the off-site object")
+print(matches[0])
+PY
+  )"
+  test -f "$manifest_file"
   # Give the non-root utility process a single writable destination rather
   # than exposing the root-owned restore-drill directory.
   install -m 0600 -o "$api_runtime_uid" -g "$api_runtime_gid" \
@@ -223,10 +251,15 @@ payload = {
     "critical_row_counts": counts,
     "rto_seconds": int(duration_seconds),
     "backup_age_seconds": rpo_seconds,
+    "backup_created_at": backup_created_at or None,
     "disposable_database_removed": drill_database_removed == "true",
 }
 Path(evidence_file).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 PY
+
+python3 "$repo_dir/deploy/publish-recovery-evidence.py" \
+  --backup-dir "$backup_dir" \
+  --output "$backup_dir/recovery-evidence/status.json"
 
 printf 'Restore drill passed: %s tables, alembic %s, RTO %ss. Evidence: %s\n' \
   "$table_count" "$schema_head" "$duration_seconds" "$evidence_file"

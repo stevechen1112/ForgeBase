@@ -59,6 +59,7 @@ services:
     environment: *api-env
     volumes:
       - uploads_data:/app/uploads
+      - ./backups/recovery-evidence:/recovery-evidence:ro
     # APScheduler runs inside the API lifespan, so production intentionally uses
     # one worker to guarantee each scheduled job executes exactly once.
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1

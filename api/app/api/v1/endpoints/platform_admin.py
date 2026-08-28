@@ -64,6 +64,7 @@ from app.services.privacy_operations import (
     retention_inventory,
 )
 from app.services.privacy_retention import purge_expired_analytics
+from app.services.recovery_evidence import load_recovery_evidence
 from app.services.site_provisioning import (
     SITE_TEMPLATES,
     evaluate_delivery_stage,
@@ -1479,6 +1480,7 @@ async def platform_resource_status(
         settings.R2_BUCKET_NAME.strip(),
         settings.R2_PUBLIC_URL.strip(),
     ))
+    recovery_evidence = load_recovery_evidence() or {}
     return PlatformResourceStatus(
         external_test=external_test_readiness(),
         forms={
@@ -1508,11 +1510,9 @@ async def platform_resource_status(
         },
         backups={
             "offsite_configured": backup_configured,
-            # Successful backup and restore evidence is recorded by the
-            # deployment/backup job, never fabricated from a config flag.
-            "last_backup_at": None,
-            "last_restore_drill_at": None,
-            "evidence_status": "not_recorded",
+            "last_backup_at": recovery_evidence.get("last_backup_at"),
+            "last_restore_drill_at": recovery_evidence.get("last_restore_drill_at"),
+            "evidence_status": recovery_evidence.get("evidence_status", "not_recorded"),
         },
         monitoring={
             "incident_alert_configured": bool(settings.OPS_ALERT_WEBHOOK_URL.strip()) or all((
