@@ -305,7 +305,10 @@ def test_fails_closed_when_provider_does_not_apply_domain_capabilities() -> None
         ("premierbiz.com.tw", "https://pcbrm.tw/api/v1/webhooks/resend"),
         ("回覆.premierbiz.com.tw", "https://pcbrm.tw/api/v1/webhooks/resend"),
         ("replies.premierbiz.com.tw", "http://pcbrm.tw/api/v1/webhooks/resend"),
-        ("replies.premierbiz.com.tw", "https://user:pass@pcbrm.tw/webhook"),
+        (
+            "replies.premierbiz.com.tw",
+            "https://user:pass@pcbrm.tw/webhook",  # pragma: allowlist secret -- invalid URL fixture
+        ),
     ],
 )
 def test_rejects_unsafe_targets(domain, endpoint) -> None:
