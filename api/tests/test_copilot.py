@@ -5,9 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy import text
-from sqlmodel import select
-
 from app.api.v1.endpoints import copilot as copilot_endpoints
 from app.core.datetime import utcnow_naive
 from app.core.security import decode_token
@@ -20,6 +17,9 @@ from app.models.rfq_event import RFQEvent
 from app.models.rfq_request import RFQRequest
 from app.services.copilot import action_tools, chat_engine
 from app.services.copilot.chat_engine import CopilotEngine
+from sqlalchemy import text
+from sqlmodel import select
+
 from tests.conftest import _make_engine, requires_db
 
 
@@ -65,6 +65,30 @@ class _FakeMessage:
 class _FakeResponse:
     def __init__(self, message: _FakeMessage):
         self.choices = [SimpleNamespace(message=message)]
+
+
+def test_copilot_system_prompt_enforces_evidence_labels_and_has_no_stale_claims():
+    prompt = chat_engine._SYSTEM_PROMPT
+
+    assert "資料事實" in prompt
+    assert "系統推論" in prompt
+    assert "建議" in prompt
+    assert "subject to human review" in prompt
+    assert "rule-based product signal" in prompt
+    assert "does not authorise contact" in prompt
+
+    stale_or_unverified_claims = (
+        "ML Score",
+        "increases win rate",
+        "3–18 months",
+        "within 5 minutes",
+        "Trigger email within 30min",
+        "Germany/Japan = quality-focused",
+        "India/Southeast Asia = price-sensitive",
+        "Taiwan time advantage",
+    )
+    for claim in stale_or_unverified_claims:
+        assert claim not in prompt
 
 
 @pytest.mark.asyncio
