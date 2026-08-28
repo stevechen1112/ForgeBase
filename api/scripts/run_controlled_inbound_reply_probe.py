@@ -134,6 +134,20 @@ async def _resolve_controlled_tenant(db, actor: User) -> Tenant:
     return tenant
 
 
+async def _resolve_controlled_context(db) -> tuple[User, Tenant]:
+    actor = (
+        await db.exec(
+            select(User).where(
+                User.email == ACTOR_EMAIL,
+                User.is_active.is_(True),
+            )
+        )
+    ).one_or_none()
+    if not _actor_is_authorized(actor):
+        raise ControlledInboundProbeError("controlled_actor_missing_or_unauthorized")
+    return actor, await _resolve_controlled_tenant(db, actor)
+
+
 async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
     send_key = f"forgebase-inbound-probe:{probe_id}"
     async with get_session_ctx() as db:
@@ -147,17 +161,7 @@ async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
         if existing:
             return existing
 
-        actor = (
-            await db.exec(
-                select(User).where(
-                    User.email == ACTOR_EMAIL,
-                    User.is_active.is_(True),
-                )
-            )
-        ).one_or_none()
-        if not _actor_is_authorized(actor):
-            raise ControlledInboundProbeError("controlled_actor_missing_or_unauthorized")
-        tenant = await _resolve_controlled_tenant(db, actor)
+        actor, tenant = await _resolve_controlled_context(db)
 
         draft_policy = await db.get(OutreachDraftPolicy, tenant.id)
         delivery_policy = await db.get(OutreachDeliveryPolicy, tenant.id)
@@ -375,6 +379,56 @@ async def _restore_outbound_policy(tenant_id) -> None:
         await db.commit()
 
 
+async def _close_controlled_tenant(tenant_id) -> None:
+    async with get_session_ctx() as db:
+        tenant = await db.get(Tenant, tenant_id)
+        if not tenant:
+            raise ControlledInboundProbeError("controlled_tenant_missing_during_close")
+        overrides = dict(tenant.feature_overrides or {})
+        overrides.update(
+            {"outreach_send": False, "inbound_reply": False, "sales_handoff": False}
+        )
+        tenant.feature_overrides = overrides
+        tenant.updated_at = utcnow_naive()
+        db.add(tenant)
+        for model in (
+            OutreachDraftPolicy,
+            OutreachDeliveryPolicy,
+            ContactPersonaPolicy,
+            InboundReplyPolicy,
+        ):
+            row = await db.get(model, tenant.id)
+            if row:
+                row.mode = "off"
+                row.updated_at = utcnow_naive()
+                db.add(row)
+        await db.commit()
+
+
+async def close() -> dict:
+    async with get_session_ctx() as db:
+        _actor, tenant = await _resolve_controlled_context(db)
+        tenant_id = tenant.id
+    await _close_controlled_tenant(tenant_id)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "operation": "controlled_internal_reply_window_closed",
+        "assessment": {"status": "passed", "controlled_window_closed": True},
+        "controls": {
+            "tenant_outreach_feature_off": True,
+            "tenant_inbound_feature_off": True,
+            "tenant_sales_handoff_feature_off": True,
+            "all_controlled_policies_off": True,
+        },
+        "privacy": {
+            "recipient_in_report": False,
+            "credential_values_in_report": False,
+            "message_content_in_report": False,
+        },
+    }
+
+
 async def prepare(recipient: str, probe_id: str) -> dict:
     normalized = _validate_prepare(recipient, probe_id)
     try:
@@ -390,9 +444,15 @@ async def prepare(recipient: str, probe_id: str) -> dict:
             await run_outreach_send_job(message.id)
         finally:
             await _restore_outbound_policy(message.tenant_id)
-    except ControlledInboundProbeError:
-        raise
     except Exception as exc:
+        try:
+            await _close_controlled_tenant(message.tenant_id)
+        except Exception as cleanup_exc:
+            raise ControlledInboundProbeError(
+                f"delivery_cleanup_unexpected_{type(cleanup_exc).__name__}"
+            ) from cleanup_exc
+        if isinstance(exc, ControlledInboundProbeError):
+            raise
         raise ControlledInboundProbeError(
             f"delivery_unexpected_{type(exc).__name__}"
         ) from exc
@@ -433,6 +493,8 @@ async def prepare(recipient: str, probe_id: str) -> dict:
     delivered = provider_event in SUCCESS_EVENTS and bool(
         webhook_events & SUCCESS_EVENTS
     )
+    if not delivered:
+        await _close_controlled_tenant(message.tenant_id)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -450,7 +512,7 @@ async def prepare(recipient: str, probe_id: str) -> dict:
             "automatic_outreach_used": False,
             "tenant_outbound_policy_restored_off": True,
             "tenant_outreach_feature_restored_off": True,
-            "inbound_review_window_open": True,
+            "inbound_review_window_open": delivered,
         },
         "evidence": {
             "outreach_message_id_sha256": hashlib.sha256(
@@ -553,7 +615,9 @@ def _write_report(report: dict, output: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", required=True, choices=("prepare", "status"))
+    parser.add_argument(
+        "--mode", required=True, choices=("prepare", "status", "close")
+    )
     parser.add_argument("--probe-id", required=True)
     parser.add_argument("--recipient", default="")
     parser.add_argument(
@@ -563,11 +627,13 @@ def main() -> int:
     )
     args = parser.parse_args()
     try:
-        report = asyncio.run(
-            prepare(args.recipient, args.probe_id)
-            if args.mode == "prepare"
-            else status(args.probe_id)
-        )
+        if args.mode == "prepare":
+            operation = prepare(args.recipient, args.probe_id)
+        elif args.mode == "status":
+            operation = status(args.probe_id)
+        else:
+            operation = close()
+        report = asyncio.run(operation)
     except ControlledInboundProbeError as exc:
         report = _failure_report(args.mode, str(exc))
     except Exception:  # noqa: BLE001 -- never disclose provider or contact data

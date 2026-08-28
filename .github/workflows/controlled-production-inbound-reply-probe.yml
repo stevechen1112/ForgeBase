@@ -4,13 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Prepare one internal Reply-To probe or inspect an existing probe
+        description: Prepare, inspect, or close one controlled internal Reply-To probe
         required: true
         default: prepare
         type: choice
         options:
           - prepare
           - status
+          - close
       probe_id:
         description: Prepare leaves this blank; status requires the prepare workflow run id
         required: false
@@ -41,15 +42,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$MODE" = prepare -o "$MODE" = status
+          test "$MODE" = prepare -o "$MODE" = status -o "$MODE" = close
           if [ "$MODE" = prepare ]; then
             test -z "$INPUT_PROBE_ID"
             test -n "$RECIPIENT"
             test "$RECIPIENT" = "${{ vars.EMAIL_FROM }}"
             case "$RECIPIENT" in *,*) exit 1 ;; esac
-          else
+          elif [ "$MODE" = status ]; then
             test -n "$INPUT_PROBE_ID"
             case "$INPUT_PROBE_ID" in *[!A-Za-z0-9._:-]*) exit 1 ;; esac
+          else
+            test -z "$INPUT_PROBE_ID"
           fi
 
       - name: Setup SSH
@@ -147,6 +150,33 @@ jobs:
                   --output -
             ' > artifacts/inbound-reply-probe/report.json
 
+      - name: Close controlled inbound reply window
+        if: inputs.mode == 'close'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/inbound-reply-probe
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/forgebase
+            python3 deploy/set-controlled-inbound-window.py \
+              --env-file deploy/api.env --state closed >/dev/null
+            docker compose -f docker-compose.prod.yml up -d --force-recreate api >/dev/null
+            status=""
+            for attempt in $(seq 1 12); do
+              status=$(curl -sf --max-time 5 http://127.0.0.1/health/ready | \
+                python3 -c "import json,sys; print(json.load(sys.stdin).get(\"status\", \"\"))" \
+                2>/dev/null || true)
+              [ "$status" = ready ] && break
+              sleep 5
+            done
+            [ "$status" = ready ]
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e PYTHONPATH=/app api \
+              python scripts/run_controlled_inbound_reply_probe.py \
+                --mode close --probe-id close --output -
+          ' > artifacts/inbound-reply-probe/report.json
+
       - name: Verify redacted probe evidence
         shell: bash
         run: |
@@ -163,12 +193,16 @@ jobs:
               assert report["assessment"]["reply_route_issued"] is True
               assert report["controls"]["automatic_outreach_used"] is False
               assert report["controls"]["tenant_outbound_policy_restored_off"] is True
-          else:
+          elif "${{ inputs.mode }}" == "status":
               assert report["assessment"]["status"] in {"waiting", "passed"}
+          else:
+              assert report["assessment"]["status"] == "passed"
+              assert report["assessment"]["controlled_window_closed"] is True
+              assert all(report["controls"].values())
           PY
 
-      - name: Audit production switches after prepare
-        if: inputs.mode == 'prepare'
+      - name: Audit production switches after controlled mutation
+        if: inputs.mode == 'prepare' || inputs.mode == 'close'
         shell: bash
         run: |
           set -euo pipefail
@@ -187,9 +221,10 @@ jobs:
           assert report["assessment"]["status"] == "passed"
           assert transport["external_delivery_enabled"] is False
           assert transport["outreach_send_enabled"] is False
-          assert transport["inbound_reply_enabled"] is True
+          expected_inbound = "${{ inputs.mode }}" == "prepare"
+          assert transport["inbound_reply_enabled"] is expected_inbound
           assert transport["inbound_prerequisites_ready"] is True
-          assert report["assessment"]["configuration_ready_for_reply_loop"] is True
+          assert report["assessment"]["configuration_ready_for_reply_loop"] is expected_inbound
           PY
 
       - name: Upload private controlled reply evidence

@@ -231,6 +231,28 @@ async def test_prepare_rows_persist_complete_controlled_journey(
         assert message.tenant_id == tenant.id
         assert message.send_idempotency_key == f"forgebase-inbound-probe:{probe_id}"
         assert message.status == "queued"
+
+        close_report = await probe.close()
+        assert close_report["assessment"] == {
+            "status": "passed",
+            "controlled_window_closed": True,
+        }
+        async with factory() as db:
+            current_tenant = await db.get(probe.Tenant, tenant.id)
+            assert current_tenant is not None
+            assert not any(
+                current_tenant.feature_overrides.get(key, False)
+                for key in ("outreach_send", "inbound_reply", "sales_handoff")
+            )
+            for model in (
+                probe.OutreachDraftPolicy,
+                probe.OutreachDeliveryPolicy,
+                probe.ContactPersonaPolicy,
+                probe.InboundReplyPolicy,
+            ):
+                policy = await db.get(model, tenant.id)
+                assert policy is not None
+                assert policy.mode == "off"
     finally:
         await engine.dispose()
 
@@ -249,3 +271,35 @@ async def test_prepare_reports_only_safe_stage_and_exception_type(monkeypatch) -
     ) as exc_info:
         await probe.prepare("reviewer@premierbiz.com.tw", "safe-probe")
     assert "private@example.test" not in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_delivery_failure_closes_controlled_tenant_state(monkeypatch) -> None:
+    _ready(monkeypatch)
+    message = SimpleNamespace(id="message-id", tenant_id="tenant-id")
+    closed = []
+
+    async def prepared(_recipient: str, _probe_id: str):
+        return message
+
+    async def delivery_failed(_message_id):
+        raise ValueError("private provider detail")
+
+    async def restored(_tenant_id):
+        return None
+
+    async def closed_tenant(tenant_id):
+        closed.append(tenant_id)
+
+    monkeypatch.setattr(probe, "_prepare_rows", prepared)
+    monkeypatch.setattr(probe, "run_outreach_send_job", delivery_failed)
+    monkeypatch.setattr(probe, "_restore_outbound_policy", restored)
+    monkeypatch.setattr(probe, "_close_controlled_tenant", closed_tenant)
+
+    with pytest.raises(
+        probe.ControlledInboundProbeError,
+        match="delivery_unexpected_ValueError",
+    ) as exc_info:
+        await probe.prepare("reviewer@premierbiz.com.tw", "safe-probe")
+    assert closed == ["tenant-id"]
+    assert "private provider detail" not in str(exc_info.value)
