@@ -85,7 +85,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          operator_email="production-browser-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@forgebase.invalid"
+          operator_email="production-browser-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@forgebase.com"
           operator_password=$(python -c 'import secrets; print(secrets.token_urlsafe(48))')
           echo "::add-mask::$operator_password"
           printf 'FORGEBASE_PLATFORM_EMAIL=%s\n' "$operator_email" >> "$GITHUB_ENV"

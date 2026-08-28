@@ -33,6 +33,7 @@ def validate_resource_page(text: str) -> dict[str, object]:
 
 
 def main() -> None:
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
     from playwright.sync_api import sync_playwright
 
     base_url = os.environ.get("FORGEBASE_PRODUCTION_URL", "https://pcbrm.tw").rstrip(
@@ -66,7 +67,19 @@ def main() -> None:
         page.get_by_label("Email").fill(email)
         page.get_by_label("密碼").fill(password)
         page.get_by_role("button", name="登入平台管理").click()
-        page.wait_for_url("**/backend/platform/overview", timeout=60_000)
+        try:
+            page.wait_for_url("**/backend/platform/overview", timeout=20_000)
+        except PlaywrightTimeoutError as exc:
+            page.screenshot(
+                path=output_dir / "platform-login-failure.png", full_page=True
+            )
+            alert = page.get_by_role("alert").last
+            detail = (
+                alert.inner_text(timeout=2_000) if alert.count() else "unknown error"
+            )
+            raise RuntimeError(
+                f"Platform Admin browser login failed: {detail}"
+            ) from exc
         page.goto(
             f"{base_url}/backend/platform/resources",
             wait_until="networkidle",

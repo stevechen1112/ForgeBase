@@ -14,7 +14,7 @@ def expected_ephemeral_email(run_id: str, run_attempt: str) -> str:
         raise ValueError("Invalid workflow run id")
     if not re.fullmatch(r"[1-9][0-9]*", run_attempt):
         raise ValueError("Invalid workflow run attempt")
-    return f"production-browser-{run_id}-{run_attempt}@forgebase.invalid"
+    return f"production-browser-{run_id}-{run_attempt}@forgebase.com"
 
 
 async def remove() -> None:
