@@ -110,8 +110,14 @@ function formatApiError(payload: unknown, fallback: string): string {
         const issue = item as Record<string, unknown>;
         const location = Array.isArray(issue.loc)
           ? issue.loc.filter((part) => part !== "body").join(" → ")
-          : "";
-        const message = typeof issue.msg === "string" ? issue.msg : "輸入資料格式不正確";
+          : typeof issue.field === "string"
+            ? issue.field.replace(/^body\.?/, "").replaceAll(".", " → ")
+            : "";
+        const message = typeof issue.msg === "string"
+          ? issue.msg
+          : typeof issue.message === "string"
+            ? issue.message
+            : "輸入資料格式不正確";
         return location ? `${location}：${message}` : message;
       })
       .filter(Boolean);

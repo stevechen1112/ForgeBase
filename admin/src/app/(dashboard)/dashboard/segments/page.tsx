@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RefreshCw, Users, PlusCircle, Send } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
@@ -55,7 +55,12 @@ function SyncToEspDialog({ token, segmentId, segmentName }: { token: string; seg
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm" onClick={e => e.stopPropagation()}>
-        <DialogHeader><DialogTitle>同步「{segmentName}」到 ESP</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>同步「{segmentName}」到 ESP</DialogTitle>
+          <DialogDescription>
+            將此分群的聯絡人同步至指定的郵件服務商清單。
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-4 py-2">
           {result && (
             <Alert variant={result.includes("失敗") && !result.includes("成功") ? "destructive" : "default"}>

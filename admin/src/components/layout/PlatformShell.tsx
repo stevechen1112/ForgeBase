@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { PlatformSidebar } from "@/components/layout/PlatformSidebar";
 import { ContextNavigation, resolvePlatformTrail } from "@/components/layout/context-navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,6 +30,9 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           className="w-[min(15rem,calc(100vw-1rem))] border-0 p-0 [&>button]:z-10 [&>button]:text-white"
         >
           <SheetTitle className="sr-only">平台管理功能選單</SheetTitle>
+          <SheetDescription className="sr-only">
+            選擇要前往的平台管理功能頁面。
+          </SheetDescription>
           <PlatformSidebar />
         </SheetContent>
       </Sheet>
