@@ -15,6 +15,17 @@ from app.models.site_profile import SiteProfile
 from app.models.tenant_domain import DOMAIN_TYPES, TenantDomain
 
 _DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+RESERVED_TENANT_SUBDOMAINS = {
+    "admin",
+    "api",
+    "app",
+    "edge",
+    "mail",
+    "replies",
+    "status",
+    "support",
+    "www",
+}
 
 
 class DomainConflictError(ValueError):
@@ -52,6 +63,66 @@ async def hostname_owner(
     return (
         await db.exec(select(TenantDomain).where(TenantDomain.hostname == normalized))
     ).first()
+
+
+def forgebase_hostname_for_slug(slug: str, base_domain: str) -> str:
+    """Return the platform-provided hostname for a tenant slug."""
+    normalized_slug = (slug or "").strip().lower()
+    normalized_base = normalize_hostname(base_domain)
+    if (
+        not _DOMAIN_LABEL.fullmatch(normalized_slug)
+        or normalized_slug in RESERVED_TENANT_SUBDOMAINS
+        or not valid_hostname(normalized_base)
+    ):
+        raise ValueError("Tenant slug cannot be used as a ForgeBase subdomain")
+    hostname = f"{normalized_slug}.{normalized_base}"
+    if not valid_hostname(hostname):
+        raise ValueError("Generated ForgeBase hostname is invalid")
+    return hostname
+
+
+async def ensure_forgebase_subdomain(
+    db: AsyncSession,
+    *,
+    tenant_id: UUID,
+    slug: str,
+    base_domain: str,
+    dns_target: str,
+    created_by_user_id: UUID | None = None,
+) -> TenantDomain:
+    """Create the always-available managed hostname for one tenant."""
+    hostname = forgebase_hostname_for_slug(slug, base_domain)
+    normalized_target = normalize_hostname(dns_target)
+    if not valid_hostname(normalized_target):
+        raise ValueError("Invalid tenant CNAME target")
+
+    existing = await hostname_owner(db, hostname)
+    if existing:
+        if existing.tenant_id != tenant_id:
+            raise DomainConflictError("ForgeBase subdomain is already assigned")
+        return existing
+
+    current_domains = (
+        await db.exec(select(TenantDomain).where(TenantDomain.tenant_id == tenant_id))
+    ).all()
+    make_canonical = not any(item.is_canonical for item in current_domains)
+    now = utcnow_naive()
+    domain = TenantDomain(
+        tenant_id=tenant_id,
+        hostname=hostname,
+        domain_type="forgebase_subdomain",
+        status="active",
+        is_canonical=make_canonical,
+        verification_method="platform_managed",
+        dns_target=normalized_target,
+        dns_verified_at=now,
+        tls_status="pending",
+        activated_at=now,
+        redirect_to_canonical=not make_canonical,
+        created_by_user_id=created_by_user_id,
+    )
+    db.add(domain)
+    return domain
 
 
 async def set_legacy_canonical_domain(

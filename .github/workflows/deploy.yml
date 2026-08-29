@@ -64,7 +64,6 @@ jobs:
             --exclude '.copilot-extracted/' \
             --exclude 'backups/' \
             --exclude 'deploy/api.env' \
-            --exclude 'deploy/Caddyfile' \
             -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
             ./ root@"$DEPLOY_HOST":/opt/forgebase/
 
@@ -89,10 +88,10 @@ jobs:
           for i in $(seq 1 8); do
             STATUS=$(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" \
               "set -e; cd /opt/forgebase; \
-               docker compose -f docker-compose.prod.yml exec -T web \
+               docker compose -f docker-compose.prod.yml exec -T web_reference \
                  wget -q -O /dev/null http://127.0.0.1:3000/northforge-tools/api/health/assets; \
-               docker compose -f docker-compose.prod.yml exec -T web_precision \
-                 wget -q -O /dev/null http://127.0.0.1:3000/api/health/assets; \
+               docker compose -f docker-compose.prod.yml exec -T web \
+                 wget -q -O /dev/null http://127.0.0.1:3000/; \
                docker compose -f docker-compose.prod.yml exec -T admin \
                  wget -q -O /dev/null http://127.0.0.1:3000/backend/login; \
                docker compose -f docker-compose.prod.yml exec -T marketing \

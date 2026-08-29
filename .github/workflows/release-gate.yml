@@ -302,6 +302,9 @@ jobs:
       POSTGRES_PASSWORD: forgebase_ci_password # pragma: allowlist secret -- CI-only fixture
       POSTGRES_DB: forgebase_ci
       REVALIDATE_SECRET: release-ci-revalidate-secret # pragma: allowlist secret -- CI-only fixture
+      TENANT_ROUTING_SECRET: release-ci-tenant-routing-secret-32-chars # pragma: allowlist secret -- CI-only fixture
+      TENANT_BASE_DOMAIN: forgebase.example
+      TENANT_CNAME_TARGET: edge.forgebase.example
       API_ENV_FILE: ./deploy/api.env.example
       NEXT_PUBLIC_SITE_NAME: ForgeBase CI
     steps:

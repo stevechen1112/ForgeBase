@@ -3,6 +3,9 @@
 {
 	default_sni {$DOMAIN}
 	auto_https disable_redirects
+	on_demand_tls {
+		ask http://api:8000/internal/tls/authorize
+	}
 }
 
 (forgebase_routes) {
@@ -12,14 +15,14 @@
 	@legacy_demo_assets path /demo/handtool-company/assets/*
 	handle @legacy_demo_assets {
 		rewrite * /northforge-tools{uri}
-		reverse_proxy web:3000
+		reverse_proxy web_reference:3000
 	}
 
 	# These are Next.js application routes, not shared FastAPI routes.
 	@web_api path /api/revalidate /api/health/*
 	handle @web_api {
 		rewrite * /northforge-tools{uri}
-		reverse_proxy web:3000
+		reverse_proxy web_reference:3000
 	}
 
 	@api path /api/* /uploads/* /health /health/*
@@ -36,11 +39,38 @@
 	}
 
 	handle /northforge-tools* {
-		reverse_proxy web:3000
+		reverse_proxy web_reference:3000
 	}
 
 	handle {
 		reverse_proxy marketing:3020
+	}
+}
+
+(tenant_routes) {
+	encode zstd gzip
+
+	@web_api path /api/revalidate /api/health/*
+	handle @web_api {
+		reverse_proxy web:3000 {
+			header_up -X-ForgeBase-Tenant-Host
+			header_up -X-ForgeBase-Routing-Secret
+		}
+	}
+
+	@api path /api/* /uploads/* /health /health/*
+	handle @api {
+		reverse_proxy api:8000 {
+			header_up -X-ForgeBase-Tenant-Host
+			header_up -X-ForgeBase-Routing-Secret
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000 {
+			header_up -X-ForgeBase-Tenant-Host
+			header_up -X-ForgeBase-Routing-Secret
+		}
 	}
 }
 
@@ -52,8 +82,12 @@
 	handle @local_health {
 		reverse_proxy api:8000
 	}
-	handle {
+	@platform_entry host {$DOMAIN} www.{$DOMAIN} {$APEX_DOMAIN}
+	handle @platform_entry {
 		redir https://{$DOMAIN}{uri} permanent
+	}
+	handle {
+		redir https://{host}{uri} permanent
 	}
 }
 
@@ -65,23 +99,6 @@ https://www.{$DOMAIN} {
 	redir https://{$DOMAIN}{uri} permanent
 }
 
-# Dedicated test-only host for the second connected tenant. sslip.io resolves
-# to the Linode IP without pretending this is a customer's production domain.
-https://axisform.172-233-64-5.sslip.io {
-	encode zstd gzip
-	@web_api path /api/revalidate /api/health/*
-	handle @web_api {
-		reverse_proxy web_precision:3000
-	}
-	@api path /api/* /uploads/* /health /health/*
-	handle @api {
-		reverse_proxy api:8000
-	}
-	handle {
-		reverse_proxy web_precision:3000
-	}
-}
-
 https://{$APEX_DOMAIN} {
 	tls {
 		issuer acme https://acme-v02.api.letsencrypt.org/directory {
@@ -89,4 +106,13 @@ https://{$APEX_DOMAIN} {
 		}
 	}
 	redir https://{$DOMAIN}{uri} permanent
+}
+
+# All platform-provided and verified custom domains share one frontend image.
+# Caddy asks the indexed API allowlist before issuing any on-demand certificate.
+https:// {
+	tls {
+		on_demand
+	}
+	import tenant_routes
 }

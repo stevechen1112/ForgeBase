@@ -81,6 +81,15 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
         assert exact.status_code == 200, exact.text
         assert exact.json()["brand_name"] == "Exact Host Alpha"
 
+        tls_allowed = await http_client.get(
+            "/internal/tls/authorize", params={"domain": host_a.upper()}
+        )
+        assert tls_allowed.status_code == 204
+        tls_unknown = await http_client.get(
+            "/internal/tls/authorize", params={"domain": "unknown.example.test"}
+        )
+        assert tls_unknown.status_code == 404
+
         conflict = await http_client.get(
             "/api/v1/site-profile",
             headers={"Host": host_a, "X-Tenant-ID": str(tenant_b.id)},
@@ -169,6 +178,10 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
         suspended = await http_client.get("/api/v1/site-profile", headers={"Host": host_a})
         assert suspended.status_code == 200
         assert suspended.json()["brand_name"] != "Exact Host Alpha"
+        tls_suspended = await http_client.get(
+            "/internal/tls/authorize", params={"domain": host_a}
+        )
+        assert tls_suspended.status_code == 404
     finally:
         clear_tenant_host_cache()
         await engine.dispose()

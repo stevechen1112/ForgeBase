@@ -16,6 +16,10 @@ from app.db.session import get_session
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.schemas.user import LoginRequest, TokenResponse, UserRead
+from app.services.tenant_domains import (
+    ensure_forgebase_subdomain,
+    forgebase_hostname_for_slug,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -72,10 +76,15 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     slug = base_slug
     counter = 1
     while True:
+        try:
+            forgebase_hostname_for_slug(slug, settings.TENANT_BASE_DOMAIN)
+            subdomain_valid = True
+        except ValueError:
+            subdomain_valid = False
         slug_check = await session.exec(select(Tenant).where(Tenant.slug == slug))
-        if not slug_check.first():
+        if subdomain_valid and not slug_check.first():
             break
-        slug = f"{base_slug}-{counter}"
+        slug = f"{base_slug or 'tenant'}-{counter}"
         counter += 1
 
     # Create tenant
@@ -85,6 +94,14 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     )
     session.add(tenant)
     await session.flush()  # Get tenant.id
+
+    await ensure_forgebase_subdomain(
+        session,
+        tenant_id=tenant.id,
+        slug=tenant.slug,
+        base_domain=settings.TENANT_BASE_DOMAIN,
+        dns_target=settings.TENANT_CNAME_TARGET,
+    )
 
     # Create owner user
     user = User(

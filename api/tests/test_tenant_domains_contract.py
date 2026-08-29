@@ -5,9 +5,11 @@ from app.models.tenant_domain import (
     TenantDomain,
 )
 from app.services.tenant_domains import (
+    forgebase_hostname_for_slug,
     normalize_hostname,
     valid_hostname,
 )
+import pytest
 from sqlalchemy import Index, UniqueConstraint
 
 
@@ -19,6 +21,9 @@ def test_hostname_normalization_and_validation_are_canonical() -> None:
     assert valid_hostname("localhost") is False
     assert valid_hostname("192.0.2.10") is False
     assert valid_hostname("-invalid.example") is False
+    assert forgebase_hostname_for_slug("axisform", "forgebase.com") == "axisform.forgebase.com"
+    with pytest.raises(ValueError):
+        forgebase_hostname_for_slug("admin", "forgebase.com")
 
 
 def test_tenant_domain_contract_has_one_global_host_and_one_canonical_per_tenant() -> None:

@@ -14,6 +14,7 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
+from app.api.internal import router as internal_router
 from app.core import rate_limit
 from app.core.config import settings
 from app.services.copilot.digest import run_daily_digest
@@ -325,6 +326,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 app.include_router(api_router)
+app.include_router(internal_router)
 
 # Local asset uploads (dev / no R2)
 from fastapi.staticfiles import StaticFiles

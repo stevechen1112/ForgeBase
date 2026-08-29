@@ -21,8 +21,8 @@ def test_release_version_and_migration_topology_are_unambiguous() -> None:
     version = (ROOT / "release/VERSION").read_text(encoding="utf-8").strip()
     assert VERSION_PATTERN.fullmatch(version)
     topology = migration_topology(ROOT)
-    assert topology["heads"] == ["0098_tenant_domains"]
-    assert topology["revision_count"] >= 99
+    assert topology["heads"] == ["0099_managed_tenant_subdomains"]
+    assert topology["revision_count"] >= 100
 
 
 def test_release_spec_keeps_external_gates_explicit() -> None:

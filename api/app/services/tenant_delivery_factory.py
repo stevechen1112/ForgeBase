@@ -11,13 +11,18 @@ from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.core.locale import PUBLIC_SITE_LOCALES
 from app.models.site_build import SiteBuild
 from app.models.tenant import Tenant
 from app.models.tenant_domain import TenantDomain
 from app.models.user import User
 from app.services.site_provisioning import SITE_TEMPLATES
-from app.services.tenant_domains import normalize_hostname, valid_hostname
+from app.services.tenant_domains import (
+    forgebase_hostname_for_slug,
+    normalize_hostname,
+    valid_hostname,
+)
 
 
 def normalize_domain(value: str | None) -> str | None:
@@ -41,14 +46,21 @@ async def evaluate_provisioning_preflight(
     slug: str,
     owner_email: str,
     template_key: str,
-    site_url: str,
+    site_url: str | None,
     primary_domain: str | None,
     default_locale: str,
     locales: list[str],
 ) -> dict[str, Any]:
-    normalized_domain = normalize_domain(primary_domain)
     try:
-        parsed_site_url = urlparse(site_url)
+        managed_hostname = forgebase_hostname_for_slug(slug, settings.TENANT_BASE_DOMAIN)
+    except ValueError:
+        managed_hostname = None
+    normalized_domain = normalize_domain(primary_domain) or managed_hostname
+    normalized_site_url = (
+        site_url or (f"https://{normalized_domain}" if normalized_domain else "")
+    ).rstrip("/")
+    try:
+        parsed_site_url = urlparse(normalized_site_url)
         site_hostname = normalize_domain(parsed_site_url.hostname)
         site_port = parsed_site_url.port
     except ValueError:
@@ -72,9 +84,18 @@ async def evaluate_provisioning_preflight(
                 select(SiteBuild.id).where(SiteBuild.primary_domain == normalized_domain)
             )
         ).first()
+    existing_managed_domain = None
+    if managed_hostname:
+        existing_managed_domain = (
+            await db.exec(
+                select(TenantDomain.id).where(TenantDomain.hostname == managed_hostname)
+            )
+        ).first()
 
     checks = {
         "tenant_slug_available": existing_tenant is None,
+        "forgebase_subdomain_valid": managed_hostname is not None,
+        "forgebase_subdomain_available": existing_managed_domain is None,
         "owner_email_available": existing_owner is None,
         "template_publishable": bool(template and template.get("cms_connected")),
         "https_site_url": bool(
@@ -110,7 +131,8 @@ async def evaluate_provisioning_preflight(
         "blockers": blockers,
         "normalized": {
             "primary_domain": normalized_domain,
-            "site_url": site_url.rstrip("/"),
+            "forgebase_hostname": managed_hostname,
+            "site_url": normalized_site_url,
             "owner_email": owner_email.lower(),
         },
     }

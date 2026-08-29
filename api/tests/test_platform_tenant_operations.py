@@ -346,6 +346,27 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
         assert preflight.status_code == 200, preflight.text
         assert preflight.json()["ready"] is True
 
+        managed_payload = {
+            **payload,
+            "slug": f"managed-{suffix}",
+            "owner_email": f"managed-owner-{suffix}@example.com",
+        }
+        managed_payload.pop("site_url")
+        managed_payload.pop("primary_domain")
+        managed_preflight = await http_client.post(
+            "/api/v1/admin/tenant-provisioning/preflight",
+            json=managed_payload,
+            headers=_auth(platform_token),
+        )
+        assert managed_preflight.status_code == 200, managed_preflight.text
+        assert managed_preflight.json()["ready"] is True
+        assert managed_preflight.json()["normalized"]["primary_domain"] == (
+            f"managed-{suffix}.forgebase.com"
+        )
+        assert managed_preflight.json()["normalized"]["site_url"] == (
+            f"https://managed-{suffix}.forgebase.com"
+        )
+
         missing_key = await http_client.post(
             "/api/v1/admin/tenants",
             json=payload,
@@ -361,6 +382,7 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
         tenant_id = uuid.UUID(created_body["tenant_id"])
         assert created_body["status"] == "blocked"
         assert created_body["delivery_stage"] == "intake"
+        assert created_body["forgebase_hostname"] == f"{slug}.forgebase.com"
         assert created_body["readiness"]["blockers"] == ["cms_adapter_connected"]
         assert created_body["next_actions"] == [
             "confirm_cms_adapter",
@@ -484,10 +506,24 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     "owners": 1,
                     "profiles": 1,
                     "builds": 1,
-                    "domains": 2,
+                    "domains": 3,
                     "canonical_domains": 1,
                     "runs": 1,
                 }
+                domain_types = (
+                    await session.exec(
+                        text(
+                            "SELECT hostname, domain_type, is_canonical FROM tenant_domains "
+                            "WHERE tenant_id = :tenant_id ORDER BY hostname"
+                        ),
+                        params={"tenant_id": str(tenant_id)},
+                    )
+                ).mappings().all()
+                assert {row["domain_type"] for row in domain_types} == {
+                    "custom",
+                    "forgebase_subdomain",
+                }
+                assert sum(1 for row in domain_types if row["is_canonical"]) == 1
                 stored = (
                     await session.exec(
                         text(

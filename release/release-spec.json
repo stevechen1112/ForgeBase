@@ -6,7 +6,7 @@
     {"name": "api", "image": "forgebase-api", "context": "api"},
     {"name": "admin", "image": "forgebase-admin", "context": "admin"},
     {"name": "web", "image": "forgebase-web", "context": "web"},
-    {"name": "web_precision", "image": "forgebase-web-precision", "context": "web"},
+    {"name": "web_reference", "image": "forgebase-web-reference", "context": "web"},
     {"name": "marketing", "image": "forgebase-marketing", "context": "forgebase-site"},
     {"name": "templates", "image": "forgebase-templates", "context": "template-demos"}
   ],

@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # network, so their public Host is carried in a separate authenticated
     # header. Never expose this value through NEXT_PUBLIC_* variables.
     TENANT_ROUTING_SECRET: str = ""
+    TENANT_BASE_DOMAIN: str = "forgebase.com"
+    TENANT_CNAME_TARGET: str = "edge.forgebase.com"
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""

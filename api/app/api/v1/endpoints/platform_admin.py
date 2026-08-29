@@ -79,6 +79,8 @@ from app.services.tenant_delivery_factory import (
 )
 from app.services.tenant_domains import (
     DomainConflictError,
+    ensure_forgebase_subdomain,
+    forgebase_hostname_for_slug,
     normalize_hostname,
     set_legacy_canonical_domain,
     valid_hostname,
@@ -217,7 +219,7 @@ class TenantProvisionIn(BaseModel):
     logo_mark: str = Field(min_length=1, max_length=10)
     contact_email: EmailStr
     contact_phone: Optional[str] = Field(default=None, max_length=50)
-    site_url: str = Field(min_length=8, max_length=500)
+    site_url: Optional[str] = Field(default=None, min_length=8, max_length=500)
     primary_domain: Optional[str] = Field(default=None, max_length=255)
     default_locale: str = Field(default="zh-TW", pattern=r"^(en|zh-TW|ja|fr|ru)$")
     locales: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=5)
@@ -2045,13 +2047,26 @@ async def provision_tenant(
             status_code=409,
             detail="Tenant delivery conflicts with an existing slug, owner, domain, or request key",
         ) from exc
-    await set_legacy_canonical_domain(
-        session,
-        tenant_id=tenant.id,
-        hostname=normalized["primary_domain"],
-        created_by_user_id=current_user.id,
-        sync_profile_url=False,
-    )
+    try:
+        managed_domain = await ensure_forgebase_subdomain(
+            session,
+            tenant_id=tenant.id,
+            slug=tenant.slug,
+            base_domain=settings.TENANT_BASE_DOMAIN,
+            dns_target=settings.TENANT_CNAME_TARGET,
+            created_by_user_id=current_user.id,
+        )
+        if normalized["primary_domain"] != managed_domain.hostname:
+            await set_legacy_canonical_domain(
+                session,
+                tenant_id=tenant.id,
+                hostname=normalized["primary_domain"],
+                created_by_user_id=current_user.id,
+                sync_profile_url=False,
+            )
+    except (DomainConflictError, ValueError) as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Tenant hostname is not available") from exc
     readiness = await evaluate_site_readiness(session, build)
     build.readiness_json = json.dumps(readiness)
     build.status = "ready" if readiness["ready"] else "blocked"
@@ -2060,6 +2075,8 @@ async def provision_tenant(
         "tenant_id": str(tenant.id),
         "owner_id": str(owner.id),
         "site_build_id": str(build.id),
+        "forgebase_hostname": managed_domain.hostname,
+        "site_url": normalized["site_url"],
         "status": build.status,
         "delivery_stage": build.delivery_stage,
         "readiness": readiness,
@@ -2197,7 +2214,11 @@ async def create_site_build(
     existing = (await session.exec(select(SiteBuild).where(SiteBuild.tenant_id == tenant_id))).first()
     if existing:
         raise HTTPException(status_code=409, detail="Site build already exists")
-    normalized_domain = normalize_hostname(body.primary_domain)
+    try:
+        managed_hostname = forgebase_hostname_for_slug(tenant.slug, settings.TENANT_BASE_DOMAIN)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="Tenant slug cannot receive a managed hostname") from exc
+    normalized_domain = normalize_hostname(body.primary_domain) or managed_hostname
     if body.primary_domain and not valid_hostname(body.primary_domain):
         raise HTTPException(status_code=422, detail="Invalid primary domain")
     if normalized_domain:
@@ -2234,16 +2255,24 @@ async def create_site_build(
             )
         )
     await session.flush()
-    if normalized_domain:
-        try:
+    try:
+        managed_domain = await ensure_forgebase_subdomain(
+            session,
+            tenant_id=tenant_id,
+            slug=tenant.slug,
+            base_domain=settings.TENANT_BASE_DOMAIN,
+            dns_target=settings.TENANT_CNAME_TARGET,
+            created_by_user_id=current_user.id,
+        )
+        if normalized_domain != managed_domain.hostname:
             await set_legacy_canonical_domain(
                 session,
                 tenant_id=tenant_id,
                 hostname=normalized_domain,
                 created_by_user_id=current_user.id,
             )
-        except DomainConflictError as exc:
-            raise HTTPException(status_code=409, detail="Primary domain is already assigned") from exc
+    except (DomainConflictError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail="Primary domain is already assigned") from exc
     await _record_platform_audit(
         session,
         current_user,
