@@ -77,6 +77,12 @@ from app.services.tenant_delivery_factory import (
     evaluate_provisioning_preflight,
     request_fingerprint,
 )
+from app.services.tenant_domains import (
+    DomainConflictError,
+    normalize_hostname,
+    set_legacy_canonical_domain,
+    valid_hostname,
+)
 
 router = APIRouter(prefix="/admin", tags=["Platform Admin"])
 
@@ -2039,6 +2045,13 @@ async def provision_tenant(
             status_code=409,
             detail="Tenant delivery conflicts with an existing slug, owner, domain, or request key",
         ) from exc
+    await set_legacy_canonical_domain(
+        session,
+        tenant_id=tenant.id,
+        hostname=normalized["primary_domain"],
+        created_by_user_id=current_user.id,
+        sync_profile_url=False,
+    )
     readiness = await evaluate_site_readiness(session, build)
     build.readiness_json = json.dumps(readiness)
     build.status = "ready" if readiness["ready"] else "blocked"
@@ -2184,7 +2197,9 @@ async def create_site_build(
     existing = (await session.exec(select(SiteBuild).where(SiteBuild.tenant_id == tenant_id))).first()
     if existing:
         raise HTTPException(status_code=409, detail="Site build already exists")
-    normalized_domain = (body.primary_domain or "").strip().lower() or None
+    normalized_domain = normalize_hostname(body.primary_domain)
+    if body.primary_domain and not valid_hostname(body.primary_domain):
+        raise HTTPException(status_code=422, detail="Invalid primary domain")
     if normalized_domain:
         duplicate = (
             await session.exec(select(SiteBuild).where(SiteBuild.primary_domain == normalized_domain))
@@ -2219,6 +2234,16 @@ async def create_site_build(
             )
         )
     await session.flush()
+    if normalized_domain:
+        try:
+            await set_legacy_canonical_domain(
+                session,
+                tenant_id=tenant_id,
+                hostname=normalized_domain,
+                created_by_user_id=current_user.id,
+            )
+        except DomainConflictError as exc:
+            raise HTTPException(status_code=409, detail="Primary domain is already assigned") from exc
     await _record_platform_audit(
         session,
         current_user,
@@ -2351,7 +2376,9 @@ async def update_site_build(
         build.cms_connected = False
         technical_settings_changed = True
     if body.primary_domain is not None:
-        normalized_domain = body.primary_domain.strip().lower() or None
+        normalized_domain = normalize_hostname(body.primary_domain)
+        if body.primary_domain and not valid_hostname(body.primary_domain):
+            raise HTTPException(status_code=422, detail="Invalid primary domain")
         if normalized_domain:
             duplicate = (
                 await session.exec(
@@ -2363,7 +2390,15 @@ async def update_site_build(
             ).first()
             if duplicate:
                 raise HTTPException(status_code=409, detail="Primary domain is already assigned")
-        build.primary_domain = normalized_domain
+        try:
+            await set_legacy_canonical_domain(
+                session,
+                tenant_id=tenant_id,
+                hostname=normalized_domain,
+                created_by_user_id=current_user.id,
+            )
+        except DomainConflictError as exc:
+            raise HTTPException(status_code=409, detail="Primary domain is already assigned") from exc
         technical_settings_changed = technical_settings_changed or before["primary_domain"] != build.primary_domain
     if body.locales is not None:
         if not body.locales or any(locale not in PUBLIC_SITE_LOCALES for locale in body.locales):

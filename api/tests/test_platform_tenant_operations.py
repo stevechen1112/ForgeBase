@@ -391,6 +391,15 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
         )
         assert key_reuse.status_code == 409
 
+        replacement_domain = f"updated-{slug}.example.test"
+        domain_update = await http_client.put(
+            f"/api/v1/admin/tenants/{tenant_id}/site-build",
+            json={"primary_domain": replacement_domain},
+            headers=_auth(platform_token),
+        )
+        assert domain_update.status_code == 200, domain_update.text
+        assert domain_update.json()["primary_domain"] == replacement_domain
+
         premature_live = await http_client.put(
             f"/api/v1/admin/tenants/{tenant_id}/site-build",
             json={"delivery_stage": "live"},
@@ -462,6 +471,8 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                               (SELECT COUNT(*) FROM users WHERE tenant_id = :tenant_id) AS owners,
                               (SELECT COUNT(*) FROM site_profiles WHERE tenant_id = :tenant_id) AS profiles,
                               (SELECT COUNT(*) FROM site_builds WHERE tenant_id = :tenant_id) AS builds,
+                              (SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tenant_id) AS domains,
+                              (SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tenant_id AND is_canonical = TRUE) AS canonical_domains,
                               (SELECT COUNT(*) FROM tenant_provisioning_runs WHERE tenant_id = :tenant_id) AS runs
                             """
                         ),
@@ -473,6 +484,8 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     "owners": 1,
                     "profiles": 1,
                     "builds": 1,
+                    "domains": 2,
+                    "canonical_domains": 1,
                     "runs": 1,
                 }
                 stored = (
@@ -496,6 +509,7 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     params = {"tenant_id": str(tenant_id)}
                     await session.exec(text("DELETE FROM platform_audit_logs WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM tenant_provisioning_runs WHERE tenant_id = :tenant_id"), params=params)
+                    await session.exec(text("DELETE FROM tenant_domains WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM site_builds WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM site_profiles WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM users WHERE tenant_id = :tenant_id"), params=params)

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-import ipaddress
 import json
-import re
 from typing import Any
 from urllib.parse import urlparse
 
@@ -16,27 +14,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.locale import PUBLIC_SITE_LOCALES
 from app.models.site_build import SiteBuild
 from app.models.tenant import Tenant
+from app.models.tenant_domain import TenantDomain
 from app.models.user import User
 from app.services.site_provisioning import SITE_TEMPLATES
-
-_DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+from app.services.tenant_domains import normalize_hostname, valid_hostname
 
 
 def normalize_domain(value: str | None) -> str | None:
-    normalized = (value or "").strip().lower().rstrip(".")
-    return normalized or None
-
-
-def valid_hostname(value: str | None) -> bool:
-    if not value or len(value) > 253 or "." not in value:
-        return False
-    try:
-        ipaddress.ip_address(value)
-        return False
-    except ValueError:
-        pass
-    labels = value.split(".")
-    return all(_DOMAIN_LABEL.fullmatch(label) for label in labels)
+    return normalize_hostname(value)
 
 
 def request_fingerprint(payload: dict[str, Any]) -> str:
@@ -81,6 +66,8 @@ async def evaluate_provisioning_preflight(
     existing_domain = None
     if normalized_domain:
         existing_domain = (
+            await db.exec(select(TenantDomain.id).where(TenantDomain.hostname == normalized_domain))
+        ).first() or (
             await db.exec(
                 select(SiteBuild.id).where(SiteBuild.primary_domain == normalized_domain)
             )
