@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type AcceptanceStatus, type AdminUser, type DeliveryStage, type FeatureCatalog, type FeatureCatalogItem, type PlatformAuditItem, type SiteBuild, type SiteTemplate, type TenantDetail, type TenantProvisioningManifest, type TenantUpdate } from "@/lib/api/platform-admin";
 import {
-  ArrowLeft, AlertCircle, Users, Package, ClipboardList, Eye,
+  AlertCircle, Users, Package, ClipboardList, Eye,
   Settings2, CheckCircle2, XCircle, Globe2, ExternalLink, History, TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlatformSiteProfileEditor } from "@/components/platform/PlatformSiteProfileEditor";
+import { TenantDomainManager } from "@/components/platform/TenantDomainManager";
 import { PlatformAuditSummary, platformAuditActionLabel } from "@/components/platform/PlatformAuditSummary";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,9 +36,9 @@ const READINESS_LABELS: Record<string, string> = {
   active_owner: "有效 Owner 帳號",
   brand_name: "品牌名稱",
   contact_email: "聯絡信箱",
-  site_url: "網站網址",
-  primary_domain: "主要網域",
-  domain_matches_site_url: "網域與網站網址一致",
+  site_url: "正式網站網址",
+  primary_domain: "Canonical 網域",
+  domain_matches_site_url: "Canonical 網域與網站網址一致",
   supported_locales: "支援語系",
   template_exists: "有效產業範本",
   cms_adapter_connected: "CMS 串接確認",
@@ -45,7 +46,6 @@ const READINESS_LABELS: Record<string, string> = {
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { state } = usePlatformAuth();
   const token = state.status === "authenticated" ? state.accessToken : undefined;
 
@@ -60,7 +60,7 @@ export default function TenantDetailPage() {
   const [auditLog, setAuditLog] = useState<PlatformAuditItem[]>([]);
   const [provisioningManifest, setProvisioningManifest] = useState<TenantProvisioningManifest | null>(null);
   const [editTemplate, setEditTemplate] = useState("handtool-company");
-  const [editDomain, setEditDomain] = useState("");
+  const [domainRevision, setDomainRevision] = useState(0);
   const [editLocales, setEditLocales] = useState<string[]>(["en"]);
   const [confirmStatusChange, setConfirmStatusChange] = useState(false);
   const [platformUsers, setPlatformUsers] = useState<AdminUser[]>([]);
@@ -100,7 +100,6 @@ export default function TenantDetailPage() {
         setPlatformUsers(users.filter((user) => user.is_superuser && user.is_active));
         if (build) {
           setEditTemplate(build.template_key);
-          setEditDomain(build.primary_domain || "");
           setEditLocales(build.locales.length ? build.locales : ["en"]);
           setEditDeliveryStage(build.delivery_stage);
           setEditDeliveryOwnerId(build.delivery_owner_id || "unassigned");
@@ -182,7 +181,7 @@ export default function TenantDetailPage() {
     if (!token || !tenant) return;
     setSaving(true); setError(null);
     try {
-      const payload = { template_key: editTemplate, primary_domain: editDomain, locales: editLocales };
+      const payload = { template_key: editTemplate, locales: editLocales };
       const result = siteBuild
         ? await platformAdminApi.updateSiteBuild(token, tenant.id, payload)
         : await platformAdminApi.createSiteBuild(token, tenant.id, payload);
@@ -221,6 +220,17 @@ export default function TenantDetailPage() {
       setAuditLog(await platformAdminApi.tenantAuditLog(token, tenant.id));
     } catch (cause) { setError(cause instanceof Error ? cause.message : "更新串接狀態失敗"); }
     finally { setSaving(false); }
+  }
+
+  async function refreshAfterDomainChange() {
+    if (!token || !tenant) return;
+    const [build, audit] = await Promise.all([
+      platformAdminApi.siteBuild(token, tenant.id),
+      platformAdminApi.tenantAuditLog(token, tenant.id),
+    ]);
+    setSiteBuild(build);
+    setAuditLog(audit);
+    setDomainRevision((current) => current + 1);
   }
 
   async function saveDeliveryWorkOrder() {
@@ -274,7 +284,6 @@ export default function TenantDetailPage() {
   const selectedTemplate = templates.find((template) => template.key === editTemplate);
   const siteSettingsChanged = !siteBuild
     || editTemplate !== siteBuild.template_key
-    || editDomain.trim().toLowerCase() !== (siteBuild.primary_domain || "")
     || [...editLocales].sort().join(",") !== [...siteBuild.locales].sort().join(",");
   const deliveryWorkOrderChanged = !!siteBuild && (
     editDeliveryStage !== siteBuild.delivery_stage
@@ -291,14 +300,6 @@ export default function TenantDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button
-        onClick={() => router.push("/platform/tenants")}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        返回租戶列表
-      </button>
-
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -365,6 +366,21 @@ export default function TenantDetailPage() {
           </div>
         ))}
       </div>
+
+      <nav aria-label="租戶交付快捷操作" className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="#tenant-domains" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">1. 網域與正式網址<span className="mt-0.5 block text-xs font-normal text-muted-foreground">免費網址、自有網域與 DNS</span></a>
+        <a href="#site-delivery" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">2. 網站上線設定<span className="mt-0.5 block text-xs font-normal text-muted-foreground">範本、語系與發布條件</span></a>
+        <a href={siteBuild ? "#delivery-work-order" : "#site-delivery"} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">3. 交付工作單<span className="mt-0.5 block text-xs font-normal text-muted-foreground">{siteBuild ? "負責人、日期與驗收進度" : "先建立網站上線設定"}</span></a>
+        <a href="#site-advanced" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted">4. 進階網站設定<span className="mt-0.5 block text-xs font-normal text-muted-foreground">網站殼層、導覽與素材對應</span></a>
+      </nav>
+
+      {token && (
+        <TenantDomainManager
+          token={token}
+          tenantId={tenant.id}
+          onChanged={refreshAfterDomainChange}
+        />
+      )}
 
       {/* Single-product capability governance */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -444,13 +460,11 @@ export default function TenantDetailPage() {
         </div>
       )}
 
-      {token && <PlatformSiteProfileEditor token={token} tenantId={tenant.id} />}
-
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div id="site-delivery" className="scroll-mt-16 rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-muted-foreground" /><h3 className="text-sm font-semibold">網站交付</h3></div>
-            <p className="mt-1 text-xs text-muted-foreground">設定範本、正式網域與語系；完成 CMS 串接後才能通過發布檢查。</p>
+            <p className="mt-1 text-xs text-muted-foreground">設定產業範本與公開語系；正式網址統一由上方「網域與正式網址」流程管理。</p>
           </div>
           {siteBuild && <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${siteBuild.status === "published" ? "bg-emerald-100 text-emerald-700" : siteBuild.status === "blocked" ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"}`}>{siteBuild.status}</span>}
         </div>
@@ -461,9 +475,13 @@ export default function TenantDetailPage() {
               {templates.map((template) => <option key={template.key} value={template.key}>{template.name} · {template.cms_connected ? "可串 CMS" : "靜態展示"}</option>)}
             </select>
           </label>
-          <label className="space-y-1.5 text-xs font-medium">主要網域
-            <Input value={editDomain} onChange={(e) => setEditDomain(e.target.value)} placeholder="customer.example.com" className="font-normal" />
-          </label>
+          <div className="space-y-1.5 text-xs font-medium">
+            <span>目前正式網址</span>
+            <div className="flex h-10 items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 font-mono text-sm font-normal">
+              <span className="min-w-0 truncate">{siteBuild?.primary_domain || "建立交付單後自動配置"}</span>
+              {siteBuild?.primary_domain && <a href={`https://${siteBuild.primary_domain}`} target="_blank" rel="noreferrer" aria-label="開啟目前正式網站"><ExternalLink className="h-4 w-4 text-primary" /></a>}
+            </div>
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
           <span className="text-xs font-medium">公開語系</span>
@@ -487,7 +505,7 @@ export default function TenantDetailPage() {
       </div>
 
       {siteBuild && (
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div id="delivery-work-order" className="scroll-mt-16 rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold">交付工作單</h3>
@@ -526,6 +544,8 @@ export default function TenantDetailPage() {
           <div className="mt-4 flex justify-end"><Button size="sm" onClick={saveDeliveryWorkOrder} disabled={saving || !deliveryWorkOrderChanged}>{saving ? "儲存中..." : "儲存交付工作單"}</Button></div>
         </div>
       )}
+
+      {token && <PlatformSiteProfileEditor key={domainRevision} token={token} tenantId={tenant.id} />}
 
       {/* Users */}
       {tenant.users.length > 0 && (

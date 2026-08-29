@@ -12,6 +12,7 @@ const COUNT_LABELS: Record<string, string> = {
   delivery_open: "進行中的網站交付",
   rfq_attention: "需要注意的 RFQ",
   failed_jobs: "失敗背景工作",
+  domain_attention: "待處理自有網域",
 };
 
 const SEVERITY_STYLE = {

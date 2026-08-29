@@ -65,6 +65,19 @@ async def test_custom_domain_never_bypasses_dns_and_falls_back_safely(
         assert by_host[custom_host]["verification"]["record_name"] == (
             f"_forgebase-verification.{custom_host}"
         )
+        tenant_attention = await http_client.get(
+            f"/api/v1/admin/tenants/{tenant_id}", headers=_auth(token)
+        )
+        assert "custom_domain_pending" in tenant_attention.json()["attention_reasons"]
+        workspace = await http_client.get(
+            "/api/v1/admin/workspace", headers=_auth(token)
+        )
+        assert workspace.status_code == 200
+        assert workspace.json()["counts"]["domain_attention"] >= 1
+        assert any(
+            item["kind"] == "tenant_domain" and item["tenant_id"] == str(tenant_id)
+            for item in workspace.json()["work_items"]
+        )
 
         async def incomplete_dns(*_args, **_kwargs):
             return DomainDNSObservation(
@@ -114,6 +127,10 @@ async def test_custom_domain_never_bypasses_dns_and_falls_back_safely(
         assert activated.status_code == 200, activated.text
         assert activated.json()["status"] == "active"
         assert activated.json()["is_canonical"] is True
+        activated_attention = await http_client.get(
+            f"/api/v1/admin/tenants/{tenant_id}", headers=_auth(token)
+        )
+        assert "custom_domain_pending" not in activated_attention.json()["attention_reasons"]
 
         alias_route = await http_client.get(
             "/api/v1/site-domain-routing", headers={"Host": managed_host}

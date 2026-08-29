@@ -247,7 +247,7 @@ export type TenantProvision = {
   logo_mark: string;
   contact_email: string;
   contact_phone?: string;
-  site_url: string;
+  site_url?: string;
   primary_domain?: string;
   default_locale: string;
   locales: string[];
@@ -261,9 +261,46 @@ export type TenantProvisionPreflight = {
   blockers: string[];
   normalized: {
     primary_domain?: string;
+    forgebase_hostname?: string;
+    requested_custom_domain?: string;
     site_url: string;
     owner_email: string;
   };
+};
+
+export type TenantDomain = {
+  id: string;
+  tenant_id: string;
+  hostname: string;
+  domain_type: "forgebase_subdomain" | "custom";
+  status: "pending" | "verifying" | "verified" | "active" | "failed" | "suspended";
+  is_canonical: boolean;
+  redirect_to_canonical: boolean;
+  verification_method?: string;
+  verification?: {
+    record_type: "TXT";
+    record_name: string;
+    record_value: string;
+  };
+  routing: {
+    record_type: "CNAME";
+    supported_record_types: string[];
+    record_name: string;
+    record_value: string;
+  };
+  dns_observed: {
+    ready?: boolean;
+    ownership_verified?: boolean;
+    routing_verified?: boolean;
+  };
+  dns_verified_at?: string;
+  tls_status: "unknown" | "pending" | "issuing" | "active" | "failed";
+  tls_issued_at?: string;
+  activated_at?: string;
+  last_checked_at?: string;
+  failure_reason?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type TenantProvisioningManifest = {
@@ -947,6 +984,37 @@ export const platformAdminApi = {
   siteBuild: (token: string, id: string) =>
     apiClient.get<SiteBuild>(`/admin/tenants/${id}/site-build`, token),
 
+  tenantDomains: (token: string, id: string) =>
+    apiClient.get<TenantDomain[]>(`/admin/tenants/${id}/domains`, token),
+
+  registerTenantDomain: (token: string, id: string, hostname: string) =>
+    apiClient.post<TenantDomain>(
+      `/admin/tenants/${id}/domains`,
+      { hostname },
+      token,
+    ),
+
+  verifyTenantDomain: (token: string, id: string, domainId: string) =>
+    apiClient.post<TenantDomain>(
+      `/admin/tenants/${id}/domains/${domainId}/verify`,
+      {},
+      token,
+    ),
+
+  activateTenantDomain: (token: string, id: string, domainId: string) =>
+    apiClient.post<TenantDomain>(
+      `/admin/tenants/${id}/domains/${domainId}/activate`,
+      {},
+      token,
+    ),
+
+  suspendTenantDomain: (token: string, id: string, domainId: string) =>
+    apiClient.post<TenantDomain>(
+      `/admin/tenants/${id}/domains/${domainId}/suspend`,
+      {},
+      token,
+    ),
+
   siteProfile: (token: string, id: string) =>
     apiClient.get<PlatformSiteProfile>(
       `/admin/tenants/${id}/site-profile`,
@@ -976,7 +1044,6 @@ export const platformAdminApi = {
     id: string,
     body: Partial<{
       template_key: string;
-      primary_domain: string;
       locales: string[];
       customization: Record<string, unknown>;
       cms_connected: boolean;

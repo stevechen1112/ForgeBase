@@ -17,6 +17,13 @@ const ACTION_LABELS: Record<string, string> = {
   "site_build.publish_blocked": "發布被上線條件阻擋",
   "site_build.published": "標記網站發布",
   "site_profile.updated": "更新網站資料",
+  "tenant_domain.registered": "加入自有網域",
+  "tenant_domain.verification_pending": "網域 DNS 尚未完成",
+  "tenant_domain.verification_unavailable": "網域 DNS 查詢暫時失敗",
+  "tenant_domain.verified": "網域 DNS 驗證通過",
+  "tenant_domain.activation_blocked": "網域啟用被 DNS 阻擋",
+  "tenant_domain.activated": "啟用正式網域",
+  "tenant_domain.suspended": "停用自有網域",
   "rfq.classified": "分類詢價資料",
 };
 
@@ -28,6 +35,7 @@ const TARGET_LABELS: Record<string, string> = {
   privacy_operation: "隱私作業",
   site_build: "網站交付單",
   site_profile: "網站資料",
+  tenant_domain: "租戶網域",
   rfq: "詢價",
 };
 
@@ -53,6 +61,11 @@ const FIELD_LABELS: Record<string, string> = {
   is_test_data: "測試資料",
   is_spam: "垃圾詢價",
   reason: "原因",
+  hostname: "網域",
+  canonical: "正式網址",
+  fallback_restored: "已回復免費網址",
+  ownership_verified: "網域所有權驗證",
+  routing_verified: "流量指向驗證",
 };
 
 const VALUE_LABELS: Record<string, string> = {

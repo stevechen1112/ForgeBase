@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, RefreshCw, Save, Search, Settings2, Trash2 } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Save, Search, Settings2, Trash2 } from "lucide-react";
 import { platformAdminApi, type PlatformSiteProfile } from "@/lib/api/platform-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,14 +147,16 @@ export function PlatformSiteProfileEditor({ token, tenantId }: Props) {
     if (invalid) { setError(`${invalid} 的資料格式不正確，請先修正後再儲存。`); return; }
     setSaving(true); setError(""); setMessage("");
     try {
-      const result = normalize(await platformAdminApi.updateSiteProfile(token, tenantId, profile));
+      const { site_url: _canonicalSiteUrl, ...editableProfile } = profile;
+      void _canonicalSiteUrl;
+      const result = normalize(await platformAdminApi.updateSiteProfile(token, tenantId, editableProfile));
       setProfile(result); setBaseline(result); setMessage("網站進階設定已更新，並留下平台操作紀錄。");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "儲存失敗"); }
     finally { setSaving(false); }
   }
 
   return (
-    <section className="rounded-xl border bg-card p-5 shadow-sm">
+    <section id="site-advanced" className="scroll-mt-16 rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-muted-foreground" /><h3 className="text-sm font-semibold">網站進階設定</h3></div><p className="mt-1 text-xs text-muted-foreground">僅供 ForgeBase 系統方調整網站殼層、導覽、多語與素材對應；租戶後台不會顯示這些技術欄位。</p></div>
         <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => void load()} disabled={loading || saving}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新讀取</Button><Button size="sm" onClick={() => void save()} disabled={loading || saving || !dirty}><Save className="h-4 w-4" />{saving ? "儲存中…" : "儲存進階設定"}</Button></div>
@@ -166,7 +168,13 @@ export function PlatformSiteProfileEditor({ token, tenantId }: Props) {
         <details className="rounded-lg border p-4">
           <summary className="cursor-pointer text-sm font-medium">網址、版型與資產路徑</summary>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Field label="完整網站網址" value={profile.site_url} onChange={(value) => field("site_url", value)} />
+            <div className="space-y-1.5">
+              <Label>正式網站網址（由網域流程管理）</Label>
+              <div className="flex h-9 items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 text-sm">
+                <span className="min-w-0 truncate font-mono">{profile.site_url}</span>
+                {profile.site_url && <a href={profile.site_url} target="_blank" rel="noreferrer" aria-label="開啟正式網站"><ExternalLink className="h-4 w-4 text-primary" /></a>}
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="platform-site-default-locale">預設語系</Label>
               <select

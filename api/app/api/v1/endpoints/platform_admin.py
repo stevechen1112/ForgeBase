@@ -471,6 +471,10 @@ def _tenant_attention_reasons(row: Any) -> list[str]:
         reasons.append("active_owner_missing")
     if int(row.get("failed_job_count") or 0) > 0:
         reasons.append("failed_jobs")
+    if int(row.get("pending_custom_domain_count") or 0) > 0:
+        reasons.append("custom_domain_pending")
+    if int(row.get("failed_custom_domain_count") or 0) > 0:
+        reasons.append("custom_domain_failed")
     return list(dict.fromkeys(reasons))
 
 
@@ -518,6 +522,11 @@ async def platform_dashboard(
                            SELECT 1 FROM operational_jobs oj
                            WHERE oj.tenant_id = t.id AND oj.status = 'failed'
                        )
+                       OR EXISTS (
+                           SELECT 1 FROM tenant_domains td
+                           WHERE td.tenant_id = t.id AND td.domain_type = 'custom'
+                             AND td.status IN ('pending', 'verifying', 'verified', 'failed')
+                       )
                 ) AS tenants_needing_attention
         """)
     )
@@ -563,7 +572,9 @@ async def platform_dashboard(
                    COALESCE(sb.cms_connected, FALSE) AS cms_connected,
                    sb.last_error AS site_last_error,
                    COALESCE(owners.cnt, 0) AS active_owner_count,
-                   COALESCE(jobs.cnt, 0) AS failed_job_count
+                   COALESCE(jobs.cnt, 0) AS failed_job_count,
+                   COALESCE(domains.pending_count, 0) AS pending_custom_domain_count,
+                   COALESCE(domains.failed_count, 0) AS failed_custom_domain_count
             FROM tenants t
             LEFT JOIN site_builds sb ON sb.tenant_id = t.id
             LEFT JOIN (
@@ -574,9 +585,17 @@ async def platform_dashboard(
                 SELECT tenant_id, COUNT(*) cnt FROM operational_jobs
                 WHERE status = 'failed' GROUP BY tenant_id
             ) jobs ON jobs.tenant_id = t.id
+            LEFT JOIN (
+                SELECT tenant_id,
+                       COUNT(*) FILTER (WHERE domain_type = 'custom' AND status IN ('pending', 'verifying', 'verified')) AS pending_count,
+                       COUNT(*) FILTER (WHERE domain_type = 'custom' AND status = 'failed') AS failed_count
+                FROM tenant_domains GROUP BY tenant_id
+            ) domains ON domains.tenant_id = t.id
             WHERE t.is_active = FALSE
                OR sb.id IS NULL OR sb.status != 'published' OR sb.cms_connected = FALSE
                OR COALESCE(owners.cnt, 0) = 0 OR COALESCE(jobs.cnt, 0) > 0
+               OR COALESCE(domains.pending_count, 0) > 0
+               OR COALESCE(domains.failed_count, 0) > 0
             ORDER BY COALESCE(jobs.cnt, 0) DESC, t.updated_at DESC
             LIMIT 8
         """)
@@ -629,7 +648,9 @@ async def platform_workspace(
                  WHERE is_test_data = FALSE AND is_spam = FALSE
                    AND status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation')
                    AND (assigned_to IS NULL OR sla_breached = TRUE)) AS rfq_attention,
-                (SELECT COUNT(*) FROM operational_jobs WHERE status = 'failed') AS failed_jobs
+                (SELECT COUNT(*) FROM operational_jobs WHERE status = 'failed') AS failed_jobs,
+                (SELECT COUNT(*) FROM tenant_domains
+                 WHERE domain_type = 'custom' AND status IN ('pending', 'verifying', 'verified', 'failed')) AS domain_attention
         """)
     )
     counts = {key: int(value or 0) for key, value in (counts_row.mappings().first() or {}).items()}
@@ -676,6 +697,38 @@ async def platform_workspace(
             tenant_id=str(row["tenant_id"]),
             tenant_name=row["tenant_name"],
             href=f"/platform/tenants/{row['tenant_id']}",
+            created_at=row["updated_at"],
+        ))
+
+    domain_rows = await session.exec(
+        text("""
+            SELECT td.id, td.tenant_id, t.name AS tenant_name, td.hostname,
+                   td.status, td.failure_reason, td.updated_at
+            FROM tenant_domains td
+            JOIN tenants t ON t.id = td.tenant_id
+            WHERE td.domain_type = 'custom'
+              AND td.status IN ('pending', 'verifying', 'verified', 'failed')
+            ORDER BY CASE WHEN td.status = 'failed' THEN 0
+                          WHEN td.status = 'verified' THEN 1 ELSE 2 END,
+                     td.updated_at ASC
+            LIMIT 10
+        """)
+    )
+    domain_status_detail = {
+        "pending": "等待租戶設定 DNS",
+        "verifying": "DNS 記錄尚未完整生效",
+        "verified": "DNS 已通過，等待設為正式網址",
+        "failed": "網域驗證失敗，需人工檢查",
+    }
+    for row in domain_rows.mappings().all():
+        items.append(PlatformWorkItem(
+            kind="tenant_domain",
+            severity="urgent" if row["status"] == "failed" else "high" if row["status"] == "verified" else "normal",
+            title=f"自有網域：{row['tenant_name']} · {row['hostname']}",
+            detail=row["failure_reason"] or domain_status_detail[row["status"]],
+            tenant_id=str(row["tenant_id"]),
+            tenant_name=row["tenant_name"],
+            href=f"/platform/tenants/{row['tenant_id']}#tenant-domains",
             created_at=row["updated_at"],
         ))
 
@@ -953,6 +1006,8 @@ async def list_all_tenants(
             t.is_active = FALSE OR sb.id IS NULL OR sb.status != 'published'
             OR sb.cms_connected = FALSE OR COALESCE(owners.cnt, 0) = 0
             OR COALESCE(jobs.cnt, 0) > 0
+            OR COALESCE(domains.pending_count, 0) > 0
+            OR COALESCE(domains.failed_count, 0) > 0
         )"""
         where_clauses.append(attention_sql if needs_attention else f"NOT {attention_sql}")
 
@@ -968,6 +1023,8 @@ async def list_all_tenants(
                 COALESCE(rc.cnt_30d, 0) AS rfq_count_30d,
                 COALESCE(vc.cnt, 0) AS visitor_count,
                 COALESCE(jobs.cnt, 0) AS failed_job_count,
+                COALESCE(domains.pending_count, 0) AS pending_custom_domain_count,
+                COALESCE(domains.failed_count, 0) AS failed_custom_domain_count,
                 COALESCE(owners.cnt, 0) AS active_owner_count,
                 GREATEST(rc.last_at, vc.last_at, cc.last_at) AS last_activity_at,
                 sb.status AS site_build_status, sb.primary_domain,
@@ -997,6 +1054,12 @@ async def list_all_tenants(
                 SELECT tenant_id, COUNT(*) cnt FROM operational_jobs
                 WHERE status = 'failed' GROUP BY tenant_id
             ) jobs ON jobs.tenant_id = t.id
+            LEFT JOIN (
+                SELECT tenant_id,
+                       COUNT(*) FILTER (WHERE domain_type = 'custom' AND status IN ('pending', 'verifying', 'verified')) AS pending_count,
+                       COUNT(*) FILTER (WHERE domain_type = 'custom' AND status = 'failed') AS failed_count
+                FROM tenant_domains GROUP BY tenant_id
+            ) domains ON domains.tenant_id = t.id
             LEFT JOIN site_builds sb ON sb.tenant_id = t.id
             {where_sql}
             ORDER BY COALESCE(jobs.cnt, 0) DESC,
@@ -1054,6 +1117,8 @@ async def get_tenant_detail(
                 COALESCE((SELECT COUNT(*) FROM rfq_requests WHERE tenant_id = :tid AND is_test_data = FALSE AND created_at >= NOW() - INTERVAL '30 days'), 0) AS rfq_count_30d,
                 COALESCE((SELECT COUNT(*) FROM visitors WHERE tenant_id = :tid AND is_test_data = FALSE), 0) AS visitor_count,
                 COALESCE((SELECT COUNT(*) FROM operational_jobs WHERE tenant_id = :tid AND status = 'failed'), 0) AS failed_job_count,
+                COALESCE((SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tid AND domain_type = 'custom' AND status IN ('pending', 'verifying', 'verified')), 0) AS pending_custom_domain_count,
+                COALESCE((SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tid AND domain_type = 'custom' AND status = 'failed'), 0) AS failed_custom_domain_count,
                 COALESCE((SELECT COUNT(*) FROM users WHERE tenant_id = :tid AND role = 'owner' AND is_active = TRUE), 0) AS active_owner_count,
                 GREATEST(
                     (SELECT MAX(created_at) FROM rfq_requests WHERE tenant_id = :tid AND is_test_data = FALSE),

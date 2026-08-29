@@ -17,6 +17,8 @@ const ATTENTION_LABELS: Record<string, string> = {
   cms_not_connected: "CMS 未確認",
   active_owner_missing: "缺有效 Owner",
   failed_jobs: "背景工作失敗",
+  custom_domain_pending: "自有網域待處理",
+  custom_domain_failed: "自有網域驗證失敗",
 };
 
 function StatCard({

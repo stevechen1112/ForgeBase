@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePlatformAuth } from "@/lib/auth/platform-store";
 import { platformAdminApi, type TenantSummary } from "@/lib/api/platform-admin";
@@ -24,6 +25,8 @@ const ATTENTION_LABELS: Record<string, string> = {
   cms_not_connected: "CMS 未確認",
   active_owner_missing: "缺有效 Owner",
   failed_jobs: "背景工作失敗",
+  custom_domain_pending: "自有網域待處理",
+  custom_domain_failed: "自有網域驗證失敗",
 };
 
 export default function PlatformTenantsPage() {
@@ -141,8 +144,14 @@ export default function PlatformTenantsPage() {
                   onClick={() => router.push(`/platform/tenants/${t.id}`)}
                 >
                   <td className="px-5 py-3">
-                    <p className="font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.slug}</p>
+                    <Link
+                      href={`/platform/tenants/${t.id}`}
+                      className="inline-block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <span className="block font-medium">{t.name}</span>
+                      <span className="block text-xs text-muted-foreground">{t.slug}</span>
+                    </Link>
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
@@ -159,7 +168,14 @@ export default function PlatformTenantsPage() {
                   <td className="px-5 py-3 text-right tabular-nums"><span className="font-semibold text-foreground">{t.rfq_count_30d}</span><span className="ml-1 text-xs text-muted-foreground">/ 總計 {t.rfq_count}</span></td>
                   <td className="px-5 py-3 text-xs text-muted-foreground">{t.last_activity_at ? new Date(t.last_activity_at).toLocaleDateString("zh-TW") : "尚無活動"}</td>
                   <td className="px-5 py-3">
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <Link
+                      href={`/platform/tenants/${t.id}`}
+                      aria-label={`開啟 ${t.name} 租戶詳情`}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
                   </td>
                 </tr>
               ))}
