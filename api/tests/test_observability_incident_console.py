@@ -40,6 +40,10 @@ async def test_slo_sampling_and_incident_lifecycle_are_durable(
             await session.exec(delete(OperationalIncidentEvent))
             await session.exec(delete(OperationalIncident))
             await session.exec(delete(ServiceLevelSnapshot))
+            # SLO sampling is platform-global. A durable local test database
+            # may retain jobs from earlier runs, so isolate the acceptance
+            # inventory just as we already isolate incidents and snapshots.
+            await session.exec(delete(OperationalJob))
             for index in range(20):
                 session.add(
                     OperationalJob(
@@ -187,6 +191,7 @@ async def test_slo_sampling_and_incident_lifecycle_are_durable(
             await session.exec(delete(OperationalIncidentEvent))
             await session.exec(delete(OperationalIncident))
             await session.exec(delete(ServiceLevelSnapshot))
+            await session.exec(delete(OperationalJob))
             await session.commit()
         await engine.dispose()
         await _delete_platform_superuser(operator_id)

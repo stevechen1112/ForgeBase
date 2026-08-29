@@ -2261,6 +2261,7 @@ async def create_site_build(
     )
     await session.commit()
     await session.refresh(build)
+    clear_tenant_host_cache()
     return _site_build_payload(build)
 
 
@@ -2472,6 +2473,8 @@ async def update_site_build(
     )
     await session.commit()
     await session.refresh(build)
+    if "primary_domain" in changes:
+        clear_tenant_host_cache()
     return _site_build_payload(build)
 
 

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     CHAT_DAILY_TENANT_MESSAGE_LIMIT: int = 500
     CHAT_LLM_TIMEOUT_SECONDS: float = 20.0
     PUBLIC_TENANT_SLUG: str = ""
+    # Transitional compatibility for the build-time tenant header. Public
+    # host routing takes precedence and rejects host/header disagreement.
+    # Disable after the shared host-aware frontend is deployed.
+    PUBLIC_TENANT_HEADER_COMPATIBILITY_ENABLED: bool = True
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""

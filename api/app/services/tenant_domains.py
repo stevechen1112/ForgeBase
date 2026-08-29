@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from urllib.parse import urlparse
 from uuid import UUID
 
 from sqlmodel import select
@@ -42,13 +41,6 @@ def valid_hostname(value: str | None) -> bool:
     except ValueError:
         pass
     return all(_DOMAIN_LABEL.fullmatch(label) for label in normalized.split("."))
-
-
-def hostname_from_url(value: str | None) -> str | None:
-    try:
-        return normalize_hostname(urlparse(value or "").hostname)
-    except ValueError:
-        return None
 
 
 async def hostname_owner(

@@ -11,7 +11,9 @@ from app.core.config import settings
 from app.core.security import decode_token
 from app.db.session import get_session
 from app.models.tenant import Tenant
+from app.models.tenant_domain import TenantDomain
 from app.models.user import User
+from app.services.tenant_domains import normalize_hostname, valid_hostname
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -231,11 +233,12 @@ async def resolve_tenant_id(
     x_tenant_id: Optional[str] = Header(None),
     session: AsyncSession = Depends(get_session),
 ) -> Optional[UUID]:
-    """Resolve tenant from X-Tenant-ID header (public endpoints).
+    """Resolve a public tenant from an exact, active hostname.
 
-    Returns tenant UUID if header is present and valid, else None.
-    Uses a process-level TTL cache for host→tenant_id lookups to avoid
-    full-table scans on every public request.
+    X-Tenant-ID remains a temporary build-time compatibility path only when
+    the request host is not assigned. A recognized host always wins and any
+    conflicting header fails closed. Arbitrary first-label/slug inference is
+    intentionally forbidden.
     """
     async def _resolve_identifier(identifier: str) -> Optional[UUID]:
         try:
@@ -252,81 +255,74 @@ async def resolve_tenant_id(
     def _extract_host(value: Optional[str]) -> Optional[str]:
         if not value:
             return None
-        parsed = urlparse(value if "://" in value else f"https://{value}")
-        host = (parsed.hostname or "").strip().lower()
-        return host or None
+        try:
+            parsed = urlparse(value if "://" in value else f"https://{value}")
+        except ValueError:
+            return None
+        normalized = normalize_hostname(parsed.hostname)
+        return normalized if valid_hostname(normalized) else None
 
-    if x_tenant_id:
-        resolved = await _resolve_identifier(x_tenant_id.strip())
-        if not resolved:
-            raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID")
-        return resolved
-
-    candidate_hosts = [
-        _extract_host(request.headers.get("x-tenant-host")),
-        _extract_host(request.headers.get("origin")),
-        _extract_host(request.headers.get("referer")),
-        _extract_host(request.headers.get("x-forwarded-host")),
-        _extract_host(request.headers.get("host")),
-    ]
-    candidate_hosts = [host for host in candidate_hosts if host]
-    if not candidate_hosts:
-        return None
+    request_host = _extract_host(request.headers.get("host"))
 
     # Check process-level TTL cache first
     import time as _time
     now = _time.monotonic()
-    for host in candidate_hosts:
-        cached = _TENANT_HOST_CACHE.get(host)
+    host_tenant_id: Optional[UUID] = None
+    host_cache_hit = False
+    if request_host:
+        cached = _TENANT_HOST_CACHE.get(request_host)
         if cached is not None:
             tenant_id, cached_at = cached
             if now - cached_at < _TENANT_HOST_CACHE_TTL:
-                return tenant_id
+                host_tenant_id = tenant_id
+                host_cache_hit = True
 
-    from app.models.site_profile import SiteProfile
+    if request_host and not host_cache_hit:
+        host_tenant_id = (
+            await session.exec(
+                select(TenantDomain.tenant_id)
+                .join(Tenant, Tenant.id == TenantDomain.tenant_id)
+                .where(
+                    TenantDomain.hostname == request_host,
+                    TenantDomain.status == "active",
+                    Tenant.is_active.is_(True),
+                )
+            )
+        ).first()
 
-    tenant_column = getattr(SiteProfile, "tenant_id", None)
-    profiles = (
-        await session.exec(
-            select(SiteProfile.site_url, SiteProfile.tenant_id)
-            .join(Tenant, Tenant.id == SiteProfile.tenant_id)
-            .where(tenant_column.is_not(None), Tenant.is_active.is_(True))
-        )
-    ).all()
+        _cache_tenant_host(request_host, host_tenant_id, now)
 
-    # Build a host→tenant_id map from profiles for efficient O(1) lookups
-    profile_map: dict[str, UUID] = {}
-    for site_url, tenant_id in profiles:
-        profile_host = _extract_host(site_url)
-        if profile_host and tenant_id is not None:
-            profile_map[profile_host] = tenant_id
+    header_tenant_id: Optional[UUID] = None
+    if x_tenant_id:
+        if not host_tenant_id and not settings.PUBLIC_TENANT_HEADER_COMPATIBILITY_ENABLED:
+            raise HTTPException(status_code=400, detail="X-Tenant-ID compatibility is disabled")
+        header_tenant_id = await _resolve_identifier(x_tenant_id.strip())
+        if not header_tenant_id:
+            raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID")
+        if host_tenant_id and header_tenant_id != host_tenant_id:
+            raise HTTPException(status_code=400, detail="Tenant host/header mismatch")
 
-    for host in candidate_hosts:
-        tid = profile_map.get(host)
-        if tid:
-            _TENANT_HOST_CACHE[host] = (tid, now)
-            return tid
-
-        subdomain = host.split(".", 1)[0]
-        if subdomain and subdomain not in {"www", "app", "api", "localhost"}:
-            tenant = (
-                await session.exec(select(Tenant).where(Tenant.slug == subdomain, Tenant.is_active.is_(True)))
-            ).first()
-            if tenant:
-                _TENANT_HOST_CACHE[host] = (tenant.id, now)
-                return tenant.id
-
-        # Cache miss — record negative result to avoid re-querying
-        _TENANT_HOST_CACHE[host] = (None, now)
-
-    return None
+    return host_tenant_id or header_tenant_id
 
 
 # ── Process-level TTL cache for host→tenant_id ──────────────────────────────
 _TENANT_HOST_CACHE: dict[str, tuple[Optional[UUID], float]] = {}
 _TENANT_HOST_CACHE_TTL = 120.0  # seconds
+_TENANT_HOST_CACHE_MAX = 4096
+
+
+def _cache_tenant_host(host: str, tenant_id: Optional[UUID], cached_at: float) -> None:
+    """Bound attacker-controlled negative host cache entries."""
+    if len(_TENANT_HOST_CACHE) >= _TENANT_HOST_CACHE_MAX:
+        expired_before = cached_at - _TENANT_HOST_CACHE_TTL
+        for key, (_, item_cached_at) in list(_TENANT_HOST_CACHE.items()):
+            if item_cached_at < expired_before:
+                _TENANT_HOST_CACHE.pop(key, None)
+        while len(_TENANT_HOST_CACHE) >= _TENANT_HOST_CACHE_MAX:
+            _TENANT_HOST_CACHE.pop(next(iter(_TENANT_HOST_CACHE)))
+    _TENANT_HOST_CACHE[host] = (tenant_id, cached_at)
 
 
 def clear_tenant_host_cache() -> None:
-    """Invalidate host resolution after platform or site-profile changes."""
+    """Invalidate host resolution after tenant, domain, or profile changes."""
     _TENANT_HOST_CACHE.clear()
