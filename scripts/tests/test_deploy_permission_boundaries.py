@@ -41,6 +41,32 @@ def test_offsite_restore_exposes_only_a_precreated_destination_file() -> None:
     assert 'chown -- "$(id -u):$(id -g)" "$downloaded_file"' in script
 
 
+def test_safe_deploy_keeps_edge_running_until_dependencies_are_healthy() -> None:
+    script = (ROOT / "deploy/safe-deploy.sh").read_text(encoding="utf-8")
+
+    application_switch = 'up -d --remove-orphans db migrate "${release_services[@]}"'
+    dependency_gate = 'if [ "$services_ready" != true ]; then'
+    edge_switch = "up -d --no-deps --force-recreate caddy"
+    assert application_switch in script
+    assert dependency_gate in script
+    assert edge_switch in script
+    assert script.index(application_switch) < script.index(dependency_gate)
+    assert script.index(dependency_gate) < script.index(edge_switch)
+    assert 'up -d --remove-orphans\n' not in script
+
+
+def test_reference_site_uses_an_explicit_host_not_a_stale_tenant_slug() -> None:
+    compose = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    reference = compose.split("  web_reference:", 1)[1].split("\n  caddy:", 1)[0]
+
+    assert reference.count('NEXT_PUBLIC_TENANT_SLUG: ""') == 2
+    assert "${NEXT_PUBLIC_TENANT_SLUG" not in reference
+    assert reference.count(
+        "FORGEBASE_TENANT_HOST_OVERRIDE: "
+        "${REFERENCE_TENANT_HOST:-default-tenant.forgebase.com}"
+    ) == 2
+
+
 @pytest.mark.parametrize("script_name", ["backup.sh", "restore-drill.sh"])
 @pytest.mark.parametrize("invalid_uid", ["0", "--reference=/tmp/untrusted"])
 def test_recovery_scripts_reject_root_or_non_numeric_runtime_uid(

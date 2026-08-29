@@ -38,6 +38,9 @@ export function withServerTenantHost(headersInit?: HeadersInit, host?: string | 
 }
 
 export async function getRequestTenantHost(): Promise<string | null> {
+  const configuredHost = normalizeHost(process.env.FORGEBASE_TENANT_HOST_OVERRIDE);
+  if (configuredHost) return configuredHost;
+
   const requestHeaders = await headers();
   return normalizeHost(requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"));
 }

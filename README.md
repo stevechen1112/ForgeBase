@@ -384,7 +384,7 @@ ForgeBase/
 |----------------|----------|
 | demo 素材未掛進 web 容器 | `docker-compose.prod.yml` 明確掛載 `./demo:/demo:ro`；`/api/health/assets` 開機探針驗證主視覺實體檔可讀 |
 | 佔位圖被長時間快取污染 | `demoAssetRoute.ts` 佔位回應改 `Cache-Control: no-store`；實體檔才用 `immutable` 長快取；佔位帶 `X-Demo-Asset: placeholder` 標頭 |
-| 前端 tenant slug 與內容 tenant 不符導致查無內容 | `NEXT_PUBLIC_TENANT_SLUG` 預設留空（對應 NULL-tenant 內容）；健康檢查以「已發布分類數 = 0」作為租戶錯配訊號 |
+| 前端 tenant slug 與內容 tenant 不符導致查無內容 | NorthForge 參考站以明確 active hostname `default-tenant.forgebase.com` 走受信路由；租戶站依瀏覽器 hostname 解析；健康檢查以「已發布分類數 = 0」攔截錯配 |
 | SSR API 呼叫繞外部網域不穩 | `API_INTERNAL_URL: http://api:8000` 走容器內網；`localhost` 健康檢查改用 `127.0.0.1`（Alpine IPv6 解析問題）|
 
 診斷工具：

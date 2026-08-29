@@ -115,6 +115,7 @@ services:
         NEXT_PUBLIC_BASE_PATH: ""
         NEXT_PUBLIC_ASSET_BASE: ""
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+        FORGEBASE_TENANT_HOST_OVERRIDE: ""
     environment:
       API_INTERNAL_URL: http://api:8000
       INTERNAL_API_URL: http://api:8000
@@ -135,25 +136,28 @@ services:
       api:
         condition: service_healthy
 
-  # Legacy reference site remains path-based. Managed tenants all share `web`.
+  # Legacy reference site remains path-based. It uses an explicit active
+  # tenant hostname so public header compatibility can remain disabled.
   web_reference:
     image: forgebase-web-reference
     build:
       context: ./web
       args:
         NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
-        NEXT_PUBLIC_TENANT_SLUG: ${NEXT_PUBLIC_TENANT_SLUG:-}
+        NEXT_PUBLIC_TENANT_SLUG: ""
         NEXT_PUBLIC_SITE_URL: ${PROTOCOL:-https}://${DOMAIN}/northforge-tools
         NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-NorthForge Tools}
         NEXT_PUBLIC_BASE_PATH: /northforge-tools
         NEXT_PUBLIC_ASSET_BASE: /northforge-tools/demo/handtool-company/assets
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+        FORGEBASE_TENANT_HOST_OVERRIDE: ${REFERENCE_TENANT_HOST:-default-tenant.forgebase.com}
     environment:
       API_INTERNAL_URL: http://api:8000
       INTERNAL_API_URL: http://api:8000
       NEXT_PUBLIC_API_URL: ${PROTOCOL:-https}://${DOMAIN}
-      NEXT_PUBLIC_TENANT_SLUG: ${NEXT_PUBLIC_TENANT_SLUG:-}
+      NEXT_PUBLIC_TENANT_SLUG: ""
       NEXT_PUBLIC_BASE_PATH: /northforge-tools
+      FORGEBASE_TENANT_HOST_OVERRIDE: ${REFERENCE_TENANT_HOST:-default-tenant.forgebase.com}
       TENANT_ROUTING_SECRET: ${TENANT_ROUTING_SECRET:?missing TENANT_ROUTING_SECRET in .env}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:?missing REVALIDATE_SECRET in .env}
     volumes:

@@ -60,7 +60,8 @@ nano .env
 | `APEX_DOMAIN` | `pcbrm.tw` |
 | `POSTGRES_PASSWORD` | 強密碼 |
 | `REVALIDATE_SECRET` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `NEXT_PUBLIC_TENANT_SLUG` | **預設留空**，見下方說明 |
+| `NEXT_PUBLIC_TENANT_SLUG` | 舊版相容設定；正式 Compose 不再使用 |
+| `REFERENCE_TENANT_HOST` | NorthForge path-based 參考站的明確 active hostname；預設 `default-tenant.forgebase.com` |
 | `NEXT_PUBLIC_SITE_NAME` | 依站台調整 |
 | `TENANT_BASE_DOMAIN` | `forgebase.com` |
 | `TENANT_CNAME_TARGET` | `edge.forgebase.com` |
@@ -86,9 +87,9 @@ python3 deploy/configure-tenant-domain-env.py \
 
 不要把 `forgebase.com` 根網域或既有官網 A 記錄改到 ForgeBase 租戶 edge。新增後以一個未建立過的隨機 label 驗證 wildcard 解析，再由 `/internal/tls/authorize` 確認未知 Host 仍拒絕 TLS。
 
-> **`NEXT_PUBLIC_TENANT_SLUG` 必須與內容的歸屬一致。** 有值時前台每次呼叫 API 都會帶 `X-Tenant-ID`，
-> API 只回該租戶的資料；seed 與匯入腳本建立的內容 `tenant_id` 是 NULL，此時必須留空，
-> 否則前台會查到 0 筆內容 —— 表現出來就是頁面沒有商品、圖片全變成佔位圖。
+> NorthForge 是保留的 path-based 參考站，因此正式 Compose 以 `REFERENCE_TENANT_HOST`
+> 明確指定 active 的 `tenant_domains` hostname，並用 routing secret 在容器內傳遞；不再使用
+> `X-Tenant-ID` 相容標頭。新租戶站直接由瀏覽器請求 hostname 解析，同一個 image 可服務所有租戶。
 
 ### 3.2 `deploy/api.env`
 

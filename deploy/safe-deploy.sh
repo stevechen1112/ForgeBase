@@ -85,14 +85,17 @@ if [ "${#web_services[@]}" -gt 0 ]; then
   docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
     up -d --no-deps --force-recreate "${web_services[@]}"
 fi
-docker compose --env-file "$repo_dir/.env" -f "$compose_file" up -d --remove-orphans
-# Caddyfile is a bind mount. Recreate Caddy so a replaced config inode is never
-# left pointing at the previous release during a managed-site delivery.
-docker compose --env-file "$repo_dir/.env" -f "$compose_file" up -d --no-deps --force-recreate caddy
+# Keep the currently serving edge alive until every replacement dependency is
+# healthy. A generic `compose up` includes Caddy and may stop it before Compose
+# discovers an unhealthy website, turning a contained rollout failure into a
+# whole-platform outage.
+docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+  up -d --remove-orphans db migrate "${release_services[@]}"
 
 domain="$(sed -n 's/^DOMAIN=//p' "$repo_dir/.env" | tail -n 1)"
 protocol="$(sed -n 's/^PROTOCOL=//p' "$repo_dir/.env" | tail -n 1)"
 protocol="${protocol:-https}"
+services_ready=false
 for _attempt in $(seq 1 18); do
   services_ready=true
   for service in "${release_services[@]}"; do
@@ -108,12 +111,31 @@ for _attempt in $(seq 1 18); do
       break
     fi
   done
-  if [ "$services_ready" = true ] && curl --fail --silent --show-error --max-time 8 "$protocol://$domain/health/ready" >/dev/null; then
-    printf 'Deployment healthy. Rollback manifest: %s\n' "$manifest"
-    exit 0
-  fi
+  [ "$services_ready" = true ] && break
   sleep 5
 done
 
-printf 'Deployment readiness failed. Inspect migration compatibility, then use deploy/rollback.sh --approve-api-schema-compatibility %s.\n' "$manifest" >&2
-exit 1
+if [ "$services_ready" != true ]; then
+  printf 'Deployment readiness failed before edge switch. Inspect migration compatibility, then use deploy/rollback.sh --approve-api-schema-compatibility %s.\n' "$manifest" >&2
+  exit 1
+fi
+
+# Caddyfile is a bind mount. Recreate Caddy only after every replacement
+# dependency is healthy, so the previous edge keeps serving during a failed
+# rollout and a replaced config inode is picked up during a successful one.
+docker compose --env-file "$repo_dir/.env" -f "$compose_file" up -d --no-deps --force-recreate caddy
+
+edge_ready=false
+for _attempt in $(seq 1 18); do
+  if curl --fail --silent --show-error --max-time 8 "$protocol://$domain/health/ready" >/dev/null; then
+    edge_ready=true
+    break
+  fi
+  sleep 5
+done
+if [ "$edge_ready" != true ]; then
+  printf 'Deployment edge readiness failed. Inspect Caddy without rolling back the migrated database; rollback manifest: %s.\n' "$manifest" >&2
+  exit 1
+fi
+
+printf 'Deployment healthy. Rollback manifest: %s\n' "$manifest"
