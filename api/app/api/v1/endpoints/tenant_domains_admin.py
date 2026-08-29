@@ -30,7 +30,10 @@ from app.services.tenant_domains import (
     DomainConflictError,
     DomainLifecycleError,
     activate_verified_custom_domain,
+    forgebase_hostname_for_slug,
+    hostname_owner,
     register_custom_domain,
+    sync_canonical_domain_projections,
     suspend_custom_domain,
 )
 
@@ -39,6 +42,14 @@ router = APIRouter(prefix="/admin/tenants", tags=["Platform Tenant Domains"])
 
 class CustomDomainCreate(BaseModel):
     hostname: str = Field(min_length=4, max_length=253)
+
+
+class ManagedDomainRename(BaseModel):
+    label: str = Field(
+        min_length=2,
+        max_length=63,
+        pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    )
 
 
 def _payload(domain: TenantDomain) -> dict[str, Any]:
@@ -227,6 +238,67 @@ async def create_custom_domain(
     except IntegrityError as exc:
         await session.rollback()
         raise HTTPException(status_code=409, detail="Hostname is already assigned") from exc
+    return _payload(domain)
+
+
+@router.put("/{tenant_id}/domains/managed")
+async def rename_managed_domain(
+    tenant_id: UUID,
+    body: ManagedDomainRename,
+    session: AsyncSession = Depends(get_session),
+    actor: User = Depends(require_superuser),
+) -> dict[str, Any]:
+    """Rename the platform hostname without changing the durable tenant slug."""
+    await _lock_tenant(session, tenant_id)
+    managed_domains = (
+        await session.exec(
+            select(TenantDomain).where(
+                TenantDomain.tenant_id == tenant_id,
+                TenantDomain.domain_type == "forgebase_subdomain",
+            )
+        )
+    ).all()
+    if len(managed_domains) != 1:
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant must have exactly one ForgeBase managed hostname",
+        )
+    domain = managed_domains[0]
+    try:
+        desired_hostname = forgebase_hostname_for_slug(
+            body.label, settings.TENANT_BASE_DOMAIN
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if desired_hostname == domain.hostname:
+        return _payload(domain)
+    if await hostname_owner(session, desired_hostname):
+        raise HTTPException(status_code=409, detail="ForgeBase hostname is already assigned")
+
+    previous_hostname = domain.hostname
+    domain.hostname = desired_hostname
+    domain.tls_status = "pending"
+    domain.tls_issued_at = None
+    domain.updated_at = utcnow_naive()
+    session.add(domain)
+    if domain.is_canonical:
+        await sync_canonical_domain_projections(
+            session, tenant_id=tenant_id, hostname=desired_hostname
+        )
+    _audit(
+        session,
+        actor,
+        domain,
+        action="tenant_domain.managed_renamed",
+        changes={"hostname": {"from": previous_hostname, "to": desired_hostname}},
+    )
+    try:
+        await session.commit()
+        await session.refresh(domain)
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="ForgeBase hostname is already assigned") from exc
+    clear_tenant_host_cache()
     return _payload(domain)
 
 

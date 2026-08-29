@@ -546,6 +546,41 @@
 - Code review 將 PDL Person Search 的核准從公司 IP 資料核准拆為獨立 `PDL_CONTACT_DATA_USE_APPROVED`，防止用途擴張；PDL／Hunter source freshness 也改為先正規化 UTC，再存為既有資料模型使用的 naive UTC。
 - 乾淨 PostgreSQL 完整 API 回歸為 324 passed、3 skipped、0 failed；PDL Sandbox 與 Hunter 自有公司網域的極小量 adapter 實測正常處理且為 0 候選，未寄信、未輸出個資。
 
+## 批次 14：租戶免費子網域、自有網域與系統方交付中心
+
+### 已實作
+
+- 建立 `tenant_domains` 單一真值來源與向前 migration；`SiteBuild.primary_domain`、`SiteProfile.site_url` 降為由 canonical domain 同步的相容投影。
+- 每租戶建立一個 platform-managed `<label>.forgebase.com`，支援系統方在不修改 tenant slug／資料關聯下改成較短品牌 label，例如 `axisform.forgebase.com`。
+- 共用前台依 Host 解析租戶；server-side API、browser API、revalidate 與資產健康檢查均使用同一租戶身分，不再以 build-time tenant slug 固定整個 image。
+- Caddy 使用 API allowlist 授權 on-demand TLS；未知 Host、停用自有網域、未驗證自有網域都 fail closed，不會落入其他租戶或 ForgeBase 官網。
+- 自有網域生命週期包含註冊、TXT ownership、CNAME／ALIAS／ANAME routing、真實 DoH 查詢、驗證、啟用、308 canonical redirect、停用與免費網址交易式回復。
+- 系統方後台新增「網域與正式網址」交付中心、DNS 複製指示、三步進度、啟用／停用確認、免費網址改名、營運待辦、dashboard attention 與完整 audit label。
+- 移除 Site Build／Site Profile 直接編輯網址的旁路；新租戶頁即時預覽免費網址，自有網域為選填且未驗證前不取代免費網址。
+- 全域返回導覽與 breadcrumb 覆蓋租戶清單、新增與詳情；清單列補正式可聚焦連結，390px viewport 無水平溢位。
+- production deployment workflow 新增冪等網域 runtime 配置器：只在缺少／占位／過短時產生高熵 `TENANT_ROUTING_SECRET`，以 atomic replace 寫入且永不輸出值。
+
+### Code review 發現與修正
+
+1. 租戶列原只靠 `tr onClick`，滑鼠可用但鍵盤與輔助工具無法進入：補具名 `Link` 與 focus ring。
+2. 尚未建立 Site Build 時，第 3 個「交付工作單」快捷連結會指向不存在 anchor：改導向建立交付單區塊。
+3. 網域 mutation 已成功後，次要面板 refresh 失敗可能誤報整體操作失敗：分離 mutation 與 secondary refresh error boundary。
+4. 只從 slug 產免費網址無法符合 `axisform.forgebase.com` 的交付命名：加入 platform-managed label 改名，並確保後續 repeat provisioning 不會重新建立 slug-derived 第二筆免費網域。
+5. 生產 env 若缺 routing secret，Compose 會 fail closed；加入冪等、atomic、保留既有密鑰且具隔離測試的 bootstrap，不把 secret 寫入 Git 或 workflow log。
+
+### 驗證
+
+- Admin type-check、ESLint、production build 通過；76 routes。
+- 本機以隔離平台超級管理員實際登入，驗收清單 → 詳情 → 返回、新租戶免費網址預覽、網域交付中心、readonly canonical 欄位及 390 × 844 viewport；無水平溢位。
+- API 完整 PostgreSQL 回歸在後台網域中心批次為 **407 passed、3 skipped**；生產 env 配置器與 managed-domain rename 另有 focused regression。
+- DNS 現況唯讀查核確認 `forgebase.com` 由 GoDaddy nameserver 管理；批次開始時 `edge.forgebase.com` 與 wildcard 尚未存在，因此不在部署前預先宣稱免費網址已對外可達。
+
+### Production Gate
+
+- 應用、migration、Caddy、後台與 deployment bootstrap 已就緒。
+- 正式完成仍須：推送 main 並通過 release／deploy workflow；在 `forgebase.com` zone 新增 `edge A → 172.233.64.5` 與 `* CNAME → edge.forgebase.com`；完成 `axisform.forgebase.com` 的 production TLS、Host isolation、登入後 UI 與 fallback smoke test。
+- DNS zone 不可存取或記錄尚未生效時，應明確回報 external Gate，不得以本機 mock、hosts file 或未驗證 TLS 取代。
+
 ## 整體實作結論
 
 - 北極星流程「匿名訪客 → 行為追蹤 → 意圖評分 → 推測公司 → 尋找公司相關聯絡窗口 → 依旅程產生個人化信件 → 寄送與追蹤 → 對方回覆 → 真人業務接手 → RFQ／成交」所需的程式結構、治理邊界、人工審核與閉環歸因均已依前十二個實作批次完成。

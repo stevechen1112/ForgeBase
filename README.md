@@ -7,7 +7,7 @@ ForgeBase 是專為外銷製造商打造的 RFQ 成長系統。
 
 ---
 
-## 目前產品狀態（2026-08-28）
+## 目前產品狀態（2026-08-29）
 
 **ForgeBase 已可在正式環境使用，適合開始導入首批租戶與受控商用試營運。** 官網、內容、多語、AI 客服、訪客追蹤、意圖評分、公司推測、聯絡窗口審核、個人化草稿、詢價、買家管線、真人接手與 RFQ／成交管理均已有 production 實作；平台權限、稽核、備份、復原、監控與部署 Gate 亦已到位。
 
@@ -16,6 +16,7 @@ ForgeBase 是專為外銷製造商打造的 RFQ 成長系統。
 | 範圍 | 目前狀態 |
 |------|----------|
 | 官網、內容、多語、AI 客服、RFQ 與後台營運 | **正式可用** |
+| 租戶免費網址與自有網域 | **產品實作完成**；每租戶保有 `<label>.forgebase.com`，自有網域需通過真實 DNS 驗證後才能啟用 |
 | 訪客行為、意圖評分與公司推測 | **正式可用**；公司結果是推測，不代表識別訪客本人 |
 | 聯絡窗口候選與個人化信件 | **人工審核／Review Only** |
 | Resend outbound／inbound prerequisites | **配置完成**；專用收信網域 MX／DKIM verified，domain、webhook 與高熵 route secret 已就緒 |
@@ -72,6 +73,15 @@ ForgeBase 採單一產品，不再區分 Starter／Professional 或第一／第�
 ```
 
 公司推測、聯絡窗口、個人化外聯、回覆與接手都是核心能力；若外部資料權利、真實 precision、寄送環境或法遵 Gate 尚未通過，系統以 capability 與 runtime mode fail closed，而不是把它們視為可刪除的實驗功能。公司候選不等於訪客本人，窗口候選也不等於實際訪客。
+
+### 租戶網站與網域交付
+
+- 每個租戶一定有一個 ForgeBase 免費網址，格式為 `<label>.forgebase.com`，不使用 `.tenant.forgebase.com`。
+- 新租戶預設以租戶代碼作為免費網址 label；系統方可在正式公布前獨立改成較短品牌名稱，例如 `axisform.forgebase.com`，不必改動 tenant slug 或資料關聯。
+- 租戶自有網域只會先建立驗證工作。系統必須同時看到所有權 TXT 與指向 `edge.forgebase.com` 的 CNAME／ALIAS／ANAME，才允許設為正式網址。
+- 自有網域啟用後，舊免費網址以 308 導向 canonical；停用或故障處置會在同一交易內安全回復免費網址。
+- Caddy 只為 API 精確授權的 active hostname 申請 on-demand TLS；未知 Host 不會被 fallback 到其他租戶或平台官網。
+- 系統方後台的「網域與正式網址」集中處理免費網址、自有網域 DNS 指示、檢查、啟用、停用、回復、待辦與稽核；Site Build 與 Site Profile 的網址欄位都是唯讀投影，不能旁路修改。
 
 ### Intent — 辨識誰在評估、誰有採購意圖
 

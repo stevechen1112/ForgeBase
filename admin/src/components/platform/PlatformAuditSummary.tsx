@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   "site_build.published": "標記網站發布",
   "site_profile.updated": "更新網站資料",
   "tenant_domain.registered": "加入自有網域",
+  "tenant_domain.managed_renamed": "變更免費子網域",
   "tenant_domain.verification_pending": "網域 DNS 尚未完成",
   "tenant_domain.verification_unavailable": "網域 DNS 查詢暫時失敗",
   "tenant_domain.verified": "網域 DNS 驗證通過",

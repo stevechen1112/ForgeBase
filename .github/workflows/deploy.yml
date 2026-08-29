@@ -72,6 +72,12 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
             set -euo pipefail
             cd /opt/forgebase
+            # Preserve an existing routing secret; bootstrap a high-entropy
+            # value only when the production host has never configured one.
+            python3 deploy/configure-tenant-domain-env.py \
+              --env-file /opt/forgebase/.env \
+              --base-domain forgebase.com \
+              --cname-target edge.forgebase.com
             docker compose -f docker-compose.prod.yml config --quiet
             # safe-deploy creates a PostgreSQL backup and rollback image
             # manifest before migration, builds every managed application

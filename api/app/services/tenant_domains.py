@@ -101,6 +101,20 @@ async def ensure_forgebase_subdomain(
     if not valid_hostname(normalized_target):
         raise ValueError("Invalid tenant CNAME target")
 
+    # A platform operator may choose a shorter public label than the durable
+    # tenant slug. Once assigned, that managed hostname remains authoritative
+    # and repeat provisioning must not recreate the slug-derived hostname.
+    tenant_managed = (
+        await db.exec(
+            select(TenantDomain).where(
+                TenantDomain.tenant_id == tenant_id,
+                TenantDomain.domain_type == "forgebase_subdomain",
+            )
+        )
+    ).first()
+    if tenant_managed:
+        return tenant_managed
+
     existing = await hostname_owner(db, hostname)
     if existing:
         if existing.tenant_id != tenant_id:

@@ -71,6 +71,8 @@ export function TenantDomainManager({ token, tenantId, onChanged }: Props) {
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState("");
   const [suspendTarget, setSuspendTarget] = useState<TenantDomain | null>(null);
+  const [managedLabel, setManagedLabel] = useState("");
+  const [renameManagedOpen, setRenameManagedOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +95,12 @@ export function TenantDomainManager({ token, tenantId, onChanged }: Props) {
     [domains],
   );
   const managed = domains.find((domain) => domain.domain_type === "forgebase_subdomain");
+
+  useEffect(() => {
+    if (managed && !renameManagedOpen) {
+      setManagedLabel(managed.hostname.split(".")[0] ?? "");
+    }
+  }, [managed, renameManagedOpen]);
 
   async function afterMutation(successMessage: string) {
     await load();
@@ -117,6 +125,27 @@ export function TenantDomainManager({ token, tenantId, onChanged }: Props) {
       await afterMutation("自有網域已加入。請依下方指示設定 DNS，原免費網域仍會正常運作。");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "加入自有網域失敗");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function renameManaged() {
+    if (!managed) return;
+    const label = managedLabel.trim().toLowerCase();
+    if (!label) return;
+    setBusy("rename-managed");
+    setError("");
+    setMessage("");
+    try {
+      const result = await platformAdminApi.renameManagedTenantDomain(token, tenantId, label);
+      setManagedLabel(result.hostname.split(".")[0] ?? label);
+      setRenameManagedOpen(false);
+      await afterMutation(
+        `免費網址已變更為 ${result.hostname}；租戶代碼與既有資料關聯不受影響。`,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "變更免費網址失敗");
     } finally {
       setBusy(null);
     }
@@ -249,6 +278,11 @@ export function TenantDomainManager({ token, tenantId, onChanged }: Props) {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {!custom && (
+                    <Button type="button" size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => setRenameManagedOpen(true)}>
+                      變更免費網址
+                    </Button>
+                  )}
                   {canVerify && (
                     <Button type="button" size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void verify(domain)}>
                       {busy === `verify:${domain.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -362,6 +396,38 @@ export function TenantDomainManager({ token, tenantId, onChanged }: Props) {
             <Button type="button" variant="destructive" onClick={() => void suspend()} disabled={Boolean(busy)}>
               {busy?.startsWith("suspend:") && <Loader2 className="h-4 w-4 animate-spin" />}
               確認停用並回復
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={renameManagedOpen} onOpenChange={(open) => { if (!busy) setRenameManagedOpen(open); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>變更免費 ForgeBase 網址</DialogTitle>
+            <DialogDescription>
+              這只會變更 ForgeBase 提供的子網域，不會修改租戶代碼。舊免費網址會立即停止服務；請在正式對外公布前完成變更。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="managed-domain-label">子網域代碼</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="managed-domain-label"
+                value={managedLabel}
+                onChange={(event) => setManagedLabel(event.target.value.toLowerCase())}
+                placeholder="axisform"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <span className="shrink-0 text-sm text-muted-foreground">.forgebase.com</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRenameManagedOpen(false)} disabled={Boolean(busy)}>取消</Button>
+            <Button type="button" onClick={() => void renameManaged()} disabled={!managedLabel.trim() || Boolean(busy)}>
+              {busy === "rename-managed" && <Loader2 className="h-4 w-4 animate-spin" />}
+              確認變更免費網址
             </Button>
           </DialogFooter>
         </DialogContent>

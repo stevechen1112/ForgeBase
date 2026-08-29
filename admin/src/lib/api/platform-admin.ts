@@ -994,6 +994,13 @@ export const platformAdminApi = {
       token,
     ),
 
+  renameManagedTenantDomain: (token: string, id: string, label: string) =>
+    apiClient.put<TenantDomain>(
+      `/admin/tenants/${id}/domains/managed`,
+      { label },
+      token,
+    ),
+
   verifyTenantDomain: (token: string, id: string, domainId: string) =>
     apiClient.post<TenantDomain>(
       `/admin/tenants/${id}/domains/${domainId}/verify`,

@@ -15,6 +15,8 @@
 
 > 正式網域為 `https://pcbrm.tw`；`deploy/Caddyfile` 由 Caddy 自動申請及更新憑證。公開 HTTP 會永久導向 HTTPS，僅保留主機內部的 HTTP 健康檢查入口。
 
+租戶網站共用 `web` frontend image，但以精確 Host 解析租戶。ForgeBase 免費網址使用 `<label>.forgebase.com`；租戶自有網域只有在平台後台完成真實 DNS 驗證並啟用後才會被 Caddy 授權 TLS 與路由。
+
 ---
 
 ## 0. 前置作業
@@ -60,6 +62,29 @@ nano .env
 | `REVALIDATE_SECRET` | `python3 -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `NEXT_PUBLIC_TENANT_SLUG` | **預設留空**，見下方說明 |
 | `NEXT_PUBLIC_SITE_NAME` | 依站台調整 |
+| `TENANT_BASE_DOMAIN` | `forgebase.com` |
+| `TENANT_CNAME_TARGET` | `edge.forgebase.com` |
+| `TENANT_ROUTING_SECRET` | 高熵內部路由密鑰；自動部署只會在缺少／占位值時產生，不會每次輪替 |
+
+自動部署會先執行以下冪等配置；手動部署也應先執行一次。腳本以 atomic replace 更新 `.env`，保留既有 routing secret，且不輸出密鑰值：
+
+```bash
+python3 deploy/configure-tenant-domain-env.py \
+  --env-file /opt/forgebase/.env \
+  --base-domain forgebase.com \
+  --cname-target edge.forgebase.com
+```
+
+### 3.1.1 免費子網域 DNS
+
+在 `forgebase.com` DNS zone 設定：
+
+| 類型 | 名稱 | 值 |
+|---|---|---|
+| `A` | `edge` | production edge IP（目前 `172.233.64.5`） |
+| `CNAME` | `*` | `edge.forgebase.com` |
+
+不要把 `forgebase.com` 根網域或既有官網 A 記錄改到 ForgeBase 租戶 edge。新增後以一個未建立過的隨機 label 驗證 wildcard 解析，再由 `/internal/tls/authorize` 確認未知 Host 仍拒絕 TLS。
 
 > **`NEXT_PUBLIC_TENANT_SLUG` 必須與內容的歸屬一致。** 有值時前台每次呼叫 API 都會帶 `X-Tenant-ID`，
 > API 只回該租戶的資料；seed 與匯入腳本建立的內容 `tenant_id` 是 NULL，此時必須留空，

@@ -53,6 +53,22 @@ async def test_custom_domain_never_bypasses_dns_and_falls_back_safely(
         assert created.json()["requested_custom_domain"] == custom_host
         assert created.json()["custom_domain_status"] == "pending"
 
+        renamed_label = f"axisform-{suffix}"
+        renamed = await http_client.put(
+            f"/api/v1/admin/tenants/{tenant_id}/domains/managed",
+            headers=_auth(token),
+            json={"label": renamed_label},
+        )
+        assert renamed.status_code == 200, renamed.text
+        managed_host = f"{renamed_label}.forgebase.com"
+        assert renamed.json()["hostname"] == managed_host
+        assert renamed.json()["is_canonical"] is True
+
+        renamed_detail = await http_client.get(
+            f"/api/v1/admin/tenants/{tenant_id}", headers=_auth(token)
+        )
+        assert renamed_detail.json()["primary_domain"] == managed_host
+
         domains = await http_client.get(
             f"/api/v1/admin/tenants/{tenant_id}/domains", headers=_auth(token)
         )
