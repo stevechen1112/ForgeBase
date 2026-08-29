@@ -6,7 +6,6 @@ import { Link } from "@/i18n/navigation";
 import { track, trackCTAClick, getAnalyticsVisitorId } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/siteConfig";
-import { withTenantHeaders } from "@/lib/tenant";
 
 type DynamicCTA = {
   cta: { id?: string; label?: string; action_type?: string; description?: string } | null;
@@ -24,7 +23,7 @@ type Props = {
   industrial?: boolean;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = "";
 
 export function ProductCTAButtons({ productId, productName, categorySlug, categoryName, industrial }: Props) {
   const encodedProductName = encodeURIComponent(productName);
@@ -41,9 +40,7 @@ export function ProductCTAButtons({ productId, productName, categorySlug, catego
     });
     const vid = getAnalyticsVisitorId();
     if (vid) params.set("visitor_id", vid);
-    fetch(`${API_BASE}/api/v1/content/dynamic-cta?${params}`, {
-      headers: withTenantHeaders(),
-    })
+    fetch(`${API_BASE}/api/v1/content/dynamic-cta?${params}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data: DynamicCTA | null) => {
         if (!data) return;

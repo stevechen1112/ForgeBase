@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { useMessageNamespace } from "@/lib/messages";
-import { withTenantHeaders } from "@/lib/tenant";
 
 type OptionItem = {
   value: string;
@@ -43,7 +42,7 @@ type ContactFormMessages = {
   };
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = "";
 
 const SELECT_CLS = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-foreground";
 
@@ -71,7 +70,7 @@ export function ContactForm() {
       const payload = { ...form, visitor_id: getVisitorId(), source_page: currentPath };
       const res = await fetch(`${API_BASE}/api/v1/forms/contact`, {
         method: "POST",
-        headers: withTenantHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();

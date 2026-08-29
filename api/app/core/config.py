@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # host routing takes precedence and rejects host/header disagreement.
     # Disable after the shared host-aware frontend is deployed.
     PUBLIC_TENANT_HEADER_COMPATIBILITY_ENABLED: bool = True
+    # Shared Next.js SSR requests reach the API over the private container
+    # network, so their public Host is carried in a separate authenticated
+    # header. Never expose this value through NEXT_PUBLIC_* variables.
+    TENANT_ROUTING_SECRET: str = ""
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""
@@ -257,8 +261,20 @@ def _validate_production_settings() -> None:
 
     if settings.CHAT_ENABLED and not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY must be set in production when CHAT_ENABLED is true.")
-    if settings.CHAT_ENABLED and not settings.PUBLIC_TENANT_SLUG:
-        raise RuntimeError("PUBLIC_TENANT_SLUG must be set in production when CHAT_ENABLED is true.")
+    if (
+        settings.CHAT_ENABLED
+        and not settings.PUBLIC_TENANT_SLUG
+        and settings.PUBLIC_TENANT_HEADER_COMPATIBILITY_ENABLED
+    ):
+        raise RuntimeError(
+            "PUBLIC_TENANT_SLUG must be set in production while public tenant header compatibility is enabled."
+        )
+
+    if not settings.PUBLIC_TENANT_HEADER_COMPATIBILITY_ENABLED and len(settings.TENANT_ROUTING_SECRET) < 32:
+        raise RuntimeError(
+            "TENANT_ROUTING_SECRET must contain at least 32 characters in production "
+            "when public tenant header compatibility is disabled."
+        )
 
 
 _validate_production_settings()

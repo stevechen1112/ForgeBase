@@ -11,7 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { FlexiblePageRenderer } from "@/components/pages/FlexiblePageRenderer";
-import { withTenantHeaders } from "@/lib/tenant";
+import { withRequestTenantHeaders } from "@/lib/serverTenant";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -42,8 +42,9 @@ interface PagePreview {
 
 async function fetchPreviewPage(token: string): Promise<PagePreview | null> {
   try {
+    const tenantRequest = await withRequestTenantHeaders();
     const res = await fetch(`${BASE}/api/v1/content/preview/${token}`, {
-      headers: withTenantHeaders(),
+      headers: tenantRequest.headers,
       cache: "no-store", // always fresh — never cache previews
     });
     if (!res.ok) return null;

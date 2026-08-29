@@ -19,8 +19,6 @@
  * IMPORTANT: This module is client-only. Never import in Server Components.
  */
 
-import { withTenantHeaders } from "@/lib/tenant";
-
 export type EventName =
   | "page_view"
   | "category_view"
@@ -57,9 +55,9 @@ export interface TrackPayload {
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const API_ENDPOINT =
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL) ||
-  "";
+// Public browser traffic must remain same-origin so the API receives the
+// exact tenant/custom Host selected by the visitor.
+const API_ENDPOINT = "";
 const TRACKING_DISABLED =
   typeof process !== "undefined" &&
   process.env?.NEXT_PUBLIC_TRACKING_DISABLED === "true";
@@ -174,7 +172,7 @@ async function syncAnalyticsConsent(visitorId: string, status: "granted" | "deni
   try {
     await fetch(`${API_ENDPOINT}/api/v1/privacy/analytics-consent`, {
       method: "POST",
-      headers: withTenantHeaders({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ visitor_id: visitorId, status, source: "web" }),
       keepalive: true,
     });
@@ -248,7 +246,7 @@ async function flushQueue(): Promise<void> {
     for (let i = 0; i < q.length; i += BATCH_SIZE) {
       await fetch(`${API_ENDPOINT}/api/v1/tracking/events/batch`, {
         method: "POST",
-        headers: withTenantHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(q.slice(i, i + BATCH_SIZE)),
       });
     }
@@ -296,7 +294,7 @@ export async function track(
   try {
     const res = await fetch(EVENTS_URL, {
       method: "POST",
-      headers: withTenantHeaders({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       keepalive: true,
     });

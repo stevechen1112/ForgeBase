@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 import { PREFIXED_LOCALES, routing } from "./i18n/routing";
-import { withTenantHost } from "./lib/tenant";
+import { tenantCacheTag, withServerTenantHost } from "./lib/serverTenant";
 
 const intlMiddleware = createMiddleware(routing);
 const PUBLIC_FILE_PATH = /\/[^/]+\.[^/]+$/;
@@ -33,8 +33,11 @@ async function resolveRedirect(request: NextRequest): Promise<NextResponse | nul
   try {
     const url = `${API_BASE}/api/v1/content/redirects/resolve?path=${encodeURIComponent(pathname)}`;
     const res = await fetch(url, {
-      headers: withTenantHost(undefined, request.headers.get("host")),
-      next: { revalidate: 60 },
+      headers: withServerTenantHost(undefined, request.headers.get("host")),
+      next: {
+        revalidate: 60,
+        tags: [tenantCacheTag(request.headers.get("host"))],
+      },
     });
     if (!res.ok) return null;
 

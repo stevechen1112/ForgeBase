@@ -1,3 +1,4 @@
+import hmac
 from typing import Optional
 from urllib.parse import urlparse
 from uuid import UUID
@@ -263,22 +264,51 @@ async def resolve_tenant_id(
         return normalized if valid_hostname(normalized) else None
 
     request_host = _extract_host(request.headers.get("host"))
+    internal_host = _extract_host(request.headers.get("x-forgebase-tenant-host"))
+    supplied_routing_secret = request.headers.get("x-forgebase-routing-secret", "")
+    trusted_internal_host: Optional[str] = None
+    if (
+        internal_host
+        and settings.TENANT_ROUTING_SECRET
+        and hmac.compare_digest(supplied_routing_secret, settings.TENANT_ROUTING_SECRET)
+    ):
+        trusted_internal_host = internal_host
+
+    # An internal SSR request normally arrives with Host=api:8000 (invalid as
+    # a public hostname) and carries the browser-facing host in the authenticated
+    # header. If both are assigned public hosts, disagreement is a hard error.
+    effective_host = trusted_internal_host or request_host
 
     # Check process-level TTL cache first
     import time as _time
     now = _time.monotonic()
     host_tenant_id: Optional[UUID] = None
     host_cache_hit = False
-    if request_host:
-        cached = _TENANT_HOST_CACHE.get(request_host)
+    if effective_host:
+        cached = _TENANT_HOST_CACHE.get(effective_host)
         if cached is not None:
             tenant_id, cached_at = cached
             if now - cached_at < _TENANT_HOST_CACHE_TTL:
                 host_tenant_id = tenant_id
                 host_cache_hit = True
 
-    if request_host and not host_cache_hit:
+    if effective_host and not host_cache_hit:
         host_tenant_id = (
+            await session.exec(
+                select(TenantDomain.tenant_id)
+                .join(Tenant, Tenant.id == TenantDomain.tenant_id)
+                .where(
+                    TenantDomain.hostname == effective_host,
+                    TenantDomain.status == "active",
+                    Tenant.is_active.is_(True),
+                )
+            )
+        ).first()
+
+        _cache_tenant_host(effective_host, host_tenant_id, now)
+
+    if trusted_internal_host and request_host and request_host != trusted_internal_host:
+        request_host_tenant_id = (
             await session.exec(
                 select(TenantDomain.tenant_id)
                 .join(Tenant, Tenant.id == TenantDomain.tenant_id)
@@ -289,8 +319,8 @@ async def resolve_tenant_id(
                 )
             )
         ).first()
-
-        _cache_tenant_host(request_host, host_tenant_id, now)
+        if request_host_tenant_id and request_host_tenant_id != host_tenant_id:
+            raise HTTPException(status_code=400, detail="Tenant routing host mismatch")
 
     header_tenant_id: Optional[UUID] = None
     if x_tenant_id:

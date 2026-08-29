@@ -1,6 +1,8 @@
 """Exact-host tenant routing and transitional header boundary tests."""
 
 import pytest
+from sqlmodel import select
+
 from app.api.v1.deps import (
     _TENANT_HOST_CACHE,
     _TENANT_HOST_CACHE_MAX,
@@ -10,7 +12,6 @@ from app.api.v1.deps import (
 from app.core.config import settings
 from app.models.site_profile import SiteProfile
 from app.models.tenant_domain import TenantDomain
-from sqlmodel import select
 
 from tests.conftest import _make_engine, requires_db
 
@@ -117,6 +118,41 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
         )
         assert disabled.status_code == 400
         assert disabled.json()["error"] == "X-Tenant-ID compatibility is disabled"
+
+        monkeypatch.setattr(settings, "TENANT_ROUTING_SECRET", "routing-secret-with-at-least-32-characters")
+        clear_tenant_host_cache()
+        untrusted_internal = await http_client.get(
+            "/api/v1/site-profile",
+            headers={
+                "Host": "api.internal",
+                "X-ForgeBase-Tenant-Host": host_a,
+                "X-ForgeBase-Routing-Secret": "wrong-secret",
+            },
+        )
+        assert untrusted_internal.status_code == 200
+        assert untrusted_internal.json()["brand_name"] != "Exact Host Alpha"
+
+        trusted_internal = await http_client.get(
+            "/api/v1/site-profile",
+            headers={
+                "Host": "api.internal",
+                "X-ForgeBase-Tenant-Host": host_a,
+                "X-ForgeBase-Routing-Secret": settings.TENANT_ROUTING_SECRET,
+            },
+        )
+        assert trusted_internal.status_code == 200, trusted_internal.text
+        assert trusted_internal.json()["brand_name"] == "Exact Host Alpha"
+
+        conflicting_internal = await http_client.get(
+            "/api/v1/site-profile",
+            headers={
+                "Host": host_a,
+                "X-ForgeBase-Tenant-Host": host_b,
+                "X-ForgeBase-Routing-Secret": settings.TENANT_ROUTING_SECRET,
+            },
+        )
+        assert conflicting_internal.status_code == 400
+        assert conflicting_internal.json()["error"] == "Tenant routing host mismatch"
 
         # Disabling a lifecycle row must not fall back to SiteProfile.site_url.
         async with factory() as session:

@@ -1,7 +1,6 @@
 import "server-only";
 
 import { cache } from "react";
-import { headers } from "next/headers";
 import {
   siteConfig,
   type SiteConfig,
@@ -15,7 +14,7 @@ import {
   normalizeLayoutVariant,
   normalizeThemeKey,
 } from "@/lib/siteConfig";
-import { withTenantHost } from "@/lib/tenant";
+import { tenantCacheTag, withRequestTenantHeaders } from "@/lib/serverTenant";
 import { rewriteLegacyPublicPath } from "@/lib/legacyPublicPaths";
 
 export type RuntimeSiteContext = {
@@ -249,11 +248,10 @@ export const getRuntimeSiteConfig = cache(async (): Promise<SiteConfig> => {
   const fallback: SiteConfig = { ...siteConfig };
 
   try {
-    const requestHeaders = await headers();
-    const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+    const tenantRequest = await withRequestTenantHeaders({ Accept: "application/json" });
     const response = await fetch(`${API_BASE}/api/v1/site-profile`, {
-      headers: withTenantHost({ Accept: "application/json" }, host),
-      next: { revalidate: 60 },
+      headers: tenantRequest.headers,
+      next: { revalidate: 60, tags: [tenantCacheTag(tenantRequest.host)] },
     });
 
     if (!response.ok) {

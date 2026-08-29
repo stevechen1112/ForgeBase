@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { useMessageNamespace } from "@/lib/messages";
-import { withTenantHeaders } from "@/lib/tenant";
 
 type OptionItem = {
   value: string;
@@ -58,7 +57,7 @@ type RFQFormMessages = {
 };
 
 const DRAFT_KEY = "fb_rfq_draft";
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = "";
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 type TurnstileApi = {
@@ -120,7 +119,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
 
   const fetchChallenge = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/v1/forms/rfq/challenge`, { headers: withTenantHeaders() });
+      const response = await fetch(`${API_BASE}/api/v1/forms/rfq/challenge`);
       if (!response.ok) throw new Error("challenge unavailable");
       const payload = await response.json();
       setBotChallenge(String(payload.challenge || ""));
@@ -183,9 +182,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
     }));
     if (!serverDraftId) return;
     const visitorId = getVisitorId();
-    fetch(`${API_BASE}/api/v1/chat/handoffs/${encodeURIComponent(serverDraftId)}?visitor_id=${encodeURIComponent(visitorId)}`, {
-      headers: withTenantHeaders(),
-    })
+    fetch(`${API_BASE}/api/v1/chat/handoffs/${encodeURIComponent(serverDraftId)}?visitor_id=${encodeURIComponent(visitorId)}`)
       .then(async (response) => {
         if (!response.ok) throw new Error(copy.submitFailed);
         return response.json();
@@ -236,7 +233,7 @@ export function RFQForm({ preselectedProductIds = [], preselectedApplicationId }
       };
       const res = await fetch(`${API_BASE}/api/v1/forms/rfq`, {
         method: "POST",
-        headers: withTenantHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));

@@ -14,7 +14,7 @@ import type {
   ComparisonTopic,
   Page,
 } from "@/types/content";
-import { withTenantHeaders } from "@/lib/tenant";
+import { tenantCacheTag, withRequestTenantHeaders } from "@/lib/serverTenant";
 import {
   mergePublishedListBySlug,
   parseListPage,
@@ -79,7 +79,7 @@ async function isApiAvailable(): Promise<boolean> {
   apiAvailableCheckedAt = now;
   try {
     const res = await fetch(`${BASE}/health`, {
-      headers: withTenantHeaders({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       next: { revalidate: 60 },
     });
     apiAvailableResult = res.ok;
@@ -105,14 +105,17 @@ async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Pr
   }
 
   try {
-    const headers = withTenantHeaders({
+    const tenantRequest = await withRequestTenantHeaders({
       "Content-Type": "application/json",
       ...(options?.headers ?? {}),
     });
     const res = await fetch(url, {
       ...options,
-      headers,
-      next: options?.next ?? { revalidate: 60 },  // ISR: revalidate every 60s
+      headers: tenantRequest.headers,
+      next: options?.next ?? {
+        revalidate: 60,
+        tags: [tenantCacheTag(tenantRequest.host)],
+      },
     });
     if (!res.ok) {
       throw new Error(`API ${path} → ${res.status} ${res.statusText}`);

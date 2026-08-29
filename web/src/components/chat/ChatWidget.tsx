@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/sheet";
 import { useMessageNamespace } from "@/lib/messages";
 import { getSessionId, getVisitorId } from "@/lib/analytics";
-import { withTenantHeaders } from "@/lib/tenant";
 
 type ChatWidgetMessages = {
   desktopButton: string;
@@ -65,14 +64,7 @@ interface HandoffResponse {
 const CHAT_DISABLED = process.env.NEXT_PUBLIC_CHAT_DISABLED === "true";
 
 function getApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL || "";
-  const trimmed = raw.replace(/\/$/, "");
-  if (trimmed.endsWith("/api/v1")) {
-    return trimmed.slice(0, -7);
-  }
-  if (trimmed) return trimmed;
-  if (typeof window === "undefined") return "";
-  return window.location.origin;
+  return typeof window === "undefined" ? "" : window.location.origin;
 }
 
 function getVisitorLanguage(): string {
@@ -114,7 +106,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     try {
       const response = await fetch(`${apiBase}/api/v1/chat/sessions`, {
         method: "POST",
-        headers: withTenantHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           visitor_id: getVisitorId(),
           session_id: getSessionId(),
@@ -168,7 +160,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     try {
       const response = await fetch(`${apiBase}/api/v1/chat/sessions/${sessionId}/messages`, {
         method: "POST",
-        headers: withTenantHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           visitor_id: getVisitorId(),
           content,
@@ -211,7 +203,7 @@ export function ChatWidget({ contextPage, contextEntityType, contextEntityId }: 
     try {
         const handoffResponse = await fetch(`${apiBase}/api/v1/chat/sessions/${chatSessionId}/handoff`, {
           method: "POST",
-          headers: withTenantHeaders({ "Content-Type": "application/json" }),
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             visitor_id: getVisitorId(),
             intent_reason: "chat_handoff_ready",
