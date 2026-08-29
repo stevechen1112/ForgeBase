@@ -1,9 +1,9 @@
 import uuid
 
 import pytest
+from app.services.domain_verification import DNSLookupError, DomainDNSObservation
 from sqlalchemy import text
 
-from app.services.domain_verification import DNSLookupError, DomainDNSObservation
 from tests.conftest import _make_engine, requires_db
 from tests.test_platform_tenant_operations import (
     _auth,
@@ -27,7 +27,7 @@ async def test_custom_domain_never_bypasses_dns_and_falls_back_safely(
         "slug": slug,
         "owner_email": f"owner-{suffix}@example.com",
         "owner_full_name": "Domain Owner",
-        "temporary_password": "domain-lifecycle-test-password",
+        "temporary_password": "domain-lifecycle-test-password",  # pragma: allowlist secret -- test fixture
         "template_key": "handtool-company",
         "brand_name": f"Domain {suffix}",
         "logo_mark": "DL",

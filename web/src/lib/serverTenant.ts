@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { getTenantIdentifier } from "@/lib/tenant";
 
 const INTERNAL_HOST_HEADER = "X-ForgeBase-Tenant-Host";
-const INTERNAL_SECRET_HEADER = "X-ForgeBase-Routing-Secret";
+const INTERNAL_SECRET_HEADER = "X-ForgeBase-Routing-Secret"; // pragma: allowlist secret -- protocol header name
 
 function normalizeHost(value?: string | null): string | null {
   const candidate = value?.split(",", 1)[0]?.trim();
@@ -22,7 +22,7 @@ function normalizeHost(value?: string | null): string | null {
 export function withServerTenantHost(headersInit?: HeadersInit, host?: string | null): Headers {
   const nextHeaders = new Headers(headersInit);
   const normalizedHost = normalizeHost(host);
-  const routingSecret = process.env.TENANT_ROUTING_SECRET?.trim();
+  const routingSecret = process.env.TENANT_ROUTING_SECRET?.trim(); // pragma: allowlist secret -- environment reference only
 
   if (normalizedHost && routingSecret) {
     nextHeaders.set(INTERNAL_HOST_HEADER, normalizedHost);

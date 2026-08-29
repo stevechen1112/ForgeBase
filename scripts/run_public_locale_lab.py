@@ -7,9 +7,11 @@ import json
 import os
 import socket
 import subprocess
+import threading
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
@@ -23,6 +25,11 @@ ARTIFACT_DIR = ROOT / "artifacts" / "public-locale-lab"
 LOCALES = ("en", "zh-TW", "ja", "fr", "ru")
 ROUTES = ("", "/products", "/rfq", "/privacy")
 PORT = 3105
+API_URL = os.environ.get("NEXT_PUBLIC_API_URL", "http://127.0.0.1:8000")
+API_PARTS = urlsplit(API_URL)
+if API_PARTS.hostname not in {"127.0.0.1", "localhost"} or not API_PARTS.port:
+    raise SystemExit("NEXT_PUBLIC_API_URL must use an explicit localhost port in the public locale lab")
+API_PORT = API_PARTS.port
 
 
 @dataclass
@@ -48,6 +55,37 @@ def wait_for_server(process: subprocess.Popen[bytes], timeout: int = 90) -> None
         except (urllib.error.URLError, TimeoutError):
             time.sleep(0.5)
     raise RuntimeError("Timed out waiting for the public website")
+
+
+def start_api_stub(challenge_requests: list[str]) -> tuple[ThreadingHTTPServer, threading.Thread]:
+    """Serve the same-origin Next.js proxy target used by the production build."""
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            if self.path == "/api/v1/forms/rfq/challenge":
+                challenge_requests.append(self.path)
+                body = b'{"challenge":"public-locale-lab"}'
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            body = b'{"detail":"public locale lab stub"}'
+            self.send_response(404)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", API_PORT), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, thread
 
 
 def record(checks: list[Check], name: str, operation) -> None:
@@ -97,33 +135,23 @@ def main() -> int:
     server_log = (ARTIFACT_DIR / "server.log").open("wb")
     env = os.environ.copy()
     env.update({"HOSTNAME": "127.0.0.1", "PORT": str(PORT), "NODE_ENV": "production"})
-    process = subprocess.Popen(
-        ["node", str(SERVER)], cwd=SERVER.parent, env=env, stdout=server_log, stderr=subprocess.STDOUT
-    )
     checks: list[Check] = []
     console_errors: list[str] = []
     page_errors: list[str] = []
     external_origins: set[str] = set()
+    challenge_requests: list[str] = []
+    api_server: ThreadingHTTPServer | None = None
+    api_thread: threading.Thread | None = None
+    process: subprocess.Popen[bytes] | None = None
     try:
+        api_server, api_thread = start_api_stub(challenge_requests)
+        process = subprocess.Popen(
+            ["node", str(SERVER)], cwd=SERVER.parent, env=env, stdout=server_log, stderr=subprocess.STDOUT
+        )
         wait_for_server(process)
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1280, "height": 900})
-            challenge_requests: list[str] = []
-
-            def fulfill_rfq_challenge(route) -> None:
-                challenge_requests.append(route.request.url)
-                route.fulfill(
-                    status=200,
-                    content_type="application/json",
-                    body='{"challenge":"public-locale-lab"}',
-                )
-
-            page.route(
-                "http://127.0.0.1:8000/api/v1/forms/rfq/challenge",
-                fulfill_rfq_challenge,
-            )
-
             def on_console(message: ConsoleMessage) -> None:
                 if message.type == "error":
                     console_errors.append(f"{page.url}: {message.text}")
@@ -205,11 +233,17 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001 - preserve machine-readable failure evidence
         checks.append(Check("lab-infrastructure", "failed", 0, str(exc)))
     finally:
-        process.terminate()
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
+        if process is not None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        if api_server is not None:
+            api_server.shutdown()
+            api_server.server_close()
+        if api_thread is not None:
+            api_thread.join(timeout=5)
         server_log.close()
 
     runtime_errors = [*console_errors, *page_errors]
