@@ -21,6 +21,7 @@ from app.services.site_provisioning import SITE_TEMPLATES
 from app.services.tenant_domains import (
     forgebase_hostname_for_slug,
     normalize_hostname,
+    validate_custom_hostname,
     valid_hostname,
 )
 
@@ -55,12 +56,26 @@ async def evaluate_provisioning_preflight(
         managed_hostname = forgebase_hostname_for_slug(slug, settings.TENANT_BASE_DOMAIN)
     except ValueError:
         managed_hostname = None
-    normalized_domain = normalize_domain(primary_domain) or managed_hostname
+    requested_custom_domain = normalize_domain(primary_domain)
+    if requested_custom_domain == managed_hostname:
+        requested_custom_domain = None
+    custom_domain_valid = True
+    if requested_custom_domain:
+        try:
+            validate_custom_hostname(
+                requested_custom_domain, settings.TENANT_BASE_DOMAIN
+            )
+        except ValueError:
+            custom_domain_valid = False
+    normalized_domain = managed_hostname
     normalized_site_url = (
-        site_url or (f"https://{normalized_domain}" if normalized_domain else "")
+        f"https://{managed_hostname}" if managed_hostname else ""
+    )
+    supplied_site_url = (
+        site_url or (f"https://{requested_custom_domain or managed_hostname}" if managed_hostname else "")
     ).rstrip("/")
     try:
-        parsed_site_url = urlparse(normalized_site_url)
+        parsed_site_url = urlparse(supplied_site_url)
         site_hostname = normalize_domain(parsed_site_url.hostname)
         site_port = parsed_site_url.port
     except ValueError:
@@ -76,12 +91,13 @@ async def evaluate_provisioning_preflight(
         await db.exec(select(User.id).where(func.lower(User.email) == owner_email.lower()))
     ).first()
     existing_domain = None
-    if normalized_domain:
+    availability_hostname = requested_custom_domain or normalized_domain
+    if availability_hostname:
         existing_domain = (
-            await db.exec(select(TenantDomain.id).where(TenantDomain.hostname == normalized_domain))
+            await db.exec(select(TenantDomain.id).where(TenantDomain.hostname == availability_hostname))
         ).first() or (
             await db.exec(
-                select(SiteBuild.id).where(SiteBuild.primary_domain == normalized_domain)
+                select(SiteBuild.id).where(SiteBuild.primary_domain == availability_hostname)
             )
         ).first()
     existing_managed_domain = None
@@ -114,10 +130,12 @@ async def evaluate_provisioning_preflight(
             and not parsed_site_url.fragment
         ),
         "site_url_uses_standard_port": site_port in {None, 443},
-        "primary_domain_valid": valid_hostname(normalized_domain),
+        "primary_domain_valid": bool(
+            valid_hostname(availability_hostname) and custom_domain_valid
+        ),
         "primary_domain_available": existing_domain is None,
         "domain_matches_site_url": bool(
-            normalized_domain and site_hostname == normalized_domain
+            availability_hostname and site_hostname == availability_hostname
         ),
         "locale_set_supported": bool(locales)
         and len(locales) == len(set(locales))
@@ -131,6 +149,7 @@ async def evaluate_provisioning_preflight(
         "blockers": blockers,
         "normalized": {
             "primary_domain": normalized_domain,
+            "requested_custom_domain": requested_custom_domain,
             "forgebase_hostname": managed_hostname,
             "site_url": normalized_site_url,
             "owner_email": owner_email.lower(),

@@ -7,6 +7,7 @@ from app.models.tenant_domain import (
 from app.services.tenant_domains import (
     forgebase_hostname_for_slug,
     normalize_hostname,
+    validate_custom_hostname,
     valid_hostname,
 )
 import pytest
@@ -24,6 +25,11 @@ def test_hostname_normalization_and_validation_are_canonical() -> None:
     assert forgebase_hostname_for_slug("axisform", "forgebase.com") == "axisform.forgebase.com"
     with pytest.raises(ValueError):
         forgebase_hostname_for_slug("admin", "forgebase.com")
+    assert validate_custom_hostname("WWW.Customer.Example", "forgebase.com") == (
+        "www.customer.example"
+    )
+    with pytest.raises(ValueError):
+        validate_custom_hostname("axisform.forgebase.com", "forgebase.com")
 
 
 def test_tenant_domain_contract_has_one_global_host_and_one_canonical_per_tenant() -> None:

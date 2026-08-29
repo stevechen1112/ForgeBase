@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     TENANT_ROUTING_SECRET: str = ""
     TENANT_BASE_DOMAIN: str = "forgebase.com"
     TENANT_CNAME_TARGET: str = "edge.forgebase.com"
+    DOMAIN_DNS_RESOLVER_URL: str = "https://cloudflare-dns.com/dns-query"
+    DOMAIN_DNS_TIMEOUT_SECONDS: float = 8.0
 
     # Cloudflare R2
     R2_ACCOUNT_ID: str = ""

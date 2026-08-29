@@ -163,7 +163,8 @@ async def test_platform_operator_can_manage_delivery_and_audit_actions(
             f"/api/v1/admin/tenants/{tenant_a.id}/site-build",
             json={
                 "template_key": "handtool-company",
-                "primary_domain": f"www.{tenant_a.slug}.example.test",
+                "primary_domain": f"{tenant_a.slug}.forgebase.com",
+                "internal_note": "same-template regression check",
             },
             headers=_auth(platform_token),
         )
@@ -338,6 +339,19 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
         assert malformed_preflight.json()["ready"] is False
         assert "https_site_url" in malformed_preflight.json()["blockers"]
 
+        platform_zone_preflight = await http_client.post(
+            "/api/v1/admin/tenant-provisioning/preflight",
+            json={
+                **payload,
+                "site_url": "https://unassigned.forgebase.com",
+                "primary_domain": "unassigned.forgebase.com",
+            },
+            headers=_auth(platform_token),
+        )
+        assert platform_zone_preflight.status_code == 200
+        assert platform_zone_preflight.json()["ready"] is False
+        assert "primary_domain_valid" in platform_zone_preflight.json()["blockers"]
+
         preflight = await http_client.post(
             "/api/v1/admin/tenant-provisioning/preflight",
             json=payload,
@@ -388,7 +402,11 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
             "confirm_cms_adapter",
             "validate_site",
             "publish_site",
+            "configure_custom_domain_dns",
         ]
+        assert created_body["site_url"] == f"https://{slug}.forgebase.com"
+        assert created_body["requested_custom_domain"] == f"{slug}.example.test"
+        assert created_body["custom_domain_status"] == "pending"
 
         replay = await http_client.post(
             "/api/v1/admin/tenants",
@@ -419,8 +437,8 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
             json={"primary_domain": replacement_domain},
             headers=_auth(platform_token),
         )
-        assert domain_update.status_code == 200, domain_update.text
-        assert domain_update.json()["primary_domain"] == replacement_domain
+        assert domain_update.status_code == 409, domain_update.text
+        assert "verified domain lifecycle" in domain_update.json()["error"]
 
         premature_live = await http_client.put(
             f"/api/v1/admin/tenants/{tenant_id}/site-build",
@@ -506,7 +524,7 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     "owners": 1,
                     "profiles": 1,
                     "builds": 1,
-                    "domains": 3,
+                    "domains": 2,
                     "canonical_domains": 1,
                     "runs": 1,
                 }

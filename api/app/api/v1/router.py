@@ -39,6 +39,8 @@ from app.api.v1.endpoints import (
     rfqs,
     segments,
     site_profile,
+    site_domain_routing,
+    tenant_domains_admin,
     visitors,
     webhooks,
 )
@@ -159,6 +161,8 @@ api_router.include_router(chat_admin.router)
 
 # Site Profile — /api/v1/site-profile
 api_router.include_router(site_profile.router)
+api_router.include_router(site_domain_routing.router)
+api_router.include_router(tenant_domains_admin.router)
 api_router.include_router(privacy.router)
 api_router.include_router(webhooks.router)
 

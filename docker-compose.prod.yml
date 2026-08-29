@@ -18,6 +18,8 @@ x-api-env: &api-env
   TENANT_ROUTING_SECRET: ${TENANT_ROUTING_SECRET:?missing TENANT_ROUTING_SECRET in .env}
   TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-forgebase.com}
   TENANT_CNAME_TARGET: ${TENANT_CNAME_TARGET:-edge.forgebase.com}
+  DOMAIN_DNS_RESOLVER_URL: ${DOMAIN_DNS_RESOLVER_URL:-https://cloudflare-dns.com/dns-query}
+  DOMAIN_DNS_TIMEOUT_SECONDS: ${DOMAIN_DNS_TIMEOUT_SECONDS:-8}
   # AgentOS is optional. Empty must override the application development
   # default; otherwise production calls its own API at localhost:8000/tasks.
   AGENTOSS_URL: ${AGENTOSS_URL:-}

@@ -253,32 +253,11 @@ async def resolve_tenant_id(
                 return tenant.id
             return None
 
-    def _extract_host(value: Optional[str]) -> Optional[str]:
-        if not value:
-            return None
-        try:
-            parsed = urlparse(value if "://" in value else f"https://{value}")
-        except ValueError:
-            return None
-        normalized = normalize_hostname(parsed.hostname)
-        return normalized if valid_hostname(normalized) else None
-
-    request_host = _extract_host(request.headers.get("host"))
-    internal_host = _extract_host(request.headers.get("x-forgebase-tenant-host"))
-    supplied_routing_secret = request.headers.get("x-forgebase-routing-secret", "")
-    trusted_internal_host: Optional[str] = None
-    if (
-        internal_host
-        and settings.TENANT_ROUTING_SECRET
-        and hmac.compare_digest(supplied_routing_secret, settings.TENANT_ROUTING_SECRET)
-    ):
-        trusted_internal_host = internal_host
+    request_host, trusted_internal_host, effective_host = request_routing_hosts(request)
 
     # An internal SSR request normally arrives with Host=api:8000 (invalid as
     # a public hostname) and carries the browser-facing host in the authenticated
     # header. If both are assigned public hosts, disagreement is a hard error.
-    effective_host = trusted_internal_host or request_host
-
     # Check process-level TTL cache first
     import time as _time
     now = _time.monotonic()
@@ -333,6 +312,44 @@ async def resolve_tenant_id(
             raise HTTPException(status_code=400, detail="Tenant host/header mismatch")
 
     return host_tenant_id or header_tenant_id
+
+
+def _extract_routing_host(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    try:
+        parsed = urlparse(value if "://" in value else f"https://{value}")
+    except ValueError:
+        return None
+    normalized = normalize_hostname(parsed.hostname)
+    return normalized if valid_hostname(normalized) else None
+
+
+def request_routing_hosts(
+    request: Request,
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Return public, trusted internal, and effective request hostnames.
+
+    The authenticated internal header is intentionally resolved in one place
+    so tenant lookup and canonical-domain routing cannot disagree.
+    """
+    request_host = _extract_routing_host(request.headers.get("host"))
+    internal_host = _extract_routing_host(
+        request.headers.get("x-forgebase-tenant-host")
+    )
+    supplied_routing_secret = request.headers.get(
+        "x-forgebase-routing-secret", ""
+    )
+    trusted_internal_host: Optional[str] = None
+    if (
+        internal_host
+        and settings.TENANT_ROUTING_SECRET
+        and hmac.compare_digest(
+            supplied_routing_secret, settings.TENANT_ROUTING_SECRET
+        )
+    ):
+        trusted_internal_host = internal_host
+    return request_host, trusted_internal_host, trusted_internal_host or request_host
 
 
 # ── Process-level TTL cache for host→tenant_id ──────────────────────────────

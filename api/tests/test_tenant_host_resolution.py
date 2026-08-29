@@ -34,6 +34,7 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
 ) -> None:
     tenant_a, tenant_b = two_tenants
     host_a = f"alpha-{tenant_a.id.hex[:8]}.example.test"
+    alias_a = f"alias-{tenant_a.id.hex[:8]}.example.test"
     host_b = f"beta-{tenant_b.id.hex[:8]}.example.test"
     engine, factory = _make_engine()
     try:
@@ -67,6 +68,15 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
             )
             session.add(
                 TenantDomain(
+                    tenant_id=tenant_a.id,
+                    hostname=alias_a,
+                    status="active",
+                    is_canonical=False,
+                    redirect_to_canonical=True,
+                )
+            )
+            session.add(
+                TenantDomain(
                     tenant_id=tenant_b.id,
                     hostname=host_b,
                     status="active",
@@ -80,6 +90,21 @@ async def test_exact_active_host_wins_and_slug_guessing_is_forbidden(
         exact = await http_client.get("/api/v1/site-profile", headers={"Host": host_a.upper()})
         assert exact.status_code == 200, exact.text
         assert exact.json()["brand_name"] == "Exact Host Alpha"
+
+        canonical_route = await http_client.get(
+            "/api/v1/site-domain-routing", headers={"Host": alias_a}
+        )
+        assert canonical_route.status_code == 200, canonical_route.text
+        assert canonical_route.json() == {
+            "hostname": alias_a,
+            "canonical_hostname": host_a,
+            "redirect_required": True,
+        }
+        canonical_self = await http_client.get(
+            "/api/v1/site-domain-routing", headers={"Host": host_a}
+        )
+        assert canonical_self.status_code == 200
+        assert canonical_self.json()["redirect_required"] is False
 
         tls_allowed = await http_client.get(
             "/internal/tls/authorize", params={"domain": host_a.upper()}

@@ -82,7 +82,7 @@ from app.services.tenant_domains import (
     ensure_forgebase_subdomain,
     forgebase_hostname_for_slug,
     normalize_hostname,
-    set_legacy_canonical_domain,
+    register_custom_domain,
     valid_hostname,
 )
 
@@ -2056,13 +2056,16 @@ async def provision_tenant(
             dns_target=settings.TENANT_CNAME_TARGET,
             created_by_user_id=current_user.id,
         )
-        if normalized["primary_domain"] != managed_domain.hostname:
-            await set_legacy_canonical_domain(
+        requested_custom_domain = normalized.get("requested_custom_domain")
+        pending_custom_domain = None
+        if requested_custom_domain and requested_custom_domain != managed_domain.hostname:
+            pending_custom_domain = await register_custom_domain(
                 session,
                 tenant_id=tenant.id,
-                hostname=normalized["primary_domain"],
+                hostname=requested_custom_domain,
+                base_domain=settings.TENANT_BASE_DOMAIN,
+                dns_target=settings.TENANT_CNAME_TARGET,
                 created_by_user_id=current_user.id,
-                sync_profile_url=False,
             )
     except (DomainConflictError, ValueError) as exc:
         await session.rollback()
@@ -2077,10 +2080,21 @@ async def provision_tenant(
         "site_build_id": str(build.id),
         "forgebase_hostname": managed_domain.hostname,
         "site_url": normalized["site_url"],
+        "requested_custom_domain": (
+            pending_custom_domain.hostname if pending_custom_domain else None
+        ),
+        "custom_domain_status": (
+            pending_custom_domain.status if pending_custom_domain else None
+        ),
         "status": build.status,
         "delivery_stage": build.delivery_stage,
         "readiness": readiness,
-        "next_actions": ["confirm_cms_adapter", "validate_site", "publish_site"],
+        "next_actions": [
+            "confirm_cms_adapter",
+            "validate_site",
+            "publish_site",
+            *(["configure_custom_domain_dns"] if pending_custom_domain else []),
+        ],
     }
     run = TenantProvisioningRun(
         idempotency_key=idempotency_key,
@@ -2218,7 +2232,8 @@ async def create_site_build(
         managed_hostname = forgebase_hostname_for_slug(tenant.slug, settings.TENANT_BASE_DOMAIN)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail="Tenant slug cannot receive a managed hostname") from exc
-    normalized_domain = normalize_hostname(body.primary_domain) or managed_hostname
+    requested_custom_domain = normalize_hostname(body.primary_domain)
+    normalized_domain = managed_hostname
     if body.primary_domain and not valid_hostname(body.primary_domain):
         raise HTTPException(status_code=422, detail="Invalid primary domain")
     if normalized_domain:
@@ -2264,11 +2279,13 @@ async def create_site_build(
             dns_target=settings.TENANT_CNAME_TARGET,
             created_by_user_id=current_user.id,
         )
-        if normalized_domain != managed_domain.hostname:
-            await set_legacy_canonical_domain(
+        if requested_custom_domain and requested_custom_domain != managed_domain.hostname:
+            await register_custom_domain(
                 session,
                 tenant_id=tenant_id,
-                hostname=normalized_domain,
+                hostname=requested_custom_domain,
+                base_domain=settings.TENANT_BASE_DOMAIN,
+                dns_target=settings.TENANT_CNAME_TARGET,
                 created_by_user_id=current_user.id,
             )
     except (DomainConflictError, ValueError) as exc:
@@ -2341,6 +2358,11 @@ async def update_tenant_site_profile(
         raise HTTPException(status_code=404, detail="Site profile not found")
 
     updates = body.model_dump(exclude_unset=True)
+    if "site_url" in updates:
+        raise HTTPException(
+            status_code=409,
+            detail="site_url is managed by the verified canonical domain lifecycle",
+        )
     for field in _SITE_PROFILE_JSON_FIELDS:
         value = updates.get(field)
         if value:
@@ -2409,27 +2431,14 @@ async def update_site_build(
         normalized_domain = normalize_hostname(body.primary_domain)
         if body.primary_domain and not valid_hostname(body.primary_domain):
             raise HTTPException(status_code=422, detail="Invalid primary domain")
-        if normalized_domain:
-            duplicate = (
-                await session.exec(
-                    select(SiteBuild).where(
-                        SiteBuild.primary_domain == normalized_domain,
-                        SiteBuild.id != build.id,
-                    )
-                )
-            ).first()
-            if duplicate:
-                raise HTTPException(status_code=409, detail="Primary domain is already assigned")
-        try:
-            await set_legacy_canonical_domain(
-                session,
-                tenant_id=tenant_id,
-                hostname=normalized_domain,
-                created_by_user_id=current_user.id,
+        if normalized_domain != build.primary_domain:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "primary_domain is managed by the verified domain lifecycle; "
+                    "register and activate the customer domain first"
+                ),
             )
-        except DomainConflictError as exc:
-            raise HTTPException(status_code=409, detail="Primary domain is already assigned") from exc
-        technical_settings_changed = technical_settings_changed or before["primary_domain"] != build.primary_domain
     if body.locales is not None:
         if not body.locales or any(locale not in PUBLIC_SITE_LOCALES for locale in body.locales):
             raise HTTPException(status_code=422, detail="Unsupported locales")
