@@ -85,5 +85,9 @@ def test_probe_workflow_preserves_failure_report_across_api_restore() -> None:
     assert "probe_process_produced_no_report" in workflow
     assert "trap restore ERR" not in workflow
     assert "--output /tmp/inbound-reply-probe.json" not in workflow
-    assert "--mode close --probe-id close --output -" in workflow
+    assert "default: close" in workflow
+    assert 'test "$CURRENT_AUTHORIZATION_CONFIRMED" = true' in workflow
+    assert '--actor-email "$actor_email" --tenant-slug "$tenant_slug"' in workflow
+    assert "--mode close --probe-id close" in workflow
+    assert "--output -" in workflow
     assert "inputs.mode == 'prepare' || inputs.mode == 'close'" in workflow

@@ -178,6 +178,10 @@ E2E。
   type-check/lint/build 全部通過。Web build 的本機 API fallback 為預期行為，build exit 0。
 - Code review 已修正：既有 idempotency lookup 原可在解析目標租戶前命中相同 probe id；
   現已加入 `tenant_id` 條件，避免跨租戶重用既有 message。
+- 第一次 production run #79（run `33384020635`）在 release gate 內停止，未部署到
+  Linode：91 個 operational contract tests 中有一個仍比對舊的 close CLI 字串。已同步
+  更新契約測試並在本機重跑同一組合為 `91 passed, 1 skipped`；應用、North Star、容量、
+  隱私及其餘 release jobs 在 #79 均已通過。
 - 尚未完成正式部署：本節會在對應 GitHub Actions production run 成功後補入 run/commit
   證據。
 - 尚未執行任何 production probe、外部寄信、真人回覆、DNS 修改、租戶政策修改或全域
