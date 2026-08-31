@@ -6,7 +6,7 @@ on:
       mode:
         description: Prepare, inspect, or close one controlled internal Reply-To probe
         required: true
-        default: prepare
+        default: close
         type: choice
         options:
           - prepare
@@ -16,6 +16,11 @@ on:
         description: Prepare leaves this blank; status requires the prepare workflow run id
         required: false
         type: string
+      current_authorization_confirmed:
+        description: Confirm current authorization for the internal email send and human reply test
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: controlled-production-inbound-reply-probe
@@ -34,6 +39,9 @@ jobs:
       RECIPIENT: ${{ vars.EMAIL_INTERNAL_RECIPIENT_ALLOWLIST }}
       MODE: ${{ inputs.mode }}
       INPUT_PROBE_ID: ${{ inputs.probe_id }}
+      CONTROLLED_ACTOR_EMAIL: ${{ vars.CONTROLLED_INBOUND_ACTOR_EMAIL }}
+      ZERO_TENANT_SLUG: ${{ vars.FORGEBASE_ZERO_TENANT_SLUG }}
+      CURRENT_AUTHORIZATION_CONFIRMED: ${{ inputs.current_authorization_confirmed }}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +51,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$MODE" = prepare -o "$MODE" = status -o "$MODE" = close
+          test -n "$ZERO_TENANT_SLUG"
+          case "$ZERO_TENANT_SLUG" in *[!a-z0-9-]*) exit 1 ;; esac
           if [ "$MODE" = prepare ]; then
+            test "$CURRENT_AUTHORIZATION_CONFIRMED" = true
+            test -n "$CONTROLLED_ACTOR_EMAIL"
             test -z "$INPUT_PROBE_ID"
             test -n "$RECIPIENT"
             test "$RECIPIENT" = "${{ vars.EMAIL_FROM }}"
@@ -52,6 +64,7 @@ jobs:
             test -n "$INPUT_PROBE_ID"
             case "$INPUT_PROBE_ID" in *[!A-Za-z0-9._:-]*) exit 1 ;; esac
           else
+            test -n "$CONTROLLED_ACTOR_EMAIL"
             test -z "$INPUT_PROBE_ID"
           fi
 
@@ -73,11 +86,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/inbound-reply-probe
-          printf '%s\n%s\n' "$RECIPIENT" "$GITHUB_RUN_ID" | \
+          printf '%s\n%s\n%s\n%s\n' \
+            "$RECIPIENT" "$GITHUB_RUN_ID" "$CONTROLLED_ACTOR_EMAIL" "$ZERO_TENANT_SLUG" | \
             ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
               set -euo pipefail
               IFS= read -r recipient
               IFS= read -r probe_id
+              IFS= read -r actor_email
+              IFS= read -r tenant_slug
               cd /opt/forgebase
               backup=$(mktemp /tmp/forgebase-api-env.XXXXXX)
               report=$(mktemp /tmp/forgebase-inbound-report.XXXXXX)
@@ -118,6 +134,7 @@ jobs:
                 -e PYTHONPATH=/app api \
                 python scripts/run_controlled_inbound_reply_probe.py \
                   --mode prepare --probe-id "$probe_id" --recipient "$recipient" \
+                  --actor-email "$actor_email" --tenant-slug "$tenant_slug" \
                   --output - >"$report"
               probe_status=$?
               set -e
@@ -138,15 +155,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/inbound-reply-probe
-          printf '%s\n' "$INPUT_PROBE_ID" | \
+          printf '%s\n%s\n' "$INPUT_PROBE_ID" "$ZERO_TENANT_SLUG" | \
             ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
               set -euo pipefail
               IFS= read -r probe_id
+              IFS= read -r tenant_slug
               cd /opt/forgebase
               docker compose -f docker-compose.prod.yml exec -T \
                 -e PYTHONPATH=/app api \
                 python scripts/run_controlled_inbound_reply_probe.py \
                   --mode status --probe-id "$probe_id" \
+                  --tenant-slug "$tenant_slug" \
                   --output -
             ' > artifacts/inbound-reply-probe/report.json
 
@@ -156,8 +175,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/inbound-reply-probe
+          printf '%s\n%s\n' "$CONTROLLED_ACTOR_EMAIL" "$ZERO_TENANT_SLUG" | \
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
             set -euo pipefail
+            IFS= read -r actor_email
+            IFS= read -r tenant_slug
             cd /opt/forgebase
             python3 deploy/set-controlled-inbound-window.py \
               --env-file deploy/api.env --state closed >/dev/null
@@ -174,7 +196,9 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T \
               -e PYTHONPATH=/app api \
               python scripts/run_controlled_inbound_reply_probe.py \
-                --mode close --probe-id close --output -
+                --mode close --probe-id close \
+                --actor-email "$actor_email" --tenant-slug "$tenant_slug" \
+                --output -
           ' > artifacts/inbound-reply-probe/report.json
 
       - name: Verify redacted probe evidence

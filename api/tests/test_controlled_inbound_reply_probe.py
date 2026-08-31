@@ -138,12 +138,7 @@ class _SingleResult:
 class _TenantLookup:
     def __init__(self, row) -> None:
         self.row = row
-        self.get_calls = []
         self.exec_calls = 0
-
-    async def get(self, model, row_id):
-        self.get_calls.append((model, row_id))
-        return self.row
 
     async def exec(self, _query):
         self.exec_calls += 1
@@ -151,39 +146,63 @@ class _TenantLookup:
 
 
 @pytest.mark.asyncio
-async def test_controlled_tenant_prefers_actor_membership(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "public-tenant")
-    tenant = SimpleNamespace(is_active=True)
+async def test_tenant_operator_can_only_target_explicit_membership() -> None:
+    tenant = SimpleNamespace(id="actor-tenant-id", is_active=True)
     db = _TenantLookup(tenant)
-    actor = SimpleNamespace(tenant_id="actor-tenant-id")
+    actor = SimpleNamespace(tenant_id="actor-tenant-id", is_superuser=False)
 
-    assert await probe._resolve_controlled_tenant(db, actor) is tenant
-    assert db.get_calls == [(probe.Tenant, "actor-tenant-id")]
-    assert db.exec_calls == 0
-
-
-@pytest.mark.asyncio
-async def test_system_admin_uses_configured_public_tenant(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "public-tenant")
-    tenant = SimpleNamespace(is_active=True)
-    db = _TenantLookup(tenant)
-    actor = SimpleNamespace(tenant_id=None)
-
-    assert await probe._resolve_controlled_tenant(db, actor) is tenant
+    assert await probe._resolve_controlled_tenant(db, actor, "zero-tenant") is tenant
     assert db.exec_calls == 1
 
 
 @pytest.mark.asyncio
-async def test_system_admin_without_public_tenant_fails_closed(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "PUBLIC_TENANT_SLUG", "")
-    db = _TenantLookup(None)
-    actor = SimpleNamespace(tenant_id=None)
+async def test_tenant_operator_target_mismatch_fails_closed() -> None:
+    tenant = SimpleNamespace(id="other-tenant-id", is_active=True)
+    db = _TenantLookup(tenant)
+    actor = SimpleNamespace(tenant_id="actor-tenant-id", is_superuser=False)
 
     with pytest.raises(
         probe.ControlledInboundProbeError,
-        match="controlled_public_tenant_not_configured",
+        match="controlled_actor_tenant_mismatch",
     ):
-        await probe._resolve_controlled_tenant(db, actor)
+        await probe._resolve_controlled_tenant(db, actor, "zero-tenant")
+
+
+@pytest.mark.asyncio
+async def test_platform_superuser_can_target_explicit_controlled_tenant() -> None:
+    tenant = SimpleNamespace(id="zero-tenant-id", is_active=True)
+    db = _TenantLookup(tenant)
+    actor = SimpleNamespace(tenant_id=None, is_superuser=True)
+
+    assert await probe._resolve_controlled_tenant(db, actor, "zero-tenant") is tenant
+
+
+@pytest.mark.asyncio
+async def test_tenantless_non_superuser_cannot_target_controlled_tenant() -> None:
+    tenant = SimpleNamespace(id="zero-tenant-id", is_active=True)
+    db = _TenantLookup(tenant)
+    actor = SimpleNamespace(tenant_id=None, is_superuser=False)
+
+    with pytest.raises(
+        probe.ControlledInboundProbeError,
+        match="platform_actor_must_be_superuser",
+    ):
+        await probe._resolve_controlled_tenant(db, actor, "zero-tenant")
+
+
+@pytest.mark.parametrize(
+    ("actor_email", "tenant_slug", "reason"),
+    [
+        ("", "zero-tenant", "controlled_actor_email_required"),
+        ("operator@example.test", "", "controlled_tenant_slug_required"),
+        ("operator@example.test", "INVALID_SLUG!", "controlled_tenant_slug_required"),
+    ],
+)
+def test_controlled_identity_must_be_explicit(
+    actor_email: str, tenant_slug: str, reason: str
+) -> None:
+    with pytest.raises(probe.ControlledInboundProbeError, match=reason):
+        probe._validate_controlled_identity(actor_email, tenant_slug)
 
 
 def _session_context(factory):
@@ -205,7 +224,6 @@ async def test_prepare_rows_persist_complete_controlled_journey(
     actor_email = f"controlled-{uuid.uuid4().hex[:10]}@test.invalid"
     recipient = f"reviewer-{uuid.uuid4().hex[:10]}@premierbiz.com.tw"
     probe_id = f"integration-{uuid.uuid4().hex[:16]}"
-    monkeypatch.setattr(probe, "ACTOR_EMAIL", actor_email)
     monkeypatch.setattr(probe, "get_session_ctx", _session_context(factory))
     monkeypatch.setattr(
         settings,
@@ -226,13 +244,15 @@ async def test_prepare_rows_persist_complete_controlled_journey(
             )
             await db.commit()
 
-        message = await probe._prepare_rows(recipient, probe_id)
+        message = await probe._prepare_rows(
+            recipient, probe_id, actor_email, tenant.slug
+        )
 
         assert message.tenant_id == tenant.id
         assert message.send_idempotency_key == f"forgebase-inbound-probe:{probe_id}"
         assert message.status == "queued"
 
-        close_report = await probe.close()
+        close_report = await probe.close(actor_email, tenant.slug)
         assert close_report["assessment"] == {
             "status": "passed",
             "controlled_window_closed": True,
@@ -261,7 +281,9 @@ async def test_prepare_rows_persist_complete_controlled_journey(
 async def test_prepare_reports_only_safe_stage_and_exception_type(monkeypatch) -> None:
     _ready(monkeypatch)
 
-    async def fail_rows(_recipient: str, _probe_id: str):
+    async def fail_rows(
+        _recipient: str, _probe_id: str, _actor_email: str, _tenant_slug: str
+    ):
         raise ValueError("must not appear in evidence: private@example.test")
 
     monkeypatch.setattr(probe, "_prepare_rows", fail_rows)
@@ -269,7 +291,12 @@ async def test_prepare_reports_only_safe_stage_and_exception_type(monkeypatch) -
         probe.ControlledInboundProbeError,
         match="prepare_rows_unexpected_ValueError",
     ) as exc_info:
-        await probe.prepare("reviewer@premierbiz.com.tw", "safe-probe")
+        await probe.prepare(
+            "reviewer@premierbiz.com.tw",
+            "safe-probe",
+            "operator@example.test",
+            "zero-tenant",
+        )
     assert "private@example.test" not in str(exc_info.value)
 
 
@@ -279,7 +306,9 @@ async def test_delivery_failure_closes_controlled_tenant_state(monkeypatch) -> N
     message = SimpleNamespace(id="message-id", tenant_id="tenant-id")
     closed = []
 
-    async def prepared(_recipient: str, _probe_id: str):
+    async def prepared(
+        _recipient: str, _probe_id: str, _actor_email: str, _tenant_slug: str
+    ):
         return message
 
     async def delivery_failed(_message_id):
@@ -300,6 +329,11 @@ async def test_delivery_failure_closes_controlled_tenant_state(monkeypatch) -> N
         probe.ControlledInboundProbeError,
         match="delivery_unexpected_ValueError",
     ) as exc_info:
-        await probe.prepare("reviewer@premierbiz.com.tw", "safe-probe")
+        await probe.prepare(
+            "reviewer@premierbiz.com.tw",
+            "safe-probe",
+            "operator@example.test",
+            "zero-tenant",
+        )
     assert closed == ["tenant-id"]
     assert "private provider detail" not in str(exc_info.value)

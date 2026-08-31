@@ -49,7 +49,7 @@ from scripts.run_controlled_email_probe import (
 
 SCHEMA_VERSION = 1
 PROBE_ID = re.compile(r"^[A-Za-z0-9._:-]{1,120}$")
-ACTOR_EMAIL = "admin@forgebase.com"
+TENANT_SLUG = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 ROOT_DOMAIN = "premierbiz.com.tw"
 INBOUND_DOMAIN = "replies.premierbiz.com.tw"
 
@@ -119,49 +119,69 @@ def _actor_is_authorized(actor: User | None) -> bool:
     )
 
 
-async def _resolve_controlled_tenant(db, actor: User) -> Tenant:
-    if actor.tenant_id:
-        tenant = await db.get(Tenant, actor.tenant_id)
-    else:
-        public_slug = settings.PUBLIC_TENANT_SLUG.strip()
-        if not public_slug:
-            raise ControlledInboundProbeError("controlled_public_tenant_not_configured")
-        tenant = (
-            await db.exec(select(Tenant).where(Tenant.slug == public_slug))
-        ).one_or_none()
+def _validate_controlled_identity(
+    actor_email: str, tenant_slug: str
+) -> tuple[str, str]:
+    normalized_actor = normalize_email(actor_email)
+    normalized_slug = tenant_slug.strip().lower()
+    if not normalized_actor or "@" not in normalized_actor:
+        raise ControlledInboundProbeError("controlled_actor_email_required")
+    if not TENANT_SLUG.fullmatch(normalized_slug):
+        raise ControlledInboundProbeError("controlled_tenant_slug_required")
+    return normalized_actor, normalized_slug
+
+
+async def _resolve_controlled_tenant(db, actor: User, tenant_slug: str) -> Tenant:
+    normalized_slug = tenant_slug.strip().lower()
+    if not TENANT_SLUG.fullmatch(normalized_slug):
+        raise ControlledInboundProbeError("controlled_tenant_slug_required")
+    tenant = (
+        await db.exec(select(Tenant).where(Tenant.slug == normalized_slug))
+    ).one_or_none()
     if not tenant or not tenant.is_active:
         raise ControlledInboundProbeError("controlled_tenant_missing_or_inactive")
+    if actor.tenant_id is not None and actor.tenant_id != tenant.id:
+        raise ControlledInboundProbeError("controlled_actor_tenant_mismatch")
+    if actor.tenant_id is None and not actor.is_superuser:
+        raise ControlledInboundProbeError("platform_actor_must_be_superuser")
     return tenant
 
 
-async def _resolve_controlled_context(db) -> tuple[User, Tenant]:
+async def _resolve_controlled_context(
+    db, actor_email: str, tenant_slug: str
+) -> tuple[User, Tenant]:
+    normalized_actor, normalized_slug = _validate_controlled_identity(
+        actor_email, tenant_slug
+    )
     actor = (
         await db.exec(
             select(User).where(
-                User.email == ACTOR_EMAIL,
+                User.email == normalized_actor,
                 User.is_active.is_(True),
             )
         )
     ).one_or_none()
     if not _actor_is_authorized(actor):
         raise ControlledInboundProbeError("controlled_actor_missing_or_unauthorized")
-    return actor, await _resolve_controlled_tenant(db, actor)
+    return actor, await _resolve_controlled_tenant(db, actor, normalized_slug)
 
 
-async def _prepare_rows(recipient: str, probe_id: str) -> OutreachMessage:
+async def _prepare_rows(
+    recipient: str, probe_id: str, actor_email: str, tenant_slug: str
+) -> OutreachMessage:
     send_key = f"forgebase-inbound-probe:{probe_id}"
     async with get_session_ctx() as db:
+        actor, tenant = await _resolve_controlled_context(db, actor_email, tenant_slug)
         existing = (
             await db.exec(
                 select(OutreachMessage).where(
-                    OutreachMessage.send_idempotency_key == send_key
+                    OutreachMessage.tenant_id == tenant.id,
+                    OutreachMessage.send_idempotency_key == send_key,
                 )
             )
         ).first()
         if existing:
             return existing
-
-        actor, tenant = await _resolve_controlled_context(db)
 
         draft_policy = await db.get(OutreachDraftPolicy, tenant.id)
         delivery_policy = await db.get(OutreachDeliveryPolicy, tenant.id)
@@ -405,9 +425,9 @@ async def _close_controlled_tenant(tenant_id) -> None:
         await db.commit()
 
 
-async def close() -> dict:
+async def close(actor_email: str, tenant_slug: str) -> dict:
     async with get_session_ctx() as db:
-        _actor, tenant = await _resolve_controlled_context(db)
+        _actor, tenant = await _resolve_controlled_context(db, actor_email, tenant_slug)
         tenant_id = tenant.id
     await _close_controlled_tenant(tenant_id)
     return {
@@ -429,10 +449,13 @@ async def close() -> dict:
     }
 
 
-async def prepare(recipient: str, probe_id: str) -> dict:
+async def prepare(
+    recipient: str, probe_id: str, actor_email: str, tenant_slug: str
+) -> dict:
     normalized = _validate_prepare(recipient, probe_id)
+    _validate_controlled_identity(actor_email, tenant_slug)
     try:
-        message = await _prepare_rows(normalized, probe_id)
+        message = await _prepare_rows(normalized, probe_id, actor_email, tenant_slug)
     except ControlledInboundProbeError:
         raise
     except Exception as exc:
@@ -460,8 +483,14 @@ async def prepare(recipient: str, probe_id: str) -> dict:
     try:
         async with get_session_ctx() as db:
             current = await db.get(OutreachMessage, message.id)
-            if not current or not current.provider_message_id or not current.sent_reply_to:
-                raise ControlledInboundProbeError("provider_send_or_reply_route_missing")
+            if (
+                not current
+                or not current.provider_message_id
+                or not current.sent_reply_to
+            ):
+                raise ControlledInboundProbeError(
+                    "provider_send_or_reply_route_missing"
+                )
             if not current.sent_reply_to.endswith(f"@{INBOUND_DOMAIN}"):
                 raise ControlledInboundProbeError("reply_route_domain_mismatch")
             provider_message_id = current.provider_message_id
@@ -532,15 +561,24 @@ async def prepare(recipient: str, probe_id: str) -> dict:
     }
 
 
-async def status(probe_id: str) -> dict:
+async def status(probe_id: str, tenant_slug: str) -> dict:
     if not PROBE_ID.fullmatch(probe_id):
         raise ControlledInboundProbeError("probe_id_invalid")
+    normalized_slug = tenant_slug.strip().lower()
+    if not TENANT_SLUG.fullmatch(normalized_slug):
+        raise ControlledInboundProbeError("controlled_tenant_slug_required")
     async with get_session_ctx() as db:
+        tenant = (
+            await db.exec(select(Tenant).where(Tenant.slug == normalized_slug))
+        ).one_or_none()
+        if not tenant or not tenant.is_active:
+            raise ControlledInboundProbeError("controlled_tenant_missing_or_inactive")
         message = (
             await db.exec(
                 select(OutreachMessage).where(
+                    OutreachMessage.tenant_id == tenant.id,
                     OutreachMessage.send_idempotency_key
-                    == f"forgebase-inbound-probe:{probe_id}"
+                    == f"forgebase-inbound-probe:{probe_id}",
                 )
             )
         ).one_or_none()
@@ -615,11 +653,11 @@ def _write_report(report: dict, output: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--mode", required=True, choices=("prepare", "status", "close")
-    )
+    parser.add_argument("--mode", required=True, choices=("prepare", "status", "close"))
     parser.add_argument("--probe-id", required=True)
     parser.add_argument("--recipient", default="")
+    parser.add_argument("--actor-email", default="")
+    parser.add_argument("--tenant-slug", default="")
     parser.add_argument(
         "--output",
         required=True,
@@ -628,11 +666,16 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.mode == "prepare":
-            operation = prepare(args.recipient, args.probe_id)
+            operation = prepare(
+                args.recipient,
+                args.probe_id,
+                args.actor_email,
+                args.tenant_slug,
+            )
         elif args.mode == "status":
-            operation = status(args.probe_id)
+            operation = status(args.probe_id, args.tenant_slug)
         else:
-            operation = close()
+            operation = close(args.actor_email, args.tenant_slug)
         report = asyncio.run(operation)
     except ControlledInboundProbeError as exc:
         report = _failure_report(args.mode, str(exc))
