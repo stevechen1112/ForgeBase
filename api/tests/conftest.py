@@ -213,7 +213,6 @@ async def two_tenants():
                 "knowledge_sync_jobs",
                 "knowledge_sources",
                 "content_assets",
-                "integration_credentials",
                 "chat_sessions",
                 "tracking_sessions",
                 "visitors",

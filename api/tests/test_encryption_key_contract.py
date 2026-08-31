@@ -52,7 +52,6 @@ def _production_ready(monkeypatch, encryption_key: str) -> None:
     monkeypatch.setattr(settings, "ADMIN_URL", "https://admin.example.test")
     monkeypatch.setattr(settings, "ALLOWED_ORIGINS", "https://admin.example.test")
     monkeypatch.setattr(settings, "ENCRYPTION_MASTER_KEY", encryption_key)
-    monkeypatch.setattr(settings, "TELEGRAM_BOT_TOKEN", "")
     monkeypatch.setattr(settings, "CHAT_ENABLED", False)
 
 
