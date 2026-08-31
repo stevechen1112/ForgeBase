@@ -18,12 +18,11 @@ logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 OBSERVING_DISABLED = {
     "agentos_runtime": 30,
-    "ml_scoring_runtime": 30,
     "relation_recommender": 60,
     "notification_telegram": 60,
     "notification_line": 60,
 }
-REMOVED = {"copilot_floating_widget", "legacy_ip_resolver"}
+REMOVED = {"legacy_ip_resolver"}
 PROTECTED_NORTH_STAR = {
     "full_tracking",
     "intent_scoring",

@@ -22,7 +22,6 @@ REQUIRED_COLUMNS: dict[str, set[str]] = {
         "tenant_id",
         "intent_score",
         "intent_stage",
-        "ml_intent_score",
         "analytics_consent_status",
     },
     "tracking_sessions": {"session_id", "tenant_id", "visitor_id", "start_time"},
