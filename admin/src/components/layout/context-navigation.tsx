@@ -40,7 +40,6 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/redirects", label: "SEO 網址轉址", parentHref: "/dashboard/content", parentLabel: "內容中心" },
 
   { base: "/dashboard/outcomes", label: "商機漏斗與成果", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
-  { base: "/dashboard/intent", label: "高意圖買家", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/buyers", parentLabel: "買家管線", childLabels: { my: "我的詢價案件", templates: "回覆範本" } },
