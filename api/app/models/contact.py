@@ -32,11 +32,6 @@ class Contact(SQLModel, table=True):
     country: str | None = Field(default=None, max_length=50)
     job_title: str | None = Field(default=None, max_length=80)
 
-    intent_score_at_creation: int = Field(default=0)
-
-    # HubSpot CRM linkage (1b.5.2)
-    hubspot_contact_id: str | None = Field(default=None, max_length=50)
-
     # Submission source
     source_page: str | None = Field(default=None, max_length=500)
     how_did_you_find_us: str | None = Field(default=None, max_length=30)

@@ -19,8 +19,8 @@ export default function NewSequencePage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    trigger_type: "intent_stage",
-    trigger_value: "warm",
+    trigger_type: "manual",
+    trigger_value: "",
     is_active: false,
     allow_re_enrollment: false,
   });
@@ -69,15 +69,16 @@ export default function NewSequencePage() {
               <div className="space-y-1.5">
                 <Label>觸發類型</Label>
                 <select className={SELECT_CLS} value={form.trigger_type} onChange={(e) => setForm((f) => ({ ...f, trigger_type: e.target.value }))}>
-                  <option value="intent_stage">買家關注程度</option>
+                  <option value="manual">手動加入</option>
                   <option value="segment">買家分群</option>
-                  <option value="manual">手動</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <Label>觸發值</Label>
-                <Input value={form.trigger_value} onChange={(e) => setForm((f) => ({ ...f, trigger_value: e.target.value }))} placeholder="例如：warm / hot" />
-              </div>
+              {form.trigger_type === "segment" && (
+                <div className="space-y-1.5">
+                  <Label>買家分群 ID</Label>
+                  <Input value={form.trigger_value} onChange={(e) => setForm((f) => ({ ...f, trigger_value: e.target.value }))} placeholder="貼上要跟進的買家分群 ID" required />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-6">
               <label className="flex items-center gap-2 text-sm">

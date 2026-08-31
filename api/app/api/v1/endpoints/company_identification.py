@@ -41,7 +41,6 @@ class GrowthPolicyUpdate(BaseModel):
     # their own reviewed implementation gates.
     company_identification_mode: Literal["off", "shadow"] = "off"
     provider_name: str = Field(default="mock", min_length=1, max_length=50)
-    min_intent_score: int = Field(default=40, ge=0, le=1000)
     observation_retention_days: int = Field(default=30, ge=1, le=365)
     daily_lookup_quota: int = Field(default=100, ge=0, le=100_000)
     daily_provider_cost_limit: Decimal = Field(
@@ -128,7 +127,6 @@ def _policy_dict(policy: GrowthAutomationPolicy, *, persisted: bool = True) -> d
         "tenant_id": str(policy.tenant_id),
         "company_identification_mode": policy.company_identification_mode,
         "provider_name": policy.provider_name,
-        "min_intent_score": policy.min_intent_score,
         "observation_retention_days": policy.observation_retention_days,
         "daily_lookup_quota": policy.daily_lookup_quota,
         "daily_provider_cost_limit": float(policy.daily_provider_cost_limit),

@@ -1,4 +1,4 @@
-/** Shared zh-TW labels for content page types and buyer intent stages. */
+/** Shared zh-TW labels for content page types. */
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {
   product: "商品",
@@ -30,15 +30,4 @@ export const BRIEF_PAGE_TYPE_OPTIONS = [
 
 export function pageTypeLabel(type: string): string {
   return PAGE_TYPE_LABELS[type] ?? type;
-}
-
-export const INTENT_STAGE_LABELS: Record<string, string> = {
-  sales_ready: "可成交",
-  hot: "高度關注",
-  warm: "多次互動",
-  cold: "初次瀏覽",
-};
-
-export function intentStageLabel(stage: string): string {
-  return INTENT_STAGE_LABELS[stage] ?? stage;
 }

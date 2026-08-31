@@ -202,7 +202,7 @@ async def submit_rfq(
     """
     Submit RFQ form. Creates (or deduplicates) a Contact, then creates a
     new RFQRequest. Returns the generated RFQ number.
-    Auto-sets priority=high when visitor intent score ≥ 30 (spec 12.7.5).
+    Sets priority from explicit RFQ facts such as urgency, volume, and trade terms.
     """
     if body.website:
         raise HTTPException(status_code=422, detail="Form verification failed")
@@ -254,15 +254,12 @@ async def submit_rfq(
 
     visitor: Optional[Visitor] = None
 
-    # ── 1. Resolve intent score ────────────────────────────────────────────
-    intent_score = 0
+    # ── 1. Resolve optional first-party visitor linkage ────────────────────
     if visitor_id_parsed:
         visitor = await db.get(Visitor, visitor_id_parsed)
         if visitor and visitor.tenant_id != tenant_id:
             raise HTTPException(status_code=422, detail="visitor_id does not belong to this site")
-        if visitor:
-            intent_score = visitor.intent_score
-        elif draft:
+        if not visitor and draft:
             # A valid draft always references a real visitor through its FK.
             raise HTTPException(status_code=422, detail="RFQ handoff visitor no longer exists")
         else:
@@ -317,7 +314,6 @@ async def submit_rfq(
             phone=body.phone,
             country=body.country,
             job_title=body.job_title,
-            intent_score_at_creation=intent_score,
             how_did_you_find_us=body.how_did_you_find_us,
             source_page=body.source_page,
             tenant_id=tenant_id,
@@ -355,12 +351,14 @@ async def submit_rfq(
         raise HTTPException(status_code=500, detail="RFQ number allocation failed")
     rfq_number = f"{prefix}{str(next_sequence).zfill(3)}"
 
-    # ── 4. Determine priority ─────────────────────────────────────────
-    priority = "normal"
-    if intent_score >= 60:
+    # ── 4. Determine priority from explicit RFQ facts ─────────────────
+    timeline = (body.timeline or "").lower()
+    if any(term in timeline for term in ("urgent", "asap", "immediate", "緊急", "立即")):
         priority = "urgent"
-    elif intent_score >= 30:
+    elif any((body.incoterm, body.annual_volume, body.target_price, body.required_certs)):
         priority = "high"
+    else:
+        priority = "normal"
 
     # ── 4b. Lead Quality Score (T9, rule-based v1) ────────────────────
     from app.services.rfq_quality import score_rfq_quality
@@ -392,20 +390,8 @@ async def submit_rfq(
         "target_price": body.target_price,
     }, ensure_ascii=False)
 
-    intent_snapshot = None
     attribution_snapshot = None
     if visitor:
-        intent_snapshot = json.dumps({
-            "score": visitor.intent_score,
-            "stage": visitor.intent_stage,
-            "facets": {
-                "product_interest": visitor.facet_product_interest,
-                "trust_validation": visitor.facet_trust_validation,
-                "procurement_readiness": visitor.facet_procurement_readiness,
-                "urgency": visitor.facet_urgency,
-            },
-            "captured_at": now.isoformat(),
-        })
         latest_event = (
             await db.exec(
                 select(TrackingEvent)
@@ -433,8 +419,6 @@ async def submit_rfq(
         visitor_id=visitor_id_parsed,
         application_id=application_id_parsed,
         form_data=form_snapshot,
-        intent_score_at_submit=intent_score,
-        intent_snapshot_json=intent_snapshot,
         attribution_json=attribution_snapshot,
         source_chat_session_id=draft.chat_session_id if draft else None,
         source_draft_id=draft.id if draft else None,
@@ -472,7 +456,6 @@ async def submit_rfq(
         tenant_id=tenant_id,
         detail=json.dumps({
             "priority": priority,
-            "intent_score": intent_score,
             "quality_score": quality_score,
         }),
     )
@@ -486,13 +469,6 @@ async def submit_rfq(
     if not is_test_data:
         enqueue_operational_job(db, job_type="rfq_notify", payload=common_payload,
                                 idempotency_key=f"rfq:{rfq.id}:notify", tenant_id=tenant_id)
-        enqueue_operational_job(db, job_type="rfq_hubspot", payload=common_payload,
-                                idempotency_key=f"rfq:{rfq.id}:hubspot", tenant_id=tenant_id)
-        agentos_payload = {**common_payload, "tenant_id": str(tenant_id) if tenant_id else None}
-        enqueue_operational_job(db, job_type="rfq_agentos", payload=agentos_payload,
-                                idempotency_key=f"rfq:{rfq.id}:agentos", tenant_id=tenant_id)
-        enqueue_operational_job(db, job_type="rfq_webhook", payload=common_payload,
-                                idempotency_key=f"rfq:{rfq.id}:webhook", tenant_id=tenant_id)
     if tenant_id and not is_test_data:
         tenant_payload = {"rfq_id": str(rfq.id), "tenant_id": str(tenant_id)}
         enqueue_operational_job(db, job_type="rfq_auto_reply", payload=tenant_payload,
@@ -515,7 +491,7 @@ class StatusUpdate(BaseModel):
     reason: Optional[str] = PydanticField(default=None, max_length=500)
     deal_amount: Optional[Decimal] = PydanticField(default=None, gt=0, max_digits=14, decimal_places=2)
     deal_currency: str = PydanticField(default="USD", min_length=3, max_length=3)
-    # §6.3：won/lost 必須填成交／流失原因（供日後回寫 intent 權重）
+    # §6.3：won/lost 必須填成交／流失原因，供業務成效分析。
 
     @field_validator("status")
     @classmethod
@@ -1075,7 +1051,6 @@ async def get_rfq(
             "traffic_source": event.traffic_source,
             "campaign_id": event.campaign_id,
             "locale": event.locale,
-            "score_delta": event.score_delta,
         }
         for event in visitor_events
     ]
@@ -1088,13 +1063,6 @@ async def get_rfq(
         }
         for item in duplicates
     ]
-    data["crm_sync"] = {
-        "hubspot": {
-            "status": "linked" if r.hubspot_deal_id else "not_linked",
-            "external_id": r.hubspot_deal_id,
-        },
-        "salesforce": {"status": "not_configured", "external_id": None},
-    }
     return data
 
 
@@ -1117,7 +1085,7 @@ async def update_rfq_status(
         if not (body.reason and body.reason.strip()) and not existing_reason:
             raise HTTPException(
                 status_code=422,
-                detail=f"reason is required when closing as {body.status}（成交／流失原因為必填，供漏斗分析與 intent 權重回寫）",
+                detail=f"reason is required when closing as {body.status}（成交／流失原因為必填，供漏斗分析）",
             )
         if body.reason and body.reason.strip():
             if body.status == "won":
@@ -1466,7 +1434,6 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         "visitor_id": str(r.visitor_id) if r.visitor_id else None,
         "status": r.status,
         "priority": r.priority,
-        "intent_score_at_submit": r.intent_score_at_submit,
         "quality_score": r.quality_score,
         "sla_due_at": r.sla_due_at.isoformat() if r.sla_due_at else None,
         "sla_breached": r.sla_breached,
@@ -1484,7 +1451,6 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         base["application_id"] = str(r.application_id) if r.application_id else None
         base["source_page"] = r.source_page
         base["buyer_timezone"] = r.buyer_timezone
-        base["hubspot_deal_id"] = r.hubspot_deal_id
         base["form_data"] = json.loads(r.form_data) if r.form_data else None
         base["quality_reasons"] = (
             json.loads(r.quality_reasons_json) if r.quality_reasons_json else []

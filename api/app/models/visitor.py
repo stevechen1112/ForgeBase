@@ -10,8 +10,7 @@ from app.core.datetime import utcnow_naive
 class Visitor(SQLModel, table=True):
     """
     Anonymous visitor identified by first-party cookie visitor_id.
-    One record per unique visitor. Accumulates intent score over time.
-    Spec: 12.6 (intent scoring), 1b.2.1
+    One record per unique visitor. Stores first-party activity facts only.
     """
     __tablename__ = "visitors"
 
@@ -25,17 +24,6 @@ class Visitor(SQLModel, table=True):
 
     total_visits: int = Field(default=1)
     total_page_views: int = Field(default=0)
-
-    # Intent scoring (spec 12.6.3)
-    intent_score: int = Field(default=0, index=True)
-    intent_stage: str = Field(default="cold", max_length=20, index=True)    # "cold" | "warm" | "hot" | "sales_ready"
-
-    # Intent Score 2.0 — 採購 facets（實效計畫 §4.1）
-    facet_product_interest: int = Field(default=0, index=True)
-    facet_trust_validation: int = Field(default=0, index=True)
-    facet_procurement_readiness: int = Field(default=0, index=True)
-    facet_urgency: int = Field(default=0, index=True)
-    intent_explanation: Optional[str] = Field(default=None)     # 「為何 Hot」顧問可讀字串
 
     # Device & location (server-side enrichment)
     device_type: Optional[str] = Field(default=None, max_length=20)
@@ -55,10 +43,6 @@ class Visitor(SQLModel, table=True):
     # than retaining the raw anonymous browser identifier.
     analytics_consent_status: str = Field(default="unknown", max_length=20, index=True)
     consent_updated_at: Optional[datetime] = Field(default=None)
-
-    # Stage change alert flags
-    stage_alert_sent: bool = Field(default=False)
-    # Reset when stage changes, set after alert is sent
 
     is_test_data: bool = Field(default=False, index=True)
     test_run_id: Optional[str] = Field(default=None, max_length=100)

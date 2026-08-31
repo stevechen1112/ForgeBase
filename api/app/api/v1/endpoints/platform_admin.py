@@ -1637,7 +1637,7 @@ async def platform_resource_status(
             "allowed_hostnames_configured": bool(settings.TURNSTILE_ALLOWED_HOSTNAMES.strip()),
         },
         email={
-            "provider": settings.ESP_PROVIDER,
+            "provider": "resend",
             "provider_configured": bool(settings.RESEND_API_KEY.strip()),
             "webhook_configured": bool(settings.RESEND_WEBHOOK_SECRET.strip()),
             "dry_run": bool(settings.EMAIL_DRY_RUN),

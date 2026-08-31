@@ -27,7 +27,6 @@ class CTA(SQLModel, table=True):
     bg_color: Optional[str] = Field(default=None, max_length=20)    # hex eg "#1A56DB"
     image_url: Optional[str] = Field(default=None, max_length=500)
     locale: str = Field(default="en", max_length=5)
-    target_intent_stage: str = Field(default="any", max_length=20)  # cold / warm / hot / sales_ready / any
     status: str = Field(default="draft", max_length=20)
     sort_order: int = Field(default=0)
     created_at: datetime = Field(default_factory=utcnow_naive)

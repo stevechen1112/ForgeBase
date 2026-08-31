@@ -22,7 +22,6 @@ x-api-env: &api-env
   DOMAIN_DNS_TIMEOUT_SECONDS: ${DOMAIN_DNS_TIMEOUT_SECONDS:-8}
   # AgentOS is optional. Empty must override the application development
   # default; otherwise production calls its own API at localhost:8000/tasks.
-  AGENTOSS_URL: ${AGENTOSS_URL:-}
   TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
 
 services:

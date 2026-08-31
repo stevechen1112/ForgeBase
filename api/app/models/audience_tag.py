@@ -10,7 +10,7 @@ from app.core.datetime import utcnow_naive
 class AudienceTag(SQLModel, table=True):
     """
     Named audience tags for segmentation (spec 1b.2.5).
-    e.g. "hydraulic-seal-interest", "high-intent-visitor"
+    e.g. "hydraulic-seal-viewers", "recent-catalog-downloaders"
     """
     __tablename__ = "audience_tags"
     __table_args__ = (UniqueConstraint("name", name="uq_audience_tags_name"),)

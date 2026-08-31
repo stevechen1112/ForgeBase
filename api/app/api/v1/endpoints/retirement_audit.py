@@ -22,9 +22,7 @@ from app.models.retirement import (
     RetirementCandidateObservation,
     RetirementUsageEvent,
 )
-from app.models.rfq_request import RFQRequest
 from app.models.user import User
-from app.models.visitor import Visitor
 
 router = APIRouter(prefix="/admin/retirement-audit", tags=["Retirement Audit"])
 DbDep = Annotated[AsyncSession, Depends(get_session)]
@@ -72,22 +70,6 @@ async def _domain_usage(
     candidate_key: str,
     since: datetime,
 ) -> tuple[int, int, datetime | None, dict]:
-    if candidate_key == "agentos_runtime":
-        row = (
-            await db.exec(
-                select(
-                    func.count(RFQRequest.id),
-                    func.count(distinct(RFQRequest.tenant_id)),
-                    func.max(RFQRequest.updated_at),
-                ).where(
-                    RFQRequest.agent_run_id.is_not(None),
-                    RFQRequest.updated_at >= since,
-                )
-            )
-        ).one()
-        return int(row[0]), int(row[1]), row[2], {
-            "signal": "RFQs with an AgentOS run id updated in the observation window"
-        }
     channel = {
         "notification_telegram": "telegram",
         "notification_line": "line",

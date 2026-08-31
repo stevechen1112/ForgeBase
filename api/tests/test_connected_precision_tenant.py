@@ -20,7 +20,7 @@ def test_precision_template_has_explicit_cms_adapter() -> None:
 
 
 def test_dynamic_cta_personalization_respects_requested_locale() -> None:
-    ctas = [{"action_type": "contact", "target_intent_stage": "any"}]
+    ctas = [{"action_type": "contact"}]
     english = select_dynamic_cta("cold", 0, ctas, locale="en")
     chinese = select_dynamic_cta("cold", 0, ctas, locale="zh-TW")
     assert english["personalization"]["headline_prefix"] == "Ready when you have a requirement"

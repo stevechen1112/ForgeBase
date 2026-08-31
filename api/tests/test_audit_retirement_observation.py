@@ -43,10 +43,10 @@ def test_validate_snapshot_rejects_enabled_channel_and_core_retirement() -> None
     line["code_state"] = "active"
     line["evidence"]["enabled_preferences"] = 1
     candidates.append(
-        _candidate("intent_scoring", state="disabled", status="observing", days=30)
+        _candidate("company_identification", state="disabled", status="observing", days=30)
     )
     report = validate_snapshot(candidates)
     assert report["status"] == "failed"
     assert "notification_line:entry_not_disabled" in report["violations"]
     assert "notification_line:enabled_preferences" in report["violations"]
-    assert "north_star_marked_for_retirement:intent_scoring" in report["violations"]
+    assert "north_star_marked_for_retirement:company_identification" in report["violations"]

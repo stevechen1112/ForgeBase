@@ -238,8 +238,6 @@ async def _prepare_rows(
             visitor_id=uuid.uuid4(),
             tenant_id=tenant.id,
             analytics_consent_status="granted",
-            intent_score=100,
-            intent_stage="sales_ready",
             is_test_data=True,
             test_run_id=probe_id,
         )
@@ -319,8 +317,6 @@ async def _prepare_rows(
             company_identification_id=company.id,
             contact_candidate_id=candidate.id,
             generation_key=f"controlled-inbound:{probe_id}",
-            intent_score=100,
-            intent_stage="sales_ready",
             journey_signals={
                 "controlled_internal_probe": True,
                 "suggested_language": "zh-TW",

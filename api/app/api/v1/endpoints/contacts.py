@@ -80,16 +80,12 @@ async def submit_contact_form(
         except ValueError:
             pass
 
-    # Determine intent score from visitor if known
-    intent_score = 0
     visitor: Optional[Visitor] = None
     if visitor_id_parsed:
         visitor = await db.get(Visitor, visitor_id_parsed)
         if visitor and visitor.tenant_id != tenant_id:
             raise HTTPException(status_code=422, detail="visitor_id does not belong to this site")
-        if visitor:
-            intent_score = visitor.intent_score
-        else:
+        if not visitor:
             visitor_id_parsed = None
 
     # Dedup by (tenant_id, email) — same email in another tenant is a
@@ -131,7 +127,6 @@ async def submit_contact_form(
         phone=body.phone,
         country=body.country,
         job_title=body.job_title,
-        intent_score_at_creation=intent_score,
         how_did_you_find_us=body.how_did_you_find_us,
         source_page=body.source_page,
         notes=body.message,
@@ -146,21 +141,6 @@ async def submit_contact_form(
     await db.commit()
     await db.refresh(contact)
 
-    # 1b.5.3 contact.created webhook
-    try:
-        from app.services.webhook import fire_webhook
-        fire_webhook("contact.created", {
-            "contact_id":   str(contact.id),
-            "full_name":    contact.full_name,
-            "email":        contact.email,
-            "company_name": contact.company_name,
-            "country":      contact.country,
-            "intent_score": intent_score,
-            "source_page":  body.source_page,
-        })
-    except Exception:
-        logger.warning("contact.created webhook failed", exc_info=True)
-
     return {"contact_id": str(contact.id), "new": True}
 
 
@@ -173,7 +153,6 @@ class ContactUpdate(BaseModel):
     country: Optional[str] = None
     job_title: Optional[str] = None
     notes: Optional[str] = None
-    hubspot_contact_id: Optional[str] = None
 
 
 @tracking_router.get("/contacts")
@@ -266,12 +245,10 @@ def _contact_row(
         "company_name": c.company_name,
         "country": c.country,
         "job_title": c.job_title,
-        "intent_score_at_creation": c.intent_score_at_creation,
         # ``visitor_id`` is retained as a compatibility alias for the first
         # linked identity. New clients should consume ``visitor_ids``.
         "visitor_id": str(visitor_ids[0]) if visitor_ids else None,
         "visitor_ids": [str(visitor_id) for visitor_id in visitor_ids],
-        "hubspot_contact_id": c.hubspot_contact_id,
         "created_at": c.created_at.isoformat(),
     }
     if full:

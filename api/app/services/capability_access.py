@@ -53,10 +53,6 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "label": "訪客與內容成效追蹤", "group": "買家旅程",
         "description": "保存訪客歷程、來源與內容成效。", "configurable": True,
     },
-    "intent_scoring": {
-        "label": "買家關注度", "group": "買家旅程",
-        "description": "依站內行為計算關注分數與原因。", "configurable": True,
-    },
     "ai_advisor": {
         "label": "AI 產品顧問", "group": "AI 客服與詢價",
         "description": "官網公開客服：依已發布資料回答，並協助整理詢價條件。", "configurable": True,
@@ -85,10 +81,6 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "label": "動態 CTA", "group": "買家旅程",
         "description": "依關注階段與頁面情境選擇行動按鈕。", "configurable": True,
     },
-    "advanced_intent_rules": {
-        "label": "進階評分規則", "group": "買家旅程",
-        "description": "自訂各種行為對買家關注分數的影響。", "configurable": True,
-    },
     "nurture_email": {
         "label": "培育與跟進郵件", "group": "外聯與跟進",
         "description": "建立序列；寄送仍保留人工核准與安全限制。", "configurable": True,
@@ -96,10 +88,6 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
     "seo_redirects": {
         "label": "SEO 網址轉址", "group": "網站與內容",
         "description": "管理舊網址至新內容的 301／302 轉址。", "configurable": True,
-    },
-    "integrations": {
-        "label": "寄件服務", "group": "潛在買家跟進",
-        "description": "提供人工核准後的郵件寄送；技術憑證由 ForgeBase 維護。", "configurable": True,
     },
     "company_identification": {
         "label": "企業辨識與聯絡人候選", "group": "待第三方資源",
@@ -145,11 +133,6 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "label": "RFQ／成交閉環歸因", "group": "核心成長引擎（試行）",
         "description": "串聯訪客、公司、窗口、外聯、回覆、RFQ 與成交成果。", "configurable": True,
         "status": "pilot",
-    },
-    "automation_runs": {
-        "label": "自動任務執行中心", "group": "待外部執行環境",
-        "description": "需完成 AgentOS 多租戶隔離與正式服務設定後開放。", "configurable": False,
-        "status": "service_required",
     },
 }
 

@@ -30,7 +30,6 @@ from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.user import User
 from app.models.visitor import Visitor
-from app.services.intent_facets import VISITOR_FACET_COLUMN
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
@@ -39,39 +38,27 @@ router = APIRouter(prefix="/tracking", tags=["Tracking"])
 
 @router.get("/visitors")
 async def list_visitors(
-    intent_stage: Optional[str] = None,
-    min_score: Optional[int] = None,
     country: Optional[str] = None,
-    facet: Optional[str] = None,
-    facet_min: Optional[int] = None,
     has_rfq: Optional[bool] = None,
-    sort: str = "intent_score",
+    sort: str = "last_activity",
     limit: int = 50,
     offset: int = 0,
     _feature: User = Depends(RequireFeature("full_tracking")),
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    """List visitors sorted by intent score (desc). Admin only.
-
-    Intent Score 2.0（§4.1）：可依 facet 篩選／排序，例如
-    `?facet=trust_validation&facet_min=10&has_rfq=false`
-    → 「信任驗證高但尚未 RFQ」名單。
-    """
-    facet_col = VISITOR_FACET_COLUMN.get(facet or "")
-    sort_col = VISITOR_FACET_COLUMN.get(sort, "intent_score")
-
-    q = select(Visitor).order_by(col(getattr(Visitor, sort_col)).desc())
+    """List visitors by recent factual activity. Admin only."""
+    sort_columns = {
+        "last_activity": Visitor.last_activity_at,
+        "last_seen": Visitor.last_seen,
+        "total_visits": Visitor.total_visits,
+        "total_page_views": Visitor.total_page_views,
+    }
+    q = select(Visitor).order_by(col(sort_columns.get(sort, Visitor.last_activity_at)).desc())
     if _.tenant_id:
         q = q.where(Visitor.tenant_id == _.tenant_id)
-    if intent_stage:
-        q = q.where(Visitor.intent_stage == intent_stage)
-    if min_score is not None:
-        q = q.where(Visitor.intent_score >= min_score)
     if country:
         q = q.where(Visitor.country == country)
-    if facet_col and facet_min is not None:
-        q = q.where(col(getattr(Visitor, facet_col)) >= facet_min)
     if has_rfq is not None:
         # 以 rfq_requests 為準（表單建立 RFQ 不一定寫入 rfq_submit 事件）
         rfq_subq = (
@@ -87,21 +74,13 @@ async def list_visitors(
     return [
         {
             "visitor_id": str(r.visitor_id),
-            "intent_score": r.intent_score,
-            "intent_stage": r.intent_stage,
-            "intent_explanation": r.intent_explanation,
-            "facets": {
-                "product_interest": r.facet_product_interest,
-                "trust_validation": r.facet_trust_validation,
-                "procurement_readiness": r.facet_procurement_readiness,
-                "urgency": r.facet_urgency,
-            },
             "total_visits": r.total_visits,
             "total_page_views": r.total_page_views,
             "device_type": r.device_type,
             "country": r.country,
             "contact_id": str(r.contact_id) if r.contact_id else None,
             "last_seen": r.last_seen.isoformat(),
+            "last_activity_at": r.last_activity_at.isoformat(),
             "first_seen": r.first_seen.isoformat(),
         }
         for r in rows
@@ -130,21 +109,13 @@ async def get_visitor(
 
     return {
         "visitor_id": str(v.visitor_id),
-        "intent_score": v.intent_score,
-        "intent_stage": v.intent_stage,
-        "intent_explanation": v.intent_explanation,
-        "facets": {
-            "product_interest": v.facet_product_interest,
-            "trust_validation": v.facet_trust_validation,
-            "procurement_readiness": v.facet_procurement_readiness,
-            "urgency": v.facet_urgency,
-        },
         "total_visits": v.total_visits,
         "total_page_views": v.total_page_views,
         "device_type": v.device_type,
         "country": v.country,
         "contact_id": str(v.contact_id) if v.contact_id else None,
         "last_seen": v.last_seen.isoformat(),
+        "last_activity_at": v.last_activity_at.isoformat(),
         "first_seen": v.first_seen.isoformat(),
         "event_breakdown": {row[0]: row[1] for row in counts},
     }
@@ -179,7 +150,6 @@ async def visitor_event_timeline(
             "timestamp": r.timestamp.isoformat(),
             "page_url": r.page_url,
             "page_type": r.page_type,
-            "score_delta": r.score_delta,
             "properties": _json.loads(r.properties) if r.properties else None,
         }
         for r in rows
@@ -297,7 +267,6 @@ async def visitor_journey(
             "event_name": e.event_name,
             "page_url": e.page_url,
             "page_type": e.page_type,
-            "score_delta": e.score_delta,
             "properties": _json.loads(e.properties) if e.properties else None,
         })
 
@@ -325,7 +294,6 @@ async def visitor_journey(
             "rfq_number": r.rfq_number,
             "status": r.status,
             "priority": r.priority,
-            "intent_score_at_submit": r.intent_score_at_submit,
             "company_name": form.get("company_name"),
             "email": form.get("email"),
         })
@@ -343,15 +311,6 @@ async def visitor_journey(
     return {
         "visitor": {
             "visitor_id": str(v.visitor_id),
-            "intent_score": v.intent_score,
-            "intent_stage": v.intent_stage,
-            "intent_explanation": v.intent_explanation,
-            "facets": {
-                "product_interest": v.facet_product_interest or 0,
-                "trust_validation": v.facet_trust_validation or 0,
-                "procurement_readiness": v.facet_procurement_readiness or 0,
-                "urgency": v.facet_urgency or 0,
-            },
             "total_visits": v.total_visits,
             "total_page_views": v.total_page_views,
             "device_type": v.device_type,
@@ -359,6 +318,7 @@ async def visitor_journey(
             "contact_id": str(v.contact_id) if v.contact_id else None,
             "first_seen": v.first_seen.isoformat(),
             "last_seen": v.last_seen.isoformat(),
+            "last_activity_at": v.last_activity_at.isoformat(),
         },
         "summary": {
             "total_events": len(events),
@@ -582,8 +542,6 @@ async def get_audience_members(
 def _visitor_summary(v: Visitor) -> dict:
     return {
         "visitor_id": str(v.visitor_id),
-        "intent_score": v.intent_score,
-        "intent_stage": v.intent_stage,
         "total_visits": v.total_visits,
         "last_seen": v.last_seen.isoformat(),
         "country": v.country,

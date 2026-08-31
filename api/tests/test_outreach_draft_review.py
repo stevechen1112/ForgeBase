@@ -156,10 +156,7 @@ async def test_snapshot_grounding_and_human_approved_delivery_lifecycle(
                     visitor_id=visitor_id,
                     tenant_id=tenant.id,
                     analytics_consent_status="granted",
-                    intent_score=72,
-                    intent_stage="hot",
-                    facet_product_interest=20,
-                    facet_procurement_readiness=10,
+                    total_page_views=20,
                 )
             )
             await db.flush()

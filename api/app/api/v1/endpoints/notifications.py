@@ -28,9 +28,7 @@ class PreferenceIn(BaseModel):
     channel_config: dict = PydanticField(default_factory=dict)
     enabled: bool = True
     notify_new_rfq: bool = True
-    notify_hot_visitor: bool = True
     notify_daily_summary: bool = True
-    notify_churn_risk: bool = False
     notify_chat_handoff: bool = True
     notify_content_suggestion: bool = False
     quiet_hours_start: Optional[str] = None
@@ -40,9 +38,7 @@ class PreferenceIn(BaseModel):
 class PreferenceUpdate(BaseModel):
     enabled: Optional[bool] = None
     notify_new_rfq: Optional[bool] = None
-    notify_hot_visitor: Optional[bool] = None
     notify_daily_summary: Optional[bool] = None
-    notify_churn_risk: Optional[bool] = None
     notify_chat_handoff: Optional[bool] = None
     notify_content_suggestion: Optional[bool] = None
     quiet_hours_start: Optional[str] = None
@@ -65,9 +61,7 @@ def _preference_payload(pref: NotificationPreference) -> dict:
         "channel_config": json.loads(pref.channel_config or "{}"),
         "enabled": pref.enabled,
         "notify_new_rfq": pref.notify_new_rfq,
-        "notify_hot_visitor": pref.notify_hot_visitor,
         "notify_daily_summary": pref.notify_daily_summary,
-        "notify_churn_risk": pref.notify_churn_risk,
         "notify_chat_handoff": pref.notify_chat_handoff,
         "notify_content_suggestion": pref.notify_content_suggestion,
         "quiet_hours_start": pref.quiet_hours_start,
@@ -156,8 +150,6 @@ async def list_notifications(
 ):
     tenant = await db.get(Tenant, current_user.tenant_id)
     allowed_event_types = {"new_rfq", "daily_summary"}
-    if tenant and tenant_has_feature(tenant, "intent_scoring"):
-        allowed_event_types.update({"hot_visitor", "churn_risk"})
     if tenant and tenant_has_feature(tenant, "chat_handoff"):
         allowed_event_types.add("chat_handoff")
     if tenant and tenant_has_feature(tenant, "full_tracking"):

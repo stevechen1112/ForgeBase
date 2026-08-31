@@ -12,7 +12,6 @@ from pathlib import Path
 def validate_retirement_page(text: str) -> dict[str, object]:
     required = (
         "功能退場稽核",
-        "AgentOS／automation runtime",
         "AI relation 推薦介面",
         "Telegram 通知渠道",
         "LINE 通知渠道",
@@ -32,7 +31,6 @@ def validate_retirement_page(text: str) -> dict[str, object]:
         return remainder[: min(stops)] if stops else remainder
 
     for label in (
-        "AgentOS／automation runtime",
         "AI relation 推薦介面",
         "Telegram 通知渠道",
         "LINE 通知渠道",
@@ -49,7 +47,7 @@ def validate_retirement_page(text: str) -> dict[str, object]:
     return {
         "schema_version": 1,
         "status": "passed",
-        "disabled_candidates_visible": 4,
+        "disabled_candidates_visible": 3,
         "notification_channels_observing": True,
         "new_removals_authorized": [],
     }

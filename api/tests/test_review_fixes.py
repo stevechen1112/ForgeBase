@@ -94,40 +94,6 @@ async def test_has_rfq_uses_rfq_requests_not_events(
     assert str(visitor_id) not in [v["visitor_id"] for v in resp.json()]
 
 
-# ── batch 事件刷新 intent_explanation ─────────────────────────────────────
-
-@requires_db
-async def test_batch_events_refresh_intent_explanation(
-    http_client, two_tenants, admin_token_for_tenant,
-):
-    tenant_a, _ = two_tenants
-    token = await admin_token_for_tenant(tenant_a.id)
-    visitor_id = uuid.uuid4()
-    session_id = uuid.uuid4()
-    events = [
-        {
-            "event_name": "certification_view",
-            "visitor_id": str(visitor_id), "session_id": str(session_id),
-            "page_url": "https://www.test.com/c", "page_type": "certification",
-            "analytics_consent": True,
-        }
-        for _ in range(3)
-    ]
-    resp = await http_client.post(
-        "/api/v1/tracking/events/batch",
-        headers={"X-Tenant-ID": str(tenant_a.id)},
-        json=events,
-    )
-    assert resp.status_code == 202, resp.text
-
-    detail = await http_client.get(
-        f"/api/v1/tracking/visitors/{visitor_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert detail.status_code == 200
-    assert detail.json()["intent_explanation"]
-
-
 # ── won_reason 詳情回傳 ────────────────────────────────────────────────────
 
 @requires_db

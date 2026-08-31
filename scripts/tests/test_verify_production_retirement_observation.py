@@ -21,8 +21,6 @@ validate_retirement_page = verifier.validate_retirement_page
 def rendered_page() -> str:
     observing = "觀察中\n程式狀態\ndisabled\n觀察進度\n0／60 天\n觀察期尚未完成"
     return f"""功能退場稽核
-AgentOS／automation runtime
-{observing}
 AI relation 推薦介面
 {observing}
 Telegram 通知渠道

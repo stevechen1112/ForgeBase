@@ -20,7 +20,7 @@ def test_single_product_defaults_and_governance_overrides() -> None:
     tenant = Tenant(name="Pilot", slug="pilot")
     defaults = resolve_tenant_features(tenant)
     for feature in (
-        "outcomes_dashboard", "full_tracking", "intent_scoring", "ai_advisor",
+        "outcomes_dashboard", "full_tracking", "ai_advisor",
         "chat_handoff", "audience_segments", "nurture_email", "rfq_workspace",
         "notifications", "follow_up_reminders",
     ):
@@ -31,10 +31,10 @@ def test_single_product_defaults_and_governance_overrides() -> None:
     assert tenant_has_feature(tenant, "dynamic_cta") is True
 
     # External dependencies cannot be enabled by a crafted override.
-    tenant.feature_overrides = {"company_identification": True, "automation_runs": True}
+    tenant.feature_overrides = {"company_identification": True}
     resolved = resolve_tenant_features(tenant)
     assert resolved["company_identification"] is False
-    assert resolved["automation_runs"] is False
+    assert "automation_runs" not in resolved
 
 
 @requires_db
@@ -102,7 +102,7 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         notifications = await http_client.get("/api/v1/notifications/history", headers=_auth(tenant_token))
         assert notifications.status_code == 200, notifications.text
         assert {item["event_type"] for item in notifications.json()["data"]} == {
-            "new_rfq", "hot_visitor", "chat_handoff",
+            "new_rfq", "chat_handoff",
         }
 
         disabled_nurture = await http_client.get("/api/v1/nurture/sequences", headers=_auth(tenant_token))

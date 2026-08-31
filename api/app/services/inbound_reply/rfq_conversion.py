@@ -98,7 +98,6 @@ async def create_rfq_from_handoff(
             ),
             source_type="inbound_outreach_reply",
             source_reference_id=reply.id,
-            intent_score_at_creation=snapshot.intent_score if snapshot else 0,
             created_at=now,
             updated_at=now,
         )
@@ -130,18 +129,6 @@ async def create_rfq_from_handoff(
         contact_id=contact.id,
         visitor_id=message.visitor_id,
         form_data=json.dumps(source_snapshot, ensure_ascii=False),
-        intent_score_at_submit=snapshot.intent_score if snapshot else 0,
-        intent_snapshot_json=json.dumps(
-            {
-                "score": snapshot.intent_score,
-                "stage": snapshot.intent_stage,
-                "facets": snapshot.intent_facets,
-                "captured_at": snapshot.generated_at.isoformat(),
-            },
-            ensure_ascii=False,
-        )
-        if snapshot
-        else None,
         attribution_json=json.dumps(
             {
                 "source": "outreach_reply_handoff",

@@ -12,8 +12,6 @@ import { apiClient } from "@/lib/api/client";
 type ChatSessionItem = {
   id: string;
   visitor_id: string;
-  visitor_intent_stage: string | null;
-  visitor_intent_score: number | null;
   visitor_country: string | null;
   context_page: string | null;
   context_entity_type: string | null;
@@ -42,20 +40,6 @@ const STATUS_LABEL: Record<string, string> = {
   active: "進行中",
   handoff_ready: "待業務接手",
   handoff_completed: "已轉業務接手",
-};
-
-const STAGE_COLOR: Record<string, string> = {
-  sales_ready: "bg-red-100 text-red-700",
-  hot: "bg-orange-100 text-orange-700",
-  warm: "bg-yellow-100 text-yellow-800",
-  cold: "bg-gray-100 text-gray-600",
-};
-
-const STAGE_LABEL: Record<string, string> = {
-  sales_ready: "可成交",
-  hot: "高度關注",
-  warm: "觀望中",
-  cold: "初次瀏覽",
 };
 
 const SELECT_CLS =
@@ -255,13 +239,6 @@ export default function ChatSessionsPage() {
                         {s.visitor_id.slice(0, 8)}…
                       </Link>
                       <div className="flex items-center gap-1.5">
-                        {s.visitor_intent_stage && (
-                          <Badge
-                            className={`text-[10px] px-1.5 py-0 ${STAGE_COLOR[s.visitor_intent_stage] ?? ""}`}
-                          >
-                            {STAGE_LABEL[s.visitor_intent_stage] ?? s.visitor_intent_stage}
-                          </Badge>
-                        )}
                         {s.visitor_country && (
                           <span className="text-[10px] text-muted-foreground">
                             {s.visitor_country}

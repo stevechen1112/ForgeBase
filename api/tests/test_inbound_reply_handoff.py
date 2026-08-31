@@ -216,8 +216,6 @@ async def _seed_reply(factory, tenant, *, suffix: str) -> InboundReply:
                 visitor_id=visitor_id,
                 tenant_id=tenant.id,
                 analytics_consent_status="granted",
-                intent_score=82,
-                intent_stage="hot",
             )
         )
         await db.flush()
@@ -283,11 +281,8 @@ async def _seed_reply(factory, tenant, *, suffix: str) -> InboundReply:
                 company_identification_id=company_id,
                 contact_candidate_id=candidate_id,
                 generation_key=f"snapshot:{suffix}",
-                intent_score=82,
-                intent_stage="hot",
-                intent_facets={"procurement_readiness": 20},
                 top_products=[{"name": "Industrial Pump"}],
-                summary="High-intent company researched an industrial pump.",
+                summary="Company researched an industrial pump.",
                 policy_version="test",
                 expires_at=now + timedelta(days=30),
             )

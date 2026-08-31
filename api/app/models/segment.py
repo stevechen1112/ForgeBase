@@ -23,7 +23,7 @@ class Segment(SQLModel, table=True):
     description: str = Field(default="", max_length=300)
 
     # JSON array of condition objects (see README for schema)
-    # Each condition: {"type": "intent_stage"|"intent_score"|"event_count"|"tag"|"country",
+    # Each condition: {"type": "event_count"|"tag"|"country",
     #                  "op": "eq"|"gte"|"lte"|"in",
     #                  "value": ..., "event_name": ..., "within_days": ..., "tag_id": ...}
     conditions: str = Field(default="[]")

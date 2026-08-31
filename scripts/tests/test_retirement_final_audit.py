@@ -17,9 +17,11 @@ def test_final_retirement_static_audit_passes_without_new_removals() -> None:
         "generic_integrations_api",
         "generic_integrations_model",
         "legacy_ip_resolver",
+        "agentos_runtime",
+        "buyer_scoring",
+        "esp_sync",
     }
     assert set(report["decisions"]["continue_observation"]) == {
-        "agentos_runtime",
         "relation_recommender",
         "notification_telegram",
         "notification_line",

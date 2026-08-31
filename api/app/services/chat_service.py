@@ -54,7 +54,6 @@ from app.services.chat_response_utils import (
 from app.services.chat_response_utils import (
     normalize_question as _normalize_question,
 )
-from app.services.intent_scoring import calculate_score_delta, get_intent_stage
 from app.services.knowledge_retrieve import admin_source, retrieve_public_chunks
 from app.services.knowledge_sync import ensure_tenant_knowledge_index
 from app.services.knowledge_text import wrap_untrusted
@@ -767,9 +766,6 @@ class ChatService:
             visitor = Visitor(visitor_id=visitor_id)
         tenant_id = visitor.tenant_id
 
-        score_delta = calculate_score_delta(event_name, properties or {})
-        visitor.intent_score = max(0, visitor.intent_score + score_delta)
-        visitor.intent_stage = get_intent_stage(visitor.intent_score)
         visitor.last_activity_at = utcnow_naive()
         visitor.last_seen = utcnow_naive()
         visitor.updated_at = utcnow_naive()
@@ -784,7 +780,6 @@ class ChatService:
             page_type=page_type,
             page_id=page_id,
             properties=json.dumps(properties or {}),
-            score_delta=score_delta,
         )
         self.db.add(event)
 

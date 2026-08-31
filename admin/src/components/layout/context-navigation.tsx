@@ -49,7 +49,6 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/segments", label: "等待跟進的買家", entityLabel: "買家條件", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
   { base: "/dashboard/ctas", label: "行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
   { base: "/dashboard/nurture", label: "跟進內容與時間", entityLabel: "跟進流程", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進", childLabels: { outbox: "寄出前確認" } },
-  { base: "/dashboard/intent-rules", label: "買家關注條件", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
 
   { base: "/dashboard/chats", label: "AI 客服對話", entityLabel: "客服對話", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
   { base: "/dashboard/tasks", label: "今日待辦", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
@@ -58,7 +57,6 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/settings/site-profile", label: "公司與網站資料", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
   { base: "/dashboard/settings/notifications", label: "通知設定", parentHref: "/dashboard/notifications", parentLabel: "通知中心" },
   { base: "/dashboard/support", label: "網站修改與支援", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
-  { base: "/dashboard/agent-runs", label: "自動化執行紀錄", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
 ];
 
 const PLATFORM_LABELS: Record<string, string> = {

@@ -23,8 +23,6 @@ logger = logging.getLogger(__name__)
 
 _JOB_FEATURES = {
     "rfq_notify": "notifications",
-    "rfq_hubspot": "integrations",
-    "rfq_agentos": "automation_runs",
     "company_identify": "company_identification",
     "contact_enrich": "contact_enrichment",
     "journey_summarize": "journey_personalization",
@@ -41,9 +39,8 @@ async def _job_feature_enabled(job: OperationalJob) -> bool:
     if not job.tenant_id:
         # Legacy jobs created before tenant_id was persisted retain their
         # previous behavior. New enqueue paths always carry tenant_id and are
-        # governed by the entitlement. AgentOS is the exception: it is a
-        # locked-off retirement candidate and must fail closed.
-        return job.job_type != "rfq_agentos"
+        # governed by the entitlement.
+        return True
     from app.models.tenant import Tenant
     from app.services.capability_access import tenant_has_feature
 
@@ -85,27 +82,12 @@ async def _execute(job: OperationalJob) -> None:
         from app.services.notifications import notify_new_rfq
 
         await notify_new_rfq(uuid.UUID(payload["rfq_id"]))
-    elif job.job_type == "rfq_hubspot":
-        from app.services.hubspot import sync_rfq_to_hubspot
-
-        await sync_rfq_to_hubspot(uuid.UUID(payload["rfq_id"]))
     elif job.job_type == "rfq_auto_reply":
         from app.services.rfq_auto_reply import maybe_auto_reply
 
         await maybe_auto_reply(
             uuid.UUID(payload["rfq_id"]), uuid.UUID(payload["tenant_id"])
         )
-    elif job.job_type == "rfq_agentos":
-        from app.services.agentOS import trigger_agentOS_rfq
-
-        tenant_id = (
-            uuid.UUID(payload["tenant_id"]) if payload.get("tenant_id") else None
-        )
-        await trigger_agentOS_rfq(uuid.UUID(payload["rfq_id"]), tenant_id)
-    elif job.job_type == "rfq_webhook":
-        from app.services.webhook import deliver_rfq_created
-
-        await deliver_rfq_created(uuid.UUID(payload["rfq_id"]))
     elif job.job_type == "company_identify":
         from app.services.company_identification.runtime import (
             run_company_identification_job,

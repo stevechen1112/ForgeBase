@@ -28,8 +28,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const EVENT_TYPE_FEATURES: Partial<Record<string, string>> = {
-  hot_visitor: "intent_scoring",
-  churn_risk: "intent_scoring",
   chat_handoff: "chat_handoff",
   content_suggestion: "full_tracking",
 };

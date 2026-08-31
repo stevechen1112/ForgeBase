@@ -73,7 +73,6 @@ Application: {rfq_data.get("application_id", "N/A")}
 Quantity: {rfq_data.get("quantity", "N/A")} | Timeline: {rfq_data.get("timeline", "N/A")}
 Specifications: {rfq_data.get("specifications", "N/A")}
 Message: {rfq_data.get("message", "N/A")}
-Intent score at submission: {rfq_data.get("intent_score_at_submit", 0)}
 
 ── Available Catalog Products ──
 {products_ctx}

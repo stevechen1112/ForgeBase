@@ -34,7 +34,7 @@ d=json.load(open('/tmp/out.json'))
 rows=d if isinstance(d,list) else d.get('data',d)
 print('count', len(rows) if isinstance(rows,list) else rows)
 if isinstance(rows,list) and rows:
-  print('sample', {k:rows[0].get(k) for k in ['visitor_id','intent_score','intent_stage','country'] if k in rows[0]})
+  print('sample', {k:rows[0].get(k) for k in ['visitor_id','total_visits','total_page_views','country'] if k in rows[0]})
 PY
 
 echo
@@ -85,19 +85,10 @@ PY
 fi
 
 echo
-echo "=== READ: intent-rules ==="
-C=$(code "http://127.0.0.1/api/v1/tracking/intent-rules" -H "$AUTH"); echo "HTTP $C"
-python3 - <<'PY'
-import json
-d=json.load(open('/tmp/out.json'))
-print('keys', list(d.keys())[:8] if isinstance(d,dict) else type(d))
-PY
-
-echo
 echo "=== WRITE: create segment ==="
 C=$(curl -s -o /tmp/seg.json -w "%{http_code}" -X POST "http://127.0.0.1/api/v1/tracking/segments" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"name":"功能驗證-高意圖","description":"e2e verify","combinator":"AND","conditions":[{"type":"intent_score","op":"gte","value":30}]}')
+  -d '{"name":"功能驗證-台灣訪客","description":"e2e verify","combinator":"AND","conditions":[{"type":"country","op":"eq","value":"TW"}]}')
 echo "HTTP $C"; cat /tmp/seg.json; echo
 SEG_ID=$(python3 -c 'import json; print(json.load(open("/tmp/seg.json")).get("id",""))')
 echo "SEG_ID=$SEG_ID"

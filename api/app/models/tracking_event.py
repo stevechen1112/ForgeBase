@@ -60,8 +60,5 @@ class TrackingEvent(SQLModel, table=True):
     # Event-specific payload (JSON string — spec 12.5.3)
     properties: Optional[str] = Field(default=None)
 
-    # Intent score delta applied by this event (for audit trail)
-    score_delta: int = Field(default=0)
-
     is_test_data: bool = Field(default=False, index=True)
     test_run_id: Optional[str] = Field(default=None, max_length=100)

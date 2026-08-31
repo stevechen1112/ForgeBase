@@ -412,8 +412,6 @@ async def get_reply(reply_id: uuid.UUID, db: DbDep, current_user: ViewerDep):
             if candidate
             else None,
             "journey_summary": snapshot.summary if snapshot else None,
-            "intent_score": snapshot.intent_score if snapshot else None,
-            "intent_stage": snapshot.intent_stage if snapshot else None,
             "top_products": snapshot.top_products if snapshot else [],
         },
         "thread": [_reply_summary(item) for item in thread],
@@ -948,13 +946,8 @@ async def convert_handoff_to_rfq(
     for job_type in (
         "rfq_route",
         "rfq_notify",
-        "rfq_hubspot",
-        "rfq_agentos",
-        "rfq_webhook",
     ):
         payload = {"rfq_id": str(rfq.id)}
-        if job_type == "rfq_agentos":
-            payload["tenant_id"] = str(tenant_id)
         enqueue_operational_job(
             db,
             job_type=job_type,

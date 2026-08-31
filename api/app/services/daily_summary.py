@@ -59,19 +59,11 @@ async def _collect_stats(
             )
         ),
         "active_visitors": 0,
-        "hot_visitors": 0,
     }
     if include_growth:
         stats["active_visitors"] = await count(
             select(func.count(Visitor.visitor_id)).where(
                 Visitor.tenant_id == tenant_id, Visitor.last_activity_at >= since
-            )
-        )
-        stats["hot_visitors"] = await count(
-            select(func.count(Visitor.visitor_id)).where(
-                Visitor.tenant_id == tenant_id,
-                Visitor.intent_stage.in_(["hot", "sales_ready"]),
-                Visitor.last_activity_at >= since,
             )
         )
     return stats
@@ -84,13 +76,10 @@ def _format_summary(stats: dict[str, int], date_text: str, *, include_growth: bo
     reminders: list[str] = []
     if stats["overdue_rfqs"]:
         reminders.append(f"{stats['overdue_rfqs']} 筆詢價超過 24 小時未回覆")
-    if include_growth and stats["hot_visitors"]:
-        reminders.append(f"{stats['hot_visitors']} 位高關注買家近 24 小時仍有活動")
     growth = ""
     if include_growth:
         growth = (
             f"網站活躍買家：{stats['active_visitors']} 位\n"
-            f"高關注買家：{stats['hot_visitors']} 位\n"
         )
     reminder_text = "\n".join(f"待處理：{item}" for item in reminders)
     return (

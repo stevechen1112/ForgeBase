@@ -63,7 +63,6 @@ def policy_snapshot(policy: GrowthAutomationPolicy | None) -> dict:
         "persisted": True,
         "company_identification_mode": policy.company_identification_mode,
         "provider_name": policy.provider_name,
-        "min_intent_score": policy.min_intent_score,
         "observation_retention_days": policy.observation_retention_days,
         "daily_lookup_quota": policy.daily_lookup_quota,
         "daily_provider_cost_limit": float(policy.daily_provider_cost_limit),

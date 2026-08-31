@@ -67,7 +67,7 @@ export default function SequenceDetailPage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [triggerType, setTriggerType] = useState("intent_stage");
+  const [triggerType, setTriggerType] = useState("manual");
   const [triggerValue, setTriggerValue] = useState("");
   const [isActive, setIsActive] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
@@ -246,15 +246,16 @@ export default function SequenceDetailPage() {
             <div className="space-y-1.5">
               <Label className="text-xs">觸發類型</Label>
               <select className={SELECT_CLS} value={triggerType} onChange={(e) => setTriggerType(e.target.value)}>
-                <option value="intent_stage">買家關注程度</option>
+                <option value="manual">手動加入</option>
                 <option value="segment">買家分群</option>
-                <option value="manual">手動</option>
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">觸發值</Label>
-              <Input value={triggerValue} onChange={(e) => setTriggerValue(e.target.value)} placeholder="warm / hot / sales_ready" />
-            </div>
+            {triggerType === "segment" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">買家分群 ID</Label>
+                <Input value={triggerValue} onChange={(e) => setTriggerValue(e.target.value)} placeholder="貼上要跟進的買家分群 ID" required />
+              </div>
+            )}
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
               啟用

@@ -144,21 +144,7 @@ class Settings(BaseSettings):
     BACKUP_ENCRYPTION_KEY: str = ""
     RECOVERY_EVIDENCE_FILE: str = "/recovery-evidence/status.json"
 
-    # Google Search Console
-    GSC_SERVICE_ACCOUNT_KEY_JSON: str = ""   # JSON string of service account credentials
-    GSC_SITE_URL: str = ""                   # e.g. "https://example.com/"
-
-    # ESP — Email Service Provider (2.4.3)
-    # Active transactional provider: "resend" | "sendgrid"
-    ESP_PROVIDER: str = "resend"
-    # SendGrid
-    SENDGRID_API_KEY: str = ""
-    SENDGRID_LIST_ID: str = ""               # SendGrid Marketing contact list ID
-    # Mailchimp (list management + tags)
-    MAILCHIMP_API_KEY: str = ""              # Format: "<key>-<dc>" e.g. "abc123-us1"
-    MAILCHIMP_AUDIENCE_ID: str = ""          # Mailchimp Audience / List ID
-
-    # Encryption — used for storing integration credentials in DB
+    # Encryption — used for protected operational data
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ENCRYPTION_MASTER_KEY: str = ""
 
@@ -192,9 +178,6 @@ class Settings(BaseSettings):
     LANGFUSE_SECRET_KEY: str = ""
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_HOST: str = ""
-
-    # AgentOS integration (Condition 1: auto-trigger RFQ workflows)
-    AGENTOSS_URL: str = ""
 
     @property
     def allowed_origins_list(self) -> list[str]:

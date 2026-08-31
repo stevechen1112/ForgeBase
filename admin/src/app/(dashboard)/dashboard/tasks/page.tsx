@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, AlarmClock, Flame, Filter, FileCheck, ShieldQuestion } from "lucide-react";
+import { RefreshCw, AlarmClock, Filter, FileCheck, ShieldQuestion } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 
 // 顧問 Growth Ops 工作台（實效計畫 §7.1）：一個入口清「今日待辦」
@@ -26,17 +26,9 @@ type TaskQueue = { generated_at: string; total_open: number; tasks: Task[] };
 const TYPE_ICON: Record<string, React.ElementType> = {
   rfq_follow_up_due: AlarmClock,
   sla_breached_rfq: AlarmClock,
-  hot_visitor_unassigned: Flame,
   low_quality_rfq: Filter,
   content_pending_approval: FileCheck,
   verification_anomaly: ShieldQuestion,
-};
-
-const STAGE_LABEL: Record<string, string> = {
-  cold: "初次瀏覽",
-  warm: "多次互動",
-  hot: "高度關注",
-  sales_ready: "可成交",
 };
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -126,16 +118,6 @@ export default function TasksPage() {
                                 ? `${item.overdue ? "已逾期" : "跟進時間"} ${new Date(String(item.next_follow_up_at)).toLocaleString("zh-TW")}`
                                 : `品質 ${String(item.quality_score ?? "—")} 分`}
                               {item.sla_due_at ? `・回覆期限 ${new Date(String(item.sla_due_at)).toLocaleString("zh-TW")}` : ""}
-                            </span>
-                          </>
-                        ) : item.visitor_id ? (
-                          <>
-                            <Link href={`/dashboard/visitors/${item.visitor_id}`} className="font-mono text-xs text-primary hover:underline">
-                              {String(item.visitor_id).slice(0, 8)}…
-                            </Link>
-                            <span className="text-xs text-muted-foreground">
-                              {STAGE_LABEL[String(item.intent_stage)] ?? String(item.intent_stage)}・{String(item.intent_score)} 分
-                              {item.intent_explanation ? `・${String(item.intent_explanation)}` : ""}
                             </span>
                           </>
                         ) : item.page_title ? (

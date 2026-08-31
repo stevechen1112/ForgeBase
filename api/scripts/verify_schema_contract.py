@@ -20,8 +20,6 @@ REQUIRED_COLUMNS: dict[str, set[str]] = {
     "visitors": {
         "visitor_id",
         "tenant_id",
-        "intent_score",
-        "intent_stage",
         "analytics_consent_status",
     },
     "tracking_sessions": {"session_id", "tenant_id", "visitor_id", "start_time"},
@@ -162,6 +160,14 @@ REQUIRED_UNIQUE_INDEXES = {
     "operational_jobs_idempotency_key_key",
 }
 
+FORBIDDEN_COLUMNS = {
+    "visitors": {"intent_score", "intent_stage", "intent_explanation", "stage_alert_sent"},
+    "tracking_events": {"score_delta"},
+    "contacts": {"intent_score_at_creation", "hubspot_contact_id"},
+    "rfq_requests": {"intent_score_at_submit", "intent_snapshot_json", "hubspot_deal_id", "agent_run_id"},
+    "journey_snapshots": {"intent_score", "intent_stage", "intent_facets"},
+}
+
 
 def _expected_heads() -> set[str]:
     config = Config(str(API_ROOT / "alembic.ini"))
@@ -199,6 +205,10 @@ async def verify() -> list[str]:
                     actual = {column["name"] for column in inspector.get_columns(table)}
                     if missing := required - actual:
                         failures.append(f"{table}: missing columns {sorted(missing)}")
+                    if forbidden := FORBIDDEN_COLUMNS.get(table, set()) & actual:
+                        failures.append(f"{table}: retired columns still present {sorted(forbidden)}")
+                if "content_strategies" in table_names:
+                    failures.append("retired table still present: content_strategies")
 
                 actual_fks: set[tuple[str, str, str, str, str]] = set()
                 for table in REQUIRED_COLUMNS:

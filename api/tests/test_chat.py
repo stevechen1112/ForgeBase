@@ -15,7 +15,6 @@ from app.services.chat_service import (
     _merge_reply_and_clarifying_question,
     _strip_html,
 )
-from app.services.intent_scoring import calculate_score_delta
 from tests.conftest import requires_db
 
 
@@ -35,11 +34,6 @@ def test_chat_message_create_rejects_empty_content():
         assert False, "Expected validation failure"
     except ValueError:
         assert True
-
-
-def test_chat_intent_scoring_defaults():
-    assert calculate_score_delta("chat_start", {}) == 8
-    assert calculate_score_delta("chat_rfq_handoff", {}) == 20
 
 
 @pytest.mark.asyncio

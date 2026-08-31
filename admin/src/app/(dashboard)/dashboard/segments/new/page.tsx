@@ -23,25 +23,17 @@ type Condition = {
 };
 
 const FIELD_OPTIONS = [
-  { value: "intent_stage", label: "意圖階段" },
-  { value: "intent_score", label: "意圖分數" },
   { value: "country", label: "國家" },
   { value: "event_count", label: "事件次數" },
 ];
 
 const OPERATOR_MAP: Record<string, { value: string; label: string }[]> = {
-  intent_stage: [{ value: "eq", label: "等於" }],
-  intent_score: [
-    { value: "gte", label: "≥" },
-    { value: "lte", label: "≤" },
-    { value: "eq", label: "=" },
-  ],
   country: [{ value: "eq", label: "等於" }],
   event_count: [{ value: "gte", label: "≥" }],
 };
 
 function emptyCondition(): Condition {
-  return { field: "intent_stage", operator: "eq", value: "" };
+  return { field: "country", operator: "eq", value: "" };
 }
 
 export default function NewSegmentPage() {
@@ -81,8 +73,7 @@ export default function NewSegmentPage() {
 
   const buildConditionsPayload = () =>
     conditions.map((c) => {
-      const base: Record<string, unknown> = { field: c.field, operator: c.operator, value: c.value };
-      if (c.field === "intent_score") base.value = Number(c.value);
+      const base: Record<string, unknown> = { type: c.field, op: c.operator, value: c.value };
       if (c.field === "event_count") {
         base.event_name = c.event_name || "page_view";
         base.within_days = c.within_days || 30;
@@ -105,7 +96,7 @@ export default function NewSegmentPage() {
         body: JSON.stringify({
           name: name || "Preview (temp)",
           description,
-          conditions: JSON.stringify(buildConditionsPayload()),
+          conditions: buildConditionsPayload(),
           combinator,
         }),
       });
@@ -142,7 +133,7 @@ export default function NewSegmentPage() {
         body: JSON.stringify({
           name,
           description,
-          conditions: JSON.stringify(buildConditionsPayload()),
+          conditions: buildConditionsPayload(),
           combinator,
         }),
       });
@@ -212,17 +203,7 @@ export default function NewSegmentPage() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">值</Label>
-                    {cond.field === "intent_stage" ? (
-                      <select className={SELECT_CLS} value={cond.value} onChange={(e) => updateCondition(idx, { value: e.target.value })}>
-                        <option value="">請選擇</option>
-                        <option value="cold">初次瀏覽</option>
-                        <option value="warm">多次互動</option>
-                        <option value="hot">高度關注</option>
-                        <option value="sales_ready">可成交</option>
-                      </select>
-                    ) : (
-                      <Input value={cond.value} onChange={(e) => updateCondition(idx, { value: e.target.value })} placeholder={cond.field === "intent_score" ? "例：50" : "值"} />
-                    )}
+                    <Input value={cond.value} onChange={(e) => updateCondition(idx, { value: e.target.value })} placeholder={cond.field === "country" ? "例：TW" : "值"} />
                   </div>
                 </div>
                 {cond.field === "event_count" && (

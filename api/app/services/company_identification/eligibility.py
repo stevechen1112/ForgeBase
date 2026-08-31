@@ -91,7 +91,7 @@ async def maybe_create_network_observation(
         return None
     if not analytics_consent or visitor.analytics_consent_status == "denied":
         return None
-    if visitor.intent_score < policy.min_intent_score or not client_ip:
+    if visitor.total_page_views < 1 or not client_ip:
         return None
 
     try:
