@@ -49,19 +49,15 @@ export function RouteGuard({ children, allowedRoles }: Props) {
   }
 
   const adminOnlyRoutes = [
-    "/dashboard/ml-scoring",
     "/dashboard/redirects",
     "/dashboard/pages",
     "/dashboard/users",
     "/dashboard/settings/site-profile",
-    "/dashboard/integrations",
-    "/dashboard/settings/integrations",
   ];
   const salesHiddenRoutes = [
     "/dashboard/growth",
     "/dashboard/intent-rules",
     "/dashboard/content-performance",
-    "/dashboard/copilot",
     "/dashboard/agent-runs",
     "/dashboard/segments",
     "/dashboard/nurture",

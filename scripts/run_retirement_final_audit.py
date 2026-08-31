@@ -23,6 +23,12 @@ def run_audit() -> dict:
     checks: list[dict] = []
     removed_paths = {
         "copilot_floating_widget": "admin/src/components/copilot/CopilotFloatingWidget.tsx",
+        "copilot_api": "api/app/api/v1/endpoints/copilot.py",
+        "copilot_service": "api/app/services/copilot",
+        "ml_scoring_api": "api/app/api/v1/endpoints/ml_scoring.py",
+        "ml_scoring_service": "api/app/services/ml_intent.py",
+        "generic_integrations_api": "api/app/api/v1/endpoints/integrations.py",
+        "generic_integrations_model": "api/app/models/integration_credential.py",
         "legacy_ip_resolver": "api/app/services/ip_resolver.py",
     }
     for candidate, relative in removed_paths.items():
@@ -33,26 +39,6 @@ def run_audit() -> dict:
             checks,
         )
 
-    _check(
-        "disabled:ml_scoring",
-        _contains(
-            "api/app/services/capability_access.py",
-            '"ml_scoring"',
-            '"status": "retirement_observation"',
-        )
-        and _contains(
-            "admin/src/components/auth/FeatureAccessGuard.tsx",
-            'path: "/dashboard/ml-scoring"',
-            'feature: "ml_scoring"',
-        )
-        and _contains(
-            "api/app/api/v1/endpoints/ml_scoring.py",
-            'RequireFeature("ml_scoring")',
-            'candidate_key="ml_scoring_runtime"',
-        ),
-        "runtime, route and telemetry remain fail-closed during observation",
-        checks,
-    )
     _check(
         "disabled:relation_recommender",
         _contains(
@@ -91,11 +77,7 @@ def run_audit() -> dict:
                 "api/app/services/notification_channel_policy.py",
                 'RETIRED_NOTIFICATION_CHANNELS = frozenset({"telegram", "line"})',
             )
-            and _contains(
-                "api/app/api/v1/endpoints/copilot.py",
-                "_block_retired_channel",
-                "record_retirement_usage",
-            )
+            and not (ROOT / "api/app/api/v1/endpoints/copilot.py").exists()
             and _contains(
                 "api/app/services/notification_router.py",
                 "retirement_candidate_for_channel",
@@ -136,10 +118,18 @@ def run_audit() -> dict:
 
     failed = [check["name"] for check in checks if not check["passed"]]
     decisions = {
-        "removed_verified": ["copilot_floating_widget", "legacy_ip_resolver"],
+        "removed_verified": [
+            "copilot_floating_widget",
+            "copilot_api",
+            "copilot_service",
+            "ml_scoring_api",
+            "ml_scoring_service",
+            "generic_integrations_api",
+            "generic_integrations_model",
+            "legacy_ip_resolver",
+        ],
         "continue_observation": [
             "agentos_runtime",
-            "ml_scoring_runtime",
             "relation_recommender",
             "notification_telegram",
             "notification_line",

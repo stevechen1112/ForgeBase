@@ -60,11 +60,6 @@ class Visitor(SQLModel, table=True):
     stage_alert_sent: bool = Field(default=False)
     # Reset when stage changes, set after alert is sent
 
-    # ML Intent Scoring (3.2.1 / 3.2.2) — predicted conversion probability from ML model
-    ml_intent_score: Optional[float] = Field(default=None)
-    # 0.0 – 1.0 probability; None until ML model has been run
-    ml_score_updated_at: Optional[datetime] = Field(default=None)
-
     is_test_data: bool = Field(default=False, index=True)
     test_run_id: Optional[str] = Field(default=None, max_length=100)
 

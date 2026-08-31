@@ -71,14 +71,6 @@ async def run_daily_score_decay() -> dict:
                             "Visitor %s stage downgraded %s→%s after score decay %d→%d",
                             v.visitor_id, old_stage, v.intent_stage, old_score, new_score,
                         )
-                        # Notify copilot — fire-and-forget
-                        if v.tenant_id:
-                            import asyncio
-
-                            from app.services.copilot import on_churn_risk
-                            asyncio.create_task(
-                                on_churn_risk(v.visitor_id, v.tenant_id, old_stage)
-                            )
 
             await db.commit()
     except Exception:

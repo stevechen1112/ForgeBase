@@ -193,10 +193,6 @@ class Settings(BaseSettings):
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_HOST: str = ""
 
-    # AI Copilot — Telegram Bot
-    TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_WEBHOOK_SECRET: str = ""
-
     # AgentOS integration (Condition 1: auto-trigger RFQ workflows)
     AGENTOSS_URL: str = ""
 
@@ -255,13 +251,6 @@ def _validate_production_settings() -> None:
             "ENCRYPTION_MASTER_KEY must be a URL-safe base64-encoded 32-byte key. "
             'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
         ) from exc
-
-    # Ensure Telegram webhook secret is set when bot token is configured
-    if settings.TELEGRAM_BOT_TOKEN and not settings.TELEGRAM_WEBHOOK_SECRET:
-        raise RuntimeError(
-            "TELEGRAM_WEBHOOK_SECRET must be set in production when TELEGRAM_BOT_TOKEN is configured. "
-            "This prevents unauthenticated webhook injection."
-        )
 
     if settings.CHAT_ENABLED and not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY must be set in production when CHAT_ENABLED is true.")

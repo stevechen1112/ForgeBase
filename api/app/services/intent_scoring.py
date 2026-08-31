@@ -7,7 +7,7 @@ Score rules sourced from spec 12.6.1.   Stage thresholds from spec 12.6.3.
 from typing import Optional
 
 # ── Scoring rules (spec 12.6.1) ───────────────────────────────────────────────
-# Exported so ml_scoring.py and the admin API can read/present defaults.
+# Exported so the admin rule API can read and present the defaults.
 
 DEFAULT_BASE_SCORES: dict[str, int] = {
     "page_view": 1,

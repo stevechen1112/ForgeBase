@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, LogOut, ChevronUp, Bell, Settings, Globe, MessageSquare,
   Lock, ListChecks, ClipboardList, ExternalLink, LifeBuoy, MailCheck,
-  Users, Route, PanelsTopLeft, WandSparkles,
+  Users, Route, PanelsTopLeft,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { useCapabilities } from "@/lib/hooks/useCapabilities";
@@ -51,7 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "AI 客服對話", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff", hideWhenUnavailable: true },
       { label: "內容中心", href: "/dashboard/content", icon: PanelsTopLeft, activePrefixes: ["/dashboard/products", "/dashboard/categories", "/dashboard/pages", "/dashboard/settings/site-copy", "/dashboard/assets", "/dashboard/applications", "/dashboard/faqs", "/dashboard/certifications", "/dashboard/capabilities", "/dashboard/comparisons", "/dashboard/redirects"] },
-      { label: "成長工具", href: "/dashboard/growth", icon: WandSparkles, salesHidden: true, activePrefixes: ["/dashboard/content-performance", "/dashboard/segments", "/dashboard/ctas", "/dashboard/nurture", "/dashboard/copilot", "/dashboard/intent-rules", "/dashboard/ml-scoring", "/dashboard/integrations"] },
+      { label: "潛在買家跟進", href: "/dashboard/growth", icon: MailCheck, salesHidden: true, activePrefixes: ["/dashboard/content-performance", "/dashboard/segments", "/dashboard/ctas", "/dashboard/nurture", "/dashboard/intent-rules"] },
     ],
   },
   {

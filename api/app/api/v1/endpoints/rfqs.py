@@ -495,8 +495,6 @@ async def submit_rfq(
                                 idempotency_key=f"rfq:{rfq.id}:webhook", tenant_id=tenant_id)
     if tenant_id and not is_test_data:
         tenant_payload = {"rfq_id": str(rfq.id), "tenant_id": str(tenant_id)}
-        enqueue_operational_job(db, job_type="rfq_copilot", payload=tenant_payload,
-                                idempotency_key=f"rfq:{rfq.id}:copilot", tenant_id=tenant_id)
         enqueue_operational_job(db, job_type="rfq_auto_reply", payload=tenant_payload,
                                 idempotency_key=f"rfq:{rfq.id}:auto-reply", tenant_id=tenant_id)
 

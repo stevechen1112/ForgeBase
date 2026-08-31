@@ -71,7 +71,7 @@ export default function NotificationCenterPage() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE}/copilot/notifications?limit=100`, {
+    fetch(`${API_BASE}/notifications/history?limit=100`, {
       headers: buildApiHeaders(token),
     })
       .then((r) => r.json())

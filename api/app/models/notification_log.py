@@ -9,7 +9,7 @@ from app.core.datetime import utcnow_naive
 
 class NotificationLog(SQLModel, table=True):
     """
-    Audit log of every notification sent by the copilot system.
+    Audit log of every operational notification sent by ForgeBase.
     Used for deduplication (prevent repeated alerts) and history display.
     """
     __tablename__ = "notification_log"

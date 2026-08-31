@@ -23,16 +23,12 @@ def rendered_page() -> str:
     return f"""功能退場稽核
 AgentOS／automation runtime
 {observing}
-ML scoring 線上 runtime／UI
-{observing}
 AI relation 推薦介面
 {observing}
 Telegram 通知渠道
 {observing}
 LINE 通知渠道
 {observing}
-重複 Copilot floating widget
-已安全移除
 不安全且未接線的舊 IP resolver
 已安全移除
 """

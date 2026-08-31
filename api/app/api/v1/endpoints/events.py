@@ -454,10 +454,6 @@ async def receive_event(
     if not is_test_data and body.visitor_id and new_score is not None and new_stage in ("hot", "sales_ready"):
         if should_alert(old_stage, new_stage):
             asyncio.create_task(notify_visitor_hot(body.visitor_id, new_stage, new_score))
-            # Copilot hot visitor notification
-            if tenant_id:
-                from app.services.copilot import on_hot_visitor as _copilot_hot
-                asyncio.create_task(_copilot_hot(body.visitor_id, tenant_id))
             # 1b.5.3 visitor.became_hot webhook
             fire_webhook("visitor.became_hot", {
                 "visitor_id":   str(body.visitor_id),

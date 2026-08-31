@@ -24,8 +24,6 @@ logger = logging.getLogger(__name__)
 _JOB_FEATURES = {
     "rfq_notify": "notifications",
     "rfq_hubspot": "integrations",
-    "rfq_copilot": "notifications",
-    "chat_handoff_copilot": "notifications",
     "rfq_agentos": "automation_runs",
     "company_identify": "company_identification",
     "contact_enrich": "contact_enrichment",
@@ -91,21 +89,11 @@ async def _execute(job: OperationalJob) -> None:
         from app.services.hubspot import sync_rfq_to_hubspot
 
         await sync_rfq_to_hubspot(uuid.UUID(payload["rfq_id"]))
-    elif job.job_type == "rfq_copilot":
-        from app.services.copilot import on_new_rfq
-
-        await on_new_rfq(uuid.UUID(payload["rfq_id"]), uuid.UUID(payload["tenant_id"]))
     elif job.job_type == "rfq_auto_reply":
         from app.services.rfq_auto_reply import maybe_auto_reply
 
         await maybe_auto_reply(
             uuid.UUID(payload["rfq_id"]), uuid.UUID(payload["tenant_id"])
-        )
-    elif job.job_type == "chat_handoff_copilot":
-        from app.services.copilot import on_chat_handoff
-
-        await on_chat_handoff(
-            uuid.UUID(payload["chat_session_id"]), uuid.UUID(payload["tenant_id"])
         )
     elif job.job_type == "rfq_agentos":
         from app.services.agentOS import trigger_agentOS_rfq

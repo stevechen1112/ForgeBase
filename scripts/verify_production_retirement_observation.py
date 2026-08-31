@@ -13,11 +13,9 @@ def validate_retirement_page(text: str) -> dict[str, object]:
     required = (
         "功能退場稽核",
         "AgentOS／automation runtime",
-        "ML scoring 線上 runtime／UI",
         "AI relation 推薦介面",
         "Telegram 通知渠道",
         "LINE 通知渠道",
-        "重複 Copilot floating widget",
         "不安全且未接線的舊 IP resolver",
     )
     missing = [label for label in required if label not in text]
@@ -35,7 +33,6 @@ def validate_retirement_page(text: str) -> dict[str, object]:
 
     for label in (
         "AgentOS／automation runtime",
-        "ML scoring 線上 runtime／UI",
         "AI relation 推薦介面",
         "Telegram 通知渠道",
         "LINE 通知渠道",
@@ -52,7 +49,7 @@ def validate_retirement_page(text: str) -> dict[str, object]:
     return {
         "schema_version": 1,
         "status": "passed",
-        "disabled_candidates_visible": 5,
+        "disabled_candidates_visible": 4,
         "notification_channels_observing": True,
         "new_removals_authorized": [],
     }

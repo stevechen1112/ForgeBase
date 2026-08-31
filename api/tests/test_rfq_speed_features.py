@@ -1,7 +1,6 @@
 """T5/T6/T8：即時推播、自動確認信、首回統計。"""
 import json
 import uuid
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from app.services.rfq_auto_reply import (
@@ -9,21 +8,7 @@ from app.services.rfq_auto_reply import (
     compute_missing_info,
     seconds_until_business_open,
 )
-from app.services.copilot.monitor import _should_instant_push, HIGH_QUALITY_THRESHOLD
 from tests.conftest import requires_db
-
-
-# ── T5：通知強度 gate ────────────────────────────────────────────────────
-
-def test_instant_push_gate():
-    hi = SimpleNamespace(quality_score=HIGH_QUALITY_THRESHOLD, priority="normal")
-    lo = SimpleNamespace(quality_score=10, priority="normal")
-    urgent_lo = SimpleNamespace(quality_score=10, priority="urgent")
-    none_score = SimpleNamespace(quality_score=None, priority="high")
-    assert _should_instant_push(hi) is True
-    assert _should_instant_push(lo) is False
-    assert _should_instant_push(urgent_lo) is True
-    assert _should_instant_push(none_score) is False
 
 
 # ── T5：LINE channel payload ─────────────────────────────────────────────

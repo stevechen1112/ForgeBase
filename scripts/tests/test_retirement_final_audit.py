@@ -10,11 +10,16 @@ def test_final_retirement_static_audit_passes_without_new_removals() -> None:
     assert report["decisions"]["new_removals_authorized"] == []
     assert set(report["decisions"]["removed_verified"]) == {
         "copilot_floating_widget",
+        "copilot_api",
+        "copilot_service",
+        "ml_scoring_api",
+        "ml_scoring_service",
+        "generic_integrations_api",
+        "generic_integrations_model",
         "legacy_ip_resolver",
     }
     assert set(report["decisions"]["continue_observation"]) == {
         "agentos_runtime",
-        "ml_scoring_runtime",
         "relation_recommender",
         "notification_telegram",
         "notification_line",

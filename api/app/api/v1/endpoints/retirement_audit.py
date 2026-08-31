@@ -88,19 +88,6 @@ async def _domain_usage(
         return int(row[0]), int(row[1]), row[2], {
             "signal": "RFQs with an AgentOS run id updated in the observation window"
         }
-    if candidate_key == "ml_scoring_runtime":
-        row = (
-            await db.exec(
-                select(
-                    func.count(Visitor.visitor_id),
-                    func.count(distinct(Visitor.tenant_id)),
-                    func.max(Visitor.ml_score_updated_at),
-                ).where(Visitor.ml_score_updated_at >= since)
-            )
-        ).one()
-        return int(row[0]), int(row[1]), row[2], {
-            "signal": "Visitors whose persisted ML score changed in the window"
-        }
     channel = {
         "notification_telegram": "telegram",
         "notification_line": "line",

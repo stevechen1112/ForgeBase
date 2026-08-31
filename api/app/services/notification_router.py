@@ -1,5 +1,5 @@
 """
-Notification Router — unified dispatch for all AI Copilot notifications.
+Notification Router — unified dispatch for operational notifications.
 
 Usage:
     await send_notification(
@@ -203,6 +203,22 @@ async def send_notification(
                     pref.channel, event_type, event_ref_id, message,
                     "skipped_quiet_hours",
                 )
+                continue
+
+            # A site notification is the durable notification log itself; it
+            # does not require an external service connection.
+            if pref.channel == "in_app":
+                await _log_notification(
+                    session,
+                    tenant_id,
+                    pref.user_id,
+                    pref.channel,
+                    event_type,
+                    event_ref_id,
+                    message,
+                    "sent",
+                )
+                sent_count += 1
                 continue
 
             # Resolve channel handler

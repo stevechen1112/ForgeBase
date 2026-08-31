@@ -22,7 +22,7 @@ type RouteGroup = {
 const DASHBOARD_HUBS: Record<string, string> = {
   "/dashboard/buyers": "買家管線",
   "/dashboard/content": "內容中心",
-  "/dashboard/growth": "成長工具",
+  "/dashboard/growth": "潛在買家跟進",
 };
 
 const DASHBOARD_GROUPS: RouteGroup[] = [
@@ -45,14 +45,11 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/buyers", parentLabel: "買家管線", childLabels: { my: "我的詢價案件", templates: "回覆範本" } },
 
-  { base: "/dashboard/content-performance", label: "內容成效", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/segments", label: "買家分群", entityLabel: "分群", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/ctas", label: "動態行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/nurture", label: "培育與跟進郵件", entityLabel: "培育流程", parentHref: "/dashboard/growth", parentLabel: "成長工具", childLabels: { outbox: "寄送佇列" } },
-  { base: "/dashboard/copilot", label: "AI 業務助理", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/intent-rules", label: "進階評分規則", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/ml-scoring", label: "預測評分模型", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
-  { base: "/dashboard/integrations", label: "外部服務", parentHref: "/dashboard/growth", parentLabel: "成長工具" },
+  { base: "/dashboard/content-performance", label: "內容成效", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
+  { base: "/dashboard/segments", label: "等待跟進的買家", entityLabel: "買家條件", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
+  { base: "/dashboard/ctas", label: "行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
+  { base: "/dashboard/nurture", label: "跟進內容與時間", entityLabel: "跟進流程", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進", childLabels: { outbox: "寄出前確認" } },
+  { base: "/dashboard/intent-rules", label: "買家關注條件", parentHref: "/dashboard/growth", parentLabel: "潛在買家跟進" },
 
   { base: "/dashboard/chats", label: "AI 客服對話", entityLabel: "客服對話", parentHref: "/dashboard", parentLabel: "每日營運總覽" },
   { base: "/dashboard/tasks", label: "今日待辦", parentHref: "/dashboard", parentLabel: "每日營運總覽" },

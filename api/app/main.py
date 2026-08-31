@@ -17,8 +17,8 @@ from app.api.v1.router import api_router
 from app.api.internal import router as internal_router
 from app.core import rate_limit
 from app.core.config import settings
-from app.services.copilot.digest import run_daily_digest
 from app.services.google_ads import sync_high_intent_to_customer_match
+from app.services.daily_summary import run_daily_summary
 from app.services.scheduled_publishing import run_scheduled_publishing
 from app.services.score_decay import run_daily_score_decay
 
@@ -39,6 +39,15 @@ async def _score_decay_job() -> None:
         logger.exception("Score decay job failed")
 
 
+async def _daily_summary_job() -> None:
+    """Send the rule-based sales operations summary each morning."""
+    try:
+        stats = await run_daily_summary()
+        logger.info("Daily operations summary complete: %s", stats)
+    except Exception:
+        logger.exception("Daily operations summary job failed")
+
+
 async def _google_ads_sync_job() -> None:
     """Daily Google Ads Customer Match sync job."""
     try:
@@ -56,15 +65,6 @@ async def _scheduled_publishing_job() -> None:
             logger.info("Scheduled publishing: %d product(s) published", stats["published"])
     except Exception:
         logger.exception("Scheduled publishing job failed")
-
-
-async def _daily_digest_job() -> None:
-    """Daily digest: send AI marketing summary to all tenants with active preferences."""
-    try:
-        stats = await run_daily_digest()
-        logger.info("Daily digest complete: %s", stats)
-    except Exception:
-        logger.exception("Daily digest job failed")
 
 
 async def _sla_scan_job() -> None:
@@ -153,6 +153,15 @@ async def lifespan(app: FastAPI):
         misfire_grace_time=3600,
     )
     _scheduler.add_job(
+        _daily_summary_job,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        id="daily_operations_summary",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    _scheduler.add_job(
         _google_ads_sync_job,
         trigger="cron",
         hour=3,
@@ -168,16 +177,6 @@ async def lifespan(app: FastAPI):
         id="scheduled_publishing",
         replace_existing=True,
         misfire_grace_time=60,
-    )
-    # Daily digest — 08:00 Asia/Taipei (= 00:00 UTC)
-    _scheduler.add_job(
-        _daily_digest_job,
-        trigger="cron",
-        hour=0,
-        minute=0,
-        id="daily_copilot_digest",
-        replace_existing=True,
-        misfire_grace_time=3600,
     )
     # First-response SLA scan — every 15 min (T7)
     _scheduler.add_job(
@@ -234,7 +233,7 @@ async def lifespan(app: FastAPI):
         misfire_grace_time=30,
     )
     _scheduler.start()
-    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min, daily digest 00:00 UTC")
+    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min")
     yield
     # shutdown
     _scheduler.shutdown(wait=False)

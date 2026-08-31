@@ -68,7 +68,7 @@ export default function NotificationSettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/copilot/preferences`, {
+      const response = await fetch(`${API_BASE}/notifications/preferences`, {
         headers: buildApiHeaders(token),
       });
       const payload = await response.json();
@@ -85,7 +85,7 @@ export default function NotificationSettingsPage() {
 
   const updatePref = async (id: string, field: string, value: boolean | string) => {
     setError(null);
-    const response = await fetch(`${API_BASE}/copilot/preferences/${id}`, {
+    const response = await fetch(`${API_BASE}/notifications/preferences/${id}`, {
       method: "PUT",
       headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
       body: JSON.stringify({ [field]: value }),
@@ -102,7 +102,7 @@ export default function NotificationSettingsPage() {
 
   const deletePref = async (id: string) => {
     if (!confirm("確定要移除此通知設定？")) return;
-    const response = await fetch(`${API_BASE}/copilot/preferences/${id}`, {
+    const response = await fetch(`${API_BASE}/notifications/preferences/${id}`, {
       method: "DELETE",
       headers: buildApiHeaders(token),
     });

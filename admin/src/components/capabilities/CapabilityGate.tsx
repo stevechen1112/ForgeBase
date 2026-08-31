@@ -37,9 +37,6 @@ export const FEATURE_LABELS: Record<string, string> = {
   advanced_content: "進階頁面與比較內容",
   audience_segments: "買家分群",
   advanced_intent_rules: "進階評分規則",
-  ml_scoring: "預測評分模型",
-  ai_copilot: "AI 業務助理",
-  integrations: "外部行銷服務整合",
   company_identification: "企業辨識與聯絡人候選",
   automation_runs: "自動任務執行中心",
 };

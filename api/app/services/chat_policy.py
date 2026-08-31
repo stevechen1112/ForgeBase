@@ -465,7 +465,7 @@ def resolve_dialogue_state(
 def summarize_quotable_needs(user_text: str) -> dict[str, Any]:
     """從買家對話文字萃取「可詢價需求」摘要（實效計畫 §4.3）。
 
-    輸出可寫入 RFQ 草稿或 Copilot 工單，讓業務拿到的是結構化需求，
+    輸出可寫入 RFQ 草稿或業務待辦，讓業務拿到的是結構化需求，
     而不是一整段對話紀錄。
     """
     lowered = user_text.lower()

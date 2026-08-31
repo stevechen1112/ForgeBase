@@ -47,7 +47,6 @@ async def _create_superuser(factory) -> tuple[uuid.UUID, str]:
 def test_retirement_candidates_are_not_enabled_by_phase2_preset() -> None:
     tenant = Tenant(name="Observation", slug="observation")
     features = resolve_tenant_features(tenant)
-    assert features["ml_scoring"] is False
     assert features["ai_relation_recommendations"] is False
     assert features["automation_runs"] is False
 
@@ -123,7 +122,7 @@ async def test_retired_notification_dispatch_is_fail_closed_and_observed(
 
 @requires_db
 @pytest.mark.asyncio
-async def test_retirement_report_records_use_and_blocks_early_removal(
+async def test_removed_scoring_endpoint_and_remaining_retirement_report(
     http_client,
     two_tenants,
     admin_token_for_tenant,
@@ -136,24 +135,10 @@ async def test_retirement_report_records_use_and_blocks_early_removal(
         platform_headers = _auth(platform_token)
         tenant_headers = _auth(tenant_token)
 
-        blocked_ml = await http_client.get(
+        removed_ml = await http_client.get(
             "/api/v1/tracking/ml/status", headers=tenant_headers
         )
-        assert blocked_ml.status_code == 403
-
-        async with factory() as db:
-            stored = await db.get(Tenant, tenant.id)
-            stored.feature_overrides = {
-                **(stored.feature_overrides or {}),
-                "ml_scoring": True,
-            }
-            db.add(stored)
-            await db.commit()
-
-        used_ml = await http_client.get(
-            "/api/v1/tracking/ml/status", headers=tenant_headers
-        )
-        assert used_ml.status_code == 200, used_ml.text
+        assert removed_ml.status_code == 404
 
         report = await http_client.get(
             "/api/v1/admin/retirement-audit", headers=platform_headers
@@ -164,25 +149,20 @@ async def test_retirement_report_records_use_and_blocks_early_removal(
         }
         assert {
             "agentos_runtime",
-            "ml_scoring_runtime",
             "notification_telegram",
             "notification_line",
             "relation_recommender",
-            "copilot_floating_widget",
             "legacy_ip_resolver",
         } <= set(candidates)
-        assert candidates["copilot_floating_widget"]["status"] == "removed"
+        assert "ml_scoring_runtime" not in candidates
+        assert "copilot_floating_widget" not in candidates
         assert candidates["legacy_ip_resolver"]["status"] == "removed"
         for channel_candidate in ("notification_telegram", "notification_line"):
             assert candidates[channel_candidate]["code_state"] == "disabled"
             assert candidates[channel_candidate]["status"] == "observing"
             assert candidates[channel_candidate]["evidence"]["enabled_preferences"] == 0
             assert "observation_window_incomplete" in candidates[channel_candidate]["blockers"]
-        assert candidates["ml_scoring_runtime"]["recent_usage_count"] >= 1
-        assert "usage_detected" in candidates["ml_scoring_runtime"]["blockers"]
-        assert candidates["ml_scoring_runtime"]["removal_ready"] is False
-
-        too_early = await http_client.put(
+        removed_candidate = await http_client.put(
             "/api/v1/admin/retirement-audit/ml_scoring_runtime/decision",
             headers=platform_headers,
             json={
@@ -190,8 +170,7 @@ async def test_retirement_report_records_use_and_blocks_early_removal(
                 "reason": "Attempted before the mandatory evidence window was complete.",
             },
         )
-        assert too_early.status_code == 409
-        assert "observation_window_incomplete" in too_early.text
+        assert removed_candidate.status_code == 404
 
         relation_blocked = await http_client.get(
             f"/api/v1/content/products/{uuid.uuid4()}/recommend-relations",

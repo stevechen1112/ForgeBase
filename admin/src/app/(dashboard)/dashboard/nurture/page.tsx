@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Mail, PlusCircle, ListChecks } from "lucide-react";
+import { RefreshCw, Mail, PlusCircle, ListChecks, Users } from "lucide-react";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 
 type Sequence = {
@@ -67,18 +67,21 @@ export default function NurturePage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">跟進郵件</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">依買家關注程度排程跟進郵件；須經核准後始可寄出（如第 0／3／7 天）。</p>
+          <h1 className="text-2xl font-bold tracking-tight">潛在買家跟進</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">安排哪些買家在什麼時間收到哪些資料；流程啟用與每封寄件都需要人工確認。</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
           </Button>
           <Button size="sm" onClick={() => router.push("/dashboard/nurture/new")}>
-            <PlusCircle className="mr-2 h-4 w-4" />新增流程
+            <PlusCircle className="mr-2 h-4 w-4" />新增跟進流程
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/segments")}>
+            <Users className="mr-2 h-4 w-4" />等待跟進的買家
           </Button>
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/nurture/outbox")}>
-            <ListChecks className="mr-2 h-4 w-4" />待寄郵件
+            <ListChecks className="mr-2 h-4 w-4" />寄出前確認
           </Button>
         </div>
       </div>
@@ -91,7 +94,7 @@ export default function NurturePage() {
 
       <div className="mb-4 grid grid-cols-2 gap-4">
         <Card><CardContent className="pt-4 pb-4">
-          <p className="text-sm text-muted-foreground">流程總數</p>
+          <p className="text-sm text-muted-foreground">跟進流程</p>
           <p className="mt-1 text-3xl font-bold">{sequences.length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
@@ -104,7 +107,7 @@ export default function NurturePage() {
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Mail className="h-4 w-4 text-primary" />跟進流程
+              <Mail className="h-4 w-4 text-primary" />跟進內容與時間
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">

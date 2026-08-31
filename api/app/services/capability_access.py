@@ -89,26 +89,17 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "label": "進階評分規則", "group": "買家旅程",
         "description": "自訂各種行為對買家關注分數的影響。", "configurable": True,
     },
-    "ml_scoring": {
-        "label": "預測評分模型", "group": "退場觀察",
-        "description": "線上 runtime 預設關閉；保留離線資料契約並觀察既有租戶使用。", "configurable": True,
-        "status": "retirement_observation",
-    },
     "nurture_email": {
         "label": "培育與跟進郵件", "group": "外聯與跟進",
         "description": "建立序列；寄送仍保留人工核准與安全限制。", "configurable": True,
-    },
-    "ai_copilot": {
-        "label": "AI 業務助理", "group": "外聯與跟進",
-        "description": "查詢營運資料並建立需核准的跟進動作。", "configurable": True,
     },
     "seo_redirects": {
         "label": "SEO 網址轉址", "group": "網站與內容",
         "description": "管理舊網址至新內容的 301／302 轉址。", "configurable": True,
     },
     "integrations": {
-        "label": "外部行銷服務整合", "group": "外聯與跟進",
-        "description": "由 ForgeBase 管理 ESP 與 CRM 串接狀態。", "configurable": True,
+        "label": "寄件服務", "group": "潛在買家跟進",
+        "description": "提供人工核准後的郵件寄送；技術憑證由 ForgeBase 維護。", "configurable": True,
     },
     "company_identification": {
         "label": "企業辨識與聯絡人候選", "group": "待第三方資源",

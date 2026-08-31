@@ -33,8 +33,6 @@ from app.models.contact_enrichment import (
 from app.models.content_asset import ContentAsset
 from app.models.content_field_lock import ContentFieldLock
 from app.models.content_strategy import ContentStrategy
-from app.models.copilot_conversation import CopilotConversation
-from app.models.copilot_run_log import CopilotRunLog
 from app.models.cta import CTA
 from app.models.email_delivery import EmailDeliveryEvent, EmailSuppression
 from app.models.faq_item import FAQItem
@@ -45,7 +43,6 @@ from app.models.inbound_reply import (
     SalesHandoff,
     SalesHandoffEvent,
 )
-from app.models.integration_credential import IntegrationCredential
 from app.models.knowledge import (
     KnowledgeChunk,
     KnowledgeSource,
@@ -123,8 +120,6 @@ __all__ = [
     "ContentAsset",
     "ContentFieldLock",
     "ContentStrategy",
-    "CopilotConversation",
-    "CopilotRunLog",
     "EmailDeliveryEvent",
     "EmailSuppression",
     "FAQItem",
@@ -133,7 +128,6 @@ __all__ = [
     "IdentificationReview",
     "InboundReply",
     "InboundReplyPolicy",
-    "IntegrationCredential",
     "JourneySnapshot",
     "KnowledgeChunk",
     "KnowledgeSource",

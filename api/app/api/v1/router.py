@@ -13,16 +13,15 @@ from app.api.v1.endpoints import (
     company_identification,
     contact_enrichment,
     contacts,
-    copilot,
     esp,
     events,
     growth_attribution,
     growth_ops,
     inbound_replies,
-    integrations,
+    intent_rules,
     locale_draft,
     locale_quality,
-    ml_scoring,
+    notifications,
     nurture,
     orphans,
     outreach,
@@ -79,7 +78,7 @@ api_router.include_router(
     inbound_replies.admin_router
 )  # Platform review of unlinked replies
 api_router.include_router(adoption_applications.admin_router)
-api_router.include_router(copilot.router)  # AI Copilot notifications
+api_router.include_router(notifications.router)
 
 # Content CRUD — all under /api/v1/content/
 content_router = APIRouter(prefix="/content")
@@ -146,7 +145,7 @@ api_router.include_router(visitor_ai_router)  # /tracking/visitors/{id}/recommen
 api_router.include_router(
     content_ai_router
 )  # /content/dynamic-cta, /recommend-relations
-api_router.include_router(ml_scoring.router)  # /tracking/ml/*
+api_router.include_router(intent_rules.router)  # /tracking/intent-rules
 
 # Public conversion forms — /api/v1/forms/
 forms_router = APIRouter()
@@ -165,6 +164,3 @@ api_router.include_router(site_domain_routing.router)
 api_router.include_router(tenant_domains_admin.router)
 api_router.include_router(privacy.router)
 api_router.include_router(webhooks.router)
-
-# Admin integrations — /api/v1/admin/
-api_router.include_router(integrations.router)  # /admin/integrations/status

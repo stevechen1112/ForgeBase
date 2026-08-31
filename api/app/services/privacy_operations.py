@@ -440,8 +440,6 @@ async def erase_anonymous_visitor(
     visitor.facet_procurement_readiness = 0
     visitor.facet_urgency = 0
     visitor.intent_explanation = None
-    visitor.ml_intent_score = None
-    visitor.ml_score_updated_at = None
     visitor.stage_alert_sent = False
     visitor.device_type = None
     visitor.country = None

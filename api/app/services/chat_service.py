@@ -743,19 +743,6 @@ class ChatService:
                 "requirement_summary": requirement_summary,
             },
         )
-        if chat_session.tenant_id:
-            from app.services.operational_outbox import enqueue_operational_job
-
-            enqueue_operational_job(
-                self.db,
-                job_type="chat_handoff_copilot",
-                payload={
-                    "chat_session_id": str(chat_session.id),
-                    "tenant_id": str(chat_session.tenant_id),
-                },
-                idempotency_key=f"chat:{chat_session.id}:handoff-copilot",
-                tenant_id=chat_session.tenant_id,
-            )
         await self.db.commit()
         return {
             "rfq_prefill_url": _build_rfq_prefill_url(draft.id, chat_session.locale),

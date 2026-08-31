@@ -99,7 +99,7 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
 
         disabled_segments = await http_client.get("/api/v1/tracking/segments", headers=_auth(tenant_token))
         assert disabled_segments.status_code == 403
-        notifications = await http_client.get("/api/v1/copilot/notifications", headers=_auth(tenant_token))
+        notifications = await http_client.get("/api/v1/notifications/history", headers=_auth(tenant_token))
         assert notifications.status_code == 200, notifications.text
         assert {item["event_type"] for item in notifications.json()["data"]} == {
             "new_rfq", "hot_visitor", "chat_handoff",
