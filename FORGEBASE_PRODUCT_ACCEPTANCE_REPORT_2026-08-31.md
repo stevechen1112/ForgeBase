@@ -12,6 +12,10 @@
   `33242102696`）在 `c39eccb` 成功；release gate、migration、API、North Star、
   admin browser/RBAC、五語系公開站、安全、SBOM、備份還原、rollback、六個映像、
   production topology、Linode 部署與健康檢查均為 success。
+- Batch 0 正式部署：`Deploy to Production` #80（run `33384622362`）在 commit
+  `2629a4569ab364f24904fdde9a611e4835fe0297` 成功；包含完整 release gate、修正後的
+  operational configuration contract、六個 production images、topology、Linode safe
+  deploy 與正式 health check。
 - 外部健康：`Production External Uptime` #218（run `33381384424`）於
   2026-08-31 成功，仍對應 `c39eccb`。
 - 公開瀏覽器實測：
@@ -21,6 +25,8 @@
     應用、認證、關於、RFQ、五語系、AI 顧問入口與手機選單存在；沒有水平溢位，
     console 無 error/warning。頁面明確標示為 fictional/demo，沒有冒充真實製造商。
   - 本輪未登入平台後台，因尚未取得本輪正式平台帳號登入授權。
+  - #80 部署後再次回歸兩站 1280px／390px：結果相同，AxisForm 手機選單可展開，
+    console 仍無 error/warning。
 - 公開 DNS（2026-08-31，以 Cloudflare DNS over HTTPS 查詢）：
   - `edge.forgebase.com`：NXDOMAIN。
   - `axisform.forgebase.com`：NXDOMAIN。
@@ -182,7 +188,9 @@ E2E。
   Linode：91 個 operational contract tests 中有一個仍比對舊的 close CLI 字串。已同步
   更新契約測試並在本機重跑同一組合為 `91 passed, 1 skipped`；應用、North Star、容量、
   隱私及其餘 release jobs 在 #79 均已通過。
-- 尚未完成正式部署：本節會在對應 GitHub Actions production run 成功後補入 run/commit
-  證據。
+- 已完成正式部署：#80（run `33384622362`）於 2026-08-31 11:04 UTC 成功，commit
+  `2629a4569ab364f24904fdde9a611e4835fe0297`；部署後桌機／手機公開瀏覽器回歸通過。
+- 尚未完成真實商用 E2E：Batch 0 只完成證據基線與安全邊界，未把任何 North Star
+  外部步驟提升為商用 E2E。
 - 尚未執行任何 production probe、外部寄信、真人回覆、DNS 修改、租戶政策修改或全域
   開關變更。
