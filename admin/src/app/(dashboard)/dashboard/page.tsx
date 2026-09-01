@@ -162,8 +162,8 @@ export default function DashboardPage() {
 
   const dashboard = useMemo(() => {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const recent = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= monthStart);
+    const rollingStart = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+    const recent = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= rollingStart);
     const open = recent.filter((rfq) => !CLOSED.has(rfq.status));
     const newUnassigned = open.filter((rfq) => rfq.status === "new" && !rfq.assigned_to).length;
     const highAttention = open.filter((rfq) => (rfq.quality_score ?? 0) >= 80).length;
@@ -250,9 +250,9 @@ export default function DashboardPage() {
       color: "border-l-amber-500 bg-amber-50 text-amber-600",
     },
     {
-      label: "本月已成交",
+      label: "近 30 天已成交",
       value: dashboard.won,
-      note: dashboard.recent.length ? `詢價成交率 ${Math.round((dashboard.won / dashboard.recent.length) * 100)}%` : "尚無本月詢價",
+      note: dashboard.recent.length ? `詢價成交率 ${Math.round((dashboard.won / dashboard.recent.length) * 100)}%` : "近 30 天尚無詢價",
       icon: Trophy,
       color: "border-l-emerald-500 bg-emerald-50 text-emerald-600",
     },
@@ -276,7 +276,7 @@ export default function DashboardPage() {
             <p className="mt-2 max-w-4xl text-sm leading-6 text-cyan-50 sm:text-base">
               今天有 <strong>{dashboard.todayTasks} 項工作</strong>
               {dashboard.overdue > 0 && <>，其中 <strong>{dashboard.overdue} 項已逾期</strong></>}
-              ；本月共 {dashboard.recent.length} 筆詢價，已有 {dashboard.won} 筆成交。
+              ；近 30 天共 {dashboard.recent.length} 筆詢價，已有 {dashboard.won} 筆成交。
               {funnel && <> 近 30 天另有 {funnel.totals.visitors} 位訪客，訪客轉詢價率 {funnel.conversion_rates.visitor_to_rfq}%。</>}
             </p>
           </div>
@@ -375,7 +375,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle className="text-lg">本月商機進度</CardTitle>
+            <CardTitle className="text-lg">近 30 天商機進度</CardTitle>
             <p className="mt-1 text-sm text-slate-500">從有效詢價一路看到成交</p>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
