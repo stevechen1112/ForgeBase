@@ -58,7 +58,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <>
       <header className="z-30 flex h-[72px] shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:px-6">
-        <Button type="button" variant="outline" size="icon" className="h-11 w-11 lg:hidden" onClick={onOpenMenu} aria-label="開啟功能選單"><Menu className="h-5 w-5" /></Button>
+        <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={onOpenMenu} aria-label="顯示或收合功能選單"><Menu className="h-5 w-5" /></Button>
 
         <nav aria-label="目前位置" className="hidden min-w-0 items-center gap-2 text-sm lg:flex">
           <Link href={workspace.href} className="max-w-40 truncate font-semibold text-slate-800 hover:text-[#176c89]">{workspace.label}</Link>
@@ -69,7 +69,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
           <Search className="h-4 w-4 shrink-0" /><span className="truncate">搜尋所有後台功能</span><kbd className="ml-auto hidden rounded border bg-white px-1.5 py-0.5 text-[11px] text-slate-400 sm:inline">Ctrl K</kbd>
         </button>
 
-        <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 xl:inline">人工確認模式</span>
+        <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 xl:inline">外銷主管模式</span>
         <Button type="button" variant="outline" className="hidden h-11 gap-2 sm:inline-flex" onClick={() => setDirectoryOpen(true)}><Grid2X2 className="h-4 w-4" />全部功能</Button>
         <Button asChild variant="ghost" size="icon" className="h-11 w-11" aria-label="開啟通知中心"><Link href="/dashboard/notifications"><Bell className="h-5 w-5" /></Link></Button>
         {canEdit && (

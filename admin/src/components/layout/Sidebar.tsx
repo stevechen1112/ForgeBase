@@ -59,24 +59,23 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-screen w-[304px] flex-col bg-[#10243a] text-slate-100">
-      <div className="border-b border-white/10 px-5 py-5">
+      <div className="border-b border-white/10 px-[18px] pb-[13px] pt-[18px]">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#27a3c4] text-sm font-extrabold text-white shadow-sm">{tenantBrand.mark}</div>
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[9px] bg-white text-sm font-black text-[#10243a] shadow-sm">{tenantBrand.mark}</div>
           <div className="min-w-0">
             <p className="truncate text-[18px] font-bold leading-tight text-white">{tenantBrand.name}</p>
             <p className="mt-1 text-xs tracking-wide text-slate-300">外銷業務營運系統</p>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
-          <span>{visibleWorkspaces.length} 個工作入口</span><span className="text-white/30">•</span><span>完整功能找得到</span>
+        <div className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-[13px] text-slate-300">
+          <span>{visibleWorkspaces.length} 個工作入口</span><strong className="text-white">完整功能找得到</strong>
         </div>
       </div>
 
       <div className="px-4 pt-4">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋功能，例如：產品、詢價" aria-label="搜尋後台功能" className="h-11 w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#56c3df] focus:ring-2 focus:ring-[#56c3df]/20" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋工作或功能" aria-label="搜尋後台功能" className="h-[42px] w-full rounded-[7px] border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#56c3df] focus:ring-2 focus:ring-[#56c3df]/20" />
         </label>
       </div>
 
@@ -106,7 +105,7 @@ export function Sidebar() {
                 {favorites.map((item) => {
                   const Icon = item.icon;
                   const active = isRouteActive(pathname, item.href);
-                  return <Link key={item.href} href={item.href} className={cn("flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-medium", active ? "bg-[#176c89] text-white" : "text-slate-300 hover:bg-white/10 hover:text-white")}><Icon className="h-[18px] w-[18px] shrink-0" /><span className="truncate">{item.label}</span></Link>;
+                  return <Link key={item.href} href={item.href} className={cn("flex min-h-11 items-center gap-3 rounded-[7px] px-3 py-2 text-[14px] font-semibold", active ? "bg-white text-[#10243a]" : "text-slate-200 hover:bg-white/10 hover:text-white")}><Icon className="h-[18px] w-[18px] shrink-0" /><span className="truncate">{item.label}</span><Star className="ml-auto h-4 w-4 fill-amber-300 text-amber-300" /></Link>;
                 })}
               </div>
             </section>
@@ -116,12 +115,12 @@ export function Sidebar() {
               <div className="space-y-1">
                 {visibleWorkspaces.map((workspace) => {
                   const Icon = workspace.icon;
-                  const active = workspace.items.some((item) => isRouteActive(pathname, item.href));
+                  const active = isRouteActive(pathname, workspace.href) || workspace.items.some((item) => isRouteActive(pathname, item.href));
                   return (
-                    <Link key={workspace.id} href={workspace.href} className={cn("group flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold transition-colors", active ? "bg-white/10 text-white shadow-inner" : "text-slate-300 hover:bg-white/5 hover:text-white")}>
-                      <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", active ? "bg-[#27a3c4] text-white" : "bg-white/5 text-slate-300 group-hover:bg-white/10")}><Icon className="h-[17px] w-[17px]" /></span>
+                    <Link key={workspace.id} href={workspace.href} className={cn("group flex min-h-12 items-center gap-3 rounded-[7px] px-3 py-2 text-[15px] font-semibold transition-colors", active ? "bg-white text-[#10243a]" : "text-slate-200 hover:bg-white/5 hover:text-white")}>
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center"><Icon className="h-[18px] w-[18px]" /></span>
                       <span className="truncate">{workspace.shortLabel}</span>
-                      <span className="ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-slate-400">{workspace.items.filter((item) => isRoleAllowed(item.roles, role)).length}</span>
+                      <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold", active ? "bg-[#e5eff6] text-[#355572]" : "bg-white/10 text-slate-300")}>{workspace.items.filter((item) => isRoleAllowed(item.roles, role)).length}</span>
                     </Link>
                   );
                 })}

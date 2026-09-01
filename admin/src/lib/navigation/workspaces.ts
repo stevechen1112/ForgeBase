@@ -16,7 +16,6 @@ import {
   GitCompareArrows,
   Globe2,
   Handshake,
-  Headphones,
   Languages,
   LayoutDashboard,
   LifeBuoy,
@@ -77,7 +76,7 @@ export const WORKSPACES: Workspace[] = [
     label: "今日工作",
     shortLabel: "今日工作",
     description: "先看需要立即處理的詢價、待辦與通知。",
-    href: "/dashboard",
+    href: "/dashboard/workspaces/today",
     icon: LayoutDashboard,
     accent: "cyan",
     items: [
@@ -91,7 +90,7 @@ export const WORKSPACES: Workspace[] = [
     label: "詢價與跟進",
     shortLabel: "詢價與跟進",
     description: "從新詢價、分派、回覆到成交結果都在同一區。",
-    href: "/dashboard/rfqs",
+    href: "/dashboard/workspaces/inquiries",
     icon: ClipboardList,
     accent: "amber",
     items: [
@@ -106,7 +105,7 @@ export const WORKSPACES: Workspace[] = [
     label: "買家與客戶",
     shortLabel: "買家與客戶",
     description: "了解買家從瀏覽、對話、回信到詢價的完整脈絡。",
-    href: "/dashboard/buyers",
+    href: "/dashboard/workspaces/customers",
     icon: Users,
     accent: "blue",
     items: [
@@ -121,7 +120,7 @@ export const WORKSPACES: Workspace[] = [
     label: "產品內容",
     shortLabel: "產品內容",
     description: "維護產品、分類、應用、認證與製造能力。",
-    href: "/dashboard/products",
+    href: "/dashboard/workspaces/product-content",
     icon: Boxes,
     accent: "emerald",
     items: [
@@ -138,11 +137,10 @@ export const WORKSPACES: Workspace[] = [
     label: "網站內容",
     shortLabel: "網站內容",
     description: "維護頁面、文案、圖片、多語與網站導覽。",
-    href: "/dashboard/content",
+    href: "/dashboard/workspaces/website-content",
     icon: PanelsTopLeft,
     accent: "violet",
     items: [
-      { label: "內容中心", description: "查看網站內容工作的完整入口。", href: "/dashboard/content", icon: PanelsTopLeft },
       { label: "頁面管理", description: "維護公司、服務與自訂頁面。", href: "/dashboard/pages", icon: Files, roles: admins },
       { label: "網站文案與圖片", description: "調整首頁與共用區塊的品牌內容。", href: "/dashboard/settings/site-copy", icon: FilePenLine, roles: editors },
       { label: "圖片與檔案", description: "管理圖片、型錄、規格書與替代文字。", href: "/dashboard/assets", icon: FileImage, roles: editors },
@@ -157,12 +155,11 @@ export const WORKSPACES: Workspace[] = [
     label: "潛在買家跟進",
     shortLabel: "潛在買家跟進",
     description: "從內容成效、買家分群到寄出前人工確認。",
-    href: "/dashboard/growth",
+    href: "/dashboard/workspaces/buyer-followup",
     icon: Handshake,
     accent: "rose",
     roles: editors,
     items: [
-      { label: "跟進工作區", description: "查看潛在買家跟進流程與所有入口。", href: "/dashboard/growth", icon: Handshake },
       { label: "內容成效", description: "找出帶來探索、下載與詢價的內容。", href: "/dashboard/content-performance", icon: ChartNoAxesCombined, feature: "full_tracking" },
       { label: "等待跟進的買家", description: "依市場與近期互動整理跟進名單。", href: "/dashboard/segments", icon: Users, feature: "audience_segments" },
       { label: "跟進內容與時間", description: "安排第幾天提供哪些資料。", href: "/dashboard/nurture", icon: Megaphone, feature: "nurture_email" },
@@ -174,7 +171,7 @@ export const WORKSPACES: Workspace[] = [
     label: "團隊管理",
     shortLabel: "團隊管理",
     description: "管理成員、角色與工作分工。",
-    href: "/dashboard/users",
+    href: "/dashboard/workspaces/team",
     icon: Users,
     accent: "blue",
     roles: admins,
@@ -187,14 +184,13 @@ export const WORKSPACES: Workspace[] = [
     label: "設定與支援",
     shortLabel: "設定與支援",
     description: "管理公司資料、通知偏好與網站修改需求。",
-    href: "/dashboard/settings/site-profile",
+    href: "/dashboard/workspaces/settings",
     icon: Settings2,
     accent: "cyan",
     items: [
       { label: "公司與網站資料", description: "維護品牌、公司與公開網站基本資料。", href: "/dashboard/settings/site-profile", icon: Globe2, roles: admins },
       { label: "通知設定", description: "調整通知方式與接收範圍。", href: "/dashboard/settings/notifications", icon: Bell },
       { label: "網站修改與支援", description: "提交網站調整需求並查看處理狀態。", href: "/dashboard/support", icon: LifeBuoy },
-      { label: "操作說明", description: "從工作目的找到正確功能入口。", href: "/dashboard/support", icon: Headphones, keywords: ["教學", "幫助"] },
     ],
   },
 ];
@@ -202,8 +198,8 @@ export const WORKSPACES: Workspace[] = [
 export const DEFAULT_FAVORITES = [
   "/dashboard",
   "/dashboard/rfqs",
-  "/dashboard/tasks",
   "/dashboard/products",
+  "/dashboard/content/locales",
 ];
 
 export function isRoleAllowed(
@@ -219,8 +215,9 @@ export function isRouteActive(pathname: string, href: string) {
 }
 
 export function findWorkspace(pathname: string) {
+  const workspaceRoute = WORKSPACES.find((workspace) => isRouteActive(pathname, workspace.href));
+  if (workspaceRoute) return workspaceRoute;
   const candidates = WORKSPACES.flatMap((workspace) => [
-    { workspace, href: workspace.href },
     ...workspace.items.map((item) => ({ workspace, href: item.href })),
   ])
     .filter(({ href }) => isRouteActive(pathname, href))

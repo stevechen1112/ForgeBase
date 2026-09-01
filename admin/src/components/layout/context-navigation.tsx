@@ -89,6 +89,7 @@ function detailLabel(group: RouteGroup, remainder: string): string | null {
 
 export function resolveDashboardTrail(pathname: string): NavigationCrumb[] {
   if (pathname === "/dashboard") return [];
+  if (pathname.startsWith("/dashboard/workspaces/")) return [];
   const hubLabel = DASHBOARD_HUBS[pathname];
   if (hubLabel) {
     return [
