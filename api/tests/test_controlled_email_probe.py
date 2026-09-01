@@ -18,7 +18,6 @@ def _configure_safe_probe(monkeypatch) -> None:
     monkeypatch.setattr(settings, "EMAIL_DRY_RUN", False)
     monkeypatch.setattr(settings, "EMAIL_EXTERNAL_DELIVERY_ENABLED", False)
     monkeypatch.setattr(settings, "OUTREACH_SEND_ENABLED", False)
-    monkeypatch.setattr(settings, "ESP_PROVIDER", "resend")
     monkeypatch.setattr(settings, "RESEND_API_KEY", "configured")
     monkeypatch.setattr(settings, "RESEND_WEBHOOK_SECRET", "configured")
 

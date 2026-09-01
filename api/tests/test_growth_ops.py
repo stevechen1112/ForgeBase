@@ -211,7 +211,7 @@ async def test_funnel_layers_and_conversion(http_client, two_tenants, admin_toke
     assert r.status_code == 200, r.text
     data = r.json()
     layers = {l["layer"]: l for l in data["layers"]}
-    assert list(layers) == ["traffic", "high_intent", "rfq", "qualified_rfq", "quoted", "negotiation", "won"]
+    assert list(layers) == ["traffic", "rfq", "qualified_rfq", "quoted", "negotiation", "won"]
     assert layers["rfq"]["count"] >= 1
     assert layers["quoted"]["count"] >= 1
     assert layers["rfq"]["conversion_from_prev_pct"] is None
@@ -243,7 +243,7 @@ async def test_task_queue_aggregates(http_client, two_tenants, admin_token_for_t
     assert r.status_code == 200, r.text
     data = r.json()
     types = {t["type"] for t in data["tasks"]}
-    assert {"sla_breached_rfq", "rfq_follow_up_due", "hot_visitor_unassigned", "low_quality_rfq",
+    assert {"sla_breached_rfq", "rfq_follow_up_due", "low_quality_rfq",
             "content_pending_approval", "verification_anomaly"} == types
     follow_up = next(t for t in data["tasks"] if t["type"] == "rfq_follow_up_due")
     assert follow_up["link"] == "/dashboard/rfqs?follow_up=due"

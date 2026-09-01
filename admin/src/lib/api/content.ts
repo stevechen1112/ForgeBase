@@ -163,7 +163,6 @@ export type CTA = {
   locale: string;
   status: string;
   sort_order: number;
-  target_intent_stage: string;
   created_at: string;
   updated_at: string;
 };

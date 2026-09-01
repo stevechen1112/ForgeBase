@@ -53,12 +53,9 @@ SIDEBAR_ROUTES = [
     "/dashboard/rfqs",
     "/dashboard/rfqs/templates",
     "/dashboard/notifications",
-    "/dashboard/intent",
     "/dashboard/visitors",
-    "/dashboard/intent-rules",
     "/dashboard/content-performance",
     "/dashboard/chats",
-    "/dashboard/agent-runs",
     "/dashboard/segments",
     "/dashboard/nurture",
     "/dashboard/nurture/outbox",
@@ -75,7 +72,6 @@ SIDEBAR_ROUTES = [
     "/dashboard/settings/notifications",
     "/dashboard/users",
     "/dashboard/settings/site-profile",
-    "/dashboard/integrations",
 ]
 
 STATIC_SUB_ROUTES = [
@@ -252,7 +248,7 @@ def main() -> int:
         dynamic += collect_dynamic_links(page, "/dashboard/chats", ["/dashboard/chats/"])
         dynamic += collect_dynamic_links(page, "/dashboard/segments", ["/dashboard/segments/"])
         dynamic += collect_dynamic_links(page, "/dashboard/nurture", ["/dashboard/nurture/"])
-        dynamic += collect_dynamic_links(page, "/dashboard/intent", ["/dashboard/visitors/"])
+        dynamic += collect_dynamic_links(page, "/dashboard/visitors", ["/dashboard/visitors/"])
 
         routes = list(dict.fromkeys(routes + dynamic))
 

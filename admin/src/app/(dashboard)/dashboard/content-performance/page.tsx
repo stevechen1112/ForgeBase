@@ -12,7 +12,7 @@ type SummaryRow = { total_events: number; total_pages: number; total_unique_visi
 type PageRow = {
   page_id?: string; page_type?: string; page_name?: string;
   page_views?: number; unique_visitors?: number; spec_downloads?: number;
-  rfq_count?: number; avg_intent_score?: number;
+  rfq_count?: number;
   // 商品專屬
   model_number?: string; category_slug?: string;
   // 應用場景專屬

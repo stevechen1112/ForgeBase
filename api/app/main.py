@@ -17,10 +17,8 @@ from app.api.v1.router import api_router
 from app.api.internal import router as internal_router
 from app.core import rate_limit
 from app.core.config import settings
-from app.services.google_ads import sync_high_intent_to_customer_match
 from app.services.daily_summary import run_daily_summary
 from app.services.scheduled_publishing import run_scheduled_publishing
-from app.services.score_decay import run_daily_score_decay
 
 logger = logging.getLogger("forgebase.api")
 
@@ -30,15 +28,6 @@ _SCHEDULER_ENABLED = os.environ.get("FORGEBASE_SCHEDULER_ENABLED", "1") == "1"
 _scheduler = AsyncIOScheduler(timezone="UTC")
 
 
-async def _score_decay_job() -> None:
-    """Wrapper so APScheduler can call the async decay function."""
-    try:
-        stats = await run_daily_score_decay()
-        logger.info("Score decay complete: %s", stats)
-    except Exception:
-        logger.exception("Score decay job failed")
-
-
 async def _daily_summary_job() -> None:
     """Send the rule-based sales operations summary each morning."""
     try:
@@ -46,15 +35,6 @@ async def _daily_summary_job() -> None:
         logger.info("Daily operations summary complete: %s", stats)
     except Exception:
         logger.exception("Daily operations summary job failed")
-
-
-async def _google_ads_sync_job() -> None:
-    """Daily Google Ads Customer Match sync job."""
-    try:
-        stats = await sync_high_intent_to_customer_match()
-        logger.info("Google Ads Customer Match sync complete: %s", stats)
-    except Exception:
-        logger.exception("Google Ads sync job failed")
 
 
 async def _scheduled_publishing_job() -> None:
@@ -144,29 +124,11 @@ async def lifespan(app: FastAPI):
         return
     # startup — register scheduled jobs
     _scheduler.add_job(
-        _score_decay_job,
-        trigger="cron",
-        hour=2,
-        minute=0,
-        id="daily_score_decay",
-        replace_existing=True,
-        misfire_grace_time=3600,
-    )
-    _scheduler.add_job(
         _daily_summary_job,
         trigger="cron",
         hour=0,
         minute=0,
         id="daily_operations_summary",
-        replace_existing=True,
-        misfire_grace_time=3600,
-    )
-    _scheduler.add_job(
-        _google_ads_sync_job,
-        trigger="cron",
-        hour=3,
-        minute=0,
-        id="daily_google_ads_sync",
         replace_existing=True,
         misfire_grace_time=3600,
     )
@@ -233,7 +195,7 @@ async def lifespan(app: FastAPI):
         misfire_grace_time=30,
     )
     _scheduler.start()
-    logger.info("APScheduler started — score decay 02:00 UTC, Google Ads sync 03:00 UTC, scheduled publishing every 1 min")
+    logger.info("APScheduler started — scheduled publishing every 1 min")
     yield
     # shutdown
     _scheduler.shutdown(wait=False)

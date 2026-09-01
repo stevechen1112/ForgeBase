@@ -14,7 +14,6 @@ import json
 import logging
 import uuid
 from datetime import datetime, timedelta
-from types import SimpleNamespace
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -28,7 +27,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import RequireFeature, get_current_user, resolve_tenant_id
 from app.db.session import get_session
-from app.models.contact import Contact
 from app.models.tracking_event import TrackingEvent
 from app.models.tracking_session import TrackingSession
 from app.models.user import User
@@ -38,60 +36,9 @@ from app.services.company_identification.eligibility import (
     maybe_create_network_observation,
 )
 from app.services.email_governance import is_authorized_synthetic_request
-from app.services.intent_facets import apply_event_to_visitor, build_intent_explanation
-from app.services.intent_scoring import (
-    calculate_score_delta,
-    get_intent_stage,
-    should_alert,
-)
 from app.services.meta_conversions import fire_meta_event
-from app.services.notifications import notify_visitor_hot
-from app.services.webhook import fire_webhook
 
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
-
-# ── Per-tenant scoring config cache (TTL = 120s) ──────────────────────────────
-import json as _json
-import time as _time
-
-_SCORING_CACHE: dict[str, tuple[dict, float]] = {}
-_SCORING_CACHE_TTL = 120.0
-
-
-async def _load_custom_scores(
-    tenant_id: Optional[uuid.UUID],
-    db: AsyncSession,
-) -> Optional[dict[str, int]]:
-    """Return per-tenant base_scores if configured, else None (use defaults)."""
-    cache_key = str(tenant_id) if tenant_id else "__global__"
-    now = _time.monotonic()
-    cached = _SCORING_CACHE.get(cache_key)
-    if cached is not None:
-        config, ts = cached
-        if now - ts < _SCORING_CACHE_TTL:
-            return config or None
-
-    custom: Optional[dict[str, int]] = None
-    try:
-        from sqlmodel import select as _sel
-
-        from app.models.site_profile import SiteProfile
-        stmt = _sel(SiteProfile)
-        if tenant_id:
-            stmt = stmt.where(SiteProfile.tenant_id == tenant_id)
-        else:
-            stmt = stmt.where(SiteProfile.tenant_id.is_(None))
-        result = await db.exec(stmt.limit(1))
-        profile = result.first()
-        if profile and profile.intent_scoring_config_json:
-            raw = _json.loads(profile.intent_scoring_config_json)
-            custom = raw.get("base_scores") or None
-    except Exception:
-        pass
-
-    _SCORING_CACHE[cache_key] = (custom, now)
-    return custom
-
 
 # ── Valid event names (spec 12.5.1) ───────────────────────────────────────────
 
@@ -130,9 +77,6 @@ class EventIn(BaseModel):
 
 class EventOut(BaseModel):
     event_id: uuid.UUID
-    score_delta: int
-    new_intent_score: Optional[int] = None
-    new_intent_stage: Optional[str] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -198,15 +142,13 @@ async def _upsert_visitor(
     visitor_id: uuid.UUID,
     event: EventIn,
     db: AsyncSession,
-    score_delta: int,
-    client_ip: Optional[str] = None,
     tenant_id: Optional[uuid.UUID] = None,
     is_test_data: bool = False,
     test_run_id: Optional[str] = None,
-) -> tuple[int, str, str, bool]:
+) -> bool:
     """
-    Create or update visitor record. Apply score_delta.
-    Returns (new_score, old_stage, new_stage, is_return_visit).
+    Create or update a visitor's factual activity counters.
+    Returns whether this is a return visit after more than 24 hours.
     is_return_visit is True when visitor existed and last_seen > 24h ago.
     """
     visitor = await db.get(Visitor, visitor_id)
@@ -229,11 +171,6 @@ async def _upsert_visitor(
             is_return_visit = True
             visitor.total_visits += 1
 
-    old_stage = visitor.intent_stage
-    old_score = visitor.intent_score
-    new_score = max(0, old_score + score_delta)
-
-    visitor.intent_score = new_score
     visitor.last_seen = now
     visitor.last_activity_at = now
     visitor.updated_at = now
@@ -246,82 +183,8 @@ async def _upsert_visitor(
     if event.device_type and not visitor.device_type:
         visitor.device_type = event.device_type
 
-    new_stage = get_intent_stage(new_score)
-    stage_changed = new_stage != old_stage
-    if stage_changed:
-        visitor.intent_stage = new_stage
-        visitor.stage_alert_sent = False  # Reset so alert can fire
-
-    # Intent Score 2.0 facets（§4.1）：事件 facet 累積
-    apply_event_to_visitor(visitor, event.event_name, score_delta, event.page_type)
-
     db.add(visitor)
-    # Note: explicit flush moved to receive_event after all upserts
-
-    # Nurture trigger: linked contact reaching a triggered intent stage (§2.1.4)
-    if stage_changed and visitor.intent_stage in ("warm", "hot", "sales_ready"):
-        try:
-            from app.services.capability_access import tenant_has_feature
-            plan_ok = True
-            if tenant_id:
-                from app.models.tenant import Tenant
-                tenant = await db.get(Tenant, tenant_id)
-                plan_ok = bool(tenant and tenant_has_feature(tenant, "nurture_email"))
-            if plan_ok:
-                contact = (
-                    await db.get(Contact, visitor.contact_id)
-                    if visitor.contact_id
-                    else None
-                )
-                if contact and tenant_id and contact.tenant_id != tenant_id:
-                    contact = None
-                if contact:
-                    from app.api.v1.endpoints.nurture import trigger_nurture_for_contact
-                    await trigger_nurture_for_contact(
-                        contact.id, "intent_stage", visitor.intent_stage, tenant_id=tenant_id
-                    )
-        except Exception:
-            logger.exception("Nurture auto-enroll failed for visitor %s", visitor.visitor_id)
-
-    return new_score, old_stage, new_stage, is_return_visit
-
-
-async def _refresh_intent_explanation(
-    visitor_id: uuid.UUID,
-    db: AsyncSession,
-    tenant_id: Optional[uuid.UUID],
-    current_event: Optional[EventIn] = None,
-) -> None:
-    """依近期事件重建「為何 Hot」解釋字串（§4.1 輸出要求）。"""
-    visitor = await db.get(Visitor, visitor_id)
-    if not visitor:
-        return
-    q = (
-        select(TrackingEvent)
-        .where(TrackingEvent.visitor_id == visitor_id)
-        .order_by(col(TrackingEvent.timestamp).desc())
-        .limit(50)
-    )
-    if tenant_id:
-        q = q.where(TrackingEvent.tenant_id == tenant_id)
-    events = list((await db.exec(q)).all())
-    if current_event is not None:
-        # 當前事件尚未落庫，手動附加（置頂，視為最新）
-        events.insert(0, SimpleNamespace(
-            event_name=current_event.event_name,
-            page_type=current_event.page_type,
-            created_at=utcnow_naive(),
-        ))
-    # 與 has_rfq 一致：表單建立的 RFQ 不一定有 rfq_submit 事件
-    from app.models.rfq_request import RFQRequest
-    rfq_q = select(RFQRequest.id).where(RFQRequest.visitor_id == visitor_id).limit(1)
-    if tenant_id:
-        rfq_q = rfq_q.where(RFQRequest.tenant_id == tenant_id)
-    has_rfq_record = (await db.exec(rfq_q)).first() is not None
-    visitor.intent_explanation = build_intent_explanation(
-        events, now=utcnow_naive(), has_rfq_record=has_rfq_record,
-    ) or None
-    db.add(visitor)
+    return is_return_visit
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -337,7 +200,7 @@ async def receive_event(
     """
     Receive a single tracking event from the frontend SDK.
     No authentication required — public endpoint.
-    Applies intent scoring to the visitor.
+    Records consented first-party activity without inferred buyer scoring.
     """
     if not body.analytics_consent:
         raise HTTPException(status_code=403, detail="Analytics consent is required")
@@ -348,20 +211,14 @@ async def receive_event(
     test_run_id = (
         request.headers.get("x-forgebase-test-run", "")[:100] or None
     ) if is_test_data else None
-    custom_scores = await _load_custom_scores(tenant_id, db)
-    score_delta = calculate_score_delta(body.event_name, props, custom_scores=custom_scores)
     client_ip = _get_client_ip(request)
-
-    new_score: Optional[int] = None
-    new_stage: Optional[str] = None
-    old_stage: str = "cold"
     computed_events: list[str] = []
 
     # Upsert session if IDs are provided
     if body.session_id and body.visitor_id:
         # Visitor must be upserted FIRST to satisfy FK constraint on tracking_sessions
-        new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip, tenant_id,
+        is_return = await _upsert_visitor(
+            body.visitor_id, body, db, tenant_id,
             is_test_data, test_run_id,
         )
         depth_reached = await _upsert_session(
@@ -373,8 +230,8 @@ async def receive_event(
         if depth_reached:
             computed_events.append("session_depth_reached")
     elif body.visitor_id:
-        new_score, old_stage, new_stage, is_return = await _upsert_visitor(
-            body.visitor_id, body, db, score_delta, client_ip, tenant_id,
+        is_return = await _upsert_visitor(
+            body.visitor_id, body, db, tenant_id,
             is_test_data, test_run_id,
         )
         if is_return:
@@ -400,24 +257,14 @@ async def receive_event(
         device_type=body.device_type,
         ip_address=client_ip,
         properties=json.dumps(props) if props else None,
-        score_delta=score_delta,
         tenant_id=tenant_id,
         is_test_data=is_test_data,
         test_run_id=test_run_id,
     )
     db.add(event_obj)
 
-    # Insert computed events with their own score deltas
+    # Insert factual computed activity milestones.
     for computed_name in computed_events:
-        c_delta = calculate_score_delta(computed_name, {})
-        if new_score is not None:
-            visitor_obj = await db.get(Visitor, body.visitor_id)
-            if visitor_obj:
-                visitor_obj.intent_score = max(0, visitor_obj.intent_score + c_delta)
-                new_score = visitor_obj.intent_score
-                new_stage = get_intent_stage(new_score)
-                visitor_obj.intent_stage = new_stage
-                db.add(visitor_obj)
         db.add(TrackingEvent(
             event_name=computed_name,
             session_id=body.session_id,
@@ -427,15 +274,12 @@ async def receive_event(
             locale=body.locale,
             device_type=body.device_type,
             ip_address=client_ip,
-            score_delta=c_delta,
             tenant_id=tenant_id,
             is_test_data=is_test_data,
             test_run_id=test_run_id,
         ))
 
     await db.flush()
-    if body.visitor_id:
-        await _refresh_intent_explanation(body.visitor_id, db, tenant_id)
     if not is_test_data and tenant_id and body.visitor_id and client_ip:
         visitor_for_identification = await db.get(Visitor, body.visitor_id)
         if visitor_for_identification:
@@ -450,32 +294,6 @@ async def receive_event(
             )
     await db.commit()
 
-    # 1b.3.5 Intent trigger: fire sales alert on stage escalation to hot/sales_ready
-    if not is_test_data and body.visitor_id and new_score is not None and new_stage in ("hot", "sales_ready"):
-        if should_alert(old_stage, new_stage):
-            asyncio.create_task(notify_visitor_hot(body.visitor_id, new_stage, new_score))
-            # 1b.5.3 visitor.became_hot webhook
-            fire_webhook("visitor.became_hot", {
-                "visitor_id":   str(body.visitor_id),
-                "intent_stage": new_stage,
-                "intent_score": new_score,
-                "page_url":     body.page_url,
-            })
-            # 1b.5.3 contact.intent_stage_changed webhook (if visitor has linked contact)
-            try:
-                visitor_for_hook = await db.get(Visitor, body.visitor_id)
-                if visitor_for_hook and visitor_for_hook.contact_id:
-                    fire_webhook("contact.intent_stage_changed", {
-                        "visitor_id":  str(body.visitor_id),
-                        "contact_id":  str(visitor_for_hook.contact_id),
-                        "old_stage":   old_stage,
-                        "new_stage":   new_stage,
-                        "intent_score": new_score,
-                    })
-                    # Nurture engine removed
-            except Exception:
-                logger.warning("visitor intent stage webhook failed", exc_info=True)
-
     # 1b.5.5 Meta Conversions API — fire server-side event for mapped event types
     if body.visitor_id and not is_test_data:
         asyncio.create_task(fire_meta_event(
@@ -487,12 +305,7 @@ async def receive_event(
             event_id=str(event_obj.event_id),
         ))
 
-    return EventOut(
-        event_id=event_obj.event_id,
-        score_delta=score_delta,
-        new_intent_score=new_score,
-        new_intent_stage=new_stage,
-    )
+    return EventOut(event_id=event_obj.event_id)
 
 
 @router.post("/events/batch", status_code=status.HTTP_202_ACCEPTED)
@@ -518,13 +331,10 @@ async def receive_events_batch(
     observation_inputs: list[tuple[EventIn, TrackingEvent]] = []
     for ev in body:
         props = ev.properties or {}
-        score_delta = calculate_score_delta(ev.event_name, props)
-        new_score = None
-        new_stage = None
         if ev.session_id and ev.visitor_id:
             # Visitor MUST be upserted first to satisfy FK on tracking_sessions
-            new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id,
+            await _upsert_visitor(
+                ev.visitor_id, ev, db, tenant_id=tenant_id,
                 is_test_data=is_test_data, test_run_id=test_run_id,
             )
             await db.flush()
@@ -534,8 +344,8 @@ async def receive_events_batch(
             )
             await db.flush()  # Also flush session before inserting event (fk_events_session_id)
         elif ev.visitor_id:
-            new_score, _, new_stage, _ = await _upsert_visitor(
-                ev.visitor_id, ev, db, score_delta, tenant_id=tenant_id,
+            await _upsert_visitor(
+                ev.visitor_id, ev, db, tenant_id=tenant_id,
                 is_test_data=is_test_data, test_run_id=test_run_id,
             )
         event_obj = TrackingEvent(
@@ -553,25 +363,14 @@ async def receive_events_batch(
             device_type=ev.device_type,
             ip_address=client_ip,
             properties=json.dumps(props) if props else None,
-            score_delta=score_delta,
             tenant_id=tenant_id,
             is_test_data=is_test_data,
             test_run_id=test_run_id,
         )
         db.add(event_obj)
         observation_inputs.append((ev, event_obj))
-        results.append({
-            "event_id": str(event_obj.event_id),
-            "score_delta": score_delta,
-            "new_intent_stage": new_stage,
-        })
-    # 與單筆路徑一致：batch 結束後為每位訪客刷新「為何 Hot」
+        results.append({"event_id": str(event_obj.event_id)})
     await db.flush()
-    refreshed: set[uuid.UUID] = set()
-    for ev in body:
-        if ev.visitor_id and ev.visitor_id not in refreshed:
-            refreshed.add(ev.visitor_id)
-            await _refresh_intent_explanation(ev.visitor_id, db, tenant_id)
     if not is_test_data and tenant_id and client_ip:
         for ev, event_obj in observation_inputs:
             if not ev.visitor_id:
@@ -636,7 +435,6 @@ async def query_events(
             "traffic_source": r.traffic_source,
             "device_type": r.device_type,
             "country": r.country,
-            "score_delta": r.score_delta,
             "properties": json.loads(r.properties) if r.properties else None,
         }
         for r in rows

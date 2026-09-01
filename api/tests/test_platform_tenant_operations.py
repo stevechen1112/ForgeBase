@@ -723,7 +723,7 @@ async def test_privacy_operations_are_tenant_scoped_audited_and_replay_safe(
                 state = (
                     await session.exec(
                         text(
-                            "SELECT analytics_consent_status, intent_score, country "
+                            "SELECT analytics_consent_status, country "
                             "FROM visitors WHERE visitor_id = :visitor_id"
                         ),
                         params={"visitor_id": str(visitor_id)},
@@ -731,7 +731,6 @@ async def test_privacy_operations_are_tenant_scoped_audited_and_replay_safe(
                 ).mappings().one()
                 assert dict(state) == {
                     "analytics_consent_status": "revoked",
-                    "intent_score": 0,
                     "country": None,
                 }
         finally:

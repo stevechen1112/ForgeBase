@@ -33,7 +33,6 @@ export default function CTAForm({ initial, id }: Props) {
     locale: initial?.locale ?? "en",
     status: initial?.status === "active" ? "published" : initial?.status ?? "draft",
     sort_order: initial?.sort_order ?? 0,
-    target_intent_stage: initial?.target_intent_stage ?? "any",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,16 +129,6 @@ export default function CTAForm({ initial, id }: Props) {
               </select>
             </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>目標關注程度</Label>
-              <select className={SELECT_CLS} {...f("target_intent_stage")}>
-                <option value="any">不限</option>
-                <option value="cold">初次瀏覽</option>
-                <option value="warm">多次互動</option>
-                <option value="hot">高度關注</option>
-                <option value="sales_ready">可交由業務跟進</option>
-              </select>
-            </div>
             <div className="space-y-1.5">
               <Label>排序</Label>
               <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} min={0} />

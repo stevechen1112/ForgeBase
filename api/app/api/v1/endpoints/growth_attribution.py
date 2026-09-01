@@ -127,15 +127,6 @@ async def _north_star_layers(db: AsyncSession, tenant_id: uuid.UUID, since) -> l
         return int((await db.exec(select(func.count(distinct(query))))).one() or 0)
 
     tracked = await _count(db, cohort)
-    high_intent = await visitors(
-        select(Visitor.visitor_id)
-        .where(
-            Visitor.tenant_id == tenant_id,
-            Visitor.visitor_id.in_(select(cohort_ids.c.visitor_id)),
-            Visitor.intent_stage.in_(("hot", "sales_ready")),
-        )
-        .subquery().c.visitor_id
-    )
     company = await visitors(
         select(CompanyIdentification.visitor_id)
         .where(
@@ -241,7 +232,6 @@ async def _north_star_layers(db: AsyncSession, tenant_id: uuid.UUID, since) -> l
     )
     definitions = [
         ("tracked_visitors", "可追蹤訪客", tracked),
-        ("high_intent", "高意圖訪客", high_intent),
         ("company_candidate", "公司候選", company),
         ("high_confidence_company", "高信心公司", high_company),
         ("qualified_contact", "合格聯絡窗口", qualified_contact),

@@ -572,7 +572,6 @@ export type GrowthAutomationPolicy = {
   tenant_id: string;
   company_identification_mode: "off" | "shadow";
   provider_name: string;
-  min_intent_score: number;
   observation_retention_days: number;
   daily_lookup_quota: number;
   daily_provider_cost_limit: number;
@@ -739,8 +738,6 @@ export type OutreachDraftPolicy = {
 
 export type JourneySnapshot = {
   id: string;
-  intent_score: number;
-  intent_stage: string;
   intent_facets: Record<string, number>;
   top_products: {
     id: string;

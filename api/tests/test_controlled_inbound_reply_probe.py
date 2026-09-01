@@ -24,7 +24,6 @@ def _ready(monkeypatch) -> None:
     monkeypatch.setattr(settings, "EMAIL_EXTERNAL_DELIVERY_ENABLED", True)
     monkeypatch.setattr(settings, "OUTREACH_SEND_ENABLED", True)
     monkeypatch.setattr(settings, "INBOUND_REPLY_ENABLED", True)
-    monkeypatch.setattr(settings, "ESP_PROVIDER", "resend")
     monkeypatch.setattr(settings, "RESEND_API_KEY", "test-resend-key")
     monkeypatch.setattr(settings, "RESEND_WEBHOOK_SECRET", "whsec_test")
     monkeypatch.setattr(settings, "OUTREACH_INBOUND_DOMAIN", probe.INBOUND_DOMAIN)

@@ -13,12 +13,10 @@ from app.api.v1.endpoints import (
     company_identification,
     contact_enrichment,
     contacts,
-    esp,
     events,
     growth_attribution,
     growth_ops,
     inbound_replies,
-    intent_rules,
     locale_draft,
     locale_quality,
     notifications,
@@ -109,7 +107,7 @@ content_router.include_router(
 content_router.include_router(locale_quality.router)
 api_router.include_router(content_router)
 
-# Buyer tracking and intent — /api/v1/tracking/
+# Buyer activity and follow-up — /api/v1/tracking/
 tracking_router = APIRouter()
 tracking_router.include_router(events.router)  # /tracking/events
 tracking_router.include_router(
@@ -121,9 +119,6 @@ tracking_router.include_router(
     inbound_replies.tracking_router
 )  # /tracking/replies, handoffs
 tracking_router.include_router(segments.router)  # /tracking/segments
-tracking_router.include_router(
-    esp.router, dependencies=[Depends(RequireFeature("integrations"))]
-)  # /tracking/esp/*
 tracking_router.include_router(analytics.router)  # /tracking/analytics/*
 tracking_router.include_router(
     growth_ops.tracking_router,
@@ -145,7 +140,6 @@ api_router.include_router(visitor_ai_router)  # /tracking/visitors/{id}/recommen
 api_router.include_router(
     content_ai_router
 )  # /content/dynamic-cta, /recommend-relations
-api_router.include_router(intent_rules.router)  # /tracking/intent-rules
 
 # Public conversion forms — /api/v1/forms/
 forms_router = APIRouter()

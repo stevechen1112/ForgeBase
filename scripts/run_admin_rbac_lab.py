@@ -760,7 +760,6 @@ def main() -> int:
         {
             "NEXT_TELEMETRY_DISABLED": "1",
             "NEXT_PUBLIC_API_URL": f"http://{host}:{args.api_port}/api/v1",
-            "NEXT_PUBLIC_AGENTOS_URL": f"http://{host}:{args.api_port}",
         }
     )
     npm = shutil.which("npm")

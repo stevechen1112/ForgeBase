@@ -61,7 +61,7 @@ def transport_snapshot(config: Any) -> dict[str, Any]:
         ),
     }
     return {
-        "provider": config.ESP_PROVIDER.lower(),
+        "provider": "resend",
         "dry_run": bool(config.EMAIL_DRY_RUN),
         "external_delivery_enabled": bool(config.EMAIL_EXTERNAL_DELIVERY_ENABLED),
         "outreach_send_enabled": bool(config.OUTREACH_SEND_ENABLED),

@@ -98,8 +98,6 @@ async def list_chat_sessions(
         items.append({
             "id": str(s.id),
             "visitor_id": str(s.visitor_id),
-            "visitor_intent_stage": v.intent_stage if v else None,
-            "visitor_intent_score": v.intent_score if v else None,
             "visitor_country": v.country if v else None,
             "context_page": s.context_page,
             "context_entity_type": s.context_entity_type,
@@ -141,8 +139,6 @@ async def get_chat_session_detail(
     return {
         "id": str(session.id),
         "visitor_id": str(session.visitor_id),
-        "visitor_intent_stage": visitor.intent_stage if visitor else None,
-        "visitor_intent_score": visitor.intent_score if visitor else None,
         "visitor_country": visitor.country if visitor else None,
         "visitor_device_type": visitor.device_type if visitor else None,
         "context_page": session.context_page,

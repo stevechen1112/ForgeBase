@@ -48,8 +48,6 @@ const WARNING_LABEL: Record<string, string> = {
 type ChatDetail = {
   id: string;
   visitor_id: string;
-  visitor_intent_stage: string | null;
-  visitor_intent_score: number | null;
   visitor_country: string | null;
   visitor_device_type: string | null;
   context_page: string | null;
@@ -74,20 +72,6 @@ const STATUS_LABEL: Record<string, string> = {
   active: "進行中",
   handoff_ready: "待業務接手",
   handoff_completed: "已轉業務接手",
-};
-
-const STAGE_COLOR: Record<string, string> = {
-  sales_ready: "bg-red-100 text-red-700",
-  hot: "bg-orange-100 text-orange-700",
-  warm: "bg-yellow-100 text-yellow-800",
-  cold: "bg-gray-100 text-gray-600",
-};
-
-const STAGE_LABEL: Record<string, string> = {
-  sales_ready: "可成交",
-  hot: "高度關注",
-  warm: "觀望中",
-  cold: "初次瀏覽",
 };
 
 export default function ChatDetailPage() {
@@ -294,22 +278,6 @@ export default function ChatDetailPage() {
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
-              {detail.visitor_intent_stage && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">意圖階段</span>
-                  <Badge
-                    className={`text-xs ${STAGE_COLOR[detail.visitor_intent_stage] ?? ""}`}
-                  >
-                    {STAGE_LABEL[detail.visitor_intent_stage] ?? detail.visitor_intent_stage}
-                  </Badge>
-                </div>
-              )}
-              {detail.visitor_intent_score != null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">意圖分數</span>
-                  <span className="font-bold">{detail.visitor_intent_score}</span>
-                </div>
-              )}
               {detail.visitor_country && (
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">

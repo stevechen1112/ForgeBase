@@ -328,8 +328,7 @@ async def _create_test_observation(
     visitor = Visitor(
         visitor_id=visitor_id,
         tenant_id=tenant_id,
-        intent_score=80,
-        intent_stage="hot",
+        total_page_views=4,
         analytics_consent_status="granted",
     )
     db.add(visitor)
@@ -390,7 +389,6 @@ async def test_shadow_runtime_replay_cache_cost_guard_and_circuit(
                     tenant_id=tenant.id,
                     company_identification_mode=CompanyIdentificationMode.shadow.value,
                     provider_name="mock",
-                    min_intent_score=0,
                     daily_provider_cost_limit=Decimal(10),
                 )
             )
@@ -485,7 +483,6 @@ async def test_observation_quota_and_country_policy_block_jobs(two_tenants) -> N
                 tenant_id=tenant.id,
                 company_identification_mode=CompanyIdentificationMode.shadow.value,
                 provider_name="mock",
-                min_intent_score=0,
                 daily_lookup_quota=0,
             )
             db.add(policy)
@@ -542,14 +539,12 @@ async def test_shadow_runtime_is_deduplicated_and_records_provider_usage(
                     tenant_id=tenant.id,
                     company_identification_mode=CompanyIdentificationMode.shadow.value,
                     provider_name="mock",
-                    min_intent_score=40,
                 )
             )
             visitor = Visitor(
                 visitor_id=visitor_id,
                 tenant_id=tenant.id,
-                intent_score=80,
-                intent_stage="hot",
+                total_page_views=4,
                 analytics_consent_status="granted",
             )
             event = TrackingEvent(

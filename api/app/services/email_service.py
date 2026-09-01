@@ -1,7 +1,7 @@
 """
 Email Service — send transactional/nurture emails.
 2.1.4 Email Nurture Engine.
-2.4.3 Multi-ESP support: routes to Resend or SendGrid based on ESP_PROVIDER setting.
+Resend is the single supported delivery provider.
 """
 
 import logging
@@ -125,78 +125,6 @@ async def _send_via_resend(
         )
 
 
-async def _send_via_sendgrid(
-    to: str,
-    subject: str,
-    html_body: str | None,
-    text_body: str | None,
-    from_email: str,
-    from_name: str,
-    idempotency_key: str | None = None,
-    message_headers: dict[str, str] | None = None,
-    reply_to: str | None = None,
-) -> EmailDeliveryResult:
-    """Send email through SendGrid."""
-    if not settings.SENDGRID_API_KEY:
-        logger.warning("SENDGRID_API_KEY not set — skipping send to %s", to)
-        return EmailDeliveryResult(
-            False, False, False, "sendgrid", error="missing_api_key"
-        )
-
-    content = []
-    if text_body:
-        content.append({"type": "text/plain", "value": text_body})
-    if html_body:
-        content.append({"type": "text/html", "value": html_body})
-    if not content:
-        content.append({"type": "text/plain", "value": subject})
-
-    body = {
-        "personalizations": [{"to": [{"email": to}]}],
-        "from": {"email": from_email, "name": from_name},
-        "subject": subject,
-        "content": content,
-    }
-    cleaned_headers = _clean_message_headers(message_headers)
-    if cleaned_headers:
-        body["personalizations"][0]["headers"] = cleaned_headers
-    if reply_to:
-        body["reply_to"] = {"email": reply_to}
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            r = await client.post(
-                "https://api.sendgrid.com/v3/mail/send",
-                json=body,
-                headers={
-                    "Authorization": f"Bearer {settings.SENDGRID_API_KEY}",
-                    "Content-Type": "application/json",
-                    "User-Agent": "ForgeBase/1.0",
-                },
-            )
-            if r.status_code in (200, 201, 202):
-                return EmailDeliveryResult(
-                    True,
-                    True,
-                    False,
-                    "sendgrid",
-                    message_id=r.headers.get("x-message-id"),
-                )
-            logger.error("SendGrid API error %s: %s", r.status_code, r.text[:200])
-            return EmailDeliveryResult(
-                False, False, False, "sendgrid", error=f"http_{r.status_code}"
-            )
-    except httpx.RequestError:
-        logger.exception("SendGrid send request failed to %s", to)
-        return EmailDeliveryResult(
-            False, False, False, "sendgrid", error="request_failed"
-        )
-    except Exception:
-        logger.exception("Unexpected SendGrid send failure to %s", to)
-        return EmailDeliveryResult(
-            False, False, False, "sendgrid", error="unexpected_failure"
-        )
-
-
 async def send_email_result(
     to: str,
     subject: str,
@@ -213,16 +141,12 @@ async def send_email_result(
     """Send an email and report whether it was simulated or provider-accepted."""
     sender_name = from_name or settings.EMAIL_FROM_NAME
     sender_addr = from_email or settings.EMAIL_FROM
-    provider = (provider_override or settings.ESP_PROVIDER or "resend").lower()
-    if provider not in {"resend", "sendgrid"}:
+    provider = (provider_override or "resend").lower()
+    if provider != "resend":
         return EmailDeliveryResult(
             False, False, False, provider, error="unsupported_provider"
         )
-    has_key = (
-        bool(settings.SENDGRID_API_KEY)
-        if provider == "sendgrid"
-        else bool(settings.RESEND_API_KEY)
-    )
+    has_key = bool(settings.RESEND_API_KEY)
 
     if settings.EMAIL_DRY_RUN:
         logger.info(
@@ -265,19 +189,6 @@ async def send_email_result(
             False, False, False, provider, error="missing_api_key"
         )
 
-    if provider == "sendgrid":
-        return await _send_via_sendgrid(
-            to,
-            subject,
-            html_body,
-            text_body,
-            sender_addr,
-            sender_name,
-            idempotency_key,
-            message_headers,
-            reply_to,
-        )
-
     from_field = f"{sender_name} <{sender_addr}>"
     return await _send_via_resend(
         to,
@@ -306,7 +217,7 @@ async def send_email(
 ) -> bool:
     """
     Send a single transactional email.
-    Routes to the active ESP provider defined by settings.ESP_PROVIDER.
+    Delivers through Resend.
     """
     result = await send_email_result(
         to=to,

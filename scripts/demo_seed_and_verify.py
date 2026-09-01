@@ -49,7 +49,7 @@ CONTACT_FORMS     = 4       # 模擬幾筆聯絡表單
 RFQ_SUBMISSIONS   = 6       # 模擬幾筆 RFQ 詢價單
 
 # ── 模擬訪客輪廓 ──────────────────────────────────────────────────────────────
-# (weight, device, country, traffic_source, intent_stage)
+# (weight, device, country, traffic_source, activity_profile)
 VISITOR_PROFILES = [
     (30, "desktop", "TW", "organic",  "cold"),
     (20, "desktop", "US", "organic",  "warm"),
@@ -213,7 +213,7 @@ def build_visitor_events(visitor_id: str, session_id: str,
     根據訪客輪廓生成一個 session 內的事件序列。
     模擬真實的瀏覽行為：先看首頁 → 瀏覽產品 → 可能下載/詢價。
     """
-    _, device, country, traffic, intent_stage = profile
+    _, device, country, traffic, activity_profile = profile
     events = []
     t = base_time
 
@@ -237,10 +237,10 @@ def build_visitor_events(visitor_id: str, session_id: str,
             page_type = "page"
             page_id = None
         else:
-            # 根據 intent stage 決定後續行為機率
-            if intent_stage == "hot":
+            # 根據測試活動輪廓決定後續行為機率
+            if activity_profile == "hot":
                 choices = ["product_view","product_view","spec_download","rfq_start","cta_click","comparison_view"]
-            elif intent_stage == "warm":
+            elif activity_profile == "warm":
                 choices = ["product_view","category_view","application_view","cta_click","faq_expand","comparison_view"]
             else:
                 choices = ["page_view","category_view","product_view","faq_expand","application_view"]
@@ -309,7 +309,6 @@ def run_verify(client: APIClient):
         ("GET",  "/api/v1/tracking/analytics/pages?days=30",   "頁面分析 (30天)"),
         ("GET",  "/api/v1/tracking/analytics/products",        "產品分析"),
         ("GET",  "/api/v1/tracking/analytics/applications",    "應用分析"),
-        ("GET",  "/api/v1/tracking/analytics/strategy-map",    "策略地圖"),
         ("GET",  "/api/v1/tracking/events/summary",            "事件摘要"),
     ]
 
@@ -356,8 +355,6 @@ def run_verify(client: APIClient):
                           expect_status=202)
     if result:
         info(f"  event_id = {result.get('event_id')}")
-        info(f"  score_delta = {result.get('score_delta')}")
-        info(f"  new_intent_stage = {result.get('new_intent_stage')}")
 
     # 驗證剛才寫入的訪客能查到
     r = client.check("GET", f"/api/v1/tracking/visitors",
@@ -608,8 +605,8 @@ def print_report(client: APIClient, mode: str):
     • {RFQ_SUBMISSIONS} 筆 RFQ 詢價單
 
   {YELLOW}可到後台儀表板查看：{RESET}
-    {client.base}/backend/dashboard/page-analytics
-    {client.base}/backend/dashboard/intent
+    {client.base}/backend/dashboard/content-performance
+    {client.base}/backend/dashboard/visitors
     {client.base}/backend/dashboard/rfqs
     {client.base}/backend/dashboard/segments
 """)

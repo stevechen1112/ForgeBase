@@ -17,7 +17,6 @@ from app.models.retirement import RetirementCandidateObservation
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 OBSERVING_DISABLED = {
-    "agentos_runtime": 30,
     "relation_recommender": 60,
     "notification_telegram": 60,
     "notification_line": 60,
@@ -25,7 +24,6 @@ OBSERVING_DISABLED = {
 REMOVED = {"legacy_ip_resolver"}
 PROTECTED_NORTH_STAR = {
     "full_tracking",
-    "intent_scoring",
     "company_identification",
     "contact_enrichment",
     "journey_personalization",

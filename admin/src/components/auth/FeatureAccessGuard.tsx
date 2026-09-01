@@ -11,7 +11,6 @@ const FEATURE_ROUTES: { path: string; feature: string }[] = [
   { path: "/dashboard/settings/notifications", feature: "notifications" },
   { path: "/dashboard/outcomes", feature: "outcomes_dashboard" },
   { path: "/dashboard/pages/new", feature: "advanced_content" },
-  { path: "/dashboard/intent-rules", feature: "advanced_intent_rules" },
   { path: "/dashboard/content-performance", feature: "full_tracking" },
   { path: "/dashboard/visitors", feature: "full_tracking" },
   { path: "/dashboard/segments", feature: "audience_segments" },
@@ -19,8 +18,6 @@ const FEATURE_ROUTES: { path: string; feature: string }[] = [
   { path: "/dashboard/comparisons", feature: "advanced_content" },
   { path: "/dashboard/ctas", feature: "dynamic_cta" },
   { path: "/dashboard/redirects", feature: "seo_redirects" },
-  { path: "/dashboard/agent-runs", feature: "automation_runs" },
-  { path: "/dashboard/intent", feature: "intent_scoring" },
   { path: "/dashboard/chats", feature: "chat_handoff" },
 ];
 
@@ -42,7 +39,7 @@ export function FeatureAccessGuard({ children }: { children: React.ReactNode }) 
     );
   }
   if (hasFeature(requirement.feature)) return <>{children}</>;
-  const retirementObservation = ["automation_runs", "ai_relation_recommendations"].includes(requirement.feature);
+  const retirementObservation = requirement.feature === "ai_relation_recommendations";
 
   return (
     <div className="flex min-h-[65vh] flex-col items-center justify-center gap-4 px-6 text-center">

@@ -31,9 +31,7 @@ class NotificationPreference(SQLModel, table=True):
 
     # Event toggle switches
     notify_new_rfq: bool = Field(default=True)
-    notify_hot_visitor: bool = Field(default=True)
     notify_daily_summary: bool = Field(default=True)
-    notify_churn_risk: bool = Field(default=False)
     notify_chat_handoff: bool = Field(default=True)
     notify_content_suggestion: bool = Field(default=False)
 

@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 export const FEATURE_LABELS: Record<string, string> = {
   multilingual: "多語內容（來源語系 + 買方語系草稿）",
   full_tracking: "訪客與成效追蹤",
-  intent_scoring: "買家關注度",
   dynamic_cta: "行動按鈕",
   ai_advisor: "AI 產品顧問",
   chat_handoff: "官網對話",
@@ -36,9 +35,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   seo_redirects: "舊網址轉址",
   advanced_content: "進階頁面與比較內容",
   audience_segments: "買家分群",
-  advanced_intent_rules: "進階評分規則",
   company_identification: "企業辨識與聯絡人候選",
-  automation_runs: "自動任務執行中心",
 };
 
 export function featureLabel(key: string): string {

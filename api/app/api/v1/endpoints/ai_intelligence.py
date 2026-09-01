@@ -52,7 +52,6 @@ def _cta_payload(cta: CTA) -> dict[str, str | None]:
         "action_type": cta.button_action,
         "label": cta.button_label,
         "description": cta.subheadline or cta.headline,
-        "target_intent_stage": cta.target_intent_stage or "any",
     }
 
 
@@ -79,7 +78,6 @@ async def analyze_rfq_endpoint(
         raise HTTPException(status_code=404, detail="RFQ not found")
 
     rfq_data: dict = _parse_properties(rfq.form_data)
-    rfq_data["intent_score_at_submit"] = rfq.intent_score_at_submit
 
     products = [
         {
@@ -147,7 +145,6 @@ async def draft_rfq_reply_endpoint(
         raise HTTPException(status_code=404, detail="RFQ not found")
 
     rfq_data: dict = _parse_properties(rfq.form_data)
-    rfq_data["intent_score_at_submit"] = rfq.intent_score_at_submit
 
     # Run analysis if not provided
     analysis = payload.analysis
@@ -235,8 +232,6 @@ async def recommend_cta_endpoint(
     ]
 
     visitor_profile = {
-        "intent_score": visitor.intent_score,
-        "intent_stage": visitor.intent_stage,
         "total_page_views": visitor.total_page_views,
         "total_visits": visitor.total_visits,
         "country": visitor.country,
@@ -274,26 +269,9 @@ async def dynamic_cta_endpoint(
         tenant = await session.get(Tenant, tenant_id)
         if not tenant or not tenant_has_feature(tenant, "dynamic_cta"):
             raise HTTPException(status_code=403, detail="Dynamic CTA is not enabled for this tenant")
-    intent_stage = "cold"
-    intent_score = 0
     top_products: list[str] = []
-    visitor_facets: dict[str, int] | None = None
 
     if visitor_id:
-        try:
-            visitor = await session.get(Visitor, uuid.UUID(visitor_id))
-            if visitor and visitor.tenant_id == tenant_id:
-                intent_stage = visitor.intent_stage or "cold"
-                intent_score = int(visitor.intent_score or 0)
-                visitor_facets = {
-                    "product_interest": visitor.facet_product_interest,
-                    "trust_validation": visitor.facet_trust_validation,
-                    "procurement_readiness": visitor.facet_procurement_readiness,
-                    "urgency": visitor.facet_urgency,
-                }
-        except Exception:
-            pass
-
         # Get recently viewed products
         try:
             event_rows = (
@@ -356,7 +334,7 @@ async def dynamic_cta_endpoint(
 
     eligible_ctas = [cta for cta in ctas if cta["id"] not in capped_cta_ids]
     page_context = {"page_type": page_type, "entity_name": entity_name, "entity_id": entity_id}
-    result = select_dynamic_cta(intent_stage, intent_score, eligible_ctas, page_context, top_products, facets=visitor_facets, locale=normalized_locale)
+    result = select_dynamic_cta(eligible_ctas, page_context, top_products, locale=normalized_locale)
     result["decision_id"] = str(uuid.uuid4())
     result["locale"] = normalized_locale
     result["frequency_capped_cta_ids"] = sorted(capped_cta_ids)

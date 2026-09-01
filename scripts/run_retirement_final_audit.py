@@ -30,6 +30,9 @@ def run_audit() -> dict:
         "generic_integrations_api": "api/app/api/v1/endpoints/integrations.py",
         "generic_integrations_model": "api/app/models/integration_credential.py",
         "legacy_ip_resolver": "api/app/services/ip_resolver.py",
+        "agentos_runtime": "api/app/services/agentOS.py",
+        "buyer_scoring": "api/app/services/intent_scoring.py",
+        "esp_sync": "api/app/api/v1/endpoints/esp.py",
     }
     for candidate, relative in removed_paths.items():
         _check(
@@ -49,26 +52,6 @@ def run_audit() -> dict:
         "recommendation endpoints require the disabled retirement capability",
         checks,
     )
-    _check(
-        "disabled:agentos_runtime",
-        _contains(
-            "api/app/services/capability_access.py",
-            '"automation_runs"',
-            '"status": "service_required"',
-            '"configurable": False',
-        )
-        and _contains(
-            "admin/src/components/auth/FeatureAccessGuard.tsx",
-            'path: "/dashboard/agent-runs"',
-            'feature: "automation_runs"',
-        )
-        and _contains(
-            "api/app/services/operational_outbox.py", "locked-off retirement candidate"
-        ),
-        "AgentOS cannot be enabled by tenant override or tenantless outbox work",
-        checks,
-    )
-
     for channel in ("telegram", "line"):
         _check(
             f"disabled:notification_{channel}",
@@ -98,7 +81,6 @@ def run_audit() -> dict:
     )
     protected_core = [
         "full_tracking",
-        "intent_scoring",
         "company_identification",
         "contact_enrichment",
         "journey_personalization",
@@ -127,9 +109,11 @@ def run_audit() -> dict:
             "generic_integrations_api",
             "generic_integrations_model",
             "legacy_ip_resolver",
+            "agentos_runtime",
+            "buyer_scoring",
+            "esp_sync",
         ],
         "continue_observation": [
-            "agentos_runtime",
             "relation_recommender",
             "notification_telegram",
             "notification_line",

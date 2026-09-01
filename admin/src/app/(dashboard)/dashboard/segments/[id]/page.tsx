@@ -37,7 +37,6 @@ type EvalResult = {
   matched_count?: number;
   count?: number;
   sample_visitor_ids?: string[];
-  sample_visitors?: { visitor_id: string; intent_stage: string; intent_score: number }[];
 };
 
 function parseConditions(raw: Segment["conditions"]): SegmentCondition[] {
@@ -58,8 +57,6 @@ function fmt(d?: string) {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  intent_stage: "意圖階段",
-  intent_score: "意圖分數",
   country: "國家",
   event_count: "事件次數",
   tag: "標籤",
@@ -139,7 +136,6 @@ export default function SegmentDetailPage() {
   const matchCount =
     evalResult?.total_matches ?? evalResult?.matched_count ?? evalResult?.count ?? 0;
   const sampleIds = evalResult?.sample_visitor_ids ?? [];
-  const sampleVisitors = evalResult?.sample_visitors ?? [];
 
   return (
     <div className="space-y-6">
@@ -218,19 +214,7 @@ export default function SegmentDetailPage() {
               <p className="text-lg font-bold">
                 符合 <span className="text-primary">{matchCount}</span> 位訪客
               </p>
-              {sampleVisitors.length > 0 ? (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">樣本訪客：</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {sampleVisitors.map((v) => (
-                      <div key={v.visitor_id} className="rounded border p-2 text-xs">
-                        <p className="font-mono truncate">{v.visitor_id.slice(0, 12)}…</p>
-                        <p className="text-muted-foreground">{v.intent_stage} / {v.intent_score}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : sampleIds.length > 0 ? (
+              {sampleIds.length > 0 ? (
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">樣本訪客 ID：</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

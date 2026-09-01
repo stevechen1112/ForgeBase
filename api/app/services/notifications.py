@@ -10,7 +10,7 @@ Triggers:
   - notify_rfq_escalation(rfq_id)  — 48-hour escalation to manager
 
 Configuration via env vars:
-  ESP_PROVIDER / RESEND_API_KEY / EMAIL_FROM / EMAIL_FROM_NAME
+  RESEND_API_KEY / EMAIL_FROM / EMAIL_FROM_NAME
   SALES_NOTIFY_EMAIL — fallback "all new RFQs" internal recipient
   MANAGER_EMAIL      — escalation recipient
 """
@@ -27,11 +27,8 @@ from app.core.datetime import utcnow_naive
 from app.db.session import get_session_ctx
 from app.models.contact import Contact
 from app.models.rfq_request import RFQRequest
-from app.models.tenant import Tenant
 from app.models.user import User
-from app.models.visitor import Visitor
 from app.services.email_service import EmailDeliveryResult, send_email_result
-from app.services.capability_access import tenant_has_feature
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +45,7 @@ async def _send_email(
             False,
             False,
             settings.EMAIL_DRY_RUN,
-            settings.ESP_PROVIDER,
+            "resend",
             error="empty_recipient",
         )
     return await send_email_result(
@@ -58,67 +55,6 @@ async def _send_email(
         idempotency_key=idempotency_key,
         recipient_kind="internal",
     )
-
-
-async def notify_visitor_hot(visitor_id: uuid.UUID, stage: str, score: int) -> None:
-    """
-    Alert sales team when an anonymous visitor reaches hot/sales_ready
-    without having submitted an RFQ. (1b.3.5 Intent trigger)
-    """
-    if not settings.SALES_NOTIFY_EMAIL:
-        return
-    try:
-        async with get_session_ctx() as db:
-            visitor = await db.get(Visitor, visitor_id)
-            if not visitor or not visitor.tenant_id:
-                return
-            tenant = await db.get(Tenant, visitor.tenant_id)
-            if (
-                not tenant
-                or not tenant_has_feature(tenant, "notifications")
-                or not tenant_has_feature(tenant, "intent_scoring")
-            ):
-                return
-            contact_name = "Anonymous"
-            contact_email = "—"
-            if visitor and visitor.contact_id:
-                contact = await db.get(Contact, visitor.contact_id)
-                if contact:
-                    contact_name = contact.full_name
-                    contact_email = contact.email
-            stage_label = stage.replace("_", " ").title()
-            contact_name = html.escape(contact_name or "Anonymous", quote=True)
-            contact_email = html.escape(contact_email or "—", quote=True)
-            stage_label = html.escape(stage_label, quote=True)
-            admin_url = settings.ADMIN_URL.rstrip("/")
-            subject = f"[ForgeBase] 🔥 High-Intent Visitor — Stage: {stage_label} (score {score})"
-            body = f"""
-<html><body style="font-family:Arial,sans-serif;color:#333">
-<h2 style="color:#1a56db">ForgeBase — High-Intent Visitor Alert</h2>
-<table style="border-collapse:collapse;width:100%">
-  <tr><td style="padding:8px;font-weight:bold;width:180px">Visitor ID</td><td style="padding:8px">{visitor_id}</td></tr>
-  <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Intent Stage</td><td style="padding:8px">{stage_label}</td></tr>
-  <tr><td style="padding:8px;font-weight:bold">Intent Score</td><td style="padding:8px">{score}</td></tr>
-  <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Known As</td><td style="padding:8px">{contact_name} ({contact_email})</td></tr>
-</table>
-<p style="margin-top:20px">
-  <a href="{admin_url}/dashboard/visitors/{visitor_id}"
-     style="background:#1a56db;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px">
-    View Visitor Profile
-  </a>
-</p>
-</body></html>
-"""
-            await _send_email(
-                settings.SALES_NOTIFY_EMAIL,
-                subject,
-                body,
-                idempotency_key=f"visitor-hot-{visitor_id}-{stage}-{score}",
-            )
-    except SQLAlchemyError:
-        logger.exception("notify_visitor_hot database error visitor_id=%s", visitor_id)
-    except Exception:
-        logger.exception("notify_visitor_hot unexpected error visitor_id=%s", visitor_id)
 
 
 # ── Notification triggers ─────────────────────────────────────────────────────
@@ -267,7 +203,6 @@ def _rfq_email_body(rfq: RFQRequest, contact: Optional[Contact], action: str) ->
   <tr><td style="padding:8px;font-weight:bold">Company</td><td style="padding:8px">{contact_company}</td></tr>
   <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Status</td><td style="padding:8px">{rfq.status}</td></tr>
   <tr><td style="padding:8px;font-weight:bold">Priority</td><td style="padding:8px">{rfq.priority.upper()}</td></tr>
-  <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold">Intent Score</td><td style="padding:8px">{rfq.intent_score_at_submit}</td></tr>
   <tr><td style="padding:8px;font-weight:bold">Submitted</td><td style="padding:8px">{rfq.created_at.strftime('%Y-%m-%d %H:%M UTC')}</td></tr>
 </table>
 <p style="margin-top:20px">

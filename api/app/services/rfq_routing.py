@@ -1,11 +1,7 @@
 """
 RFQ Auto-Routing Service — 1b.4.6
 
-Rules (evaluated in order):
-  1. intent_score >= 60 → priority=urgent, assign to senior_sales_user_id
-  2. intent_score >= 30 → priority=high
-  3. country in HIGH_VALUE_COUNTRIES → priority=high
-  4. Default round-robin among active sales users
+Rules use explicit RFQ facts and round-robin assignment.
 
 Config is read from env vars / DB settings for production deployments.
 For now, defaults live in ROUTING_RULES below.
@@ -53,12 +49,6 @@ async def _do_route(rfq_id: uuid.UUID, db: AsyncSession) -> None:
     rfq = await db.get(RFQRequest, rfq_id)
     if not rfq:
         return
-
-    # Elevate priority based on score
-    if rfq.intent_score_at_submit >= 60 and rfq.priority != "urgent":
-        rfq.priority = "urgent"
-    elif rfq.intent_score_at_submit >= 30 and rfq.priority == "normal":
-        rfq.priority = "high"
 
     # Elevate priority based on country
     import json as _json

@@ -285,8 +285,6 @@ async def export_anonymous_visitor(
             "last_seen": _iso(visitor.last_seen),
             "consent_status": visitor.analytics_consent_status,
             "consent_updated_at": _iso(visitor.consent_updated_at),
-            "intent_score": visitor.intent_score,
-            "intent_stage": visitor.intent_stage,
             "country": visitor.country,
             "device_type": visitor.device_type,
             "linked_to_known_contact": visitor.contact_id is not None,
@@ -314,7 +312,6 @@ async def export_anonymous_visitor(
                 "page_type": row.page_type,
                 "locale": row.locale,
                 "traffic_source": row.traffic_source,
-                "score_delta": row.score_delta,
             }
             for row in events
         ],
@@ -346,8 +343,6 @@ async def export_anonymous_visitor(
         "journey_snapshots": [
             {
                 "id": str(row.id),
-                "intent_score": row.intent_score,
-                "intent_stage": row.intent_stage,
                 "summary": row.summary,
                 "generated_at": _iso(row.generated_at),
                 "expires_at": _iso(row.expires_at),
@@ -433,14 +428,6 @@ async def erase_anonymous_visitor(
     visitor.consent_updated_at = utcnow_naive()
     visitor.total_visits = 0
     visitor.total_page_views = 0
-    visitor.intent_score = 0
-    visitor.intent_stage = "cold"
-    visitor.facet_product_interest = 0
-    visitor.facet_trust_validation = 0
-    visitor.facet_procurement_readiness = 0
-    visitor.facet_urgency = 0
-    visitor.intent_explanation = None
-    visitor.stage_alert_sent = False
     visitor.device_type = None
     visitor.country = None
     visitor.updated_at = utcnow_naive()

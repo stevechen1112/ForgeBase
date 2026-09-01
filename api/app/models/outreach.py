@@ -151,7 +151,6 @@ class JourneySnapshot(SQLModel, table=True):
     __tablename__ = "journey_snapshots"
     __table_args__ = (
         UniqueConstraint("generation_key", name="uq_journey_snapshot_generation_key"),
-        CheckConstraint("intent_score >= 0", name="ck_journey_snapshot_intent_score"),
         CheckConstraint("expires_at > generated_at", name="ck_journey_snapshot_expiry"),
     )
 
@@ -169,11 +168,6 @@ class JourneySnapshot(SQLModel, table=True):
         foreign_key="contact_candidates.id", ondelete="CASCADE", index=True
     )
     generation_key: str = Field(max_length=200, index=True)
-    intent_score: int = Field(default=0, ge=0)
-    intent_stage: str = Field(default="cold", max_length=20)
-    intent_facets: dict[str, Any] = Field(
-        default_factory=dict, sa_column=Column(JSON, nullable=False, default=dict)
-    )
     top_products: list[dict[str, Any]] = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False, default=list)
     )

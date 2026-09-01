@@ -52,7 +52,7 @@ def _validate(recipient: str, probe_id: str) -> str:
         raise ControlledProbeError("email_dry_run_enabled")
     if settings.EMAIL_EXTERNAL_DELIVERY_ENABLED or settings.OUTREACH_SEND_ENABLED:
         raise ControlledProbeError("general_delivery_switches_must_remain_closed")
-    if settings.ESP_PROVIDER.lower() != "resend" or not settings.RESEND_API_KEY.strip():
+    if not settings.RESEND_API_KEY.strip():
         raise ControlledProbeError("resend_not_configured")
     if not settings.RESEND_WEBHOOK_SECRET.strip():
         raise ControlledProbeError("resend_webhook_not_configured")

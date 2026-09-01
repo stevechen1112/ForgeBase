@@ -1,9 +1,7 @@
 """Batch-8 safe-retirement observation and approval gate tests."""
 
-import json
 import uuid
 from datetime import timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy import select, text
@@ -11,11 +9,9 @@ from sqlalchemy import select, text
 from app.core.datetime import utcnow_naive
 from app.core.security import create_access_token, decode_token, get_password_hash
 from app.models.notification_preference import NotificationPreference
-from app.models.operational_job import OperationalJob
 from app.models.retirement import RetirementCandidateObservation, RetirementUsageEvent
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.services import agentOS, operational_outbox
 from app.services.capability_access import resolve_tenant_features
 from app.services.notification_router import send_notification
 from tests.conftest import _make_engine, requires_db
@@ -48,7 +44,7 @@ def test_retirement_candidates_are_not_enabled_by_phase2_preset() -> None:
     tenant = Tenant(name="Observation", slug="observation")
     features = resolve_tenant_features(tenant)
     assert features["ai_relation_recommendations"] is False
-    assert features["automation_runs"] is False
+    assert "automation_runs" not in features
 
 
 def test_usage_event_contract_contains_no_request_payload_or_pii_fields() -> None:
@@ -61,19 +57,6 @@ def test_usage_event_contract_contains_no_request_payload_or_pii_fields() -> Non
         "source",
         "occurred_at",
     }
-
-
-@pytest.mark.asyncio
-async def test_tenantless_agentos_job_cannot_bypass_locked_feature(monkeypatch) -> None:
-    trigger = AsyncMock()
-    monkeypatch.setattr(agentOS, "trigger_agentOS_rfq", trigger)
-    job = OperationalJob(
-        job_type="rfq_agentos",
-        payload_json=json.dumps({"rfq_id": str(uuid.uuid4()), "tenant_id": None}),
-        idempotency_key=f"retired-agentos-{uuid.uuid4()}",
-    )
-    await operational_outbox._execute(job)
-    trigger.assert_not_awaited()
 
 
 @requires_db
@@ -148,7 +131,6 @@ async def test_removed_scoring_endpoint_and_remaining_retirement_report(
             item["candidate_key"]: item for item in report.json()["candidates"]
         }
         assert {
-            "agentos_runtime",
             "notification_telegram",
             "notification_line",
             "relation_recommender",

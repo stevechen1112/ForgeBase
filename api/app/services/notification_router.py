@@ -45,9 +45,7 @@ _CHANNEL_MAP = {}
 # Maps event_type → preference column name on NotificationPreference
 _EVENT_PREF_COL = {
     "new_rfq": "notify_new_rfq",
-    "hot_visitor": "notify_hot_visitor",
     "daily_summary": "notify_daily_summary",
-    "churn_risk": "notify_churn_risk",
     "chat_handoff": "notify_chat_handoff",
     "content_suggestion": "notify_content_suggestion",
 }
@@ -143,8 +141,6 @@ async def send_notification(
             logger.info("Notification %s skipped because tenant notifications are disabled", event_type)
             return 0
         event_feature = {
-            "hot_visitor": "intent_scoring",
-            "churn_risk": "intent_scoring",
             "chat_handoff": "chat_handoff",
         }.get(event_type)
         if event_feature and not tenant_has_feature(tenant, event_feature):

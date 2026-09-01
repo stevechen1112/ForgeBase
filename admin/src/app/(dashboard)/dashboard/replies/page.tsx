@@ -54,8 +54,6 @@ type ReplyDetail = ReplyRow & {
     candidate_title: string | null;
     candidate_source_provider: string | null;
     journey_summary: string | null;
-    intent_score: number | null;
-    intent_stage: string | null;
     top_products: Array<Record<string, unknown>>;
   };
   thread: ReplyRow[];
@@ -360,9 +358,6 @@ export default function RepliesPage() {
                   <p className="mt-1 text-muted-foreground">
                     {detail.buyer_context.candidate_name || "窗口待確認"}
                     {detail.buyer_context.candidate_title ? ` · ${detail.buyer_context.candidate_title}` : ""}
-                    {detail.buyer_context.intent_score !== null
-                      ? ` · 意圖 ${detail.buyer_context.intent_score}`
-                      : ""}
                   </p>
                   {detail.buyer_context.journey_summary && (
                     <p className="mt-2 whitespace-pre-wrap text-muted-foreground">

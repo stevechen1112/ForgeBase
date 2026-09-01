@@ -39,7 +39,6 @@ type VisitorEvent = {
   traffic_source: string | null;
   campaign_id: string | null;
   locale: string | null;
-  score_delta: number;
 };
 
 type RFQDetail = {
@@ -64,7 +63,6 @@ type RFQDetail = {
   }[];
   quality_score: number | null;
   quality_reasons?: string[];
-  intent_score_at_submit: number;
   sla_due_at: string | null;
   sla_breached: boolean;
   incoterm?: string | null;
@@ -83,10 +81,6 @@ type RFQDetail = {
   is_spam: boolean;
   spam_reason: string | null;
   merged_into_rfq_id: string | null;
-  crm_sync: {
-    hubspot: { status: string; external_id: string | null };
-    salesforce: { status: string; external_id: string | null };
-  };
 };
 
 type RFQEvent = {
@@ -775,8 +769,7 @@ export default function RFQDetailPage() {
                 <h2 className="mb-2 font-semibold">如何找到我們</h2>
                 <p>來源頁：{rfq.source_page || "未記錄"}</p>
                 <p className="text-muted-foreground">
-                  品質判定：{rfq.quality_score ?? 0} 分 · 訪客關注分數：
-                  {rfq.intent_score_at_submit}
+                  詢價完整度：{rfq.quality_score ?? 0} 分
                 </p>
                 {(rfq.quality_reasons?.length ?? 0) > 0 && (
                   <ul className="mt-2 list-inside list-disc text-muted-foreground">
@@ -808,16 +801,6 @@ export default function RFQDetailPage() {
                     ))}
                   </ul>
                 )}
-              </section>
-              <section>
-                <h2 className="mb-2 font-semibold">CRM 同步介面</h2>
-                <p>
-                  HubSpot：
-                  {rfq.crm_sync.hubspot.status === "linked"
-                    ? `已連結 ${rfq.crm_sync.hubspot.external_id}`
-                    : "尚未連結"}
-                </p>
-                <p>Salesforce：尚未設定（保留未來 connector）</p>
               </section>
               {isManager && rfq.duplicate_candidates.length > 0 && (
                 <section>

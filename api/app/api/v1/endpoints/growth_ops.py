@@ -30,60 +30,6 @@ ops_router = APIRouter(prefix="/ops", tags=["Growth Ops"])
 QUALIFIED_THRESHOLD = 70
 _CLOSED = ("won", "lost", "expired")
 
-# outcome-feedback 高 lift facet → 建議任務（閉環第一步：觀察 → 產生行動）
-_FACET_ACTIONS = {
-    "trust_validation": {
-        "title": "成交訪客更重視信任驗證",
-        "action": "補強認證 / 廠能 / 客戶案例頁",
-        "link": "/dashboard/certifications",
-    },
-    "product_interest": {
-        "title": "成交訪客產品瀏覽更深",
-        "action": "優化熱門商品頁與規格表",
-        "link": "/dashboard/products",
-    },
-    "procurement_readiness": {
-        "title": "成交訪客採購準備度高",
-        "action": "在商品頁強化 MOQ / 交期 / Incoterms 說明",
-        "link": "/dashboard/products",
-    },
-    "urgency": {
-        "title": "成交訪客急迫性訊號強",
-        "action": "檢查 RFQ 回覆 SLA 與首回範本",
-        "link": "/dashboard/rfqs/templates",
-    },
-}
-
-
-def _build_facet_tasks(feedback: dict) -> list[dict]:
-    """把 outcome-feedback 中 lift >= 1.5 的 facet 轉成可執行任務。"""
-    if not feedback.get("statistically_actionable"):
-        return []
-    tasks = []
-    for f in feedback.get("facets") or []:
-        lift = f.get("won_lift")
-        if lift is None or lift < 1.5:
-            continue
-        meta = _FACET_ACTIONS.get(f["facet"])
-        if not meta:
-            continue
-        tasks.append({
-            "type": "outcome_facet_action",
-            "title": meta["title"],
-            "count": 1,
-            "severity": "medium",
-            "items": [{
-                "facet": f["facet"],
-                "won_lift": lift,
-                "avg_all": f.get("avg_all_rfq_visitors"),
-                "avg_won": f.get("avg_won_visitors"),
-                "action": meta["action"],
-            }],
-            "link": meta["link"],
-        })
-    return tasks
-
-
 def _month_bounds(now):
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     prev_end = start - timedelta(days=1)
@@ -211,7 +157,7 @@ async def get_funnel(
 
     # Use one acquisition cohort consistently: visitors first seen in-period.
     # Counting sessions here would mix returning visitors into the denominator
-    # while the high-intent layer used first_seen, producing a non-cohort funnel.
+    # while RFQ stages use their own explicit lifecycle cohort.
     sessions_q = select(Visitor.visitor_id).where(
         Visitor.first_seen >= since,
         Visitor.is_test_data.is_(False),
@@ -219,15 +165,6 @@ async def get_funnel(
     if tid:
         sessions_q = sessions_q.where(Visitor.tenant_id == tid)
     traffic = await _count(db, sessions_q)
-
-    hi_q = select(Visitor).where(
-        Visitor.first_seen >= since,
-        Visitor.intent_stage.in_(["hot", "sales_ready"]),
-        Visitor.is_test_data.is_(False),
-    )
-    if tid:
-        hi_q = hi_q.where(Visitor.tenant_id == tid)
-    high_intent = await _count(db, hi_q)
 
     def _rfq_q(*conds):
         q = select(RFQRequest).where(*conds, RFQRequest.is_test_data.is_(False))
@@ -257,7 +194,6 @@ async def get_funnel(
 
     layers = [
         {"layer": "traffic", "label": "流量（不重複訪客）", "count": traffic, "cohort": "visitor"},
-        {"layer": "high_intent", "label": "高關注訪客", "count": high_intent, "cohort": "visitor"},
         {"layer": "rfq", "label": "詢價單", "count": rfq_total, "cohort": "rfq"},
         {"layer": "qualified_rfq", "label": "合格詢價", "count": qualified, "cohort": "rfq"},
         {"layer": "quoted", "label": "報價送出", "count": quoted, "cohort": "rfq"},
@@ -270,7 +206,6 @@ async def get_funnel(
         # quality branch, not the parent of quote-sent, so that transition is
         # intentionally left blank as well.
         comparable_transitions = {
-            ("traffic", "high_intent"),
             ("rfq", "qualified_rfq"),
             ("quoted", "negotiation"),
             ("negotiation", "won"),
@@ -289,7 +224,7 @@ async def get_funnel(
     return {
         "days": days,
         "cohort_start": since.isoformat(),
-        "methodology": "Traffic/high-intent use the visitor acquisition cohort first seen in period. RFQ and sales stages use a separate RFQ cohort created in period, so visitor-to-RFQ conversion is intentionally not calculated. Qualified RFQ is a quality branch; quote, negotiation and won are cumulative lifecycle stages based on quote_sent_at and current advanced status.",
+        "methodology": "Traffic uses the visitor acquisition cohort first seen in period. RFQ and sales stages use a separate RFQ cohort created in period, so visitor-to-RFQ conversion is intentionally not calculated. Qualified RFQ is a quality branch; quote, negotiation and won are cumulative lifecycle stages based on quote_sent_at and current advanced status.",
         "layers": layers,
         "bottleneck_layer": bottleneck,
     }
@@ -332,31 +267,6 @@ async def get_task_queue(
         RFQRequest.sla_breached.is_(True), RFQRequest.status.not_in(_CLOSED),
     ).order_by(col(RFQRequest.sla_due_at).asc()).limit(5))).all()
 
-    # Hot 訪客 72h 內活躍但未送 RFQ（未被跟進）
-    # 以 rfq_requests.visitor_id 為準（表單建立不一定寫入 rfq_submit 事件）
-    hot_q = (
-        select(Visitor)
-        .where(
-            Visitor.intent_stage.in_(["hot", "sales_ready"]),
-            Visitor.last_seen >= now - timedelta(hours=72),
-        )
-        .order_by(col(Visitor.intent_score).desc())
-        .limit(20)
-    )
-    if tid:
-        hot_q = hot_q.where(Visitor.tenant_id == tid)
-    hot_visitors = (await db.exec(hot_q)).all()
-    hot_without_rfq: list[Visitor] = []
-    for v in hot_visitors:
-        rfq_exists_q = select(RFQRequest.id).where(RFQRequest.visitor_id == v.visitor_id).limit(1)
-        if tid:
-            rfq_exists_q = rfq_exists_q.where(RFQRequest.tenant_id == tid)
-        has_rfq = (await db.exec(rfq_exists_q)).first()
-        if not has_rfq:
-            hot_without_rfq.append(v)
-        if len(hot_without_rfq) >= 5:
-            break
-
     # 低品質 RFQ 待過濾
     low_q_count = await _count(db, _rfq_q(
         RFQRequest.status == "new", RFQRequest.quality_score < 40,
@@ -371,14 +281,6 @@ async def get_task_queue(
         drafts_q = drafts_q.where(Page.tenant_id == tid)
     draft_count = await _count(db, drafts_q)
     draft_rows = (await db.exec(drafts_q.order_by(col(Page.updated_at).asc()).limit(5))).all()
-
-    # 成交迴路觀察：高 lift facet 自動產生行動任務（閉環）
-    facet_tasks: list[dict] = []
-    try:
-        feedback = await get_intent_outcome_feedback(db=db, _=_)
-        facet_tasks = _build_facet_tasks(feedback)
-    except Exception:
-        facet_tasks = []
 
     tasks = [
         {
@@ -412,22 +314,6 @@ async def get_task_queue(
                 for r in sla_rows
             ],
             "link": "/dashboard/rfqs?sla=breached",
-        },
-        {
-            "type": "hot_visitor_unassigned",
-            "title": "高關注訪客未跟進（72 小時內活躍、尚未送出詢價）",
-            "count": len(hot_without_rfq),
-            "severity": "medium" if hot_without_rfq else "none",
-            "items": [
-                {
-                    "visitor_id": str(v.visitor_id),
-                    "intent_score": v.intent_score,
-                    "intent_stage": v.intent_stage,
-                    "intent_explanation": v.intent_explanation,
-                }
-                for v in hot_without_rfq
-            ],
-            "link": "/dashboard/intent",
         },
         {
             "type": "low_quality_rfq",
@@ -471,7 +357,6 @@ async def get_task_queue(
             "items": [],
             "link": None,
         },
-        *facet_tasks,
     ]
     if _.role == "sales":
         tasks = [task for task in tasks if task["type"] in {"rfq_follow_up_due", "sla_breached_rfq", "low_quality_rfq"}]
@@ -644,85 +529,3 @@ async def retry_operational_job(
     db.add(job)
     await db.commit()
     return {"id": str(job.id), "status": job.status, "available_at": job.available_at.isoformat()}
-
-
-# ── Phase 5：成交原因回寫 intent（§8.3，observational — 只觀察、不自動改權重）──
-
-_FACET_FIELDS = (
-    "facet_product_interest", "facet_trust_validation",
-    "facet_procurement_readiness", "facet_urgency",
-)
-
-
-@tracking_router.get("/intent/outcome-feedback")
-async def get_intent_outcome_feedback(
-    db: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
-):
-    """比較「成交單的訪客 facet 輪廓」與全體 RFQ 訪客，產生觀察性權重建議。
-
-    ⚠️ observational：僅呈現相對 lift，不自動修改評分權重（§8.3 長期迴路的第一步）。
-    """
-    tid = _.tenant_id
-    rfq_q = select(RFQRequest).where(
-        RFQRequest.visitor_id.is_not(None),
-        RFQRequest.is_test_data.is_(False),
-    )
-    if tid:
-        rfq_q = rfq_q.where(RFQRequest.tenant_id == tid)
-    rfqs = (await db.exec(rfq_q)).all()
-    if not rfqs:
-        return {
-            "sample": {"rfq_with_snapshot": 0, "won": 0, "legacy_without_snapshot": 0},
-            "statistically_actionable": False,
-            "minimum_sample": {"rfq": 10, "won": 3},
-            "facets": [],
-            "note": "尚無連結訪客的 RFQ，無法計算",
-        }
-
-    won_snapshots: list[dict] = []
-    all_snapshots: list[dict] = []
-    legacy_without_snapshot = 0
-    for r in rfqs:
-        if not r.intent_snapshot_json:
-            legacy_without_snapshot += 1
-            continue
-        try:
-            snapshot = json.loads(r.intent_snapshot_json)
-            facets_snapshot = snapshot.get("facets") or {}
-        except (TypeError, json.JSONDecodeError):
-            legacy_without_snapshot += 1
-            continue
-        all_snapshots.append(facets_snapshot)
-        if r.status == "won":
-            won_snapshots.append(facets_snapshot)
-
-    def _avg(group: list[dict], field: str) -> float:
-        if not group:
-            return 0.0
-        key = field.replace("facet_", "")
-        return sum(float(v.get(key, 0) or 0) for v in group) / len(group)
-
-    facets = []
-    for field in _FACET_FIELDS:
-        base = _avg(all_snapshots, field)
-        won_avg = _avg(won_snapshots, field)
-        lift = round(won_avg / base, 2) if base > 0 else None
-        facets.append({
-            "facet": field.replace("facet_", ""),
-            "avg_all_rfq_visitors": round(base, 1),
-            "avg_won_visitors": round(won_avg, 1),
-            "won_lift": lift,
-            "hint": (
-                f"成交訪客此面向為全體的 {lift}x，可考慮提高權重" if lift and lift >= 1.5
-                else "差異不顯著，維持現行權重"
-            ) if lift is not None else "樣本不足",
-        })
-
-    return {
-        "sample": {"rfq_with_snapshot": len(all_snapshots), "won": len(won_snapshots), "legacy_without_snapshot": legacy_without_snapshot},
-        "statistically_actionable": len(all_snapshots) >= 10 and len(won_snapshots) >= 3,
-        "minimum_sample": {"rfq": 10, "won": 3},
-        "facets": facets,
-        "note": "觀察性數據（observational）：未自動調整評分權重；調整需經人工確認並記錄於評分規則。",
-    }

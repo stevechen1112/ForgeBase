@@ -40,7 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "核心工作",
     items: [
       { label: "每日營運總覽", href: "/dashboard", icon: LayoutDashboard, exact: true },
-      { label: "買家管線", href: "/dashboard/buyers", icon: Route, activePrefixes: ["/dashboard/outcomes", "/dashboard/intent", "/dashboard/visitors"] },
+      { label: "買家管線", href: "/dashboard/buyers", icon: Route, activePrefixes: ["/dashboard/outcomes", "/dashboard/visitors"] },
       { label: "詢價案件", href: "/dashboard/rfqs", icon: ClipboardList },
       { label: "買家回信與接手", href: "/dashboard/replies", icon: MailCheck, requiredFeature: "inbound_reply", hideWhenUnavailable: true },
       { label: "今日待辦", href: "/dashboard/tasks", icon: ListChecks },
@@ -51,7 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "AI 客服對話", href: "/dashboard/chats", icon: MessageSquare, requiredFeature: "chat_handoff", hideWhenUnavailable: true },
       { label: "內容中心", href: "/dashboard/content", icon: PanelsTopLeft, activePrefixes: ["/dashboard/products", "/dashboard/categories", "/dashboard/pages", "/dashboard/settings/site-copy", "/dashboard/assets", "/dashboard/applications", "/dashboard/faqs", "/dashboard/certifications", "/dashboard/capabilities", "/dashboard/comparisons", "/dashboard/redirects"] },
-      { label: "潛在買家跟進", href: "/dashboard/growth", icon: MailCheck, salesHidden: true, activePrefixes: ["/dashboard/content-performance", "/dashboard/segments", "/dashboard/ctas", "/dashboard/nurture", "/dashboard/intent-rules"] },
+      { label: "潛在買家跟進", href: "/dashboard/growth", icon: MailCheck, salesHidden: true, activePrefixes: ["/dashboard/content-performance", "/dashboard/segments", "/dashboard/ctas", "/dashboard/nurture"] },
     ],
   },
   {

@@ -501,7 +501,7 @@ async def test_review_only_runtime_dedupes_encrypts_and_manual_conversion_has_no
         actor_id = uuid.uuid4()
         async with factory() as db:
             db.add(User(id=actor_id, tenant_id=tenant.id, email=f"reviewer-{uuid.uuid4().hex[:8]}@test.invalid", hashed_password="test", full_name="Reviewer", role="admin"))
-            db.add(Visitor(visitor_id=visitor_id, tenant_id=tenant.id, facet_product_interest=10, analytics_consent_status="granted"))
+            db.add(Visitor(visitor_id=visitor_id, tenant_id=tenant.id, total_page_views=10, analytics_consent_status="granted"))
             await db.flush()
             db.add(NetworkObservation(id=observation_id, tenant_id=tenant.id, visitor_id=visitor_id, ip_hash="a" * 64, ip_masked="203.0.113.0/24", ip_version=4, eligibility_status="eligible", consent_state="granted", policy_version="test", dedupe_key=f"test:{observation_id}", observed_at=now, expires_at=now + timedelta(days=30)))
             await db.flush()

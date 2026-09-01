@@ -66,7 +66,6 @@ class GrowthAutomationPolicy(SQLModel, table=True):
             "('off', 'shadow', 'review_only', 'approval_send', 'controlled_auto')",
             name="ck_growth_policy_company_identification_mode",
         ),
-        CheckConstraint("min_intent_score >= 0", name="ck_growth_policy_min_intent_score"),
         CheckConstraint(
             "observation_retention_days >= 1 AND observation_retention_days <= 365",
             name="ck_growth_policy_observation_retention",
@@ -97,7 +96,6 @@ class GrowthAutomationPolicy(SQLModel, table=True):
         index=True,
     )
     provider_name: str = Field(default="mock", max_length=50)
-    min_intent_score: int = Field(default=40, ge=0)
     observation_retention_days: int = Field(default=30, ge=1, le=365)
     daily_lookup_quota: int = Field(default=100, ge=0)
     daily_provider_cost_limit: Decimal = Field(

@@ -257,7 +257,6 @@ class CTACreate(BaseModel):
     locale: str = Field(default="en", max_length=5)
     status: Literal["draft", "published", "archived"] = "draft"
     sort_order: int = Field(default=0, ge=0)
-    target_intent_stage: str = Field(default="any", max_length=20)
 
 
 class CTAUpdate(BaseModel):
@@ -273,7 +272,6 @@ class CTAUpdate(BaseModel):
     locale: Optional[str] = Field(default=None, max_length=5)
     status: Optional[Literal["draft", "published", "archived"]] = None
     sort_order: Optional[int] = Field(default=None, ge=0)
-    target_intent_stage: Optional[str] = Field(default=None, max_length=20)
 
 
 class CTARead(BaseModel):
@@ -290,7 +288,6 @@ class CTARead(BaseModel):
     locale: str
     status: str
     sort_order: int
-    target_intent_stage: str
     created_at: datetime
     updated_at: datetime
 

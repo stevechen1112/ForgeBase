@@ -275,7 +275,7 @@ async def run_contact_enrichment_job(
         if cost + projected > policy.daily_provider_cost_limit:
             raise ContactProviderPermanentError("Tenant contact provider cost limit would be exceeded")
         visitor = await db.get(Visitor, company.visitor_id)
-        product_interest = visitor.facet_product_interest if visitor else 0
+        product_interest = visitor.total_page_views if visitor else 0
         context = ContactSearchContext(
             tenant_id=company.tenant_id,
             company_identification_id=company.id,

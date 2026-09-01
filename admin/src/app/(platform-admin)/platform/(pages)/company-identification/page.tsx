@@ -22,7 +22,6 @@ type EditablePolicy = Omit<GrowthAutomationPolicy, "tenant_id" | "updated_by" | 
 const EMPTY_POLICY: EditablePolicy = {
   company_identification_mode: "off",
   provider_name: "mock",
-  min_intent_score: 40,
   observation_retention_days: 30,
   daily_lookup_quota: 100,
   daily_provider_cost_limit: 10,
@@ -194,7 +193,6 @@ export default function CompanyIdentificationPage() {
         <CardContent className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-2"><Label>模式</Label><Select value={policy.company_identification_mode} onValueChange={(value: "off" | "shadow") => setPolicy({ ...policy, company_identification_mode: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">關閉</SelectItem><SelectItem value="shadow">Shadow（只觀察）</SelectItem></SelectContent></Select></div>
           <div className="space-y-2"><Label>公司資料供應商</Label><Select value={policy.provider_name} onValueChange={(value) => setPolicy({ ...policy, provider_name: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{providers.map((provider) => <SelectItem key={provider} value={provider}>{provider === "mock" ? "Mock（不連外）" : provider}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>最低意圖分數</Label><Input type="number" min={0} max={1000} value={policy.min_intent_score} onChange={(event) => setPolicy({ ...policy, min_intent_score: Number(event.target.value) })} /></div>
           <div className="space-y-2"><Label>每日查詢上限</Label><Input type="number" min={0} max={100000} value={policy.daily_lookup_quota} onChange={(event) => setPolicy({ ...policy, daily_lookup_quota: Number(event.target.value) })} /></div>
           <div className="space-y-2"><Label>每日供應商成本上限</Label><Input type="number" min={0} max={1000000} step={0.01} value={policy.daily_provider_cost_limit} onChange={(event) => setPolicy({ ...policy, daily_provider_cost_limit: Number(event.target.value) })} /></div>
           <div className="space-y-2"><Label>觀察保留天數</Label><Input type="number" min={1} max={365} value={policy.observation_retention_days} onChange={(event) => setPolicy({ ...policy, observation_retention_days: Number(event.target.value) })} /></div>

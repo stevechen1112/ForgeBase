@@ -15,9 +15,7 @@ type NotificationPref = {
   channel_config: Record<string, string>;
   enabled: boolean;
   notify_new_rfq: boolean;
-  notify_hot_visitor: boolean;
   notify_daily_summary: boolean;
-  notify_churn_risk: boolean;
   notify_chat_handoff: boolean;
   notify_content_suggestion: boolean;
   quiet_hours_start: string | null;
@@ -35,9 +33,7 @@ const TOGGLE_LABELS: {
   requiredFeature?: string;
 }[] = [
   { key: "notify_new_rfq", label: "新 RFQ 通知", desc: "有新詢價時立即留下營運通知" },
-  { key: "notify_hot_visitor", label: "高關注訪客警報", desc: "訪客進入高意圖狀態時通知", requiredFeature: "intent_scoring" },
   { key: "notify_daily_summary", label: "每日營運摘要", desc: "每日彙整前一天的重要事件" },
-  { key: "notify_churn_risk", label: "客戶流失預警", desc: "已識別客戶的關注分數下降時通知", requiredFeature: "intent_scoring" },
   { key: "notify_chat_handoff", label: "對話轉業務接手", desc: "官網 AI 對話轉交真人時通知", requiredFeature: "chat_handoff" },
   { key: "notify_content_suggestion", label: "內容優化建議", desc: "保留低頻內容品質提醒", requiredFeature: "full_tracking" },
 ];

@@ -32,7 +32,6 @@ from app.models.contact_enrichment import (
 )
 from app.models.content_asset import ContentAsset
 from app.models.content_field_lock import ContentFieldLock
-from app.models.content_strategy import ContentStrategy
 from app.models.cta import CTA
 from app.models.email_delivery import EmailDeliveryEvent, EmailSuppression
 from app.models.faq_item import FAQItem
@@ -119,7 +118,6 @@ __all__ = [
     "ContactPersonaPolicy",
     "ContentAsset",
     "ContentFieldLock",
-    "ContentStrategy",
     "EmailDeliveryEvent",
     "EmailSuppression",
     "FAQItem",

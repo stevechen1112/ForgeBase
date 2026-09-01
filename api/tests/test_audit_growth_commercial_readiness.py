@@ -17,7 +17,6 @@ def _config(**overrides):
         "OUTREACH_UNSUBSCRIBE_SECRET": "unsubscribe-sensitive-value",  # pragma: allowlist secret
         "OUTREACH_INBOUND_DOMAIN": "reply.example.test",
         "OUTREACH_INBOUND_SECRET": "inbound-sensitive-value",  # pragma: allowlist secret
-        "ESP_PROVIDER": "resend",
         "EMAIL_DRY_RUN": False,
         "EMAIL_EXTERNAL_DELIVERY_ENABLED": False,
         "OUTREACH_SEND_ENABLED": False,

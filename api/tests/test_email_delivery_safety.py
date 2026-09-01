@@ -2,7 +2,6 @@ import uuid
 from types import SimpleNamespace
 
 import pytest
-from app.api.v1.endpoints.esp import _live_test_recipient_allowed
 from app.core.config import settings
 from app.services import email_service
 from app.services.notifications import _rfq_email_body
@@ -11,7 +10,6 @@ from app.services.notifications import _rfq_email_body
 @pytest.mark.asyncio
 async def test_dry_run_is_successful_but_not_delivered(monkeypatch):
     monkeypatch.setattr(settings, "EMAIL_DRY_RUN", True)
-    monkeypatch.setattr(settings, "ESP_PROVIDER", "resend")
     monkeypatch.setattr(settings, "RESEND_API_KEY", "re_configured")
 
     result = await email_service.send_email_result(
@@ -28,7 +26,6 @@ async def test_dry_run_is_successful_but_not_delivered(monkeypatch):
 @pytest.mark.asyncio
 async def test_missing_key_is_not_reported_as_success(monkeypatch):
     monkeypatch.setattr(settings, "EMAIL_DRY_RUN", False)
-    monkeypatch.setattr(settings, "ESP_PROVIDER", "resend")
     monkeypatch.setattr(settings, "RESEND_API_KEY", "")
 
     result = await email_service.send_email_result(
@@ -69,7 +66,6 @@ async def test_resend_request_has_idempotency_and_no_secret_in_payload(monkeypat
             return FakeResponse()
 
     monkeypatch.setattr(settings, "EMAIL_DRY_RUN", False)
-    monkeypatch.setattr(settings, "ESP_PROVIDER", "sendgrid")
     monkeypatch.setattr(settings, "RESEND_API_KEY", "re_secret_value")
     monkeypatch.setattr(settings, "EMAIL_FROM", "notifications@example.org")
     monkeypatch.setattr(email_service.httpx, "AsyncClient", FakeClient)
@@ -98,18 +94,6 @@ async def test_resend_request_has_idempotency_and_no_secret_in_payload(monkeypat
     assert "re_secret_value" not in repr(captured["json"])
 
 
-def test_live_test_recipient_is_restricted(monkeypatch):
-    monkeypatch.setattr(
-        settings, "EMAIL_TEST_RECIPIENT_ALLOWLIST", "owner@example.org,example.net"
-    )
-
-    assert _live_test_recipient_allowed("delivered@resend.dev") is True
-    assert _live_test_recipient_allowed("delivered+forgebase@resend.dev") is True
-    assert _live_test_recipient_allowed("owner@example.org") is True
-    assert _live_test_recipient_allowed("qa@example.net") is True
-    assert _live_test_recipient_allowed("buyer@customer.example") is False
-
-
 def test_rfq_internal_email_escapes_contact_and_uses_configured_admin_url(monkeypatch):
     monkeypatch.setattr(settings, "ADMIN_URL", "https://pcbrm.tw/backend")
     rfq_id = uuid.uuid4()
@@ -118,7 +102,6 @@ def test_rfq_internal_email_escapes_contact_and_uses_configured_admin_url(monkey
         rfq_number="RFQ-100",
         status="new",
         priority="high",
-        intent_score_at_submit=80,
         created_at=SimpleNamespace(strftime=lambda _format: "2026-08-16 12:00 UTC"),
     )
     contact = SimpleNamespace(

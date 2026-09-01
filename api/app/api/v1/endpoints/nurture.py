@@ -16,7 +16,7 @@ POST   /nurture/process              process due steps (admin)
 """
 import uuid
 from datetime import timedelta
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -44,7 +44,7 @@ router = APIRouter(prefix="/nurture", tags=["Nurture"])
 class SequenceCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    trigger_type: str  # "intent_stage" | "segment" | "manual"
+    trigger_type: Literal["segment", "manual"]
     trigger_value: Optional[str] = None
     is_active: bool = True
     allow_re_enrollment: bool = False
@@ -53,7 +53,7 @@ class SequenceCreate(BaseModel):
 class SequenceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    trigger_type: Optional[str] = None
+    trigger_type: Optional[Literal["segment", "manual"]] = None
     trigger_value: Optional[str] = None
     is_active: Optional[bool] = None
     # is_approved is intentionally NOT patchable — use /approve|/unapprove (admin only)
@@ -83,7 +83,7 @@ class StepUpdate(BaseModel):
 class EnrollRequest(BaseModel):
     contact_id: uuid.UUID
     sequence_id: uuid.UUID
-    trigger_type: Optional[str] = "manual"
+    trigger_type: Literal["segment", "manual"] = "manual"
     trigger_value: Optional[str] = None
 
 
@@ -426,7 +426,7 @@ async def process_due_steps(
     return {"status": "queued"}
 
 
-# ── Trigger from intent system ─────────────────────────────────────────────
+# ── Trigger from an explicit segment or manual action ─────────────────────
 
 
 async def trigger_nurture_for_contact(

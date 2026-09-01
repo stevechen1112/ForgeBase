@@ -2,8 +2,8 @@
 Nurture Models — Email Nurture Engine.
 
 A NurtureSequence is a named email workflow with:
-  - trigger_type: "intent_stage" | "segment" | "manual"
-  - trigger_value: e.g. "warm" / "hot" or segment id
+  - trigger_type: "segment" | "manual"
+  - trigger_value: segment id when applicable
   - Steps: ordered list of emails with delay_days
 
 A NurtureEnrollment tracks a contact's progress through a sequence.
@@ -30,9 +30,9 @@ class NurtureSequence(SQLModel, table=True):
     description: Optional[str] = Field(default=None)
 
     trigger_type: str = Field(max_length=30)
-    # "intent_stage" | "segment" | "manual"
+    # "segment" | "manual"
     trigger_value: Optional[str] = Field(default=None, max_length=200)
-    # intent_stage: "warm" | "hot" | "sales_ready"; segment: segment UUID
+    # segment: segment UUID
 
     is_active: bool = Field(default=True)
     allow_re_enrollment: bool = Field(default=False)
