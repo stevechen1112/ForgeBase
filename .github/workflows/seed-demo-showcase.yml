@@ -1,0 +1,113 @@
+name: Seed Protected Demo Showcase
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_email:
+        description: Existing user whose tenant is explicitly named Demo
+        required: true
+        default: demo.phase2@forgebase.com
+        type: string
+      confirmation:
+        description: Type SEED_DEMO_SHOWCASE to authorize idempotent synthetic records
+        required: true
+        type: string
+
+concurrency:
+  group: production-demo-showcase-seed
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    name: Seed synthetic data into the named Demo tenant
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate explicit authorization
+        env:
+          DEMO_USER_EMAIL: ${{ inputs.user_email }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "SEED_DEMO_SHOWCASE"
+          python - <<'PY'
+          import os
+          import re
+
+          email = os.environ["DEMO_USER_EMAIL"]
+          assert re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+", email)
+          PY
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_SSH_KEY"
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Seed the protected production Demo tenant
+        env:
+          DEMO_USER_EMAIL: ${{ inputs.user_email }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/demo-showcase
+          printf '%s\n' "$DEMO_USER_EMAIL" | \
+            ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes root@"$DEPLOY_HOST" '
+              set -euo pipefail
+              IFS= read -r demo_user_email
+              cd /opt/forgebase
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e PYTHONPATH=/app \
+                api python scripts/seed_demo_showcase.py \
+                  --user-email "$demo_user_email" \
+                  --apply
+            ' | tail -n 1 > artifacts/demo-showcase/report.json
+
+      - name: Validate safety and expected showcase density
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/demo-showcase/report.json").read_text())
+          assert report["schema_version"] == 1
+          assert report["status"] == "seeded"
+          assert "demo" in report["tenant_name"].casefold()
+          assert report["records"]["visitors"] == 120
+          assert report["records"]["rfqs"] == 28
+          assert report["records"]["won"] == 4
+          assert report["records"]["draft_pages"] == 2
+          assert report["safety"] == {
+              "synthetic_contacts_only": True,
+              "outbound_jobs_created": 0,
+              "email_sent": False,
+              "idempotent": True,
+          }
+          print("Protected Demo showcase seed passed all safety checks")
+          PY
+
+      - name: Upload private seeding evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protected-demo-showcase-seed-evidence
+          path: artifacts/demo-showcase/
+          if-no-files-found: error
+          retention-days: 30
