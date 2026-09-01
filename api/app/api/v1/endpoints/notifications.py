@@ -78,6 +78,7 @@ async def list_preferences(
     result = await db.exec(
         select(NotificationPreference)
         .where(NotificationPreference.user_id == current_user.id)
+        .where(NotificationPreference.channel.in_(ACTIVE_NOTIFICATION_CHANNELS))
         .order_by(NotificationPreference.created_at)
     )
     return {"data": [_preference_payload(pref) for pref in result.all()]}
@@ -157,6 +158,7 @@ async def list_notifications(
     result = await db.exec(
         select(NotificationLog)
         .where(NotificationLog.tenant_id == current_user.tenant_id)
+        .where(NotificationLog.channel.in_(ACTIVE_NOTIFICATION_CHANNELS))
         .where(NotificationLog.event_type.in_(allowed_event_types))
         .order_by(NotificationLog.sent_at.desc())
         .limit(100)

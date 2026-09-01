@@ -513,7 +513,17 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                               (SELECT COUNT(*) FROM site_builds WHERE tenant_id = :tenant_id) AS builds,
                               (SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tenant_id) AS domains,
                               (SELECT COUNT(*) FROM tenant_domains WHERE tenant_id = :tenant_id AND is_canonical = TRUE) AS canonical_domains,
-                              (SELECT COUNT(*) FROM tenant_provisioning_runs WHERE tenant_id = :tenant_id) AS runs
+                              (SELECT COUNT(*) FROM tenant_provisioning_runs WHERE tenant_id = :tenant_id) AS runs,
+                              (SELECT COUNT(*) FROM contacts WHERE tenant_id = :tenant_id) AS contacts,
+                              (SELECT COUNT(*) FROM visitors WHERE tenant_id = :tenant_id) AS visitors,
+                              (SELECT COUNT(*) FROM tracking_events WHERE tenant_id = :tenant_id) AS tracking_events,
+                              (SELECT COUNT(*) FROM chat_sessions WHERE tenant_id = :tenant_id) AS chat_sessions,
+                              (SELECT COUNT(*) FROM rfq_requests WHERE tenant_id = :tenant_id) AS rfq_requests,
+                              (SELECT COUNT(*) FROM segments WHERE tenant_id = :tenant_id) AS segments,
+                              (SELECT COUNT(*) FROM nurture_sequences WHERE tenant_id = :tenant_id) AS nurture_sequences,
+                              (SELECT COUNT(*) FROM nurture_outbox WHERE tenant_id = :tenant_id) AS nurture_outbox,
+                              (SELECT COUNT(*) FROM notification_preferences WHERE tenant_id = :tenant_id) AS notification_preferences,
+                              (SELECT COUNT(*) FROM notification_log WHERE tenant_id = :tenant_id) AS notification_log
                             """
                         ),
                         params={"tenant_id": str(tenant_id)},
@@ -527,6 +537,16 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     "domains": 2,
                     "canonical_domains": 1,
                     "runs": 1,
+                    "contacts": 0,
+                    "visitors": 0,
+                    "tracking_events": 0,
+                    "chat_sessions": 0,
+                    "rfq_requests": 0,
+                    "segments": 0,
+                    "nurture_sequences": 0,
+                    "nurture_outbox": 0,
+                    "notification_preferences": 0,
+                    "notification_log": 0,
                 }
                 domain_types = (
                     await session.exec(
@@ -561,6 +581,27 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
             try:
                 async with factory() as session:
                     params = {"tenant_id": str(tenant_id)}
+                    for table in (
+                        "nurture_outbox",
+                        "nurture_enrollments",
+                        "nurture_steps",
+                        "nurture_sequences",
+                        "notification_preferences",
+                        "notification_log",
+                        "segments",
+                        "rfq_notes",
+                        "rfq_events",
+                        "rfq_requests",
+                        "chat_sessions",
+                        "tracking_events",
+                        "tracking_sessions",
+                        "visitors",
+                        "contacts",
+                    ):
+                        await session.exec(
+                            text(f"DELETE FROM {table} WHERE tenant_id = :tenant_id"),
+                            params=params,
+                        )
                     await session.exec(text("DELETE FROM platform_audit_logs WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM tenant_provisioning_runs WHERE tenant_id = :tenant_id"), params=params)
                     await session.exec(text("DELETE FROM tenant_domains WHERE tenant_id = :tenant_id"), params=params)

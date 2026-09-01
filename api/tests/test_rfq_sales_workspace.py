@@ -98,6 +98,18 @@ async def test_rfq_sales_workspace_end_to_end(http_client, two_tenants, admin_to
     assert {row["id"] for row in response.json()} == {first_id, third_id}
     assert response.json()[0]["contact"]["company_name"]
     assert response.json()[0]["assigned_to_name"] == "Alice Sales"
+    manager_mine = await http_client.get(
+        f"/api/v1/tracking/rfqs?assigned_to={sales.id}",
+        headers=_auth(admin_token),
+    )
+    assert manager_mine.status_code == 200, manager_mine.text
+    assert {row["id"] for row in manager_mine.json()} == {first_id, third_id}
+    manager_mine_stats = await http_client.get(
+        f"/api/v1/tracking/rfqs/stats?assigned_to={sales.id}",
+        headers=_auth(admin_token),
+    )
+    assert manager_mine_stats.status_code == 200, manager_mine_stats.text
+    assert manager_mine_stats.json()["unquoted"] == 2
     assert (await http_client.get(f"/api/v1/tracking/rfqs/{second_id}", headers=_auth(sales_token))).status_code == 404
     response = await http_client.put(
         f"/api/v1/tracking/rfqs/{first_id}/follow-up",
@@ -167,6 +179,12 @@ async def test_rfq_sales_workspace_end_to_end(http_client, two_tenants, admin_to
     assert export.status_code == 200, export.text
     assert "text/csv" in export.headers["content-type"]
     assert "Acme Industrial" in export.content.decode("utf-8-sig")
+    filtered_export = await http_client.get(
+        f"/api/v1/tracking/rfqs/export.csv?assigned_to={sales.id}",
+        headers=_auth(admin_token),
+    )
+    assert filtered_export.status_code == 200, filtered_export.text
+    assert "Acme Industrial" in filtered_export.content.decode("utf-8-sig")
     assert (await http_client.get("/api/v1/tracking/rfqs/export.csv", headers=_auth(sales_token))).status_code == 403
 
     events = await http_client.get(f"/api/v1/tracking/rfqs/{first_id}/events", headers=_auth(admin_token))

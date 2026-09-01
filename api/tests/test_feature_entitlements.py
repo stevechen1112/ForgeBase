@@ -4,8 +4,9 @@ import uuid
 
 import pytest
 
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import create_access_token, decode_token, get_password_hash
 from app.models.notification_log import NotificationLog
+from app.models.notification_preference import NotificationPreference
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.services.capability_access import resolve_tenant_features, tenant_has_feature
@@ -64,11 +65,15 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
 
         platform_token = create_access_token(str(platform_id))
         tenant_token = await admin_token_for_tenant(tenant.id)
+        tenant_user_id = uuid.UUID(decode_token(tenant_token)["sub"])
         async with factory() as session:
             session.add_all([
                 NotificationLog(tenant_id=tenant.id, channel="in_app", event_type="new_rfq", status="sent"),
                 NotificationLog(tenant_id=tenant.id, channel="in_app", event_type="hot_visitor", status="sent"),
                 NotificationLog(tenant_id=tenant.id, channel="in_app", event_type="chat_handoff", status="sent"),
+                NotificationLog(tenant_id=tenant.id, channel="line", event_type="new_rfq", status="sent"),
+                NotificationPreference(user_id=tenant_user_id, tenant_id=tenant.id, channel="email"),
+                NotificationPreference(user_id=tenant_user_id, tenant_id=tenant.id, channel="telegram", enabled=False),
             ])
             await session.commit()
 
@@ -104,6 +109,10 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         assert {item["event_type"] for item in notifications.json()["data"]} == {
             "new_rfq", "chat_handoff",
         }
+        assert {item["channel"] for item in notifications.json()["data"]} == {"in_app"}
+        preferences = await http_client.get("/api/v1/notifications/preferences", headers=_auth(tenant_token))
+        assert preferences.status_code == 200, preferences.text
+        assert [item["channel"] for item in preferences.json()["data"]] == ["email"]
 
         disabled_nurture = await http_client.get("/api/v1/nurture/sequences", headers=_auth(tenant_token))
         assert disabled_nurture.status_code == 403
