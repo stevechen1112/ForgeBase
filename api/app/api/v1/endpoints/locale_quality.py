@@ -92,7 +92,35 @@ async def locale_coverage(
                           AND source.updated_at > COALESCE(target.updated_at, target.created_at)
                     ),
                     NULL
-                ) AS stale_keys
+                ) AS stale_keys,
+                (
+                    SELECT COUNT(*)
+                    FROM {table} orphan
+                    WHERE orphan.tenant_id = :tenant_id
+                      AND orphan.locale = :target
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM {table} canonical
+                          WHERE canonical.tenant_id = orphan.tenant_id
+                            AND canonical.{key} = orphan.{key}
+                            AND canonical.locale = :source
+                      )
+                ) AS unpaired,
+                ARRAY(
+                    SELECT orphan.{key}
+                    FROM {table} orphan
+                    WHERE orphan.tenant_id = :tenant_id
+                      AND orphan.locale = :target
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM {table} canonical
+                          WHERE canonical.tenant_id = orphan.tenant_id
+                            AND canonical.{key} = orphan.{key}
+                            AND canonical.locale = :source
+                      )
+                    ORDER BY orphan.updated_at DESC
+                    LIMIT 100
+                ) AS unpaired_keys
             FROM {table} source
             LEFT JOIN {table} target
               ON target.tenant_id = source.tenant_id
@@ -110,6 +138,7 @@ async def locale_coverage(
         published = int(result["published"] or 0)
         draft = int(result["draft"] or 0)
         stale = int(result["stale"] or 0)
+        unpaired = int(result["unpaired"] or 0)
         rows.append({
             "entity": entity,
             "source_total": source_total,
@@ -117,26 +146,32 @@ async def locale_coverage(
             "published": published,
             "draft": draft,
             "stale": stale,
-            "coverage_pct": round(translated / source_total * 100, 1) if source_total else 100.0,
-            "published_pct": round(published / source_total * 100, 1) if source_total else 100.0,
+            "coverage_pct": round(translated / source_total * 100, 1) if source_total else None,
+            "published_pct": round(published / source_total * 100, 1) if source_total else None,
             "missing_count": max(source_total - translated, 0),
+            "unpaired": unpaired,
             "missing_keys": list(result["missing_keys"] or [])[:100],
             "missing_ids": [str(item) for item in list(result["missing_ids"] or [])[:100]],
             "draft_keys": list(result["draft_keys"] or [])[:100],
             "stale_keys": list(result["stale_keys"] or [])[:100],
+            "unpaired_keys": list(result["unpaired_keys"] or [])[:100],
         })
     total = sum(row["source_total"] for row in rows)
     translated = sum(row["translated"] for row in rows)
     missing = sum(row["missing_count"] for row in rows)
     draft = sum(row["draft"] for row in rows)
     stale = sum(row["stale"] for row in rows)
+    unpaired = sum(row["unpaired"] for row in rows)
     return {
         "source_locale": source,
         "target_locale": target,
-        "overall_coverage_pct": round(translated / total * 100, 1) if total else 100.0,
+        "source_total": total,
+        "translated": translated,
+        "overall_coverage_pct": round(translated / total * 100, 1) if total else None,
         "missing": missing,
         "draft": draft,
         "stale": stale,
+        "unpaired": unpaired,
         "entities": rows,
         "policy": "Buyer-locale drafts are unpublished until an editor publishes them. ForgeBase does not auto-publish translations.",
     }
