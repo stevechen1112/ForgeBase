@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/store";
+import { useCapabilities } from "@/lib/hooks/useCapabilities";
 import { cn } from "@/lib/utils";
 
 type ContactSummary = {
@@ -120,6 +121,8 @@ export default function DashboardPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
   const user = state.status === "authenticated" ? state.user : null;
+  const { hasFeature, isLoading: featuresLoading } = useCapabilities();
+  const hasOutcomes = !featuresLoading && hasFeature("outcomes_dashboard");
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [queue, setQueue] = useState<TaskQueue | null>(null);
@@ -128,14 +131,16 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!token) return;
+    if (!token || featuresLoading) return;
     setLoading(true);
     setError(null);
     const results = await Promise.allSettled([
       apiClient.get<RFQRow[]>("/tracking/rfqs?limit=200", token),
       apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
       apiClient.get<TaskQueue>("/ops/task-queue", token),
-      apiClient.get<OutcomesData>("/tracking/outcomes", token),
+      hasOutcomes
+        ? apiClient.get<OutcomesData>("/tracking/outcomes", token)
+        : Promise.resolve(null),
     ]);
 
     const [rfqResult, funnelResult, queueResult, outcomesResult] = results;
@@ -143,9 +148,13 @@ export default function DashboardPage() {
     else setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入詢價資料");
     setFunnel(funnelResult.status === "fulfilled" ? funnelResult.value : null);
     setQueue(queueResult.status === "fulfilled" ? queueResult.value : null);
-    setOutcomes(outcomesResult.status === "fulfilled" ? outcomesResult.value : null);
+    setOutcomes(
+      outcomesResult.status === "fulfilled" && outcomesResult.value
+        ? outcomesResult.value
+        : null,
+    );
     setLoading(false);
-  }, [token]);
+  }, [featuresLoading, hasOutcomes, token]);
 
   useEffect(() => {
     void loadData();
@@ -385,7 +394,9 @@ export default function DashboardPage() {
               </div>
             ))}
             <Button variant="outline" className="w-full" asChild>
-              <Link href="/dashboard/outcomes">查看成交成果 <ArrowUpRight className="ml-1 h-4 w-4" /></Link>
+              <Link href={hasOutcomes ? "/dashboard/outcomes" : "/dashboard/rfqs"}>
+                {hasOutcomes ? "查看成交成果" : "查看全部詢價"} <ArrowUpRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
           </CardContent>
         </Card>
