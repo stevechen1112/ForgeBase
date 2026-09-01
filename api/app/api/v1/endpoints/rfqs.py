@@ -693,6 +693,7 @@ async def list_rfqs(
 @tracking_router.get("/rfqs/export.csv")
 async def export_rfqs_csv(
     status: Optional[str] = None,
+    assigned_to: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_rfq_manager),
 ):
@@ -707,6 +708,8 @@ async def export_rfqs_csv(
     )
     if status:
         q = q.where(RFQRequest.status == status)
+    if assigned_to:
+        q = q.where(RFQRequest.assigned_to == assigned_to)
     rows = list((await db.exec(q)).all())
     enriched = await _enrich_rfq_rows(db, rows)
     buffer = io.StringIO(newline="")
@@ -745,6 +748,7 @@ async def export_rfqs_csv(
 @tracking_router.get("/rfqs/stats")
 async def rfq_stats(
     days: int = 30,
+    assigned_to: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
@@ -763,6 +767,8 @@ async def rfq_stats(
     )
     if _.role == "sales":
         q = q.where(RFQRequest.assigned_to == _.id)
+    elif assigned_to:
+        q = q.where(RFQRequest.assigned_to == assigned_to)
     rows = (await db.exec(q)).all()
 
     def _naive(dt):
@@ -818,6 +824,8 @@ async def rfq_stats(
     )
     if _.role == "sales":
         q_open = q_open.where(RFQRequest.assigned_to == _.id)
+    elif assigned_to:
+        q_open = q_open.where(RFQRequest.assigned_to == assigned_to)
     open_rows = (await db.exec(q_open)).all()
     unquoted = len(open_rows)
     unassigned = sum(1 for r in open_rows if not r.assigned_to)

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { RFQsListPage } from "../page";
 
 export default function MyRFQsPage() {
-  redirect("/dashboard/rfqs");
+  return <RFQsListPage mineOnly />;
 }

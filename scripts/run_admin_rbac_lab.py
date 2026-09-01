@@ -382,8 +382,15 @@ def _run_browser_and_api_matrix(
     def route(page, path: str, expectation: str) -> None:
         page.goto(f"{admin_base}{path}", wait_until="domcontentloaded")
         page.wait_for_timeout(700)
+        redirect_target = (
+            expectation.removeprefix("redirect:")
+            if expectation.startswith("redirect:")
+            else None
+        )
+        if redirect_target:
+            page.wait_for_url(f"{admin_base}{redirect_target}", timeout=30_000)
         text = body_text(page)
-        if expectation == "allowed":
+        if expectation == "allowed" or redirect_target:
             if "您沒有權限使用這項功能" in text:
                 raise LabFailure(f"{path} unexpectedly rendered RBAC 403")
             if "此租戶尚未開通這項功能" in text:
@@ -402,13 +409,21 @@ def _run_browser_and_api_matrix(
             page.get_by_role("link", name="返回每日營運總覽").wait_for(
                 state="visible", timeout=30_000
             )
-        elif path != "/dashboard":
+        elif path != "/dashboard" and not redirect_target:
             page.get_by_role("navigation", name="頁面階層").wait_for(
                 state="visible", timeout=30_000
             )
             back_link = page.locator('a[aria-label^="返回"]')
             if back_link.count() < 1:
                 raise LabFailure(f"{path} did not expose a deterministic parent link")
+        if path == "/dashboard/rfqs/my" and expectation == "allowed":
+            page.get_by_role("heading", name="我的詢價案件", exact=True).wait_for(
+                state="visible", timeout=30_000
+            )
+            if page.url != f"{admin_base}/dashboard/rfqs/my":
+                raise LabFailure("My RFQs route did not remain on its dedicated view")
+            if page.get_by_label("負責業務").count() > 0:
+                raise LabFailure("My RFQs view exposed the company-wide owner filter")
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -446,42 +461,46 @@ def _run_browser_and_api_matrix(
             "owner": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "allowed",
+                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/products/new": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
                 "/dashboard/outcomes": "locked",
             },
             "admin": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "allowed",
+                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
             },
             "marketing_manager": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "allowed",
+                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/content/locales": "allowed",
                 "/dashboard/pages": "denied",
                 "/dashboard/users": "denied",
                 "/dashboard/settings/site-profile": "denied",
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
             },
             "sales": {
                 "/dashboard": "allowed",
                 "/dashboard/rfqs": "allowed",
+                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/replies": "allowed",
                 "/dashboard/visitors": "allowed",
                 # The content hub is intentionally read-only for Sales and

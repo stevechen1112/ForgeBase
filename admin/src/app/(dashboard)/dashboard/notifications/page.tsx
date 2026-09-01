@@ -39,8 +39,6 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 const CHANNEL_LABELS: Record<string, string> = {
-  telegram: "Telegram",
-  line: "LINE",
   email: "Email",
   in_app: "站內",
 };

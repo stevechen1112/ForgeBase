@@ -72,7 +72,11 @@ function formatDate(value: string | null, withTime = false) {
     : { year: "numeric", month: "numeric", day: "numeric" });
 }
 
-export default function RFQsListPage() {
+type RFQsListPageProps = {
+  mineOnly?: boolean;
+};
+
+export function RFQsListPage({ mineOnly = false }: RFQsListPageProps) {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
   const user = state.status === "authenticated" ? state.user : null;
@@ -91,6 +95,7 @@ export default function RFQsListPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 25;
+  const assignedToFilter = mineOnly ? user?.id ?? "" : ownerFilter;
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -103,7 +108,7 @@ export default function RFQsListPage() {
     });
     if (search.trim()) params.set("search", search.trim());
     if (statusFilter) params.set("status", statusFilter);
-    if (ownerFilter && isManager) params.set("assigned_to", ownerFilter);
+    if (assignedToFilter && isManager) params.set("assigned_to", assignedToFilter);
     if (followUpFilter === "response_overdue") params.set("sla", "breached");
     else if (followUpFilter) params.set("follow_up", followUpFilter);
     try {
@@ -117,7 +122,7 @@ export default function RFQsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [followUpFilter, isManager, ownerFilter, page, search, statusFilter, token, view]);
+  }, [assignedToFilter, followUpFilter, isManager, page, search, statusFilter, token, view]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -131,7 +136,9 @@ export default function RFQsListPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${API_BASE}/tracking/rfqs/stats?days=30`, { headers: buildApiHeaders(token) })
+    const params = new URLSearchParams({ days: "30" });
+    if (mineOnly && isManager && user?.id) params.set("assigned_to", user.id);
+    fetch(`${API_BASE}/tracking/rfqs/stats?${params}`, { headers: buildApiHeaders(token) })
       .then(async (response) => response.ok ? response.json() : null)
       .then(setStats)
       .catch(() => setStats(null));
@@ -140,7 +147,7 @@ export default function RFQsListPage() {
         .then((members) => setTeam(members.filter((member) => member.is_active && ["sales", "admin", "owner"].includes(member.role))))
         .catch(() => setTeam([]));
     }
-  }, [isManager, token]);
+  }, [isManager, mineOnly, token, user?.id]);
 
   async function downloadCsv() {
     setExporting(true);
@@ -148,6 +155,7 @@ export default function RFQsListPage() {
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.set("status", statusFilter);
+      if (mineOnly && user?.id) params.set("assigned_to", user.id);
       const response = await fetch(`${API_BASE}/tracking/rfqs/export.csv?${params}`, { headers: buildApiHeaders(token) });
       if (!response.ok) throw new Error("匯出失敗");
       const blob = await response.blob();
@@ -168,23 +176,27 @@ export default function RFQsListPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">詢價案件</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{mineOnly ? "我的詢價案件" : "詢價案件"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isManager ? "掌握新詢價、負責業務與下一步。" : "只顯示分派給您的詢價與今天要跟進的案件。"}
+            {mineOnly
+              ? "只顯示分派給您的詢價與今天要跟進的案件。"
+              : isManager
+                ? "掌握新詢價、負責業務與下一步。"
+                : "只顯示分派給您的詢價與今天要跟進的案件。"}
           </p>
         </div>
         {isManager && (
           <Button variant="outline" size="sm" onClick={downloadCsv} disabled={exporting}>
-            <Download className="mr-2 h-4 w-4" />{exporting ? "匯出中…" : "匯出 CSV"}
+            <Download className="mr-2 h-4 w-4" />{exporting ? "匯出中…" : mineOnly ? "匯出我的案件" : "匯出 CSV"}
           </Button>
         )}
       </div>
 
       {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      <div className={`mb-5 grid gap-3 ${isManager ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+      <div className={`mb-5 grid gap-3 ${isManager && !mineOnly ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">待處理案件</p><p className="mt-1 text-2xl font-bold">{stats?.unquoted ?? "—"}</p></CardContent></Card>
-        {isManager && <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">尚未分派</p><p className={`mt-1 text-2xl font-bold ${(stats?.unassigned ?? 0) > 0 ? "text-red-600" : ""}`}>{stats?.unassigned ?? "—"}</p></CardContent></Card>}
+        {isManager && !mineOnly && <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">尚未分派</p><p className={`mt-1 text-2xl font-bold ${(stats?.unassigned ?? 0) > 0 ? "text-red-600" : ""}`}>{stats?.unassigned ?? "—"}</p></CardContent></Card>}
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">24 小時內要跟進</p><p className="mt-1 text-2xl font-bold">{stats?.due_today ?? "—"}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">跟進已逾期</p><p className={`mt-1 text-2xl font-bold ${(stats?.overdue_follow_ups ?? 0) > 0 ? "text-red-600" : ""}`}>{stats?.overdue_follow_ups ?? "—"}</p></CardContent></Card>
       </div>
@@ -198,7 +210,7 @@ export default function RFQsListPage() {
           <option value="">全部階段</option>
           {Object.entries(STATUS_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
-        {isManager && (
+        {isManager && !mineOnly && (
           <select className={SELECT_CLS} aria-label="負責業務" value={ownerFilter} onChange={(event) => { setOwnerFilter(event.target.value); setPage(1); }}>
             <option value="">全部負責人</option>
             {team.map((member) => <option key={member.id} value={member.id}>{member.full_name}</option>)}
@@ -261,4 +273,8 @@ export default function RFQsListPage() {
       </div>
     </div>
   );
+}
+
+export default function RFQsPage() {
+  return <RFQsListPage />;
 }

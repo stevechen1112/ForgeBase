@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArchiveX, Bell, BellOff, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,6 @@ type NotificationPref = {
 };
 
 const ACTIVE_CHANNELS = new Set(["email", "in_app"]);
-const RETIRED_CHANNELS = new Set(["telegram", "line"]);
 const TOGGLE_LABELS: {
   key: keyof NotificationPref;
   label: string;
@@ -49,10 +48,6 @@ export default function NotificationSettingsPage() {
 
   const activePrefs = useMemo(
     () => prefs.filter((pref) => ACTIVE_CHANNELS.has(pref.channel)),
-    [prefs],
-  );
-  const retiredPrefCount = useMemo(
-    () => prefs.filter((pref) => RETIRED_CHANNELS.has(pref.channel)).length,
     [prefs],
   );
   const visibleToggleLabels = TOGGLE_LABELS.filter(
@@ -115,28 +110,17 @@ export default function NotificationSettingsPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">營運通知設定</h1>
         <p className="mt-1 text-muted-foreground">
-          通知事件、歷史與站內營運流程持續保留；外部渠道依正式退場政策管理。
+          管理站內與 Email 通知事件、接收範圍及靜音時段。
         </p>
       </header>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       {success && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>{success}</AlertDescription></Alert>}
 
-      <section className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/50 p-6 dark:border-amber-900 dark:bg-amber-950/20">
-        <div className="flex items-center gap-2">
-          <ArchiveX className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-          <h2 className="font-semibold">LINE／Telegram 已停止新綁定</h2>
-        </div>
-        <p className="text-sm leading-6 text-muted-foreground">
-          這兩個未使用的外部渠道已進入 60 天退場觀察。期間不再發送或接受新設定；既有停用設定與歷史記錄保留，供稽核與必要時回復。通知核心沒有移除。
-        </p>
-        {retiredPrefCount > 0 && <p className="text-xs text-muted-foreground">目前保留 {retiredPrefCount} 筆已停用渠道設定作為稽核證據。</p>}
-      </section>
-
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">受管理的通知管道</h2>
-          <p className="mt-1 text-sm text-muted-foreground">站內與 Email 管道依系統部署設定顯示；事件開關不影響退場中的外部渠道。</p>
+          <p className="mt-1 text-sm text-muted-foreground">站內與 Email 管道依系統部署設定顯示。</p>
         </div>
         {loading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />載入中…</div>
