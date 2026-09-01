@@ -21,10 +21,10 @@ def test_precision_template_has_explicit_cms_adapter() -> None:
 
 def test_dynamic_cta_personalization_respects_requested_locale() -> None:
     ctas = [{"action_type": "contact"}]
-    english = select_dynamic_cta("cold", 0, ctas, locale="en")
-    chinese = select_dynamic_cta("cold", 0, ctas, locale="zh-TW")
-    assert english["personalization"]["headline_prefix"] == "Ready when you have a requirement"
-    assert chinese["personalization"]["headline_prefix"] == "有需求時，歡迎進一步聯絡"
+    english = select_dynamic_cta(ctas, locale="en")
+    chinese = select_dynamic_cta(ctas, locale="zh-TW")
+    assert english["personalization"]["headline_prefix"] == "Choose the next step"
+    assert chinese["personalization"]["headline_prefix"] == "選擇下一步"
 
 
 def test_tenant_chat_copy_replaces_industry_inappropriate_defaults() -> None:

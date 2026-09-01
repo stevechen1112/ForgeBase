@@ -259,10 +259,10 @@ async def submit_rfq(
         visitor = await db.get(Visitor, visitor_id_parsed)
         if visitor and visitor.tenant_id != tenant_id:
             raise HTTPException(status_code=422, detail="visitor_id does not belong to this site")
-        if not visitor and draft:
-            # A valid draft always references a real visitor through its FK.
-            raise HTTPException(status_code=422, detail="RFQ handoff visitor no longer exists")
-        else:
+        if not visitor:
+            if draft:
+                # A valid draft always references a real visitor through its FK.
+                raise HTTPException(status_code=422, detail="RFQ handoff visitor no longer exists")
             # Essential/session-only identity may not have a tracking record
             # when analytics consent was declined. RFQ submission must still
             # work; simply leave the RFQ unlinked from analytics.
@@ -1483,7 +1483,4 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         base["won_reason"] = r.won_reason
         base["spam_marked_at"] = r.spam_marked_at.isoformat() if r.spam_marked_at else None
         base["merged_at"] = r.merged_at.isoformat() if r.merged_at else None
-        base["agent_run_id"] = r.agent_run_id
-        base["agent_analysis_summary"] = r.agent_analysis_summary
-        base["agent_draft_body"] = r.agent_draft_body
     return base

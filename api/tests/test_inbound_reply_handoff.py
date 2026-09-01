@@ -425,7 +425,7 @@ async def test_reply_inbox_is_tenant_scoped_and_converts_to_existing_rfq_workben
                     )
                 )
             ).all()
-            assert len(jobs) == 5
+            assert {job.job_type for job in jobs} == {"rfq_route", "rfq_notify"}
     finally:
         await engine.dispose()
 

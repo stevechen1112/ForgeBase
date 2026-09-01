@@ -130,7 +130,7 @@ async def test_rfq_sales_workspace_end_to_end(http_client, two_tenants, admin_to
     assert detail.json()["next_follow_up_at"].endswith("Z")
     assert any(item["id"] == second_id for item in detail.json()["duplicate_candidates"])
     assert "visitor_history" in detail.json()
-    assert detail.json()["crm_sync"]["salesforce"]["status"] == "not_configured"
+    assert "crm_sync" not in detail.json()
 
     # The sales workspace records outcome reason, amount and currency.
     response = await http_client.put(
