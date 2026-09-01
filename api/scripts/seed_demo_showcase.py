@@ -112,6 +112,12 @@ async def seed(user_email: str) -> dict[str, Any]:
         ).first()
         if profile is None:
             raise RuntimeError("Demo tenant has no site profile")
+        # AxisForm's canonical CMS records are English.  Keeping this aligned is
+        # essential because locale coverage pairs rows by canonical locale and
+        # stable content key (slug / variant key).
+        profile.default_locale = "en"
+        profile.updated_at = now
+        session.add(profile)
 
         products = list(
             (
@@ -413,10 +419,36 @@ async def seed(user_email: str) -> dict[str, Any]:
                 )
 
         draft_pages = [
-            ("demo-ja-servo-housing", "Servo Drive Housing 日文內容待確認"),
-            ("demo-ja-sensor-sleeve", "Sensor Sleeve 日文內容待確認"),
+            (
+                "demo-servo-housing-review",
+                "Servo Drive Housing translation brief",
+                "Servo Drive Housing 日文內容待確認",
+            ),
+            (
+                "demo-sensor-sleeve-review",
+                "Sensor Sleeve translation brief",
+                "Sensor Sleeve 日文內容待確認",
+            ),
         ]
-        for index, (slug, title) in enumerate(draft_pages):
+        for index, (slug, source_title, target_title) in enumerate(draft_pages):
+            await upsert_id(
+                session,
+                Page,
+                stable_id(tenant.id, "draft-source-page", index),
+                {
+                    "tenant_id": tenant.id,
+                    "page_type": "landing",
+                    "slug": slug,
+                    "title": source_title,
+                    "subtitle": "[DEMO] English source copy prepared for translation review.",
+                    "body": "<p>Demonstration source content for the multilingual review workflow.</p>",
+                    "locale": "en",
+                    "status": "draft",
+                    "noindex": True,
+                    "created_at": now - timedelta(days=3),
+                    "updated_at": now - timedelta(days=2),
+                },
+            )
             page_id = stable_id(tenant.id, "draft-page", index)
             await upsert_id(
                 session,
@@ -426,7 +458,7 @@ async def seed(user_email: str) -> dict[str, Any]:
                     "tenant_id": tenant.id,
                     "page_type": "landing",
                     "slug": slug,
-                    "title": title,
+                    "title": target_title,
                     "subtitle": "[DEMO] 客戶語言草稿，確認後才會公開。",
                     "body": "<p>Demonstration translation draft for review.</p>",
                     "locale": "ja",

@@ -149,6 +149,43 @@ async def test_locale_draft_creates_unpublished_english_and_does_not_overwrite_p
 
 @requires_db
 @pytest.mark.asyncio
+async def test_locale_coverage_reports_unpaired_target_without_claiming_full_coverage(
+    http_client, two_tenants, admin_token_for_tenant
+):
+    tenant, _ = two_tenants
+    token = await admin_token_for_tenant(tenant.id)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    target_only = await http_client.post(
+        "/api/v1/content/pages",
+        json={
+            "title": "Target without canonical source",
+            "slug": "unpaired-locale-page",
+            "page_type": "custom",
+            "body": "This target row has no Traditional Chinese source.",
+            "locale": "en",
+            "status": "draft",
+        },
+        headers=headers,
+    )
+    assert target_only.status_code == 201, target_only.text
+
+    coverage = await http_client.get(
+        "/api/v1/content/locale-coverage?target_locale=en", headers=headers
+    )
+    assert coverage.status_code == 200, coverage.text
+    payload = coverage.json()
+    pages = next(row for row in payload["entities"] if row["entity"] == "pages")
+    assert payload["source_total"] == 0
+    assert payload["overall_coverage_pct"] is None
+    assert payload["unpaired"] == 1
+    assert pages["coverage_pct"] is None
+    assert pages["unpaired"] == 1
+    assert pages["unpaired_keys"] == ["unpaired-locale-page"]
+
+
+@requires_db
+@pytest.mark.asyncio
 async def test_publish_rejects_english_copy_that_still_contains_chinese(
     http_client, two_tenants, admin_token_for_tenant
 ):
@@ -249,4 +286,8 @@ async def test_locale_batch_creates_bounded_french_drafts_without_publishing(
     assert coverage.status_code == 200, coverage.text
     pages = next(row for row in coverage.json()["entities"] if row["entity"] == "pages")
     assert "missing_ids" in pages
+    assert pages["source_total"] == 2
+    assert pages["translated"] == 2
+    assert pages["coverage_pct"] == 100.0
+    assert coverage.json()["overall_coverage_pct"] == 100.0
     assert coverage.json()["target_locale"] == "fr"

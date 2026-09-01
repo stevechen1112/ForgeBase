@@ -206,6 +206,11 @@ async def test_locale_coverage_endpoint_queries_all_supported_content_tables(
     payload = response.json()
     assert payload["source_locale"] == "zh-tw"
     assert payload["target_locale"] == "en"
+    assert payload["source_total"] == 0
+    assert payload["translated"] == 0
+    assert payload["overall_coverage_pct"] is None
+    assert payload["unpaired"] == 0
+    assert all(row["coverage_pct"] is None for row in payload["entities"])
     assert {row["entity"] for row in payload["entities"]} == {
         "products",
         "categories",

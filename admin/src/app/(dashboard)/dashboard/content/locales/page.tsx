@@ -26,8 +26,10 @@ type CoverageEntity = {
   published: number;
   draft: number;
   stale: number;
-  coverage_pct: number;
-  published_pct: number;
+  unpaired: number;
+  unpaired_keys: string[];
+  coverage_pct: number | null;
+  published_pct: number | null;
   missing_keys: string[];
   missing_ids: string[];
   missing_count: number;
@@ -36,10 +38,13 @@ type CoverageEntity = {
 type Coverage = {
   source_locale: string;
   target_locale: string;
-  overall_coverage_pct: number;
+  source_total: number;
+  translated: number;
+  overall_coverage_pct: number | null;
   missing: number;
   draft: number;
   stale: number;
+  unpaired: number;
   entities: CoverageEntity[];
   policy: string;
 };
@@ -131,6 +136,9 @@ export default function LocaleOperationsPage() {
   }
 
   const targetDefinition = locales.find((locale) => locale.content_locale === targetLocale);
+  const sourceDefinition = locales.find((locale) => locale.content_locale === sourceLocale);
+  const sourceLabel = sourceDefinition?.native_label || sourceLocale || "載入中";
+  const targetLabel = targetDefinition?.native_label || targetLocale || "載入中";
 
   return (
     <div className="space-y-6">
@@ -151,7 +159,7 @@ export default function LocaleOperationsPage() {
       <Card>
         <CardHeader>
           <CardTitle>內容正本與客戶語言</CardTitle>
-          <CardDescription>目前內容正本語言為 {sourceLocale || "載入中"}。請選擇要檢查的客戶使用語言；網站介面與內容草稿分開管理。</CardDescription>
+          <CardDescription>先以 {sourceLabel} 維護正本，再逐項確認 {targetLabel} 的翻譯。這一頁是完整度檢查表，不是文章編輯器。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-medium" htmlFor="target-locale">要檢查的客戶語言</label>
@@ -160,9 +168,10 @@ export default function LocaleOperationsPage() {
           </select>
           {targetDefinition && (
             <Badge variant={targetDefinition.public_shell_ready ? "default" : "outline"}>
-              {targetDefinition.public_shell_ready ? "完整官網介面已就緒" : "內容草稿可用；官網介面包待交付"}
+              {targetDefinition.public_shell_ready ? "網站選單與按鈕已支援" : "網站操作介面待補齊"}
             </Badge>
           )}
+          <p className="basis-full text-xs text-muted-foreground">介面支援只代表網站選單、按鈕與系統提示可顯示該語言；商品、頁面與規格內容仍須依下方清單逐項確認。</p>
         </CardContent>
       </Card>
 
@@ -170,35 +179,48 @@ export default function LocaleOperationsPage() {
       {coverage ? (
         <>
           <div className="grid gap-3 sm:grid-cols-4">
-            <Metric label="整體覆蓋" value={`${coverage.overall_coverage_pct}%`} />
-            <Metric label="缺少草稿" value={String(coverage.missing)} />
-            <Metric label="待審草稿" value={String(coverage.draft)} />
-            <Metric label="來源更新後過期" value={String(coverage.stale)} />
+            <Metric
+              label="翻譯完整度"
+              value={coverage.overall_coverage_pct === null ? "—" : `${coverage.overall_coverage_pct}%`}
+              hint={coverage.source_total ? `${coverage.translated}/${coverage.source_total} 筆已有翻譯` : "沒有正本可供比較"}
+            />
+            <Metric label="缺少翻譯" value={String(coverage.missing)} hint="尚未建立客戶語言版本" />
+            <Metric label="待人工確認" value={String(coverage.draft)} hint="草稿不會自動公開" />
+            <Metric label="正本更新後需重審" value={String(coverage.stale)} hint="避免客戶看到舊內容" />
           </div>
+          {coverage.source_total === 0 ? (
+            <Alert><AlertDescription>目前找不到 {sourceLabel} 正本內容，因此沒有可計算的翻譯完整度。請先到各內容管理頁建立正本；系統不會再把 0/0 誤顯示成 100%。</AlertDescription></Alert>
+          ) : null}
+          {coverage.unpaired > 0 ? (
+            <Alert><AlertDescription>發現 {coverage.unpaired} 筆 {targetLabel} 內容沒有同名正本，暫時無法列入完整度。請到對應內容頁確認識別網址（slug）是否一致。</AlertDescription></Alert>
+          ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
-            {coverage.entities.map((row) => (
-              <Card key={row.entity}>
+            {coverage.entities.map((row) => {
+              const label = ENTITY_LABELS[row.entity] ?? row.entity;
+              const hasSource = row.source_total > 0;
+              return <Card key={row.entity}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div><CardTitle>{ENTITY_LABELS[row.entity] ?? row.entity}</CardTitle><CardDescription>{row.translated}/{row.source_total} 已有翻譯版本；{row.published} 已上架</CardDescription></div>
-                    <Badge variant="outline">{row.coverage_pct}%</Badge>
+                    <div><CardTitle>{label}</CardTitle><CardDescription>{hasSource ? `${row.translated}/${row.source_total} 筆已有翻譯；${row.published} 筆已上架` : `尚無 ${sourceLabel} 正本內容`}</CardDescription></div>
+                    <Badge variant="outline">{row.coverage_pct === null ? "無資料" : `${row.coverage_pct}%`}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span>缺少 {row.missing_count}</span><span>草稿 {row.draft}</span><span>需更新 {row.stale}</span>
-                  </div>
+                  {hasSource ? <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span>缺少 {row.missing_count}</span><span>待確認 {row.draft}</span><span>需重審 {row.stale}</span>
+                  </div> : <p className="text-sm text-muted-foreground">先建立正本後，這裡才會顯示缺少、待確認與需重審的數量。</p>}
                   {row.missing_keys.length ? <p className="line-clamp-2 text-xs text-muted-foreground">缺少：{row.missing_keys.slice(0, 8).join("、")}</p> : null}
+                  {row.unpaired_keys.length ? <p className="line-clamp-2 text-xs text-amber-700">未配對：{row.unpaired_keys.slice(0, 8).join("、")}</p> : null}
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => void createMissingDrafts(row)} disabled={!row.missing_ids.length || batching !== null}>
+                    {hasSource ? <Button size="sm" onClick={() => void createMissingDrafts(row)} disabled={!row.missing_ids.length || batching !== null}>
                       {batching === row.entity ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
                       產生缺少草稿{row.missing_ids.length > 25 ? "（前 25 筆）" : ""}
-                    </Button>
-                    <Button size="sm" variant="outline" asChild><Link href={ENTITY_PATHS[row.entity] ?? "/dashboard/content"}>開啟內容逐筆審核</Link></Button>
+                    </Button> : null}
+                    <Button size="sm" variant="outline" asChild><Link href={ENTITY_PATHS[row.entity] ?? "/dashboard/content"}>前往{label}管理</Link></Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            })}
           </div>
         </>
       ) : null}
@@ -206,6 +228,6 @@ export default function LocaleOperationsPage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></CardContent></Card>;
+function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{hint}</p></CardContent></Card>;
 }

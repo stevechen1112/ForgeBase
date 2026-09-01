@@ -285,11 +285,14 @@ export const localeCoverageApi = {
     apiClient.get<{
       source_locale: string;
       target_locale: string;
-      overall_coverage_pct: number;
+      source_total: number;
+      translated: number;
+      overall_coverage_pct: number | null;
       missing: number;
       draft: number;
       stale: number;
-      entities: Array<{ entity: string; missing_keys: string[]; missing_ids: string[]; missing_count: number; draft: number; stale: number; source_total: number; translated: number; published: number; coverage_pct: number; published_pct: number }>;
+      unpaired: number;
+      entities: Array<{ entity: string; missing_keys: string[]; missing_ids: string[]; missing_count: number; draft: number; stale: number; unpaired: number; unpaired_keys: string[]; source_total: number; translated: number; published: number; coverage_pct: number | null; published_pct: number | null }>;
       policy: string;
     }>(`${BASE}/locale-coverage${targetLocale ? `?target_locale=${encodeURIComponent(targetLocale)}` : ""}`, token),
   settings: (token: string) =>
