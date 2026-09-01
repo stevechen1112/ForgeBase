@@ -3,7 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/store";
 
 export const metadata: Metadata = {
-  title: "ForgeBase 管理後台",
+  title: "ForgeBase｜完整外銷營運後台",
+  description: "為外銷業務團隊設計的網站與商機營運工作區",
   robots: { index: false, follow: false },
 };
 

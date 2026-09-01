@@ -147,23 +147,23 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ─── AI 晨報 Hero ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/10 pointer-events-none" />
+      {/* ─── Daily operating brief ────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-[14px] border border-[#cbd9df] bg-gradient-to-br from-white via-white to-cyan-50/80 p-6 shadow-sm sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-[#27a3c4]/10 blur-3xl" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-400">
-              <Sunrise className="h-5 w-5" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#176c89] text-white shadow-sm">
+              <Sunrise className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold leading-tight">每日營運總覽</h1>
-              <p className="text-sm text-white/60 mt-0.5">早安，{userName}！以下是今天需要您關注的事項</p>
+              <h1 className="text-[30px] font-bold leading-tight text-slate-900">每日營運總覽</h1>
+              <p className="mt-1 text-base text-slate-600">早安，{userName}！先處理重要詢價，再掌握網站營運。</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="shrink-0 gap-1.5 text-white/60 hover:text-white hover:bg-white/10"
+            className="h-11 shrink-0 gap-1.5 border border-slate-300 bg-white px-4 text-slate-600 hover:bg-slate-50 hover:text-[#176c89]"
             onClick={loadData}
             disabled={loading}
           >
@@ -171,18 +171,18 @@ export default function DashboardPage() {
             重新整理
           </Button>
         </div>
-        <p className="relative mt-4 text-sm text-white/80 leading-relaxed">
+        <p className="relative mt-5 max-w-5xl border-t border-slate-200 pt-4 text-base leading-7 text-slate-700">
           {loading ? "載入中…" : (
             <>
-              近 30 天共 <strong className="text-white">{rfqCount} 筆詢價</strong>
-              {overdueRfqs.length > 0 && <>，其中 <strong className="text-red-300">{overdueRfqs.length} 筆逾時未回覆</strong></>}
-              {hasFullTracking && visitors > 0 && <>，追蹤到 <strong className="text-white">{visitors} 位訪客</strong></>}
+              近 30 天共 <strong className="text-slate-950">{rfqCount} 筆詢價</strong>
+              {overdueRfqs.length > 0 && <>，其中 <strong className="text-red-700">{overdueRfqs.length} 筆逾時未回覆</strong></>}
+              {hasFullTracking && visitors > 0 && <>，追蹤到 <strong className="text-slate-950">{visitors} 位訪客</strong></>}
               {hasFullTracking
-                ? <>。訪客轉詢價率目前 <strong className="text-amber-300">{convRate}%</strong>。</>
+                ? <>。訪客轉詢價率目前 <strong className="text-[#176c89]">{convRate}%</strong>。</>
                 : <>。請依待辦與案件狀態安排後續處理。</>}
               {localeSummary && (
                 <> 買方語系：{localeSummary}。{localeSummary !== "買方語系內容已齊" && (
-                  <Link href="/dashboard/products?pair_status=missing_target" className="ml-1 underline decoration-white/40 hover:decoration-white">查看商品</Link>
+                  <Link href="/dashboard/products?pair_status=missing_target" className="ml-1 font-semibold text-[#176c89] underline decoration-[#176c89]/30 hover:decoration-[#176c89]">查看商品</Link>
                 )}</>
               )}
             </>
@@ -193,8 +193,8 @@ export default function DashboardPage() {
       {/* ─── 優先行動卡 ───────────────────────────────────────────────── */}
       {(overdueRfqs.length > 0 || newRfqs > 0) && (
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            🔥 需要您處理的事項
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
+            需要您處理的事項
           </p>
           <div className="space-y-2">
             {overdueRfqs.slice(0, 3).map(rfq => (
@@ -233,10 +233,10 @@ export default function DashboardPage() {
 
       {/* ─── KPI Grid（真實資料）─── */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">📊 營運數據概覽</p>
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">營運數據概覽・近 30 天真實資料</p>
         <div className={cn("grid grid-cols-1 gap-4", hasFullTracking ? "sm:grid-cols-3" : "sm:grid-cols-1")}>
           {/* RFQ KPI — always available */}
-          <Card className="hover:shadow-card-hover transition-shadow duration-200">
+          <Card className="border-l-4 border-l-[#176c89] hover:shadow-card-hover transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天詢價 (RFQ)</CardTitle>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
@@ -251,7 +251,7 @@ export default function DashboardPage() {
 
           {/* 只顯示目前可用的訪客與轉換能力，不呈現付費升級語意。 */}
           {hasFullTracking && (
-            <Card className="hover:shadow-card-hover transition-shadow duration-200">
+            <Card className="border-l-4 border-l-violet-500 hover:shadow-card-hover transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天訪客</CardTitle>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
@@ -266,7 +266,7 @@ export default function DashboardPage() {
           )}
 
           {hasFullTracking && (
-            <Card className="hover:shadow-card-hover transition-shadow duration-200">
+            <Card className="border-l-4 border-l-amber-500 hover:shadow-card-hover transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">訪客 → 詢價轉換率</CardTitle>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50">
@@ -343,9 +343,14 @@ export default function DashboardPage() {
                 Object.entries(rfqByStatus).map(([status, count]) => {
                   const cfg = STATUS_CONFIG[status] ?? { label: status, variant: "secondary" as const };
                   return (
-                    <div key={status} className="flex items-center justify-between">
-                      <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">{cfg.label}</Badge>
-                      <span className="text-sm font-semibold">{count}</span>
+                    <div key={status} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Badge variant={cfg.variant} className="h-5 px-2 text-[11px]">{cfg.label}</Badge>
+                        <span className="text-sm font-bold text-slate-800">{count}</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-label={`${cfg.label}占近 30 天詢價 ${Math.round((count / Math.max(rfqCount, 1)) * 100)}%`}>
+                        <div className="h-full rounded-full bg-[#27a3c4]" style={{ width: `${Math.max(6, (count / Math.max(rfqCount, 1)) * 100)}%` }} />
+                      </div>
                     </div>
                   );
                 })

@@ -14,8 +14,8 @@
     --popover:      0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary = Salesforce blue */
-    --primary:      211 100% 50%;
+    /* Primary = restrained export-operations teal */
+    --primary:      193 71% 31%;
     --primary-foreground: 0 0% 100%;
 
     --secondary:    210 40% 96%;
@@ -38,15 +38,15 @@
 
     --border:       214 32% 91%;
     --input:        214 32% 91%;
-    --ring:         211 100% 50%;
-    --radius:       0.5rem;
+    --ring:         193 71% 31%;
+    --radius:       0.625rem;
 
     /* ── Sidebar (dark slate, Lightning App Builder style) ── */
-    --sidebar-background:        222 47% 11%;
+    --sidebar-background:        210 56% 15%;
     --sidebar-foreground:        213 27% 75%;
-    --sidebar-primary:           211 100% 50%;
+    --sidebar-primary:           193 71% 31%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent:            222 47% 16%;
+    --sidebar-accent:            208 55% 20%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border:            222 47% 16%;
     --sidebar-ring:              211 100% 50%;
@@ -58,6 +58,8 @@
 
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.55;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
   }
@@ -84,11 +86,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  body {
-    @apply bg-gray-50 text-gray-900 font-sans text-sm;
-  }
+  body { @apply bg-[#f3f5f7] text-gray-900 font-sans; }
 
-  h1 { @apply text-2xl font-bold leading-tight; }
+  h1 { @apply text-[30px] font-bold leading-tight; }
   h2 { @apply text-xl font-semibold leading-tight; }
   h3 { @apply text-lg font-semibold; }
 }
@@ -96,8 +96,8 @@
 @layer components {
   /* ── Form Inputs ─────────────────────────────────────────────── */
   .input-base {
-    @apply block w-full rounded-md border border-gray-300 bg-white px-3 py-2
-           text-sm text-gray-900 placeholder-gray-400
+    @apply block min-h-[42px] w-full rounded-md border border-gray-300 bg-white px-3 py-2
+           text-base text-gray-900 placeholder-gray-400
            shadow-sm transition-colors
            focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20
            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500;
@@ -109,7 +109,7 @@
 
   /* ── Buttons ─────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md
+    @apply inline-flex min-h-[42px] items-center justify-center gap-2 rounded-md
            px-4 py-2 text-sm font-medium
            transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1
            disabled:cursor-not-allowed disabled:opacity-50;
@@ -164,7 +164,7 @@
   }
 
   .table-td {
-    @apply px-4 py-3 text-sm text-gray-900;
+    @apply px-4 py-3 text-[13px] text-gray-900;
   }
 
   /* ── Section header ──────────────────────────────────────────── */
