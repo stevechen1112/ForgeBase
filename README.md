@@ -471,6 +471,17 @@ python3 ../demo/handtool-company/seed/seed_demo_visitors.py       # 模擬訪客
 python3 ../demo/handtool-company/seed/seed_demo_briefs_ctas_nurture.py
 ```
 
+正式環境的銷售展示資料使用 GitHub Actions 的 **Seed Protected Demo Showcase** 手動流程。它只接受使用者所屬名稱含 `Demo` 的租戶，需輸入 `SEED_DEMO_SHOWCASE` 確認字串，並以固定識別碼更新同一批合成資料；重跑不會持續增加資料，也不會建立寄信或外送工作。預設帳號為 `demo.phase2@forgebase.com`，執行證據會保留為私有 workflow artifact。
+
+本地驗證可在隔離資料庫執行：
+
+```bash
+cd api && source .venv/bin/activate
+python scripts/seed_demo_showcase.py --user-email owner@axisform-precision.test --apply
+```
+
+腳本會拒絕未標示為 Demo 的租戶；勿將正式客戶租戶改名以繞過保護。
+
 ### AI 客服端到端測試（對任意環境）
 
 ```bash

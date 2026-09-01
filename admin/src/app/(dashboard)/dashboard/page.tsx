@@ -1,394 +1,495 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
+  ArrowUpRight,
+  Bell,
+  CalendarClock,
+  CheckCircle2,
+  ChevronRight,
+  CircleDollarSign,
   ClipboardList,
-  Bell, Eye, Percent, ArrowUpRight,
-  RefreshCcw, Sunrise, AlertTriangle, Flame,
-  ChevronRight, ListChecks, PanelsTopLeft, Route,
+  FileCheck2,
+  ListChecks,
+  PanelsTopLeft,
+  RefreshCcw,
+  Route,
+  Sparkles,
+  Trophy,
+  UserPlus,
+  UsersRound,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth/store";
-import { useCapabilities } from "@/lib/hooks/useCapabilities";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
-import { localeCoverageApi } from "@/lib/api/content";
-import Link from "next/link";
+import { useAuth } from "@/lib/auth/store";
 import { cn } from "@/lib/utils";
 
-// ── 型別 ────────────────────────────────────────────────────────────────────
-type FunnelData = {
-  totals: { visitors: number; rfqs: number; won: number };
-  conversion_rates: { visitor_to_rfq: number; rfq_to_won: number; visitor_to_won: number };
-  rfq_by_status: Record<string, number>;
+type ContactSummary = {
+  full_name: string | null;
+  company_name: string | null;
+  email: string | null;
+  country: string | null;
 };
+
 type RFQRow = {
   id: string;
   rfq_number: string;
   status: string;
   priority: string;
+  quality_score: number | null;
+  sla_breached: boolean;
+  assigned_to: string | null;
+  next_follow_up_at: string | null;
+  deal_amount: string | null;
+  deal_currency: string | null;
   created_at: string;
+  contact: ContactSummary | null;
 };
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info" }> = {
-  new:         { label: "新進", variant: "info" },
-  assigned:    { label: "已指派", variant: "info" },
-  in_progress: { label: "處理中", variant: "warning" },
-  reviewing:   { label: "審核中", variant: "warning" },
-  quoted:      { label: "已報價", variant: "success" },
-  negotiation: { label: "談判中", variant: "warning" },
-  won:         { label: "成交", variant: "success" },
-  lost:        { label: "流失", variant: "secondary" },
-  expired:     { label: "過期", variant: "secondary" },
-  closed:      { label: "已結案", variant: "secondary" },
+type FunnelData = {
+  totals: { visitors: number; rfqs: number; won: number };
+  conversion_rates: { visitor_to_rfq: number };
 };
+
+type TaskItem = { id?: string; rfq_number?: string; page_title?: string };
+type TaskGroup = {
+  type: string;
+  count: number;
+  items: TaskItem[];
+};
+type TaskQueue = { total_open: number; tasks: TaskGroup[] };
+type OutcomesData = {
+  funnel_status: Record<string, number>;
+  next_week_suggestions: string[];
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  new: "新詢價",
+  assigned: "已分派",
+  in_progress: "洽談中",
+  reviewing: "評估中",
+  quoted: "已報價",
+  negotiation: "議價中",
+  won: "已成交",
+  lost: "未成交",
+  expired: "已過期",
+  closed: "已結案",
+};
+
+const CLOSED = new Set(["won", "lost", "expired", "closed"]);
+const STATUS_ORDER = ["new", "assigned", "in_progress", "reviewing", "quoted", "negotiation", "won"];
+
+function displayBuyer(rfq: RFQRow): string {
+  return rfq.contact?.company_name || rfq.contact?.full_name || rfq.rfq_number;
+}
 
 function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "剛才";
-  if (mins < 60) return `${mins} 分鐘前`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} 小時前`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return "昨天";
-  return `${days} 天前`;
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (minutes < 60) return `${Math.max(1, minutes)} 分鐘前`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)} 小時前`;
+  return `${Math.floor(minutes / 1440)} 天前`;
+}
+
+function isOverdue(rfq: RFQRow): boolean {
+  if (CLOSED.has(rfq.status)) return false;
+  return Boolean(
+    rfq.sla_breached ||
+      (rfq.next_follow_up_at && new Date(rfq.next_follow_up_at).getTime() < Date.now()),
+  );
+}
+
+function priorityText(rfq: RFQRow): string {
+  if (isOverdue(rfq)) return "已逾期，請優先回覆";
+  if (!rfq.assigned_to && rfq.status === "new") return "新詢價，尚未分派";
+  if (rfq.next_follow_up_at) {
+    return `跟進時間 ${new Date(rfq.next_follow_up_at).toLocaleString("zh-TW", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  }
+  return `詢價完整度 ${rfq.quality_score ?? 0} 分`;
 }
 
 export default function DashboardPage() {
   const { state } = useAuth();
   const token = state.status === "authenticated" ? state.accessToken : "";
   const user = state.status === "authenticated" ? state.user : null;
-  const { hasFeature, isLoading: featuresLoading } = useCapabilities();
-  const hasFullTracking = !featuresLoading && hasFeature("full_tracking");
-  const hasMultilingual = !featuresLoading && hasFeature("multilingual");
-  const canReviewLocaleCoverage = Boolean(
-    user && ["owner", "admin", "marketing_manager"].includes(user.role),
-  );
-
-  const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [rfqs, setRfqs] = useState<RFQRow[]>([]);
-  const [localeSummary, setLocaleSummary] = useState<string | null>(null);
+  const [funnel, setFunnel] = useState<FunnelData | null>(null);
+  const [queue, setQueue] = useState<TaskQueue | null>(null);
+  const [outcomes, setOutcomes] = useState<OutcomesData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!token || featuresLoading) return;
+    if (!token) return;
     setLoading(true);
     setError(null);
-    try {
-      const [funnelResult, rfqResult, coverageResult] = await Promise.allSettled([
-        hasFullTracking
-          ? apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token)
-          : Promise.resolve(null),
-        apiClient.get<RFQRow[]>("/tracking/rfqs?limit=200", token),
-        hasMultilingual && canReviewLocaleCoverage
-          ? localeCoverageApi.get(token)
-          : Promise.resolve(null),
-      ]);
-      if (funnelResult.status === "fulfilled" && funnelResult.value) {
-        setFunnel(funnelResult.value);
-      } else {
-        setFunnel(null);
-      }
-      if (rfqResult.status === "fulfilled") {
-        setRfqs(Array.isArray(rfqResult.value) ? rfqResult.value : []);
-      } else {
-        setRfqs([]);
-        setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入 RFQ");
-      }
-      if (coverageResult.status === "fulfilled" && coverageResult.value) {
-        const coverage = coverageResult.value;
-        const parts: string[] = [];
-        if (coverage.missing > 0) parts.push(`${coverage.missing} 筆缺${coverage.target_locale === "en" ? "英文" : "客戶語言內容"}`);
-        if (coverage.draft > 0) parts.push(`${coverage.draft} 筆草稿未上架`);
-        if (coverage.stale > 0) parts.push(`${coverage.stale} 筆需更新`);
-        setLocaleSummary(parts.length ? parts.join("、") : "客戶語言內容已齊");
-      } else {
-        setLocaleSummary(null);
-      }
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "載入失敗");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    canReviewLocaleCoverage,
-    featuresLoading,
-    hasFullTracking,
-    hasMultilingual,
-    token,
-  ]);
+    const results = await Promise.allSettled([
+      apiClient.get<RFQRow[]>("/tracking/rfqs?limit=200", token),
+      apiClient.get<FunnelData>("/tracking/analytics/funnel?days=30", token),
+      apiClient.get<TaskQueue>("/ops/task-queue", token),
+      apiClient.get<OutcomesData>("/tracking/outcomes", token),
+    ]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+    const [rfqResult, funnelResult, queueResult, outcomesResult] = results;
+    if (rfqResult.status === "fulfilled") setRfqs(Array.isArray(rfqResult.value) ? rfqResult.value : []);
+    else setError(rfqResult.reason instanceof Error ? rfqResult.reason.message : "無法載入詢價資料");
+    setFunnel(funnelResult.status === "fulfilled" ? funnelResult.value : null);
+    setQueue(queueResult.status === "fulfilled" ? queueResult.value : null);
+    setOutcomes(outcomesResult.status === "fulfilled" ? outcomesResult.value : null);
+    setLoading(false);
+  }, [token]);
 
-  // ── 衍生數值 ──────────────────────────────────────────────────────────────
-  const visitors = funnel?.totals.visitors ?? 0;
-  const convRate = funnel?.conversion_rates.visitor_to_rfq ?? 0;
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recentRfqs = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= thirtyDaysAgo);
-  const rfqCount = recentRfqs.length;
-  const newRfqs = recentRfqs.filter((rfq) => rfq.status === "new").length;
-  const rfqByStatus = recentRfqs.reduce<Record<string, number>>((counts, rfq) => {
-    counts[rfq.status] = (counts[rfq.status] ?? 0) + 1;
-    return counts;
-  }, {});
-  const overdueRfqs = recentRfqs.filter(r => {
-    const hrs = (Date.now() - new Date(r.created_at).getTime()) / 3600000;
-    return (r.status === "new" || r.status === "assigned") && hrs > 24;
-  });
-  const userName = user?.email?.split("@")[0] ?? "您";
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const dashboard = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const recent = rfqs.filter((rfq) => new Date(rfq.created_at).getTime() >= monthStart);
+    const open = recent.filter((rfq) => !CLOSED.has(rfq.status));
+    const newUnassigned = open.filter((rfq) => rfq.status === "new" && !rfq.assigned_to).length;
+    const highAttention = open.filter((rfq) => (rfq.quality_score ?? 0) >= 80).length;
+    const won = recent.filter((rfq) => rfq.status === "won").length;
+    const overdue = open.filter(isOverdue).length;
+
+    const itemKeys = new Set<string>();
+    queue?.tasks.forEach((task) => {
+      task.items.forEach((item, index) => itemKeys.add(item.id || `${task.type}-${index}`));
+    });
+    const todayTasks = itemKeys.size || queue?.total_open || 0;
+
+    const priorities = [...open]
+      .sort((a, b) => {
+        const rank = (rfq: RFQRow) =>
+          (isOverdue(rfq) ? 1000 : 0) +
+          (!rfq.assigned_to && rfq.status === "new" ? 500 : 0) +
+          (rfq.priority === "urgent" ? 200 : rfq.priority === "high" ? 100 : 0) +
+          (rfq.quality_score ?? 0);
+        return rank(b) - rank(a);
+      })
+      .slice(0, 4);
+
+    const statusCounts = recent.reduce<Record<string, number>>((acc, rfq) => {
+      acc[rfq.status] = (acc[rfq.status] ?? 0) + 1;
+      return acc;
+    }, {});
+    const atOrBeyond = (status: string) => {
+      const threshold = STATUS_ORDER.indexOf(status);
+      return recent.filter((rfq) => STATUS_ORDER.indexOf(rfq.status) >= threshold).length;
+    };
+    const pipeline = [
+      { label: "有效詢價", value: recent.length },
+      { label: "已報價", value: atOrBeyond("quoted") },
+      { label: "議價中", value: statusCounts.negotiation ?? 0 },
+      { label: "已成交", value: won },
+    ];
+
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(now);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - (6 - index));
+      const next = new Date(date);
+      next.setDate(next.getDate() + 1);
+      const rows = rfqs.filter((rfq) => {
+        const timestamp = new Date(rfq.created_at).getTime();
+        return timestamp >= date.getTime() && timestamp < next.getTime();
+      });
+      return {
+        label: index === 6 ? "今天" : date.toLocaleDateString("zh-TW", { weekday: "short" }),
+        total: rows.length,
+        overdue: rows.filter(isOverdue).length,
+      };
+    });
+
+    return { recent, newUnassigned, highAttention, won, overdue, todayTasks, priorities, pipeline, days };
+  }, [queue, rfqs]);
+
+  const maxPipeline = Math.max(1, ...dashboard.pipeline.map((item) => item.value));
+  const maxDay = Math.max(1, ...dashboard.days.map((item) => item.total));
+  const demoVisible = rfqs.some((rfq) => rfq.rfq_number.startsWith("DEMO-"));
+  const userName = user?.full_name || user?.email?.split("@")[0] || "主管";
+
+  const kpis = [
+    {
+      label: "今日必須完成",
+      value: dashboard.todayTasks,
+      note: `其中 ${dashboard.overdue} 項已逾期`,
+      icon: ListChecks,
+      color: "border-l-[#176c89] bg-cyan-50 text-[#176c89]",
+    },
+    {
+      label: "新詢價待分派",
+      value: dashboard.newUnassigned,
+      note: dashboard.newUnassigned ? "請先確認負責業務" : "目前皆已分派",
+      icon: UserPlus,
+      color: "border-l-violet-500 bg-violet-50 text-violet-600",
+    },
+    {
+      label: "高關注買家",
+      value: dashboard.highAttention,
+      note: "詢價完整度 80 分以上",
+      icon: UsersRound,
+      color: "border-l-amber-500 bg-amber-50 text-amber-600",
+    },
+    {
+      label: "本月已成交",
+      value: dashboard.won,
+      note: dashboard.recent.length ? `詢價成交率 ${Math.round((dashboard.won / dashboard.recent.length) * 100)}%` : "尚無本月詢價",
+      icon: Trophy,
+      color: "border-l-emerald-500 bg-emerald-50 text-emerald-600",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-10">
       {error && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {/* ─── Daily operating brief ────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[14px] border border-[#cbd9df] bg-gradient-to-br from-white via-white to-cyan-50/80 p-6 shadow-sm sm:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-[#27a3c4]/10 blur-3xl" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#176c89] text-white shadow-sm">
-              <Sunrise className="h-6 w-6" />
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#114c68] to-[#247e8d] px-6 py-6 text-white shadow-sm sm:px-8">
+        <div className="absolute -right-12 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-cyan-100">
+              <span>每日營運總覽</span>
+              {demoVisible && <Badge className="border border-white/25 bg-white/15 text-white hover:bg-white/15">展示資料</Badge>}
             </div>
-            <div>
-              <h1 className="text-[30px] font-bold leading-tight text-slate-900">每日營運總覽</h1>
-              <p className="mt-1 text-base text-slate-600">早安，{userName}！先處理重要詢價，再掌握網站營運。</p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">早安，{userName}！先處理最接近成交的工作。</h1>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-cyan-50 sm:text-base">
+              今天有 <strong>{dashboard.todayTasks} 項工作</strong>
+              {dashboard.overdue > 0 && <>，其中 <strong>{dashboard.overdue} 項已逾期</strong></>}
+              ；本月共 {dashboard.recent.length} 筆詢價，已有 {dashboard.won} 筆成交。
+              {funnel && <> 近 30 天另有 {funnel.totals.visitors} 位訪客，訪客轉詢價率 {funnel.conversion_rates.visitor_to_rfq}%。</>}
+            </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-11 shrink-0 gap-1.5 border border-slate-300 bg-white px-4 text-slate-600 hover:bg-slate-50 hover:text-[#176c89]"
-            onClick={loadData}
-            disabled={loading}
-          >
-            <RefreshCcw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-            重新整理
-          </Button>
-        </div>
-        <p className="relative mt-5 max-w-5xl border-t border-slate-200 pt-4 text-base leading-7 text-slate-700">
-          {loading ? "載入中…" : (
-            <>
-              近 30 天共 <strong className="text-slate-950">{rfqCount} 筆詢價</strong>
-              {overdueRfqs.length > 0 && <>，其中 <strong className="text-red-700">{overdueRfqs.length} 筆逾時未回覆</strong></>}
-              {hasFullTracking && visitors > 0 && <>，追蹤到 <strong className="text-slate-950">{visitors} 位訪客</strong></>}
-              {hasFullTracking
-                ? <>。訪客轉詢價率目前 <strong className="text-[#176c89]">{convRate}%</strong>。</>
-                : <>。請依待辦與案件狀態安排後續處理。</>}
-              {localeSummary && (
-                <> 客戶語言：{localeSummary}。{localeSummary !== "客戶語言內容已齊" && (
-                  <Link href="/dashboard/products?pair_status=missing_target" className="ml-1 font-semibold text-[#176c89] underline decoration-[#176c89]/30 hover:decoration-[#176c89]">查看商品</Link>
-                )}</>
-              )}
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* ─── 優先行動卡 ───────────────────────────────────────────────── */}
-      {(overdueRfqs.length > 0 || newRfqs > 0) && (
-        <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
-            需要您處理的事項
-          </p>
-          <div className="space-y-2">
-            {overdueRfqs.slice(0, 3).map(rfq => (
-              <Link
-                key={rfq.id}
-                href={`/dashboard/rfqs/${rfq.id}`}
-                className="flex items-center gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 transition-colors hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:hover:bg-red-950/30"
-              >
-                <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{rfq.rfq_number}</p>
-                  <p className="text-xs text-muted-foreground">
-                    逾時 {Math.floor((Date.now() - new Date(rfq.created_at).getTime()) / 3600000)} 小時未回覆
-                  </p>
-                </div>
-                <Badge variant="destructive" className="shrink-0 text-[10px]">逾時</Badge>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-            ))}
-            {newRfqs > 0 && overdueRfqs.length === 0 && (
-              <Link
-                href="/dashboard/rfqs"
-                className="flex items-center gap-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 transition-colors hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/20"
-              >
-                <Flame className="h-4 w-4 shrink-0 text-blue-500" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">有 {newRfqs} 筆新詢價待處理</p>
-                  <p className="text-xs text-muted-foreground">點擊前往詢價中心</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-            )}
+          <div className="flex gap-2">
+            <Button asChild className="bg-white text-[#155a73] hover:bg-cyan-50">
+              <Link href="/dashboard/tasks">開始處理 <ChevronRight className="ml-1 h-4 w-4" /></Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="border border-white/25 text-white hover:bg-white/10 hover:text-white"
+              onClick={() => void loadData()}
+              disabled={loading}
+              aria-label="重新整理營運資料"
+            >
+              <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </Button>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* ─── KPI Grid（真實資料）─── */}
-      <div>
-        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">營運數據概覽・近 30 天真實資料</p>
-        <div className={cn("grid grid-cols-1 gap-4", hasFullTracking ? "sm:grid-cols-3" : "sm:grid-cols-1")}>
-          {/* RFQ KPI — always available */}
-          <Card className="border-l-4 border-l-[#176c89] hover:shadow-card-hover transition-shadow duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天詢價 (RFQ)</CardTitle>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
-                <ClipboardList className="h-4 w-4 text-blue-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold tracking-tight">{loading ? "—" : rfqCount.toLocaleString()}</p>
-              <p className="mt-1 text-xs text-muted-foreground">其中 {newRfqs} 筆待處理</p>
-            </CardContent>
-          </Card>
-
-          {/* 只顯示目前可用的訪客與轉換能力，不呈現付費升級語意。 */}
-          {hasFullTracking && (
-            <Card className="border-l-4 border-l-violet-500 hover:shadow-card-hover transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">近 30 天訪客</CardTitle>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
-                  <Eye className="h-4 w-4 text-violet-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold tracking-tight">{loading ? "—" : visitors.toLocaleString()}</p>
-                <p className="mt-1 text-xs text-muted-foreground">追蹤器記錄的不重複訪客</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {hasFullTracking && (
-            <Card className="border-l-4 border-l-amber-500 hover:shadow-card-hover transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">訪客 → 詢價轉換率</CardTitle>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50">
-                  <Percent className="h-4 w-4 text-amber-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold tracking-tight">{loading ? "—" : `${convRate}%`}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{visitors} 訪客 → {rfqCount} 詢價</p>
-              </CardContent>
-            </Card>
-          )}
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">今天先看這四件事</h2>
+            <p className="text-sm text-slate-500">只呈現會影響回覆速度與成交的關鍵數字</p>
+          </div>
+          {demoVisible && <span className="hidden text-xs text-slate-500 sm:block">資料皆為 Demo 租戶合成內容，不會寄出郵件</span>}
         </div>
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kpis.map(({ label, value, note, icon: Icon, color }) => (
+            <Card key={label} className={cn("border-l-4 shadow-sm", color.split(" ")[0])}>
+              <CardContent className="flex items-start justify-between p-5">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">{label}</p>
+                  <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950">{loading ? "—" : value}</p>
+                  <p className="mt-1 text-xs text-slate-500">{note}</p>
+                </div>
+                <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", color.split(" ").slice(1).join(" "))}>
+                  <Icon className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-      {/* ─── Main content grid ─── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Recent RFQs（真實資料）*/}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
             <div>
-              <CardTitle className="text-base">最新詢價單</CardTitle>
-              <CardDescription className="text-xs mt-0.5">近 30 天共 {rfqCount} 筆</CardDescription>
+              <CardTitle className="text-lg">主管優先工作</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">依逾期、待分派、優先度與詢價完整度排序</p>
             </div>
-            <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary" asChild>
-              <Link href="/dashboard/rfqs">查看全部 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/tasks">全部待辦</Link>
             </Button>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-4">
             {loading ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">載入中…</p>
-            ) : recentRfqs.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">尚無詢價資料</p>
+              <p className="py-12 text-center text-sm text-slate-500">載入工作中…</p>
+            ) : dashboard.priorities.length === 0 ? (
+              <div className="flex flex-col items-center py-10 text-center">
+                <CheckCircle2 className="mb-3 h-9 w-9 text-emerald-500" />
+                <p className="font-semibold">目前沒有急迫詢價</p>
+                <p className="mt-1 text-sm text-slate-500">新詢價進來後會自動依優先度出現在這裡</p>
+              </div>
             ) : (
-              <div className="divide-y">
-                {recentRfqs.slice(0, 8).map((rfq) => {
-                  const cfg = STATUS_CONFIG[rfq.status] ?? { label: rfq.status, variant: "secondary" as const };
-                  return (
-                    <Link
-                      key={rfq.id}
-                      href={`/dashboard/rfqs/${rfq.id}`}
-                      className="flex items-center gap-4 px-6 py-3.5 hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-medium font-mono text-foreground">{rfq.rfq_number}</span>
-                          <Badge variant={cfg.variant} className="shrink-0 text-[10px] h-4 px-1.5">{cfg.label}</Badge>
-                          {(rfq.priority === "high" || rfq.priority === "urgent") && (
-                            <Badge variant="destructive" className="shrink-0 text-[10px] h-4 px-1.5">高優先</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{relativeTime(rfq.created_at)}</p>
+              <div className="space-y-2">
+                {dashboard.priorities.map((rfq) => (
+                  <Link
+                    key={rfq.id}
+                    href={`/dashboard/rfqs/${rfq.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:border-[#63aabd] hover:bg-cyan-50/40"
+                  >
+                    <div className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
+                      isOverdue(rfq) ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700",
+                    )}>
+                      {isOverdue(rfq) ? "急" : `${rfq.quality_score ?? 0}`}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-semibold text-slate-950">{displayBuyer(rfq)}</p>
+                        <Badge variant="outline" className="h-5 text-[10px]">{STATUS_LABEL[rfq.status] || rfq.status}</Badge>
                       </div>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-                    </Link>
-                  );
-                })}
+                      <p className={cn("mt-0.5 text-xs", isOverdue(rfq) ? "font-medium text-red-700" : "text-slate-500")}>{priorityText(rfq)}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="shrink-0">處理</Button>
+                  </Link>
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Right column：RFQ 狀態分佈（真實）*/}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">詢價單狀態</CardTitle>
-              <CardDescription className="text-xs">近 30 天各狀態數量</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2.5">
-              {loading ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">載入中…</p>
-              ) : Object.entries(rfqByStatus).length > 0 ? (
-                Object.entries(rfqByStatus).map(([status, count]) => {
-                  const cfg = STATUS_CONFIG[status] ?? { label: status, variant: "secondary" as const };
-                  return (
-                    <div key={status} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Badge variant={cfg.variant} className="h-5 px-2 text-[11px]">{cfg.label}</Badge>
-                        <span className="text-sm font-bold text-slate-800">{count}</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-label={`${cfg.label}占近 30 天詢價 ${Math.round((count / Math.max(rfqCount, 1)) * 100)}%`}>
-                        <div className="h-full rounded-full bg-[#27a3c4]" style={{ width: `${Math.max(6, (count / Math.max(rfqCount, 1)) * 100)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">近 30 天尚無詢價</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">快速入口</CardTitle>
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="text-lg">本月商機進度</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">從有效詢價一路看到成交</p>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5">
+            {dashboard.pipeline.map((item, index) => (
+              <div key={item.label}>
+                <div className="mb-1.5 flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-700">{item.label}</span>
+                  <strong className="text-slate-950">{loading ? "—" : item.value}</strong>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={cn("h-full rounded-full", index === 3 ? "bg-emerald-600" : "bg-[#247d69]")}
+                    style={{ width: `${Math.max(item.value ? 8 : 0, (item.value / maxPipeline) * 100)}%` }}
+                  />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              {[
-                { label: "買家管線", href: "/dashboard/buyers", icon: Route },
-                { label: "內容中心", href: "/dashboard/content", icon: PanelsTopLeft },
-                { label: "今日待辦", href: "/dashboard/tasks", icon: ListChecks },
-                { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
-              ].map(({ label, href, icon: Icon }) => (
-                <Link
-                  key={label}
-                  href={href}
-                  className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted/60 transition-colors"
-                >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            ))}
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/dashboard/outcomes">查看成交成果 <ArrowUpRight className="ml-1 h-4 w-4" /></Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <div>
+              <CardTitle className="text-lg">近 7 天詢價工作量</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">紅色代表目前仍逾期的詢價</p>
+            </div>
+            <CalendarClock className="h-5 w-5 text-slate-400" />
+          </CardHeader>
+          <CardContent className="p-5">
+            <div className="flex h-44 items-end gap-3" aria-label="近 7 天詢價工作量長條圖">
+              {dashboard.days.map((day) => {
+                const height = Math.max(day.total ? 18 : 4, (day.total / maxDay) * 100);
+                const overdueHeight = day.total ? (day.overdue / day.total) * 100 : 0;
+                return (
+                  <div key={day.label} className="flex h-full min-w-0 flex-1 flex-col justify-end text-center">
+                    <span className="mb-1 text-xs font-bold text-slate-700">{day.total}</span>
+                    <div className="relative mx-auto w-full max-w-14 overflow-hidden rounded-t-md bg-[#2c8297]" style={{ height: `${height}%` }}>
+                      {overdueHeight > 0 && <div className="absolute bottom-0 w-full bg-red-500" style={{ height: `${overdueHeight}%` }} />}
+                    </div>
+                    <span className="mt-2 truncate text-[11px] text-slate-500">{day.label}</span>
                   </div>
-                  <span className="text-sm text-foreground">{label}</span>
-                  <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground/40" />
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-amber-500" />建議下一步</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 p-5">
+            {(outcomes?.next_week_suggestions?.length
+              ? outcomes.next_week_suggestions
+              : ["先完成逾期詢價回覆", "確認新詢價的負責業務", "檢查本週待發布內容"]
+            ).slice(0, 3).map((suggestion, index) => (
+              <div key={`${suggestion}-${index}`} className="flex gap-3 rounded-xl bg-slate-50 p-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#176c89] text-xs font-bold text-white">{index + 1}</span>
+                <p className="text-sm leading-6 text-slate-700">{suggestion}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.7fr)]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <div>
+              <CardTitle className="text-lg">最新詢價</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">最近收到的買家需求與目前進度</p>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/rfqs">查看全部 <ArrowUpRight className="ml-1 h-4 w-4" /></Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {rfqs.slice(0, 6).map((rfq) => (
+              <Link key={rfq.id} href={`/dashboard/rfqs/${rfq.id}`} className="flex items-center gap-3 border-b px-5 py-3 last:border-b-0 hover:bg-slate-50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-[#176c89]"><ClipboardList className="h-4 w-4" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-semibold">{displayBuyer(rfq)}</p>
+                    <Badge variant="outline" className="h-5 text-[10px]">{STATUS_LABEL[rfq.status] || rfq.status}</Badge>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">{rfq.rfq_number}・{relativeTime(rfq.created_at)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400" />
+              </Link>
+            ))}
+            {!loading && rfqs.length === 0 && <p className="py-12 text-center text-sm text-slate-500">尚無詢價資料</p>}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b pb-4"><CardTitle className="text-lg">快速入口</CardTitle></CardHeader>
+          <CardContent className="space-y-1 p-3">
+            {[
+              { label: "買家管線", href: "/dashboard/buyers", icon: Route },
+              { label: "內容中心", href: "/dashboard/content", icon: PanelsTopLeft },
+              { label: "今日待辦", href: "/dashboard/tasks", icon: FileCheck2 },
+              { label: "通知中心", href: "/dashboard/notifications", icon: Bell },
+            ].map(({ label, href, icon: Icon }) => (
+              <Link key={label} href={href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-50">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100"><Icon className="h-4 w-4 text-slate-600" /></span>
+                {label}<ChevronRight className="ml-auto h-4 w-4 text-slate-400" />
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+
+      {demoVisible && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-sm text-slate-700">
+          <span className="flex items-center gap-2"><CircleDollarSign className="h-4 w-4 text-[#176c89]" />目前為展示租戶：資料可操作示範，但系統不會因這批資料自動寄信。</span>
+          <span className="text-xs text-slate-500">所有展示信箱皆使用 example.com</span>
         </div>
-      </div>
+      )}
     </div>
   );
 }
