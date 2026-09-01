@@ -81,7 +81,7 @@ async def _validate_buyer_locale_publish(session: AsyncSession, prefix: str, obj
         if not value:
             raise HTTPException(
                 status_code=422,
-                detail="買方語系尚未填寫必要說明，不能上架。",
+                detail="客戶語言內容尚未填寫必要說明，不能上架。",
             )
         if item_locale == "en" and contains_cjk(value):
             raise HTTPException(

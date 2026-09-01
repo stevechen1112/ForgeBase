@@ -24,7 +24,17 @@ type Condition = {
 
 const FIELD_OPTIONS = [
   { value: "country", label: "國家" },
-  { value: "event_count", label: "事件次數" },
+  { value: "event_count", label: "網站互動次數" },
+];
+
+const EVENT_OPTIONS = [
+  { value: "page_view", label: "瀏覽頁面" },
+  { value: "product_view", label: "查看商品" },
+  { value: "spec_download", label: "下載規格" },
+  { value: "cta_click", label: "點選詢價或聯絡按鈕" },
+  { value: "rfq_start", label: "開始填寫詢價" },
+  { value: "rfq_submit", label: "送出詢價" },
+  { value: "chat_start", label: "開始 AI 客服對話" },
 ];
 
 const OPERATOR_MAP: Record<string, { value: string; label: string }[]> = {
@@ -86,38 +96,17 @@ export default function NewSegmentPage() {
     setPreviewing(true);
     setPreviewCount(null);
     try {
-      // Create temp segment, evaluate, then delete — or just call evaluate with inline rules
-      // The evaluate endpoint requires a saved segment. So we'll create, evaluate, then show count.
-      // Alternative: just submit and show count on the detail page.
-      // For now, create the segment first
-      const res = await fetch(`${API_BASE}/tracking/segments`, {
+      const res = await fetch(`${API_BASE}/tracking/segments/preview`, {
         method: "POST",
         headers: buildApiHeaders(token, { "Content-Type": "application/json" }),
         body: JSON.stringify({
-          name: name || "Preview (temp)",
-          description,
           conditions: buildConditionsPayload(),
           combinator,
         }),
       });
-      if (!res.ok) throw new Error("建立預覽失敗");
-      const seg = await res.json();
-
-      // Evaluate
-      const evalRes = await fetch(`${API_BASE}/tracking/segments/${seg.id}/evaluate`, {
-        method: "POST",
-        headers: buildApiHeaders(token),
-      });
-      if (evalRes.ok) {
-        const evalData = await evalRes.json();
-        setPreviewCount(evalData.matched_count ?? evalData.count ?? 0);
-      }
-
-      // Delete temp segment
-      await fetch(`${API_BASE}/tracking/segments/${seg.id}`, {
-        method: "DELETE",
-        headers: buildApiHeaders(token),
-      });
+      if (!res.ok) throw new Error("預覽失敗");
+      const data = await res.json();
+      setPreviewCount(data.total_matches ?? 0);
     } catch {
       setPreviewCount(-1);
     } finally { setPreviewing(false); }
@@ -146,7 +135,10 @@ export default function NewSegmentPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <h1 className="text-2xl font-bold">新增買家分群</h1>
+      <div>
+        <h1 className="text-2xl font-bold">建立跟進名單條件</h1>
+        <p className="mt-1 text-sm text-muted-foreground">先預覽符合人數；儲存後才會建立可供後續跟進使用的名單條件。</p>
+      </div>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
@@ -155,7 +147,7 @@ export default function NewSegmentPage() {
           <CardHeader><CardTitle className="text-base">基本資料</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label>分群名稱 *</Label>
+              <Label>名單條件名稱 *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} placeholder="例：高關注台灣訪客" />
             </div>
             <div className="space-y-1.5">
@@ -168,12 +160,12 @@ export default function NewSegmentPage() {
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle className="text-base">條件規則</CardTitle>
+              <CardTitle className="text-base">篩選條件</CardTitle>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">條件組合：</span>
+                <span className="text-xs text-muted-foreground">符合方式：</span>
                 <select className="rounded border px-2 py-1 text-xs" value={combinator} onChange={(e) => setCombinator(e.target.value)}>
-                  <option value="AND">AND (全部符合)</option>
-                  <option value="OR">OR (任一符合)</option>
+                  <option value="AND">全部符合</option>
+                  <option value="OR">任一符合</option>
                 </select>
               </div>
             </div>
@@ -209,8 +201,10 @@ export default function NewSegmentPage() {
                 {cond.field === "event_count" && (
                   <div className="grid flex-1 gap-2 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">事件名稱</Label>
-                      <Input value={cond.event_name || ""} onChange={(e) => updateCondition(idx, { event_name: e.target.value })} placeholder="page_view" />
+                        <Label className="text-xs">互動類型</Label>
+                        <select className={SELECT_CLS} value={cond.event_name || "page_view"} onChange={(e) => updateCondition(idx, { event_name: e.target.value })}>
+                          {EVENT_OPTIONS.map((event) => <option key={event.value} value={event.value}>{event.label}</option>)}
+                        </select>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">天數內</Label>
@@ -233,7 +227,7 @@ export default function NewSegmentPage() {
         <div className="flex items-center gap-4">
           <Button type="button" variant="outline" size="sm" onClick={handlePreview} disabled={previewing}>
             {previewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-            預覽符合人數
+            預覽符合人數（不會儲存）
           </Button>
           {previewCount !== null && previewCount >= 0 && (
             <span className="text-sm font-medium">符合 <strong>{previewCount}</strong> 位訪客</span>
@@ -246,7 +240,7 @@ export default function NewSegmentPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {saving ? "儲存中…" : "建立分群"}
+            {saving ? "儲存中…" : "儲存名單條件"}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.push("/dashboard/segments")}>取消</Button>
         </div>

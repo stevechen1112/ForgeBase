@@ -154,7 +154,7 @@ export const WORKSPACES: Workspace[] = [
     id: "followup",
     label: "潛在買家跟進",
     shortLabel: "潛在買家跟進",
-    description: "從內容成效、買家分群到寄出前人工確認。",
+    description: "從內容成效、等待跟進的買家到寄出前人工確認。",
     href: "/dashboard/workspaces/buyer-followup",
     icon: Handshake,
     accent: "rose",

@@ -132,7 +132,7 @@ export default function ProductsListPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">商品管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理產品型錄：規格、圖片、分類，以及多語標題說明。可用「買方語系」篩出缺英文、草稿未上架或需更新的商品。</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理產品型錄：規格、圖片、分類與多語內容。可用「客戶語言」找出缺英文、草稿未上架或需要更新的商品。</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -149,8 +149,8 @@ export default function ProductsListPage() {
             onChange={(e) => { setPairStatus(e.target.value); setPage(1); }}
             className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white"
           >
-            <option value="">買方語系：全部</option>
-            <option value="missing_target">缺買方語系</option>
+            <option value="">客戶語言：全部</option>
+            <option value="missing_target">缺客戶語言內容</option>
             <option value="draft_target">草稿未上架</option>
             <option value="stale">已過期需更新</option>
           </select>

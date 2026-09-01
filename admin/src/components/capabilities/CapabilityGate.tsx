@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 
 // ── Feature label map ─────────────────────────────────────────────────────────
 export const FEATURE_LABELS: Record<string, string> = {
-  multilingual: "多語內容（來源語系 + 買方語系草稿）",
+  multilingual: "多語內容（來源語言 + 客戶語言草稿）",
   full_tracking: "訪客與成效追蹤",
   dynamic_cta: "行動按鈕",
   ai_advisor: "AI 產品顧問",
@@ -34,7 +34,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   nurture_email: "跟進郵件",
   seo_redirects: "舊網址轉址",
   advanced_content: "進階頁面與比較內容",
-  audience_segments: "買家分群",
+  audience_segments: "等待跟進的買家",
   company_identification: "企業辨識與聯絡人候選",
 };
 

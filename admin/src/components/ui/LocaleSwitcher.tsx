@@ -154,7 +154,7 @@ export function LocaleSwitcher({
       }
     } catch (error) {
       if (error instanceof ApiError && error.targetId) {
-        setMessage("買方語系已上架，系統不會覆蓋。正在開啟該語系頁面。");
+        setMessage("客戶語言內容已上架，系統不會覆蓋。正在開啟該語言頁面。");
         router.push(`${basePath}/${error.targetId}/edit`);
       } else {
         setMessage(error instanceof Error ? error.message : "無法產生草稿");
@@ -168,7 +168,7 @@ export function LocaleSwitcher({
     <div className="rounded-md border border-blue-200 bg-blue-50/30 px-4 py-3 space-y-2">
       <p className="text-xs font-medium text-blue-800">語言版本</p>
       <p className="text-xs text-blue-900/80 leading-relaxed">
-        用{localeLabel(sourceLocale)}維護正本。買方語系先產生草稿，確認後再上架才會出現在該語系官網。
+        用{localeLabel(sourceLocale)}維護正本。客戶語言內容會先產生草稿，確認後再上架才會出現在對應語言的官網。
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <Badge className="bg-blue-700 text-white hover:bg-blue-800">

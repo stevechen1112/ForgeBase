@@ -47,15 +47,15 @@ export default function SegmentsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">買家分群</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">依瀏覽行為定義買家分群，供後續跟進或廣告投放使用</p>
+          <h1 className="text-2xl font-bold tracking-tight">等待跟進的買家</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">依市場與網站互動整理待跟進名單；這不是自動評分，也不會自動投放廣告。</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
           </Button>
           <Button size="sm" onClick={() => router.push("/dashboard/segments/new")}>
-            <PlusCircle className="mr-2 h-4 w-4" />新增 Segment
+            <PlusCircle className="mr-2 h-4 w-4" />建立跟進名單條件
           </Button>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function SegmentsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4 text-primary" />分群列表（{segments.length}）
+            <Users className="h-4 w-4 text-primary" />跟進名單條件（{segments.length}）
           </CardTitle>
         </CardHeader>
         <CardContent className="max-w-full overflow-x-auto p-0">
@@ -78,8 +78,8 @@ export default function SegmentsPage() {
           ) : segments.length === 0 ? (
             <div className="py-16 text-center">
               <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm font-medium text-muted-foreground">尚未建立任何受眾分群</p>
-              <p className="mt-1 text-xs text-muted-foreground">透過 API 或後台設定建立分群規則，訪客將自動歸分</p>
+              <p className="text-sm font-medium text-muted-foreground">尚未建立任何跟進名單條件</p>
+              <p className="mt-1 text-xs text-muted-foreground">先設定市場或網站互動條件，符合的訪客會出現在待跟進名單中。</p>
             </div>
           ) : (
             <table className="w-full min-w-[720px] text-sm">
@@ -88,7 +88,7 @@ export default function SegmentsPage() {
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">名稱</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">說明</th>
                   <th className="px-4 py-2 text-center font-medium text-muted-foreground">狀態</th>
-                  <th className="px-4 py-2 text-right font-medium text-muted-foreground">成員數</th>
+                  <th className="px-4 py-2 text-right font-medium text-muted-foreground">符合人數</th>
                   <th className="px-4 py-2 text-left font-medium text-muted-foreground">建立時間</th>
                   <th className="px-4 py-2 text-right font-medium text-muted-foreground">操作</th>
                 </tr>

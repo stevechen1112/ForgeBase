@@ -202,7 +202,7 @@ export default function ProductForm({ initial, id, aiDraft }: Props) {
       {draftNotice && (
         <Alert className="border-violet-200 bg-violet-50">
           <AlertDescription className="text-violet-800">
-            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過品名與說明後再上架。型號、規格數字與圖片已對齊，不會被翻譯改掉。
+            此為依來源語言產生的客戶語言草稿，尚未出現在公開網站。請看過品名與說明後再上架。型號、規格數字與圖片已對齊，不會被翻譯改掉。
           </AlertDescription>
         </Alert>
       )}

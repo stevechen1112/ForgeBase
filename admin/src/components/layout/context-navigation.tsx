@@ -20,7 +20,6 @@ type RouteGroup = {
 };
 
 const DASHBOARD_HUBS: Record<string, string> = {
-  "/dashboard/buyers": "買家管線",
   "/dashboard/content": "內容中心",
   "/dashboard/growth": "潛在買家跟進",
 };
@@ -40,6 +39,7 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/redirects", label: "SEO 網址轉址", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
 
   { base: "/dashboard/outcomes", label: "商機漏斗與成果", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價與跟進" },
+  { base: "/dashboard/buyers", label: "買家管線", parentHref: "/dashboard/workspaces/customers", parentLabel: "買家與客戶" },
   { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
   { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價與跟進", childLabels: { my: "我的詢價案件", templates: "回覆範本" } },

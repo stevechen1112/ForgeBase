@@ -316,7 +316,7 @@ async def create_locale_draft(
             status_code=409,
             detail={
                 "error": "target_published",
-                "message": "買方語系已上架，系統不會用新草稿覆蓋。請開啟該語系頁面修改後再上架。",
+                "message": "客戶語言內容已上架，系統不會用新草稿覆蓋。請開啟該語言頁面修改後再上架。",
                 "target_id": str(existing.id),
             },
         )
