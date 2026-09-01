@@ -114,7 +114,7 @@ export default function ApplicationForm({ initial, id, aiDraft }: Props) {
       {draftNotice && (
         <Alert className="border-violet-200 bg-violet-50">
           <AlertDescription className="text-violet-800">
-            此為依來源語系產生的買方語系草稿，尚未出現在公開網站。請看過後再上架。
+            此為依來源語言產生的客戶語言草稿，尚未出現在公開網站。請看過後再上架。
           </AlertDescription>
         </Alert>
       )}

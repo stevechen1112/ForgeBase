@@ -47,7 +47,7 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
     },
     "multilingual": {
         "label": "多語內容與語系網站", "group": "網站與內容",
-        "description": "維護來源語系與買方語系內容；可產英文草稿，確認上架後才公開。", "configurable": True,
+        "description": "維護來源語言與客戶語言內容；可產英文草稿，確認上架後才公開。", "configurable": True,
     },
     "full_tracking": {
         "label": "訪客與內容成效追蹤", "group": "買家旅程",
@@ -120,7 +120,7 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "status": "pilot",
     },
     "inbound_reply": {
-        "label": "外聯回覆接收", "group": "核心成長引擎（試行）",
+        "label": "買家回信接收", "group": "核心成長引擎（試行）",
         "description": "接收、關聯並安全分類對方回覆。", "configurable": True,
         "status": "pilot",
     },

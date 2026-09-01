@@ -36,6 +36,8 @@ export function WorkspaceHub({
   description,
   items,
   flow,
+  flowTitle = "買家處理流程",
+  flowDescription = "「尚未開通」表示這項服務目前沒有啟用，並不代表系統已確認匿名訪客的身分。",
   primaryAction,
   sectionTitle,
 }: {
@@ -44,6 +46,8 @@ export function WorkspaceHub({
   description: string;
   items: WorkspaceItem[];
   flow?: FlowStep[];
+  flowTitle?: string;
+  flowDescription?: string;
   primaryAction?: { label: string; href: string };
   sectionTitle?: string;
 }) {
@@ -67,11 +71,11 @@ export function WorkspaceHub({
       </header>
 
       {flow && (
-        <section aria-label="ForgeBase 北極星流程" className="rounded-xl border bg-white p-5 shadow-sm">
+        <section aria-label={flowTitle} className="rounded-xl border bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-semibold">北極星商機流程</h2>
-              <p className="mt-1 text-xs text-muted-foreground">受控中代表能力仍在品質、供應商或法遵 Gate，不代表已識別訪客本人。</p>
+              <h2 className="font-semibold">{flowTitle}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">{flowDescription}</p>
             </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2">
@@ -84,7 +88,7 @@ export function WorkspaceHub({
                     enabled ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20" : "border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/20",
                   )}>
                     <p className="text-sm font-medium">{step.label}</p>
-                    <p className={cn("mt-1 text-[11px] font-medium", enabled ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300")}>{enabled ? "運作中" : "受控中"}</p>
+                    <p className={cn("mt-1 text-[11px] font-medium", enabled ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300")}>{enabled ? "可使用" : "尚未開通"}</p>
                   </div>
                   {index < flow.length - 1 && <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />}
                 </div>

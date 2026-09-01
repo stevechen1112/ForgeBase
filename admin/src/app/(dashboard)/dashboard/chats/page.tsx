@@ -42,6 +42,20 @@ const STATUS_LABEL: Record<string, string> = {
   handoff_completed: "已轉業務接手",
 };
 
+const CONTEXT_LABEL: Record<string, string> = {
+  home: "首頁",
+  product: "商品頁",
+  category: "商品分類頁",
+  application: "應用場景頁",
+  faq: "常見問題頁",
+  certification: "認證頁",
+  comparison: "產品比較頁",
+};
+
+function contextLabel(session: ChatSessionItem) {
+  return CONTEXT_LABEL[session.context_entity_type ?? ""] ?? "網站頁面";
+}
+
 const SELECT_CLS =
   "rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground";
 
@@ -171,7 +185,7 @@ export default function ChatSessionsPage() {
           }}
         >
           <option value="">所有狀態</option>
-          <option value="active">Active</option>
+          <option value="active">進行中</option>
           <option value="handoff_ready">待業務接手</option>
           <option value="handoff_completed">已轉業務接手</option>
         </select>
@@ -225,7 +239,7 @@ export default function ChatSessionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {items.map((s) => (
+              {items.map((s, index) => (
                 <tr
                   key={s.id}
                   className="hover:bg-muted/30 transition-colors"
@@ -236,7 +250,7 @@ export default function ChatSessionsPage() {
                         href={`/dashboard/visitors/${s.visitor_id}`}
                         className="font-mono text-xs text-primary hover:underline"
                       >
-                        {s.visitor_id.slice(0, 8)}…
+                        匿名訪客 #{index + 1}
                       </Link>
                       <div className="flex items-center gap-1.5">
                         {s.visitor_country && (
@@ -248,14 +262,7 @@ export default function ChatSessionsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="max-w-[200px] truncate text-xs text-muted-foreground">
-                      {s.context_page ?? "—"}
-                    </div>
-                    {s.context_entity_type && s.context_entity_type !== "unknown" && (
-                      <Badge variant="outline" className="mt-0.5 text-[10px]">
-                        {s.context_entity_type}
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-[10px]">{contextLabel(s)}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={`text-xs ${STATUS_COLOR[s.status] ?? "bg-muted text-muted-foreground"}`}>

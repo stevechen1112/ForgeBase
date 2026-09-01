@@ -14,6 +14,8 @@ type OutboxItem = {
   sequence_id: string;
   step_id: string;
   contact_id: string;
+  contact_name?: string | null;
+  contact_email_masked?: string | null;
   status: string;
   subject: string;
   due_at?: string;
@@ -25,6 +27,13 @@ type OutboxItem = {
 function fmt(d?: string) {
   return d ? new Date(d).toLocaleString("zh-TW") : "—";
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "待確認",
+  sent: "已寄出",
+  skipped: "已略過",
+  failed: "寄送失敗",
+};
 
 export default function NurtureOutboxPage() {
   const { state } = useAuth();
@@ -62,7 +71,7 @@ export default function NurtureOutboxPage() {
       setMessage(action === "send" ? "已寄出" : "已略過並前進到下一步");
       await load();
     } catch (e: unknown) {
-      setMessage(`Error: ${e instanceof Error ? e.message : "unknown"}`);
+      setMessage(`無法完成操作：${e instanceof Error ? e.message : "未知原因"}`);
     } finally { setActing(null); }
   };
 
@@ -108,10 +117,13 @@ export default function NurtureOutboxPage() {
                 {items.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/30">
                     <td className="px-4 py-2 font-medium">{o.subject}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{o.contact_id.slice(0, 8)}</td>
+                    <td className="px-4 py-2">
+                      <p className="font-medium">{o.contact_name || "未命名聯絡人"}</p>
+                      <p className="text-xs text-muted-foreground">{o.contact_email_masked || "聯絡資料尚未提供"}</p>
+                    </td>
                     <td className="px-4 py-2 text-muted-foreground">{fmt(o.due_at)}</td>
                     <td className="px-4 py-2 text-center">
-                      <Badge variant="outline" className="text-xs">{o.status}</Badge>
+                      <Badge variant="outline" className="text-xs">{STATUS_LABEL[o.status] ?? o.status}</Badge>
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="inline-flex gap-2">

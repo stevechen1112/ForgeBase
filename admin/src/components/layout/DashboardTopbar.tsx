@@ -69,7 +69,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
           <Search className="h-4 w-4 shrink-0" /><span className="truncate">搜尋所有後台功能</span><kbd className="ml-auto hidden rounded border bg-white px-1.5 py-0.5 text-[11px] text-slate-400 sm:inline">Ctrl K</kbd>
         </button>
 
-        <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 lg:inline">外銷主管模式</span>
+        <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 lg:inline">外銷業務工作介面</span>
         <Button type="button" variant="outline" className="hidden h-11 gap-2 sm:inline-flex" onClick={() => setDirectoryOpen(true)}><Grid2X2 className="h-4 w-4" />全部功能</Button>
         <Button asChild variant="ghost" size="icon" className="h-11 w-11" aria-label="開啟通知中心"><Link href="/dashboard/notifications"><Bell className="h-5 w-5" /></Link></Button>
         {canEdit && (
@@ -79,7 +79,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               <DropdownMenuLabel>選擇要新增的內容</DropdownMenuLabel><DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link href="/dashboard/products/new" className="min-h-10 cursor-pointer">新增商品</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link href="/dashboard/pages/new" className="min-h-10 cursor-pointer">新增頁面</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/dashboard/segments/new" className="min-h-10 cursor-pointer">新增跟進名單</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/dashboard/segments/new" className="min-h-10 cursor-pointer">建立跟進名單條件</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

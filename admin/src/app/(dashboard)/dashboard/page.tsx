@@ -100,10 +100,10 @@ export default function DashboardPage() {
       if (coverageResult.status === "fulfilled" && coverageResult.value) {
         const coverage = coverageResult.value;
         const parts: string[] = [];
-        if (coverage.missing > 0) parts.push(`${coverage.missing} 筆缺${coverage.target_locale === "en" ? "英文" : "買方語系"}`);
+        if (coverage.missing > 0) parts.push(`${coverage.missing} 筆缺${coverage.target_locale === "en" ? "英文" : "客戶語言內容"}`);
         if (coverage.draft > 0) parts.push(`${coverage.draft} 筆草稿未上架`);
         if (coverage.stale > 0) parts.push(`${coverage.stale} 筆需更新`);
-        setLocaleSummary(parts.length ? parts.join("、") : "買方語系內容已齊");
+        setLocaleSummary(parts.length ? parts.join("、") : "客戶語言內容已齊");
       } else {
         setLocaleSummary(null);
       }
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 ? <>。訪客轉詢價率目前 <strong className="text-[#176c89]">{convRate}%</strong>。</>
                 : <>。請依待辦與案件狀態安排後續處理。</>}
               {localeSummary && (
-                <> 買方語系：{localeSummary}。{localeSummary !== "買方語系內容已齊" && (
+                <> 客戶語言：{localeSummary}。{localeSummary !== "客戶語言內容已齊" && (
                   <Link href="/dashboard/products?pair_status=missing_target" className="ml-1 font-semibold text-[#176c89] underline decoration-[#176c89]/30 hover:decoration-[#176c89]">查看商品</Link>
                 )}</>
               )}

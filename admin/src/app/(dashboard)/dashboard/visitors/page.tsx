@@ -83,9 +83,9 @@ export default function VisitorsPage() {
           <table className="w-full text-sm">
             <thead className="border-y bg-muted/40 text-left"><tr><th className="px-4 py-3">訪客</th><th className="px-4 py-3">造訪／瀏覽</th><th className="px-4 py-3">國家／裝置</th><th className="px-4 py-3">最後活動</th></tr></thead>
             <tbody>
-              {visitors.map((visitor) => (
+              {visitors.map((visitor, index) => (
                 <tr key={visitor.visitor_id} className="border-b hover:bg-muted/30">
-                  <td className="px-4 py-3"><Link className="font-mono text-primary hover:underline" href={`/dashboard/visitors/${visitor.visitor_id}`}>{visitor.visitor_id.slice(0, 12)}…</Link>{visitor.contact_id && <span className="ml-2 text-xs text-emerald-700">已識別</span>}</td>
+                  <td className="px-4 py-3"><Link className="font-medium text-primary hover:underline" href={`/dashboard/visitors/${visitor.visitor_id}`}>匿名訪客 #{index + 1}</Link>{visitor.contact_id && <span className="ml-2 text-xs text-emerald-700">已提供聯絡資料</span>}</td>
                   <td className="px-4 py-3">{visitor.total_visits}／{visitor.total_page_views}</td>
                   <td className="px-4 py-3">{visitor.country || "—"}／{visitor.device_type || "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{dateTime(visitor.last_activity_at || visitor.last_seen)}</td>

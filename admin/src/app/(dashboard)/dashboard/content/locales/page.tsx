@@ -136,9 +136,9 @@ export default function LocaleOperationsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Languages className="h-4 w-4" />Multilingual Content</div>
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Languages className="h-4 w-4" />客戶語言內容</div>
           <h1 className="text-2xl font-bold tracking-tight">多語內容與草稿審核</h1>
-          <p className="mt-1 text-sm text-muted-foreground">以來源語系維護正本；AI 只產生草稿，人工確認並逐筆上架。</p>
+          <p className="mt-1 text-sm text-muted-foreground">以內容正本語言維護資料；AI 只協助起草，仍由人員確認後逐筆上架。</p>
         </div>
         <Button variant="outline" onClick={() => void load(targetLocale)} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />重新整理
@@ -150,11 +150,11 @@ export default function LocaleOperationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>語系範圍</CardTitle>
-          <CardDescription>來源語系為 {sourceLocale || "載入中"}。內容草稿能力與完整公開網站介面語系分開治理。</CardDescription>
+          <CardTitle>內容正本與客戶語言</CardTitle>
+          <CardDescription>目前內容正本語言為 {sourceLocale || "載入中"}。請選擇要檢查的客戶使用語言；網站介面與內容草稿分開管理。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium" htmlFor="target-locale">檢視目標語系</label>
+          <label className="text-sm font-medium" htmlFor="target-locale">要檢查的客戶語言</label>
           <select id="target-locale" className="h-9 rounded-md border bg-background px-3 text-sm" value={targetLocale} onChange={(event) => void changeTarget(event.target.value)} disabled={loading}>
             {targets.map((locale) => <option key={locale.content_locale} value={locale.content_locale}>{locale.native_label} ({locale.label})</option>)}
           </select>

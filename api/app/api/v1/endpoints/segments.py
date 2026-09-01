@@ -74,6 +74,13 @@ class SegmentCreate(BaseModel):
     combinator: str = "AND"
 
 
+class SegmentPreviewRequest(BaseModel):
+    """Read-only conditions preview; it never creates a temporary segment."""
+
+    conditions: list[ConditionItem] = PydanticField(min_length=1, max_length=20)
+    combinator: str = "AND"
+
+
 class SegmentRead(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
@@ -241,6 +248,22 @@ async def create_segment(
     await db.commit()
     await db.refresh(seg)
     return _to_segment_read(seg)
+
+
+@router.post("/segments/preview")
+async def preview_segment(
+    payload: SegmentPreviewRequest,
+    _feature: User = Depends(RequireFeature("audience_segments")),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return a matching count for unsaved conditions without changing tenant data."""
+    if payload.combinator not in ("AND", "OR"):
+        raise HTTPException(status_code=422, detail="combinator must be AND or OR")
+    tenant_id = require_user_tenant_id(current_user)
+    conditions = [item.model_dump(mode="json", exclude_none=True) for item in payload.conditions]
+    total = await _count_segment_matches(db, conditions, payload.combinator, tenant_id)
+    return {"total_matches": total}
 
 
 @router.get("/segments/{segment_id}", response_model=SegmentRead)

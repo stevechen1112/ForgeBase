@@ -26,6 +26,9 @@ const PAGE_TYPE_LABEL: Record<string, string> = {
   application: "應用場景",
   page: "一般頁面",
   category: "分類頁",
+  certification: "認證頁",
+  capability: "廠能頁",
+  comparison: "產品比較頁",
 };
 type AnalyticsResponse = {
   period_days: number;
@@ -46,7 +49,12 @@ const CONTENT_TABS: { key: ContentTab; label: string; icon: React.ElementType; e
 const DAYS_OPTIONS = [7, 14, 30, 90];
 
 // ── 取顯示名稱 ────────────────────────────────────────────────────────────────
-function rowName(r: PageRow) { return r.page_name ?? r.title ?? r.slug ?? r.page_id ?? "—"; }
+function rowName(r: PageRow) {
+  const raw = r.page_name ?? r.title ?? r.slug;
+  const typeLabel = PAGE_TYPE_LABEL[r.page_type ?? ""];
+  if (!raw) return typeLabel ? `未命名${typeLabel}` : r.page_id ?? "—";
+  return raw === r.page_type ? `${typeLabel ?? "網站內容"}（未命名）` : raw;
+}
 function rowSubtext(r: PageRow, tab: ContentTab): string {
   if (tab === "products") {
     const parts = [r.model_number, r.category_slug].filter(Boolean);
@@ -126,7 +134,7 @@ export default function ContentPerformancePage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">內容成效</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">各頁面、商品與應用場景的瀏覽量，以及帶來多少詢價</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">查看各頁面、商品與應用場景的瀏覽與互動；商品與應用場景可再看詢價數。</p>
         </div>
         <div className="flex items-center gap-2">
           {/* 日期選擇 */}

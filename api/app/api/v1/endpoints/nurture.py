@@ -37,6 +37,7 @@ from app.models.nurture import (
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.services.capability_access import tenant_has_feature
+from app.services.email_governance import mask_email
 
 router = APIRouter(prefix="/nurture", tags=["Nurture"])
 
@@ -608,13 +609,15 @@ async def _advance_enrollment_after_send(
 # ── Outbox (manual per-email approval) ─────────────────────────────────────
 
 
-def _outbox_dict(o: NurtureOutbox) -> dict:
+def _outbox_dict(o: NurtureOutbox, contact: Contact | None = None) -> dict:
     return {
         "id": str(o.id),
         "enrollment_id": str(o.enrollment_id),
         "sequence_id": str(o.sequence_id),
         "step_id": str(o.step_id),
         "contact_id": str(o.contact_id),
+        "contact_name": contact.full_name if contact else None,
+        "contact_email_masked": mask_email(contact.email) if contact else None,
         "outreach_message_id": str(o.outreach_message_id) if o.outreach_message_id else None,
         "status": o.status,
         "subject": o.subject,
@@ -640,7 +643,14 @@ async def list_outbox(
         q = q.where(NurtureOutbox.status == outbox_status)
     q = q.offset(offset).limit(min(limit, 200))
     rows = (await db.exec(q)).all()
-    return [_outbox_dict(o) for o in rows]
+    contact_ids = {row.contact_id for row in rows}
+    contacts = (
+        (await db.exec(select(Contact).where(Contact.id.in_(contact_ids)))).all()
+        if contact_ids
+        else []
+    )
+    contact_map = {contact.id: contact for contact in contacts}
+    return [_outbox_dict(o, contact_map.get(o.contact_id)) for o in rows]
 
 
 async def _get_scoped_outbox(
