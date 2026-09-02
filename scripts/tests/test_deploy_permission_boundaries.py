@@ -82,9 +82,12 @@ def test_safe_deploy_reclaims_only_disposable_builder_cache() -> None:
     assert script.index(database_ready) < script.index(backup) < script.index(first_build)
     assert "Database did not recover before the backup safety gate." in script
     assert "docker system prune" not in script
-    assert "docker image prune" not in script
     assert "docker container prune" not in script
     assert "docker volume prune" not in script
+    assert "${rollback_stamps[@]:2}" in script
+    assert 'docker image rm "$repository"' in script
+    assert "docker image prune --force" in script
+    assert "docker image prune --all" not in script
 
 
 def test_reference_site_uses_an_explicit_host_not_a_stale_tenant_slug() -> None:

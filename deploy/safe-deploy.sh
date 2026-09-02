@@ -46,12 +46,37 @@ reclaim_build_cache() {
 }
 reclaim_build_cache
 
+# Each release tags the currently serving images so rollback remains possible.
+# Retaining every historical tag eventually fills a small production disk,
+# because tagged images are intentionally ignored by Docker's normal prune.
+# Keep the newest two complete rollback generations (including the generation
+# created above), remove only older ForgeBase rollback tags, then reclaim any
+# layers that became dangling. Running/current images are never selected.
+mapfile -t rollback_stamps < <(
+  docker image ls --format '{{.Repository}}' |
+    sed -n 's/^forgebase-rollback-\([0-9]\{8\}t[0-9]\{6\}z\)-.*/\1/p' |
+    sort -ru
+)
+if [ "${#rollback_stamps[@]}" -gt 2 ]; then
+  for old_stamp in "${rollback_stamps[@]:2}"; do
+    mapfile -t old_rollback_repositories < <(
+      docker image ls --format '{{.Repository}}' |
+        grep -E "^forgebase-rollback-${old_stamp}-" |
+        sort -u
+    )
+    for repository in "${old_rollback_repositories[@]}"; do
+      docker image rm "$repository"
+    done
+  done
+  docker image prune --force
+fi
+
 # Disk exhaustion can leave PostgreSQL replaying recovery records while the
 # host comes back. Cache reclamation must happen before the backup attempt, and
 # the deployment must wait for PostgreSQL to accept connections rather than
 # failing immediately or attempting a migration during recovery.
 database_ready=false
-for _attempt in $(seq 1 24); do
+for _attempt in $(seq 1 60); do
   if docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
     exec -T db pg_isready >/dev/null 2>&1; then
     database_ready=true
