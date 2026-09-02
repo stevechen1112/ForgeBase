@@ -20,9 +20,7 @@ type NotifLog = {
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   new_rfq: "新 RFQ",
-  hot_visitor: "熱訪客",
   daily_summary: "每日摘要",
-  churn_risk: "流失預警",
   chat_handoff: "對話轉業務",
   content_suggestion: "內容建議",
 };
@@ -102,7 +100,7 @@ export default function NotificationCenterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">通知中心</h1>
           <p className="text-muted-foreground mt-1">
-            近期系統與 AI 助理推給您的通知紀錄。
+            近期詢價、內容審核與業務接手等可確認的系統通知。
           </p>
         </div>
         <div className="flex gap-2">

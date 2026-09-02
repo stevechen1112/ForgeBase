@@ -21,7 +21,7 @@ def test_single_product_defaults_and_governance_overrides() -> None:
     tenant = Tenant(name="Pilot", slug="pilot")
     defaults = resolve_tenant_features(tenant)
     for feature in (
-        "outcomes_dashboard", "full_tracking", "ai_advisor",
+        "full_tracking", "ai_advisor",
         "chat_handoff", "audience_segments", "nurture_email", "rfq_workspace",
         "notifications", "follow_up_reminders",
     ):
@@ -82,15 +82,18 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         assert any(item["key"] == "company_identification" and not item["configurable"] for item in catalog.json()["features"])
 
         for path in (
-            "/api/v1/tracking/segments", "/api/v1/tracking/outcomes",
-            "/api/v1/tracking/analytics/funnel", "/api/v1/tracking/visitors",
+            "/api/v1/tracking/segments", "/api/v1/tracking/visitors",
         ):
             response = await http_client.get(path, headers=_auth(tenant_token))
             assert response.status_code == 200, response.text
 
         enabled = await http_client.put(
             f"/api/v1/admin/tenants/{tenant.id}",
-            json={"feature_overrides": {"nurture_email": False, "audience_segments": False}},
+            json={"feature_overrides": {
+                "nurture_email": False,
+                "audience_segments": False,
+                "advanced_content": False,
+            }},
             headers=_auth(platform_token),
         )
         assert enabled.status_code == 200, enabled.text
@@ -116,6 +119,20 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
 
         disabled_nurture = await http_client.get("/api/v1/nurture/sequences", headers=_auth(tenant_token))
         assert disabled_nurture.status_code == 403
+
+        # Published comparison pages remain publicly readable, while direct
+        # mutations still honor the tenant capability and editor role checks.
+        public_comparisons = await http_client.get(
+            "/api/v1/content/comparisons?status=published",
+            headers={"X-Tenant-ID": str(tenant.id)},
+        )
+        assert public_comparisons.status_code == 200, public_comparisons.text
+        disabled_comparison_mutation = await http_client.patch(
+            f"/api/v1/content/comparisons/{uuid.uuid4()}",
+            json={},
+            headers=_auth(tenant_token),
+        )
+        assert disabled_comparison_mutation.status_code == 403
     finally:
         async with factory() as session:
             from sqlalchemy import text

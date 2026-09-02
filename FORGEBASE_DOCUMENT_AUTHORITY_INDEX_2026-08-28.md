@@ -2,6 +2,8 @@
 
 > 建立日期：2026-08-28
 >
+> 最新更新：2026-09-02；產品邊界已改以「網站到詢價人工交接」為準。
+>
 > 用途：避免歷史稽核、舊 TODO、舊百分比或舊兩階段方案被誤認為目前產品狀態。
 
 ## 一、文件優先順序
@@ -9,19 +11,22 @@
 遇到不同文件結論不一致時，依下列順序判定：
 
 1. 最新 production 只讀 audit／workflow artifact 與目前部署 commit。
-2. `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 的 2026-08-28 正式環境更新版。
-3. `FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md` 的最新執行記錄與決策記錄。
-4. `FORGEBASE_NORTH_STAR_IMPLEMENTATION_PROGRESS_2026-08-26.md` 與 `FORGEBASE_INTERNAL_PRODUCTIZATION_14_BATCH_PROGRESS_2026-08-27.md`。
-5. 專項現行決策文件，例如供應商 POC、退場治理與部署 runbook。
-6. 舊稽核、舊 roadmap、舊 TODO 與 sprint ticket；只用於理解歷史，不作目前完成度或產品承諾依據。
+2. `FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md`；它是現行產品邊界、功能退場、資料遷移與 Demo 流程的最高決策基準。
+3. `README.md`、目前程式、API schema、migration 與部署 workflow；若舊模組名稱或舊銷售流程與範圍決策衝突，以 2026-09-02 決策及 runtime 為準。
+4. `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` 的 2026-08-28 更新版，只作調整前的 17 模組歷史基線，不再代表現行功能清單。
+5. 北極星與內部產品化進度文件，只作既有工程、治理與測試背景；涉及 CRM 式銷售追蹤的段落已被 2026-09-02 決策取代。
+6. 專項現行決策文件，例如供應商 POC、退場治理與部署 runbook。
+7. 舊稽核、舊 roadmap、舊 TODO 與 sprint ticket；只用於理解歷史，不作目前完成度或產品承諾依據。
 
-計分規則：目前唯一有效的 17 模組百分比與四分類，以功能模組完整度盤點的 2026-08-28 版本為準。
+現行產品不再使用舊 17 模組百分比作為正式產品完成度；是否可部署以目前 release gate、production readiness、瀏覽器驗證與 2026-09-02 範圍決策為準。
 
 ## 二、目前權威文件
 
 | 文件 | 狀態 | 權威範圍 |
 |---|---|---|
-| `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` | **目前總盤點** | 17 模組分數、北極星逐段狀態、四分類、對外承諾與剩餘 Gate |
+| `FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md` | **現行產品最高決策基準** | 網站到詢價人工交接的產品邊界、保留／整併／完整剔除、資料遷移、Demo 與部署驗收 |
+| `README.md` | **現行產品入口** | 目前流程、功能、明確不包含項目、驗證與部署順序 |
+| `FORGEBASE_FUNCTION_MODULE_COMPLETENESS_AUDIT_2026-08-15.md` | **調整前總盤點／歷史基線** | 2026-08-28 當時的 17 模組分數與 Gate；不得用來恢復已退場的 CRM 式功能 |
 | `FORGEBASE_NORTH_STAR_CORE_GAP_IMPLEMENTATION_PLAN_2026-08-26.md` | **產品決策基準／持續更新** | 北極星契約、Build vs. Buy、供應商中立、Phase Gate；現況優先讀第 23、24 節 |
 | `FORGEBASE_NORTH_STAR_IMPLEMENTATION_PROGRESS_2026-08-26.md` | **工程實作紀錄** | 北極星各批實作、測試與 code review；較早批次的「尚缺」是歷史快照 |
 | `FORGEBASE_INTERNAL_PRODUCTIZATION_14_BATCH_PROGRESS_2026-08-27.md` | **內部產品化完成紀錄** | 14 批 Release、瀏覽器、五語、AI、fault、capacity、security、delivery、privacy、SLO、release、retirement |

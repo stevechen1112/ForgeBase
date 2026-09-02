@@ -66,7 +66,7 @@ async def page_analytics(
 ) -> dict[str, Any]:
     """
     Per-page aggregated metrics over the last N days.
-    Joins tracking events with RFQs for direct performance outcomes.
+    Joins first-party tracking events with RFQs for direct website performance.
     """
     filter_sql, filter_params = _build_filter_sql(_.tenant_id, page_type)
     sql = text(
@@ -120,7 +120,6 @@ async def page_analytics(
         "pages": [dict(r) for r in rows],
     }
 
-
 # ── 2.5.2  Product-level analytics ────────────────────────────────────────────
 
 @router.get("/products")
@@ -165,8 +164,6 @@ async def product_analytics(
         "generated_at": _iso(datetime.now(timezone.utc)),
         "products": [dict(r) for r in rows],
     }
-
-
 # ── 2.5.2  Application-level analytics ────────────────────────────────────────
 
 @router.get("/applications")
@@ -208,82 +205,4 @@ async def application_analytics(
         "period_days": days,
         "generated_at": _iso(datetime.now(timezone.utc)),
         "applications": [dict(r) for r in rows],
-    }
-
-
-# ── Funnel analytics ─────────────────────────────────────────────────────────
-
-@router.get("/funnel")
-async def funnel_analytics(
-    days: int = Query(30, ge=1, le=365),
-    _feature: User = Depends(RequireFeature("full_tracking")),
-    session: AsyncSession = Depends(get_session),
-    _: User = Depends(get_current_user),
-) -> dict[str, Any]:
-    """
-    Marketing funnel overview:
-    - New website visitors
-    - RFQ counts by status
-    - Conversion rates between stages
-    """
-    since = datetime.now(timezone.utc) - timedelta(days=days)
-
-    # New visitor acquisition cohort
-    visitor_filter_sql, visitor_params = _build_visitor_filter_sql(_.tenant_id)
-
-    visitor_sql = text(
-        """
-        SELECT COUNT(*) AS count
-        FROM visitors
-        WHERE created_at >= :since
-          __FILTERS__
-        """.replace("__FILTERS__", visitor_filter_sql)
-    )
-    params = {"since": since} | visitor_params
-    visitor_result = await session.exec(visitor_sql, params=params)
-    total_visitors = int(visitor_result.mappings().one()["count"])
-
-    # RFQ counts by status
-    rfq_sql = text(
-        """
-        SELECT status, COUNT(*) AS count
-        FROM rfq_requests
-        WHERE created_at >= :since
-          __FILTERS__
-        GROUP BY status
-        ORDER BY count DESC
-        """.replace("__FILTERS__", visitor_filter_sql)
-    )
-    rfq_result = await session.exec(rfq_sql, params=params)
-    rfq_rows = {r["status"]: r["count"] for r in rfq_result.mappings().all()}
-
-    # Totals for conversion rates
-    total_rfqs = sum(rfq_rows.values())
-    won = rfq_rows.get("won", 0)
-
-    conversions = {
-        "visitor_to_rfq": round(total_rfqs / total_visitors * 100, 1) if total_visitors else 0,
-        "rfq_to_won": round(won / total_rfqs * 100, 1) if total_rfqs else 0,
-        "visitor_to_won": round(won / total_visitors * 100, 1) if total_visitors else 0,
-    }
-
-    funnel_stages = [
-        {"stage": "website_visitors", "count": total_visitors},
-        {"stage": "rfqs", "count": total_rfqs},
-        {"stage": "won", "count": won},
-    ]
-
-    return {
-        "period_days": days,
-        "generated_at": _iso(datetime.now(timezone.utc)),
-        "funnel_stages": funnel_stages,
-        "cohort_start": _iso(since),
-        "methodology": "Visitors and RFQs are acquisition cohorts created in the selected period. RFQ-to-won uses the current outcome of the same RFQ cohort.",
-        "rfq_by_status": rfq_rows,
-        "totals": {
-            "visitors": total_visitors,
-            "rfqs": total_rfqs,
-            "won": won,
-        },
-        "conversion_rates": conversions,
     }

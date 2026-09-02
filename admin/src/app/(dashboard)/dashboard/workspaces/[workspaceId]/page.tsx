@@ -10,11 +10,11 @@ import { WORKSPACES } from "@/lib/navigation/workspaces";
 
 const HERO_COPY: Record<string, { title: string; description: string; action: string }> = {
   today: { title: "今天必須完成的工作", description: "先處理今天到期、逾期與需要決定的工作。", action: "開始處理" },
-  rfq: { title: "從收到詢價一路跟進到成交", description: "詢價、分派、回覆與成交結果都從這裡進入。", action: "查看詢價" },
-  buyers: { title: "先看最值得業務接手的買家", description: "保留訪客、對話、回信與詢價之間的完整脈絡。", action: "查看買家" },
+  rfq: { title: "把新詢價清楚交到負責業務手上", description: "詢價、分派、接手與來源脈絡都從這裡進入。", action: "查看詢價" },
+  buyers: { title: "從來源看懂訪客如何形成詢價", description: "保留訪客、對話、回信與詢價之間的完整脈絡。", action: "查看訪客" },
   products: { title: "產品資料集中維護，避免版本不一致", description: "產品、分類、規格、認證與製造能力都在這裡。", action: "查看產品" },
   website: { title: "網站內容都在同一個工作區", description: "頁面、圖片、多語、FAQ 與網址導覽不必分散尋找。", action: "查看內容" },
-  followup: { title: "從有興趣到正式詢價", description: "先整理待跟進買家，再安排內容與時間；寄出前由人員確認。", action: "開始跟進" },
+  followup: { title: "以經同意的郵件安排回訪", description: "先整理合規名單，再安排內容與時間；寄出前由人員確認。", action: "查看內容成效" },
   team: { title: "讓每位成員清楚自己的角色與範圍", description: "集中管理團隊帳號、角色與工作權限。", action: "查看團隊" },
   settings: { title: "公司設定與支援集中處理", description: "管理公司資料、通知方式，或提出網站修改需求。", action: "開啟設定" },
 };

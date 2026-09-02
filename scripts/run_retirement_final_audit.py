@@ -87,7 +87,6 @@ def run_audit() -> dict:
         "outreach_send",
         "inbound_reply",
         "sales_handoff",
-        "closed_loop_attribution",
         "rfq_workspace",
     ]
     for feature in protected_core:

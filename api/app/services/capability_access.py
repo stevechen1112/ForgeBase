@@ -23,17 +23,13 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
     },
     "rfq_workspace": {
         "label": "RFQ 詢價工作台", "group": "核心交付（固定開啟）",
-        "description": "收件、品質、狀態、指派、備註、歷程與匯出。", "configurable": False,
+        "description": "收件、分派、接手、備註、來源歷程與匯出。", "configurable": False,
         "status": "core_required", "locked_value": True,
     },
     "task_sla": {
         "label": "待辦、期限與 SLA", "group": "核心交付（固定開啟）",
-        "description": "處理跟進任務、期限、逾期與責任歸屬。", "configurable": False,
+        "description": "處理未分派、待接手、期限與責任歸屬。", "configurable": False,
         "status": "core_required", "locked_value": True,
-    },
-    "outcomes_dashboard": {
-        "label": "成果與漏斗總覽", "group": "成效與營運",
-        "description": "整合訪客、詢價、商機狀態、來源與成交結果。", "configurable": True,
     },
     "team_roles": {
         "label": "團隊成員與角色", "group": "核心交付（固定開啟）",
@@ -66,8 +62,8 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "description": "RFQ、指派、逾期、官網對話轉交與日常營運通知。", "configurable": True,
     },
     "follow_up_reminders": {
-        "label": "跟進提醒", "group": "業務營運",
-        "description": "案件待辦、期限、逾期與提醒。", "configurable": True,
+        "label": "詢價接手提醒", "group": "業務營運",
+        "description": "新詢價分派、待接手、逾期與提醒。", "configurable": True,
     },
     "advanced_content": {
         "label": "進階頁面與比較內容", "group": "網站與內容",
@@ -82,8 +78,8 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "description": "依關注階段與頁面情境選擇行動按鈕。", "configurable": True,
     },
     "nurture_email": {
-        "label": "培育與跟進郵件", "group": "外聯與跟進",
-        "description": "建立序列；寄送仍保留人工核准與安全限制。", "configurable": True,
+        "label": "經同意的郵件回訪", "group": "郵件回訪",
+        "description": "建立回訪安排；寄送保留人工核准、退訂與安全限制。", "configurable": True,
     },
     "seo_redirects": {
         "label": "SEO 網址轉址", "group": "網站與內容",
@@ -127,11 +123,6 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
     "sales_handoff": {
         "label": "真人業務接手", "group": "核心成長引擎（試行）",
         "description": "將有價值回覆轉為可指派、具 SLA 的業務任務。", "configurable": True,
-        "status": "pilot",
-    },
-    "closed_loop_attribution": {
-        "label": "RFQ／成交閉環歸因", "group": "核心成長引擎（試行）",
-        "description": "串聯訪客、公司、窗口、外聯、回覆、RFQ 與成交成果。", "configurable": True,
         "status": "pilot",
     },
 }

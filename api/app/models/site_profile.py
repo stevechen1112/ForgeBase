@@ -57,7 +57,7 @@ class SiteProfile(SQLModel, table=True):
     # This keeps a connected template genuinely white-label instead of only
     # swapping its logo and colours while leaking NorthForge copy.
     site_copy_json: Optional[str] = Field(default=None)
-    # ── Ops Config (per-tenant): sla_response_hours / auto_reply_* ──
+    # ── Ops Config (per-tenant): sla_acceptance_hours / auto_reply_* ──
     ops_config_json: Optional[str] = Field(default=None)
     # ── Translation glossary (per-tenant): [{source, target, note?}] ──
     translation_glossary_json: Optional[str] = Field(default=None)

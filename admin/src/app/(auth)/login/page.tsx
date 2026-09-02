@@ -17,8 +17,8 @@ import { Separator } from "@/components/ui/separator";
 const FEATURES = [
   "產品、應用與文件集中維護",
   "多語外銷網站內容管理",
-  "詢價、分派與回覆時效管理",
-  "訪客意圖與成效追蹤",
+  "訪客來源與網站旅程觀察",
+  "詢價收件、分派與接手管理",
 ];
 
 export default function LoginPage() {
@@ -90,10 +90,10 @@ export default function LoginPage() {
             <h2 className="text-4xl font-light leading-tight text-white">
               讓網站成為全天候的
               <br />
-              <span className="font-bold text-[hsl(211,100%,70%)]">多工業務助手</span>
+              <span className="font-bold text-[hsl(211,100%,70%)]">外銷詢價入口</span>
             </h2>
             <p className="text-base text-slate-400 leading-relaxed">
-              ForgeBase 協助製造業管理產品內容、接收詢價、追蹤買家關注與安排後續工作；不把網站包裝成商城，也不承諾自動帶來訂單。
+              ForgeBase 協助製造業維護多語內容、看懂訪客來源與旅程，並把網站詢價完整交給負責業務；不要求回填線下成交，也不承諾自動帶來訂單。
             </p>
           </div>
 

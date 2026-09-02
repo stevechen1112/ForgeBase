@@ -23,7 +23,8 @@ class NotificationLog(SQLModel, table=True):
     )
 
     channel: str = Field(max_length=20)
-    # Event types: 'new_rfq' | 'hot_visitor' | 'daily_summary' | 'churn_risk' | 'chat_handoff'
+    # Event types exposed to tenants: new_rfq, daily_summary, chat_handoff,
+    # and content_suggestion. Retired score-derived alerts are not displayed.
     event_type: str = Field(max_length=50, index=True)
     # Optional FK to the triggering entity (rfq_id, visitor_id, etc.)
     event_ref_id: Optional[uuid.UUID] = Field(default=None, index=True)

@@ -12,13 +12,9 @@ import {
 
 const STATUS_LABEL: Record<string, string> = {
   new: "新詢價",
-  assigned: "已指派",
-  in_progress: "處理中",
-  quoted: "已報價",
-  negotiation: "議價中",
-  won: "成交",
-  lost: "失單",
-  expired: "逾期",
+  assigned: "已分派・待接手",
+  accepted: "業務已接手",
+  archived: "已封存",
 };
 
 export default function PlatformRFQsPage() {
@@ -74,7 +70,7 @@ export default function PlatformRFQsPage() {
         <div>
           <h1 className="text-2xl font-bold">全平台詢價</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            平台方只監控是否成功收件、指派與處理；不取代客戶業務，也不會從這裡自動聯繫訪客。
+            平台方只監控是否成功收件、分派與接手；不取代客戶業務，也不追蹤線下成交。
           </p>
         </div>
         <Button
@@ -109,7 +105,7 @@ export default function PlatformRFQsPage() {
             checked={attention}
             onChange={(event) => setAttention(event.target.checked)}
           />
-          只看未指派或逾期
+          只看未分派或接手逾期
         </label>
       </div>
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -138,7 +134,7 @@ export default function PlatformRFQsPage() {
                   <td className="px-4 py-3">
                     <p className="font-medium">{item.rfq_number}</p>
                     <p className="text-xs text-muted-foreground">
-                      品質 {item.quality_score} · {item.priority}
+                      內部優先度：{item.priority}
                     </p>
                   </td>
                   <td className="px-4 py-3">{item.tenant_name}</td>
@@ -149,10 +145,10 @@ export default function PlatformRFQsPage() {
                     </p>
                   </td>
                   <td className="px-4 py-3">
-                    {item.sla_breached ? (
+                    {item.acceptance_sla_breached ? (
                       <span className="inline-flex items-center gap-1 text-red-700">
                         <TriangleAlert className="h-3.5 w-3.5" />
-                        已逾期
+                        接手已逾期
                       </span>
                     ) : (
                       STATUS_LABEL[item.status] || item.status

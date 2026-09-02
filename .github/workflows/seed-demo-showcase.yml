@@ -92,7 +92,8 @@ jobs:
           assert "demo" in report["tenant_name"].casefold()
           assert report["records"]["visitors"] == 120
           assert report["records"]["rfqs"] == 28
-          assert report["records"]["won"] == 4
+          assert report["records"]["accepted"] == 10
+          assert report["records"]["archived"] == 4
           assert report["records"]["draft_pages"] == 2
           assert report["safety"] == {
               "synthetic_contacts_only": True,

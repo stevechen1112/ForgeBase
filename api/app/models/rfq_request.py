@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, Numeric, UniqueConstraint
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from app.core.datetime import utcnow_naive
@@ -56,7 +55,9 @@ class RFQRequest(SQLModel, table=True):
     # JSON: {full_name, company_name, email, phone, country, job_title,
     #        quantity, specifications, timeline, message, how_did_you_find_us}
 
-    attribution_json: Optional[str] = Field(default=None)
+    # First-party website context captured when the RFQ was submitted. This is
+    # provenance for triage, not CRM or closed-loop revenue attribution.
+    source_context_json: Optional[str] = Field(default=None)
 
     # Durable Chat -> RFQ provenance
     source_chat_session_id: Optional[uuid.UUID] = Field(
@@ -69,9 +70,10 @@ class RFQRequest(SQLModel, table=True):
         default=None, foreign_key="rfq_drafts.id", ondelete="SET NULL", index=True
     )
 
-    # Status machine (spec 12.7.4)
+    # Website-to-sales handoff state.  ForgeBase stops at accepted/archived;
+    # quotation, negotiation, won/lost and revenue belong in a CRM.
     status: str = Field(default="new", max_length=20, index=True)
-    # "new" | "assigned" | "in_progress" | "quoted" | "won" | "lost" | "expired"
+    # "new" | "assigned" | "accepted" | "archived"
 
     # Routing & assignment
     assigned_to: Optional[uuid.UUID] = Field(
@@ -87,17 +89,12 @@ class RFQRequest(SQLModel, table=True):
     reminder_24h_sent_at: Optional[datetime] = Field(default=None)
     escalation_48h_sent_at: Optional[datetime] = Field(default=None)
 
-    # Sales follow-up timestamps
-    first_response_at: Optional[datetime] = Field(default=None)
-    quote_sent_at: Optional[datetime] = Field(default=None)
-    next_follow_up_at: Optional[datetime] = Field(default=None, index=True)
-    lost_reason: Optional[str] = Field(default=None, max_length=500)
-    won_reason: Optional[str] = Field(default=None, max_length=500)   # §6.3 成交原因（必填於 won）
-    deal_amount: Optional[Decimal] = Field(
-        default=None,
-        sa_column=Column(Numeric(14, 2), nullable=True),
-    )
-    deal_currency: str = Field(default="USD", max_length=3)
+    # Verifiable handoff timestamps.  Assignment, automatic acknowledgement,
+    # human acceptance and a substantive reply are deliberately separate.
+    acknowledgement_sent_at: Optional[datetime] = Field(default=None)
+    accepted_at: Optional[datetime] = Field(default=None, index=True)
+    first_verified_response_at: Optional[datetime] = Field(default=None)
+    archived_at: Optional[datetime] = Field(default=None, index=True)
 
     # Operational triage. Spam and merged records remain auditable and are
     # hidden from the default work queue instead of being deleted.
@@ -117,15 +114,11 @@ class RFQRequest(SQLModel, table=True):
     is_test_data: bool = Field(default=False, index=True)
     test_run_id: Optional[str] = Field(default=None, max_length=100)
 
-    # Timezone-aware first-response SLA (T7)
+    # Timezone-aware acceptance SLA.  It measures whether the assigned owner
+    # accepted the RFQ, never whether an offline phone/video response happened.
     buyer_timezone: Optional[str] = Field(default=None, max_length=50)
-    sla_due_at: Optional[datetime] = Field(default=None, index=True)
-    sla_breached: bool = Field(default=False)
-
-    # Lead Quality Score (T9: rule-based v1, explainable)
-    quality_score: int = Field(default=0, index=True)
-    quality_reasons_json: Optional[str] = Field(default=None)
-    # JSON list of human-readable scoring reasons, e.g. ["+15 指定貿易條件 FOB"]
+    acceptance_due_at: Optional[datetime] = Field(default=None, index=True)
+    acceptance_sla_breached: bool = Field(default=False)
 
     # Trade terms (T10: optional form step 2 — strong buyer signals)
     incoterm: Optional[str] = Field(default=None, max_length=10)
@@ -137,4 +130,3 @@ class RFQRequest(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=utcnow_naive)
     updated_at: datetime = Field(default_factory=utcnow_naive)
-    closed_at: Optional[datetime] = Field(default=None)

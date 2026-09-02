@@ -405,10 +405,7 @@ export default function RepliesPage() {
                   {canOperate && selectedHandoff && !["closed", "converted_to_rfq"].includes(selectedHandoff.status) && (
                     <>
                       {detail.reply_externally_url && <Button asChild variant="outline" size="sm">
-                        <a
-                          href={detail.reply_externally_url}
-                          onClick={() => action(`/tracking/sales-handoffs/${selectedHandoff.id}/contacted`)}
-                        >
+                        <a href={detail.reply_externally_url}>
                           <ExternalLink className="mr-2 h-4 w-4" />用外部郵件回覆
                         </a>
                       </Button>}

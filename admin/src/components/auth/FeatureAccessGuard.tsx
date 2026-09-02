@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 
 const FEATURE_ROUTES: { path: string; feature: string }[] = [
   { path: "/dashboard/settings/notifications", feature: "notifications" },
-  { path: "/dashboard/outcomes", feature: "outcomes_dashboard" },
   { path: "/dashboard/pages/new", feature: "advanced_content" },
   { path: "/dashboard/content-performance", feature: "full_tracking" },
   { path: "/dashboard/visitors", feature: "full_tracking" },

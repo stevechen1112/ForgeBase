@@ -10,7 +10,6 @@ from app.models.associations import (
     ProductComparisonLink,
     ProductFAQLink,
 )
-from app.models.attribution import AttributionEvent, AttributionLink
 from app.models.audience_tag import AudienceTag, VisitorTagLink
 from app.models.capability import Capability
 from app.models.certification import Certification
@@ -102,8 +101,6 @@ __all__ = [
     "Application",
     "ApplicationFAQLink",
     "ApplicationRelatedLink",
-    "AttributionEvent",
-    "AttributionLink",
     "AudienceTag",
     "Capability",
     "Certification",

@@ -26,7 +26,7 @@ class RFQEvent(SQLModel, table=True):
     # Event classification
     event_type: str = Field(max_length=40, index=True)
     # "created" | "status_changed" | "assigned" | "priority_changed"
-    # "first_response" | "quote_sent" | "lost_reason_set"
+    # "accepted" | "archived" | "auto_reply_sent" | "verified_response"
     # "notification_sent" | "ai_analysis_run" | "draft_reply_generated"
 
     # Human-readable summary, e.g. "Status changed from new to assigned"

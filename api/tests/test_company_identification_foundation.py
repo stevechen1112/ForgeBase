@@ -49,23 +49,20 @@ def test_growth_feature_flags_are_locked_off_during_foundation_stage() -> None:
             "outreach_send": True,
             "inbound_reply": True,
             "sales_handoff": True,
-            "closed_loop_attribution": True,
         },
     )
 
     resolved = resolve_tenant_features(tenant)
 
     for feature in tenant.feature_overrides:
-        # Batch 7 promotes tenant-scoped closed-loop reporting alongside the
-        # reviewed receive/handoff and human-approved send path. Provider-data
-        # stages remain locked behind their external-quality gates.
+        # Reviewed receive/handoff and human-approved send are available while
+        # provider-data stages remain locked behind external-quality gates.
         assert resolved[feature] is (
             feature
             in {
                 "outreach_send",
                 "inbound_reply",
                 "sales_handoff",
-                "closed_loop_attribution",
             }
         )
 

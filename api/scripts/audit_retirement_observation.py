@@ -30,7 +30,6 @@ PROTECTED_NORTH_STAR = {
     "outreach_send",
     "inbound_reply",
     "sales_handoff",
-    "closed_loop_attribution",
     "rfq_workspace",
 }
 

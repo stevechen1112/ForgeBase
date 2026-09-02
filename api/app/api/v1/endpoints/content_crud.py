@@ -24,6 +24,7 @@ from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1.deps import (
+    RequireFeatureRole,
     optional_current_user,
     require_admin,
     require_content_editor,
@@ -128,6 +129,7 @@ def make_crud_router(
     mutation_guard=require_content_editor,
     create_guard=require_content_editor,
     editor_update_fields: tuple[str, ...] | None = None,
+    delete_guard=require_admin,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=[tag])
 
@@ -452,7 +454,7 @@ def make_crud_router(
     async def delete_item(
         item_id: uuid.UUID,
         session: AsyncSession = Depends(get_session),
-        _user=Depends(require_admin),
+        _user=Depends(delete_guard),
     ):
         item = await session.get(Model, item_id)
         if not item:
@@ -484,6 +486,13 @@ comparisons_router = make_crud_router(
     prefix="/comparisons", tag="comparisons",
     Model=ComparisonTopic, ReadSchema=ComparisonTopicRead,
     CreateSchema=ComparisonTopicCreate, UpdateSchema=ComparisonTopicUpdate,
+    mutation_guard=RequireFeatureRole(
+        "advanced_content", ("admin", "owner", "marketing_manager")
+    ),
+    create_guard=RequireFeatureRole(
+        "advanced_content", ("admin", "owner", "marketing_manager")
+    ),
+    delete_guard=RequireFeatureRole("advanced_content", ("admin", "owner")),
 )
 
 certifications_router = make_crud_router(
@@ -504,6 +513,13 @@ ctas_router = make_crud_router(
     Model=CTA, ReadSchema=CTARead,
     CreateSchema=CTACreate, UpdateSchema=CTAUpdate,
     slug_field="cta_key",
+    mutation_guard=RequireFeatureRole(
+        "dynamic_cta", ("admin", "owner", "marketing_manager")
+    ),
+    create_guard=RequireFeatureRole(
+        "dynamic_cta", ("admin", "owner", "marketing_manager")
+    ),
+    delete_guard=RequireFeatureRole("dynamic_cta", ("admin", "owner")),
 )
 
 pages_router = make_crud_router(

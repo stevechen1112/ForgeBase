@@ -1,4 +1,4 @@
-"""Idempotently seed a rich, clearly synthetic sales showcase tenant.
+"""Idempotently seed a rich, clearly synthetic website-to-RFQ showcase tenant.
 
 The script resolves the tenant through an explicitly named demo user, refuses
 to run unless the tenant name contains ``demo``, and never sends email or
@@ -14,7 +14,6 @@ import json
 import sys
 import uuid
 from datetime import timedelta
-from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -64,12 +63,10 @@ BUYERS = [
 ]
 
 RFQ_STATUSES = (
-    ["new"] * 4
-    + ["assigned"] * 4
-    + ["in_progress"] * 4
-    + ["quoted"] * 5
-    + ["negotiation"] * 7
-    + ["won"] * 4
+    ["new"] * 6
+    + ["assigned"] * 8
+    + ["accepted"] * 10
+    + ["archived"] * 4
 )
 RFQ_DAY_OFFSETS = [0] * 7 + [1] * 5 + [2] * 4 + [3] * 4 + [4] * 3 + [5] * 3 + [6] * 2
 
@@ -156,7 +153,7 @@ async def seed(user_email: str) -> dict[str, Any]:
                         "linkedin",
                     ][index % 4],
                     "source_type": "demo_showcase",
-                    "notes": "[DEMO] Synthetic buyer used only for the ForgeBase sales showcase.",
+                    "notes": "[DEMO] Synthetic buyer used only for the ForgeBase website-to-handoff showcase.",
                     "created_at": now - timedelta(days=21 - index % 12),
                     "updated_at": now - timedelta(hours=index % 8),
                 },
@@ -271,33 +268,26 @@ async def seed(user_email: str) -> dict[str, Any]:
                 days=RFQ_DAY_OFFSETS[index], hours=(index * 3) % 20
             )
             is_new = status == "new"
-            quote_sent_at = (
-                created_at + timedelta(hours=18 + index % 6)
-                if status in {"quoted", "negotiation", "won"}
+            is_assigned = status in {"assigned", "accepted", "archived"}
+            accepted_at = (
+                created_at + timedelta(hours=3 + index % 5)
+                if status in {"accepted", "archived"}
                 else None
             )
-            first_response_at = (
-                None if index < 2 else created_at + timedelta(hours=2 + index % 7)
+            archived_at = (
+                accepted_at + timedelta(days=2 + index % 4)
+                if status == "archived" and accepted_at
+                else None
             )
-            next_follow_up_at = None
-            if index == 0:
-                next_follow_up_at = now - timedelta(hours=3)
-            elif index == 1:
-                next_follow_up_at = now - timedelta(minutes=45)
-            elif index in {2, 3}:
-                next_follow_up_at = now + timedelta(hours=index + 1)
-            elif status in {"assigned", "in_progress", "quoted", "negotiation"}:
-                next_follow_up_at = now + timedelta(days=1 + index % 6)
-
-            quality_score = (
-                [94, 91, 88, 86, 84, 82, 80][index] if index < 7 else 48 + index % 29
+            acknowledgement_sent_at = (
+                created_at + timedelta(minutes=3) if index >= 2 else None
+            )
+            first_verified_response_at = (
+                accepted_at + timedelta(hours=2 + index % 4)
+                if accepted_at and index % 3 != 0
+                else None
             )
             rfq_id = stable_id(tenant.id, "rfq", index)
-            deal_amount = (
-                Decimal(str([28000, 46500, 72000, 93000][index - 24]))
-                if status == "won"
-                else None
-            )
             rfq = await upsert_id(
                 session,
                 RFQRequest,
@@ -326,11 +316,11 @@ async def seed(user_email: str) -> dict[str, Any]:
                             "message": "Synthetic showcase enquiry. No external reply is expected.",
                         }
                     ),
-                    "attribution_json": json.dumps(
+                    "source_context_json": json.dumps(
                         {"campaign": "phase2-demo", "synthetic": True}
                     ),
                     "status": status,
-                    "assigned_to": None if is_new else user.id,
+                    "assigned_to": user.id if is_assigned else None,
                     "priority": "urgent"
                     if index == 0
                     else "high"
@@ -341,29 +331,16 @@ async def seed(user_email: str) -> dict[str, Any]:
                         "/en/quality",
                         "/en/rfq",
                     ][index % 3],
-                    "first_response_at": first_response_at,
-                    "quote_sent_at": quote_sent_at,
-                    "next_follow_up_at": next_follow_up_at,
-                    "won_reason": "[DEMO] Technical evidence and responsive follow-up"
-                    if status == "won"
-                    else None,
-                    "deal_amount": deal_amount,
-                    "deal_currency": "USD",
+                    "acknowledgement_sent_at": acknowledgement_sent_at,
+                    "accepted_at": accepted_at,
+                    "first_verified_response_at": first_verified_response_at,
+                    "archived_at": archived_at,
                     "is_spam": False,
                     "is_test_data": False,
                     "test_run_id": RUN_ID,
                     "buyer_timezone": timezone_name,
-                    "sla_due_at": created_at + timedelta(hours=24),
-                    "sla_breached": index < 2,
-                    "quality_score": quality_score,
-                    "quality_reasons_json": json.dumps(
-                        [
-                            "需求數量與時程完整",
-                            "已查看產品與品質資料",
-                            "公司與聯絡資料齊全",
-                        ],
-                        ensure_ascii=False,
-                    ),
+                    "acceptance_due_at": created_at + timedelta(hours=24),
+                    "acceptance_sla_breached": status == "assigned" and index in {6, 7},
                     "incoterm": ["FOB", "EXW", "CIF"][index % 3],
                     "annual_volume": ["5,000 pcs", "12,000 pcs", "25,000 pcs"][
                         index % 3
@@ -375,9 +352,6 @@ async def seed(user_email: str) -> dict[str, Any]:
                     "target_price": "Demo only",
                     "created_at": created_at,
                     "updated_at": now - timedelta(minutes=index * 2),
-                    "closed_at": now - timedelta(days=index % 3)
-                    if status == "won"
-                    else None,
                 },
             )
             rfqs.append(rfq)
@@ -397,12 +371,33 @@ async def seed(user_email: str) -> dict[str, Any]:
                     "rfq_id": rfq.id,
                     "tenant_id": tenant.id,
                     "actor_id": user.id,
-                    "event_type": "created" if is_new else "status_changed",
-                    "summary": f"[DEMO] {company} enquiry is currently {status}",
+                    "event_type": "created",
+                    "summary": f"[DEMO] 收到 {company} 的網站詢價",
                     "detail": json.dumps({"status": status, "showcase": RUN_ID}),
                     "created_at": created_at,
                 },
             )
+            if acknowledgement_sent_at:
+                await upsert_id(
+                    session, RFQEvent, stable_id(tenant.id, "rfq-ack-event", index),
+                    {"rfq_id": rfq.id, "tenant_id": tenant.id, "actor_id": None,
+                     "event_type": "acknowledgement_sent", "summary": "[DEMO] 已寄送收件確認",
+                     "detail": json.dumps({"showcase": RUN_ID}), "created_at": acknowledgement_sent_at},
+                )
+            if is_assigned:
+                await upsert_id(
+                    session, RFQEvent, stable_id(tenant.id, "rfq-assigned-event", index),
+                    {"rfq_id": rfq.id, "tenant_id": tenant.id, "actor_id": user.id,
+                     "event_type": "assigned", "summary": f"[DEMO] 已分派給 {user.full_name}",
+                     "detail": json.dumps({"showcase": RUN_ID}), "created_at": created_at + timedelta(hours=1)},
+                )
+            if accepted_at:
+                await upsert_id(
+                    session, RFQEvent, stable_id(tenant.id, "rfq-accepted-event", index),
+                    {"rfq_id": rfq.id, "tenant_id": tenant.id, "actor_id": user.id,
+                     "event_type": "accepted", "summary": "[DEMO] 業務已確認接手",
+                     "detail": json.dumps({"showcase": RUN_ID}), "created_at": accepted_at},
+                )
             if index < 6:
                 note_id = stable_id(tenant.id, "rfq-note", index)
                 await upsert_id(
@@ -652,7 +647,8 @@ async def seed(user_email: str) -> dict[str, Any]:
                 "visitors": len(visitors),
                 "contacts": len(contacts),
                 "rfqs": len(rfqs),
-                "won": sum(1 for row in rfqs if row.status == "won"),
+                "accepted": sum(1 for row in rfqs if row.status == "accepted"),
+                "archived": sum(1 for row in rfqs if row.status == "archived"),
                 "draft_pages": len(draft_pages),
                 "segments": len(segment_rows),
                 "reply_templates": len(reply_rows),

@@ -469,11 +469,10 @@ export type PlatformRFQItem = {
   contact_email?: string;
   status: string;
   priority: string;
-  quality_score: number;
   assigned_to?: string;
   assigned_name?: string;
-  sla_due_at?: string;
-  sla_breached: boolean;
+  acceptance_due_at?: string;
+  acceptance_sla_breached: boolean;
   created_at: string;
   is_spam: boolean;
   is_test_data: boolean;
@@ -738,7 +737,6 @@ export type OutreachDraftPolicy = {
 
 export type JourneySnapshot = {
   id: string;
-  intent_facets: Record<string, number>;
   top_products: {
     id: string;
     title: string;
