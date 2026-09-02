@@ -70,6 +70,20 @@ def test_safe_deploy_exports_retired_rfq_fields_before_migration() -> None:
     assert "legacy columns are already absent" in script
 
 
+def test_safe_deploy_reclaims_only_disposable_builder_cache() -> None:
+    script = (ROOT / "deploy/safe-deploy.sh").read_text(encoding="utf-8")
+
+    backup = 'bash "$repo_dir/deploy/backup.sh"'
+    cache_prune = "docker builder prune --all --force"
+    first_build = 'build migrate'
+    assert cache_prune in script
+    assert script.index(backup) < script.index(cache_prune) < script.index(first_build)
+    assert "docker system prune" not in script
+    assert "docker image prune" not in script
+    assert "docker container prune" not in script
+    assert "docker volume prune" not in script
+
+
 def test_reference_site_uses_an_explicit_host_not_a_stale_tenant_slug() -> None:
     compose = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
     reference = compose.split("  web_reference:", 1)[1].split("\n  caddy:", 1)[0]
