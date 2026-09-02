@@ -74,7 +74,7 @@ ForgeBase 不是 CRM，以下能力已退出產品 runtime、API、前台、資�
 
 歷史 migration 保留以維持資料庫演進可追溯；它們不代表現行功能。`0102_realign_rfq_to_handoff_scope` 是不可逆的前向退場 migration，正式套用前必須先備份資料庫並用 `api/scripts/export_retired_rfq_sales_data.py` 匯出將刪除的舊銷售欄位。
 
-完整決策與資料處理原則見 [FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md](FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md)。
+完整決策與資料處理原則見 [FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md](FORGEBASE_PRODUCT_SCOPE_REALIGNMENT_DECISION_2026-09-02.md)。文件的新舊適用順序與 production 證據入口，統一由 [FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md](FORGEBASE_DOCUMENT_AUTHORITY_INDEX_2026-08-28.md) 管理。
 
 ## 專案結構
 
