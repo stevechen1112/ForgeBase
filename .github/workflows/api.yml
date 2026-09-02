@@ -66,11 +66,11 @@ jobs:
         run: python scripts/verify_schema_contract.py
       - name: Run frozen AI and public knowledge quality gate
         run: python api/scripts/run_ai_dialogue_eval.py
-      - name: Run hermetic North Star full-chain gate
+      - name: Run hermetic website-to-RFQ handoff gate
         working-directory: api
         run: >-
-          python scripts/run_north_star_lab.py
-          --artifacts-dir ../artifacts/north-star-lab
+          python scripts/run_website_to_rfq_handoff_lab.py
+          --artifacts-dir ../artifacts/website-to-rfq-handoff
       - name: Run concurrent fault-injection and endurance gate
         working-directory: api
         run: >-
