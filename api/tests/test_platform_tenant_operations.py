@@ -519,9 +519,6 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                               (SELECT COUNT(*) FROM tracking_events WHERE tenant_id = :tenant_id) AS tracking_events,
                               (SELECT COUNT(*) FROM chat_sessions WHERE tenant_id = :tenant_id) AS chat_sessions,
                               (SELECT COUNT(*) FROM rfq_requests WHERE tenant_id = :tenant_id) AS rfq_requests,
-                              (SELECT COUNT(*) FROM segments WHERE tenant_id = :tenant_id) AS segments,
-                              (SELECT COUNT(*) FROM nurture_sequences WHERE tenant_id = :tenant_id) AS nurture_sequences,
-                              (SELECT COUNT(*) FROM nurture_outbox WHERE tenant_id = :tenant_id) AS nurture_outbox,
                               (SELECT COUNT(*) FROM notification_preferences WHERE tenant_id = :tenant_id) AS notification_preferences,
                               (SELECT COUNT(*) FROM notification_log WHERE tenant_id = :tenant_id) AS notification_log
                             """
@@ -542,9 +539,6 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                     "tracking_events": 0,
                     "chat_sessions": 0,
                     "rfq_requests": 0,
-                    "segments": 0,
-                    "nurture_sequences": 0,
-                    "nurture_outbox": 0,
                     "notification_preferences": 0,
                     "notification_log": 0,
                 }
@@ -582,13 +576,8 @@ async def test_tenant_delivery_factory_is_preflighted_atomic_and_replay_safe(
                 async with factory() as session:
                     params = {"tenant_id": str(tenant_id)}
                     for table in (
-                        "nurture_outbox",
-                        "nurture_enrollments",
-                        "nurture_steps",
-                        "nurture_sequences",
                         "notification_preferences",
                         "notification_log",
-                        "segments",
                         "rfq_notes",
                         "rfq_events",
                         "rfq_requests",

@@ -44,19 +44,17 @@ SIDEBAR_ROUTES = [
     "/dashboard/buyers",
     "/dashboard/content",
     "/dashboard/content/locales",
-    "/dashboard/growth",
-    "/dashboard/replies",
+    "/dashboard/workspaces/website-product",
+    "/dashboard/workspaces/visitor-sources",
+    "/dashboard/workspaces/buyer-details",
+    "/dashboard/workspaces/inquiries",
     "/dashboard/support",
     "/dashboard/tasks",
     "/dashboard/rfqs",
     "/dashboard/rfqs/templates",
     "/dashboard/notifications",
     "/dashboard/visitors",
-    "/dashboard/content-performance",
     "/dashboard/chats",
-    "/dashboard/segments",
-    "/dashboard/nurture",
-    "/dashboard/nurture/outbox",
     "/dashboard/products",
     "/dashboard/categories",
     "/dashboard/pages",
@@ -82,8 +80,6 @@ STATIC_SUB_ROUTES = [
     "/dashboard/capabilities/new",
     "/dashboard/ctas/new",
     "/dashboard/comparisons/new",
-    "/dashboard/segments/new",
-    "/dashboard/nurture/new",
 ]
 
 # Words/phrases that should not appear in user-facing UI (case-insensitive word boundary where possible)
@@ -244,8 +240,6 @@ def main() -> int:
         dynamic += collect_dynamic_links(page, "/dashboard/ctas", ["/edit"])
         dynamic += collect_dynamic_links(page, "/dashboard/rfqs", ["/dashboard/rfqs/"])
         dynamic += collect_dynamic_links(page, "/dashboard/chats", ["/dashboard/chats/"])
-        dynamic += collect_dynamic_links(page, "/dashboard/segments", ["/dashboard/segments/"])
-        dynamic += collect_dynamic_links(page, "/dashboard/nurture", ["/dashboard/nurture/"])
         dynamic += collect_dynamic_links(page, "/dashboard/visitors", ["/dashboard/visitors/"])
 
         routes = list(dict.fromkeys(routes + dynamic))

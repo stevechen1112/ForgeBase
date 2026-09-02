@@ -57,7 +57,7 @@ async def recommend_cta_for_visitor(
     )
 
     prompt = f"""
-Recommend the best CTA and nurture workflow for this visitor.
+Recommend the best CTA and website-to-sales handoff next step for this visitor.
 
 ── Visitor Profile ──
 Total Visits: {visitor_profile.get("total_visits", 0)} | Page Views: {visitor_profile.get("total_page_views", 0)}
@@ -82,7 +82,7 @@ Return JSON:
   "reason": "<why this CTA is best for this visitor>",
   "alternative_cta_id": "<uuid or null; second best option>",
   "personalization_hint": "<short text to personalize the CTA, e.g. mention specific product>",
-  "recommended_workflow_type": "<discovery|nurture|re-engagement|sales-handoff>",
+  "recommended_workflow_type": "<discovery|inquiry|sales-handoff>",
   "workflow_rationale": "<why this workflow type fits this visitor>"
 }}"""
 

@@ -574,8 +574,6 @@ async def revise_message(
         contact_candidate_id=original.contact_candidate_id,
         contact_id=original.contact_id,
         journey_snapshot_id=original.journey_snapshot_id,
-        nurture_sequence_id=original.nurture_sequence_id,
-        nurture_step_id=original.nurture_step_id,
         revision_of_id=original.id,
         revision_no=latest + 1,
         purpose=original.purpose,

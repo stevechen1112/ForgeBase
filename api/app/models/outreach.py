@@ -250,12 +250,6 @@ class OutreachMessage(SQLModel, table=True):
     journey_snapshot_id: uuid.UUID = Field(
         foreign_key="journey_snapshots.id", ondelete="CASCADE", index=True
     )
-    nurture_sequence_id: uuid.UUID | None = Field(
-        default=None, foreign_key="nurture_sequences.id", ondelete="SET NULL"
-    )
-    nurture_step_id: uuid.UUID | None = Field(
-        default=None, foreign_key="nurture_steps.id", ondelete="SET NULL"
-    )
     revision_of_id: uuid.UUID | None = Field(
         default=None,
         foreign_key="outreach_messages.id",

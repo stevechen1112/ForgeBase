@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.api.v1.deps import RequireFeature
 from app.api.v1.endpoints import (
     adoption_applications,
     analytics,
@@ -19,7 +18,6 @@ from app.api.v1.endpoints import (
     locale_draft,
     locale_quality,
     notifications,
-    nurture,
     orphans,
     outreach,
     page_meta,
@@ -33,7 +31,6 @@ from app.api.v1.endpoints import (
     relations,
     retirement_audit,
     rfqs,
-    segments,
     site_profile,
     site_domain_routing,
     tenant_domains_admin,
@@ -113,11 +110,7 @@ tracking_router.include_router(rfqs.tracking_router)  # /tracking/rfqs
 tracking_router.include_router(
     inbound_replies.tracking_router
 )  # /tracking/replies, handoffs
-tracking_router.include_router(segments.router)  # /tracking/segments
 tracking_router.include_router(analytics.router)  # /tracking/analytics/*
-tracking_router.include_router(
-    nurture.router, dependencies=[Depends(RequireFeature("nurture_email"))]
-)  # /tracking/nurture/*
 api_router.include_router(tracking_router)
 api_router.include_router(growth_ops.ops_router)  # /ops/task-queue
 

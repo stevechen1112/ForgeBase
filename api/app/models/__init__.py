@@ -47,12 +47,6 @@ from app.models.knowledge import (
     KnowledgeSyncJob,
     RateLimitHit,
 )
-from app.models.nurture import (
-    NurtureEnrollment,
-    NurtureOutbox,
-    NurtureSequence,
-    NurtureStep,
-)
 from app.models.notification_log import NotificationLog
 from app.models.notification_preference import NotificationPreference
 from app.models.operational_job import OperationalJob
@@ -77,7 +71,6 @@ from app.models.rfq_draft import RFQDraft
 from app.models.rfq_event import RFQEvent
 from app.models.rfq_note import RFQNote
 from app.models.rfq_request import RFQProductLink, RFQRequest
-from app.models.segment import Segment
 from app.models.site_build import SiteBuild
 from app.models.site_profile import SiteProfile
 from app.models.tenant import Tenant
@@ -128,10 +121,6 @@ __all__ = [
     "KnowledgeSource",
     "KnowledgeSyncJob",
     "NetworkObservation",
-    "NurtureEnrollment",
-    "NurtureOutbox",
-    "NurtureSequence",
-    "NurtureStep",
     "NotificationLog",
     "NotificationPreference",
     "OperationalJob",
@@ -160,7 +149,6 @@ __all__ = [
     "RetirementUsageEvent",
     "SalesHandoff",
     "SalesHandoffEvent",
-    "Segment",
     "SiteBuild",
     "SiteProfile",
     "Tenant",

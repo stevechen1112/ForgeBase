@@ -305,7 +305,6 @@ def run_verify(client: APIClient):
         ("GET",  "/api/v1/tracking/visitors?limit=5",         "訪客列表"),
         ("GET",  "/api/v1/tracking/contacts?page_size=5",      "聯絡人列表"),
         ("GET",  "/api/v1/tracking/rfqs",                      "RFQ 列表"),
-        ("GET",  "/api/v1/tracking/segments",                  "分群列表"),
         ("GET",  "/api/v1/tracking/analytics/pages?days=30",   "頁面分析 (30天)"),
         ("GET",  "/api/v1/tracking/analytics/products",        "產品分析"),
         ("GET",  "/api/v1/tracking/analytics/applications",    "應用分析"),
@@ -558,7 +557,6 @@ def run_demo(client: APIClient):
         ("/api/v1/tracking/rfqs",                     "RFQ 列表（應有資料）"),
         ("/api/v1/tracking/analytics/pages?days=30",  "頁面分析（應有 page_views）"),
         ("/api/v1/tracking/analytics/products",       "產品分析"),
-        ("/api/v1/tracking/segments",                 "分群列表"),
     ]
 
     for path, label in verify_checks:
@@ -605,10 +603,10 @@ def print_report(client: APIClient, mode: str):
     • {RFQ_SUBMISSIONS} 筆 RFQ 詢價單
 
   {YELLOW}可到後台儀表板查看：{RESET}
-    {client.base}/backend/dashboard/content-performance
-    {client.base}/backend/dashboard/visitors
-    {client.base}/backend/dashboard/rfqs
-    {client.base}/backend/dashboard/segments
+    {client.base}/backend/dashboard/workspaces/website-product
+    {client.base}/backend/dashboard/workspaces/visitor-sources
+    {client.base}/backend/dashboard/workspaces/buyer-details
+    {client.base}/backend/dashboard/workspaces/inquiries
 """)
 
 
