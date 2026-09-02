@@ -24,7 +24,7 @@ const items: WorkspaceItem[] = [
 export default function ContentWorkspacePage() {
   return (
     <WorkspaceHub
-      eyebrow="Website Content"
+      eyebrow="網站內容"
       title="內容中心"
       description="從一處進入商品、頁面、文件、應用、FAQ、認證與廠能內容。多語草稿與審核會沿用同一份來源內容與治理流程。"
       items={items}

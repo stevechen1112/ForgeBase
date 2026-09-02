@@ -1,8 +1,8 @@
 # ForgeBase 產品邊界調整與 CRM 式功能退場決策紀錄
 
 文件日期：2026-09-02  
-文件狀態：**程式調整與本地驗收已完成；尚未部署正式環境**  
-建立基準：Git `main`，HEAD `c7c100e`  
+文件狀態：**已完成、正式部署並通過正式環境唯讀複驗**
+建立基準：Git `main`，HEAD `c7c100e`；正式實作合併 commit `557f7f7`
 適用範圍：ForgeBase 正式產品、管理後台、API、資料模型、Demo 資料、測試、CI/CD、產品文件與銷售展示  
 
 ---
@@ -563,7 +563,7 @@ ForgeBase 應負責網站內及系統可直接觀測的完整流程：
 
 ## 16. 2026-09-02 實作與本地驗收紀錄
 
-- Git branch：`codex/product-scope-realignment`（尚未提交、推送或建立 PR）。
+- Git branch：`codex/product-scope-realignment`；PR `#24`；正式合併 commit `557f7f7`。
 - 資料庫 migration：`0102_realign_rfq_to_handoff_scope`。
 - 前台與後台：移除 CRM 式成交結果、成交／失單、成交金額、報價／議價、下次跟進、智慧買家／詢價品質分數及重複的「我的詢價」入口。
 - API 與資料模型：RFQ 狀態收斂為 `new`、`assigned`、`accepted`、`archived`；收件確認、分派、人工接手、可驗證人工回覆與封存時間分開記錄。
@@ -577,4 +577,20 @@ ForgeBase 應負責網站內及系統可直接觀測的完整流程：
 - 瀏覽器：以實際登入狀態逐頁檢查 8 個工作區及 15 個核心頁面；詢價列表與詳情資料載入正常，桌面與 390×844 手機版皆完成視覺檢查。
 - Code review 修正：公開比較頁原先誤受後台登入依賴而在嚴格建置出現 401，已改為公開已發布內容可讀、寫入仍受功能授權與角色權限雙重限制；另修正首頁錯誤連結、通知殘留文案、搜尋提示、RFQ 欄位名稱與 Dialog 關閉按鈕的中文無障礙標示。
 - 退場防回歸：新增測試，確認成果漏斗、CRM 跟進及無法驗證的 `start`／`contacted` 路由未註冊於 OpenAPI。
-- 正式環境：本批次尚未部署，也未修改、寄信、發布或刪除任何正式資料。部署前必須先執行退場資料唯讀匯出、正式備份、migration gate 與 CI。
+- 正式環境：已於正式備份、退場資料保護匯出、migration gate 與 CI 全數通過後部署；部署與唯讀複驗細節記錄於第 17 節。
+
+---
+
+## 17. 2026-09-02 正式部署與唯讀複驗紀錄
+
+- CI：PR `#24` 的 Release Gate run `33606767342` 全數通過，共 17 個工作項目；包含 API migration、347 項 API 測試、Python lint、Admin RBAC 真實瀏覽器測試、五語公開網站瀏覽器測試、前後台 production build、備份還原、SAST、secret scanning、SBOM、六個正式映像建置與弱點掃描，以及部署拓撲檢查。
+- 正式部署：GitHub Actions Deploy Production run `33607576980` 成功，正式環境部署 commit `557f7f78bf076a3ca91e3e051fb103c222abdd01`。
+- 部署前資料庫備份：`/opt/forgebase/backups/database-20260902T082218Z.sql.gz`；83 張資料表；備份時 migration 為 `0101_removed_feature_cleanup`；SHA-256 `32c71e55367ff3b2d2aa5f8fb205f035908570624e0992f5f35ea2a0047eda93`。
+- 退場資料保護匯出：`/protected-exports/retired-rfq-sales-20260902t082215z.json`；36 筆舊 RFQ 銷售資料；SHA-256 `838335cd4b3f70b1d9271220ce34b015a294233a7d1c146f0569b39f9247e4ce`。
+- 資料庫 migration：正式環境由 `0101_removed_feature_cleanup` 升至 `0102_realign_rfq_to_handoff_scope`；部署後 readiness 的 database、migration、storage、scheduler 均為 `ok`。
+- 回復依據：映像回復 manifest 為 `/opt/forgebase/backups/images-20260902t082215z.manifest`。
+- 正式後台唯讀瀏覽器複驗：登入 `https://pcbrm.tw/backend/dashboard`，逐頁確認 8 個工作區、詢價列表、詢價詳情與核心內容頁；新版工作區介面、Demo 資料、權限說明與網站詢價交接流程皆正常載入。
+- 詢價資料複驗：正式 Demo 租戶有 28 筆 RFQ；列表依 `新進詢價`、`已分派・待接手`、`業務已接手`、`已封存` 呈現；詳情包含買家、需求原文、網站足跡、分派、接手期限、內部備註與系統事件。
+- 退場功能複驗：正式詢價詳情沒有成交、失單、報價中、議價、成交金額、下次跟進、品質分數、智慧買家評分或行銷工作助理欄位；舊 `/backend/dashboard/outcomes` 與 `/backend/dashboard/my-rfqs` 回傳 404；舊 `/backend/dashboard/growth` 只轉址至保留的「郵件回訪」工作區。
+- 公開服務複驗：`https://pcbrm.tw/health/ready` 回傳 200；NorthForge 與 AxisForm 的 `/api/health/assets` 均回傳 200，沒有缺圖、錯誤租戶範圍或無主圖商品。
+- 正式資料安全：上述瀏覽器複驗全程只讀，未新增、修改、寄信、發布或刪除任何正式資料。
