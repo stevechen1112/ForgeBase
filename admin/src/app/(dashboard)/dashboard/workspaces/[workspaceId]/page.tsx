@@ -1,15 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import { TodayWorkQueue } from "@/components/workspaces/TodayWorkQueue";
 import { WorkspaceHub, type WorkspaceItem } from "@/components/workspaces/WorkspaceHub";
-import { apiClient } from "@/lib/api/client";
-import { useAuth } from "@/lib/auth/store";
 import { WORKSPACES } from "@/lib/navigation/workspaces";
 
 const HERO_COPY: Record<string, { title: string; description: string; action: string }> = {
-  today: { title: "今天必須完成的工作", description: "先處理今天到期、逾期與需要決定的工作。", action: "開始處理" },
   prepare: { title: "先讓網站具備承接詢價的條件", description: "產品、技術底稿、網站頁面與多語內容都在同一個工作區。", action: "開始準備" },
   traffic: { title: "從來源看懂訪客如何形成詢價", description: "查看來源、瀏覽與網站對話；不把匿名訊號當成買家身分。", action: "查看訪客" },
   buyers: { title: "買家資料只服務於詢價交接", description: "保留公司、窗口、來源與需求摘要，不建立 CRM 管線。", action: "查看買家" },
@@ -24,29 +21,20 @@ const STAGE_DETAIL: Record<string, { metrics: [string, string, string][]; caseSt
   rfq: { metrics: [["有效詢價","28","近 30 天"],["新詢價待分派","4","1 筆急件"],["資料待補","3","圖面或交期"],["已完成交接","21","由業務後續處理"]], caseStudy: { title: "DEMO-P2-001・Axis Technik", status: "已完成業務交接", facts: [["需求","TW-220・5,000 pcs・德國"],["資料完整度","圖面、公差、材質與交期已確認"],["交接內容","詢價原文、窗口、來源與附件已備齊"]] }, nextStep: "由業務以適合方式回應買家；系統不要求回填電話、報價或成交狀態。" },
 };
 
-type TaskQueue = { total_open: number };
-
 export default function WorkspaceLandingPage() {
   const params = useParams<{ workspaceId: string }>();
-  const { state } = useAuth();
-  const [todayCount, setTodayCount] = useState<number | null>(null);
   const workspace = WORKSPACES.find((item) => item.href.endsWith(`/${params.workspaceId}`));
-  const token = state.status === "authenticated" ? state.accessToken : "";
-
-  useEffect(() => {
-    if (!token || workspace?.id !== "today") return;
-    apiClient.get<TaskQueue>("/ops/task-queue", token)
-      .then((queue) => setTodayCount(queue.total_open))
-      .catch(() => setTodayCount(null));
-  }, [token, workspace?.id]);
 
   if (!workspace) {
     return <div className="rounded-xl border bg-white p-8"><h1>找不到工作區</h1><p className="mt-2 text-slate-600">請從左側選單重新選擇。</p></div>;
   }
 
+  if (workspace.id === "today") {
+    return <TodayWorkQueue />;
+  }
+
   const copy = HERO_COPY[workspace.id];
   const detail = STAGE_DETAIL[workspace.id];
-  const title = workspace.id === "today" && todayCount !== null ? `今天必須完成 ${todayCount} 項` : copy.title;
   const items: WorkspaceItem[] = workspace.items.map((item, index) => ({
     title: item.label,
     description: item.description,
@@ -60,7 +48,7 @@ export default function WorkspaceLandingPage() {
   return (
     <WorkspaceHub
       eyebrow={workspace.label}
-      title={title}
+      title={copy.title}
       description={copy.description}
       items={items}
       primaryAction={{ label: copy.action, href: workspace.items[0].href }}
