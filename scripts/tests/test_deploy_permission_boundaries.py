@@ -75,9 +75,12 @@ def test_safe_deploy_reclaims_only_disposable_builder_cache() -> None:
 
     backup = 'bash "$repo_dir/deploy/backup.sh"'
     cache_prune = "docker builder prune --all --force"
+    database_ready = "exec -T db pg_isready"
     first_build = 'build migrate'
     assert cache_prune in script
-    assert script.index(backup) < script.index(cache_prune) < script.index(first_build)
+    assert script.index(cache_prune) < script.index(database_ready)
+    assert script.index(database_ready) < script.index(backup) < script.index(first_build)
+    assert "Database did not recover before the backup safety gate." in script
     assert "docker system prune" not in script
     assert "docker image prune" not in script
     assert "docker container prune" not in script
