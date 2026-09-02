@@ -36,14 +36,28 @@ for service in "${release_services[@]}"; do
 done
 
 bash "$repo_dir/deploy/backup.sh"
+
+# BuildKit keeps intermediate layers from every release. On the production
+# host those caches are disposable, but over time they can consume the disk
+# while the tagged rollback images and running containers still need to be
+# preserved. Reclaim only builder cache before the first build and between
+# sequential application builds; this does not remove images, containers,
+# volumes, the database backup, or the rollback tags recorded above.
+reclaim_build_cache() {
+  docker builder prune --all --force
+}
+reclaim_build_cache
+
 # This production host has limited memory. Building several Next.js images in
 # parallel can exhaust RAM/swap and make the running site temporarily
 # unreachable. Build one release image at a time, while old containers stay
 # online, and switch only after every image succeeds.
 docker compose --env-file "$repo_dir/.env" -f "$compose_file" build migrate
+reclaim_build_cache
 for service in "${release_services[@]}"; do
   [ "$service" = "api" ] && continue  # migrate and api share forgebase-api
   docker compose --env-file "$repo_dir/.env" -f "$compose_file" build "$service"
+  reclaim_build_cache
 done
 
 # Migration 0102 intentionally removes legacy CRM-style RFQ fields.  Export
