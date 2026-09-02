@@ -217,7 +217,6 @@ async def two_tenants():
                 "pages",
                 "redirects",
                 "ctas",
-                "segments",
                 "faq_items",
                 "comparison_topics",
                 "certifications",
