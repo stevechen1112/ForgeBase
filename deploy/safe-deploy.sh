@@ -35,8 +35,6 @@ for service in "${release_services[@]}"; do
   fi
 done
 
-bash "$repo_dir/deploy/backup.sh"
-
 # BuildKit keeps intermediate layers from every release. On the production
 # host those caches are disposable, but over time they can consume the disk
 # while the tagged rollback images and running containers still need to be
@@ -47,6 +45,26 @@ reclaim_build_cache() {
   docker builder prune --all --force
 }
 reclaim_build_cache
+
+# Disk exhaustion can leave PostgreSQL replaying recovery records while the
+# host comes back. Cache reclamation must happen before the backup attempt, and
+# the deployment must wait for PostgreSQL to accept connections rather than
+# failing immediately or attempting a migration during recovery.
+database_ready=false
+for _attempt in $(seq 1 24); do
+  if docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+    exec -T db pg_isready >/dev/null 2>&1; then
+    database_ready=true
+    break
+  fi
+  sleep 5
+done
+if [ "$database_ready" != true ]; then
+  printf 'Database did not recover before the backup safety gate.\n' >&2
+  exit 1
+fi
+
+bash "$repo_dir/deploy/backup.sh"
 
 # This production host has limited memory. Building several Next.js images in
 # parallel can exhaust RAM/swap and make the running site temporarily
