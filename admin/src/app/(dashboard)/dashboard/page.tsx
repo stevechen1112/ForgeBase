@@ -45,9 +45,9 @@ export default function DashboardPage() {
   const priority = useMemo(() => [...rfqs].filter((item) => item.status === "new" || item.status === "assigned").sort((a, b) => Number(b.acceptance_sla_breached) - Number(a.acceptance_sla_breached) || Number(b.priority === "urgent") - Number(a.priority === "urgent") || new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).slice(0, 5), [rfqs]);
   const stages = [
     ["網站收到", stats?.total ?? 0, "近 30 天有效詢價"],
-    ["已寄確認", stats?.acknowledged ?? 0, "系統可驗證送達"],
+    ["等待分派", stats?.unassigned ?? 0, "等待指定負責業務"],
+    ["已分派", stats?.awaiting_acceptance ?? 0, "等待業務確認接手"],
     ["業務接手", stats?.accepted ?? 0, "已確認內部交接"],
-    ["人工回覆", stats?.verified_responses ?? 0, "僅計可驗證回覆"],
   ] as const;
   const maxStage = Math.max(...stages.map((stage) => stage[1]), 1);
 
@@ -80,10 +80,10 @@ export default function DashboardPage() {
     <Card><CardHeader><CardTitle>近 30 天網站詢價交接</CardTitle><p className="text-sm text-muted-foreground">這不是成交漏斗；只呈現 ForgeBase 能由網站與系統事件確認的階段。</p></CardHeader><CardContent><div className="grid gap-5 md:grid-cols-4">{stages.map(([label, value, note], index) => <div key={label} className="relative"><div className="mb-2 flex items-end justify-between"><span className="text-sm font-semibold">{index + 1}. {label}</span><span className="text-2xl font-bold">{value}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(value ? 8 : 0, Math.round(value / maxStage * 100))}%` }} /></div><p className="mt-2 text-xs text-muted-foreground">{note}</p></div>)}</div></CardContent></Card>
 
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{[
-      ["準備網站與產品", "先維護產品、頁面、多語內容，讓訪客看懂能否合作。", "/dashboard/content"],
-      ["觀察訪客與來源", "查看第一方訪客旅程、來源與客服對話，不假裝知道買家意圖。", "/dashboard/buyers"],
+      ["準備網站與產品", "先維護產品、頁面、多語內容，讓訪客看懂能否合作。", "/dashboard/workspaces/website-product"],
+      ["觀察訪客與來源", "查看第一方訪客旅程、來源與客服對話，不假裝知道買家意圖。", "/dashboard/workspaces/visitor-sources"],
       ["整理買家資料", "保存詢價所需的公司與聯絡窗口，不建立 CRM 管線。", "/dashboard/workspaces/buyer-details"],
-      ["承接網站詢價", "確認表單內容、分派業務並留下可稽核的接手時間。", "/dashboard/rfqs"],
+      ["承接網站詢價", "確認表單內容、分派業務並留下可稽核的接手時間。", "/dashboard/workspaces/inquiries"],
     ].map(([title, body, href]) => <Card key={title}><CardContent className="p-5"><p className="font-semibold">{title}</p><p className="mt-2 min-h-10 text-sm text-muted-foreground">{body}</p><Link href={href} className="mt-4 inline-flex items-center text-sm font-semibold text-primary">前往工作區 <ArrowRight className="ml-1 h-4 w-4" /></Link></CardContent></Card>)}</div>
   </div>;
 }
