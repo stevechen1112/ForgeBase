@@ -56,12 +56,6 @@ ForgeBase 協助傳產外銷團隊經營多語網站，保存第一方訪客脈�
 - 內部備註、垃圾隔離、重複合併、CSV 匯出與完整事件時間軸。
 - 回覆準備 checklist 與範本可協助整理缺少的詢價資料；它不是買家價值評分。
 
-### 經同意的郵件回訪
-
-- Nurture sequence、步驟、人工核准、enrollment、outbox 與寄送合規機制仍保留。
-- 只用於有合法聯絡依據且經核准的回訪，不因網站瀏覽自動陌生開發。
-- 一般外寄、真人 inbound loop 與租戶自動外聯均受全域 kill switch、租戶政策、指定收件範圍與人工核准控制。
-
 ## 明確不包含
 
 ForgeBase 不是 CRM，以下能力已退出產品 runtime、API、前台、資料模型與 Demo 資料：
@@ -71,6 +65,7 @@ ForgeBase 不是 CRM，以下能力已退出產品 runtime、API、前台、資�
 - 成交漏斗、成果儀表板、內容到成交歸因。
 - 智慧買家／詢價品質分數，以及依分數自動通知或寄信。
 - AI 行銷工作助理與通用外部服務連線介面。
+- 郵件培育、回訪名單、寄出前確認與其自動排程；業務接手後不要求在 ForgeBase 回填後續動作。
 
 歷史 migration 保留以維持資料庫演進可追溯；它們不代表現行功能。`0102_realign_rfq_to_handoff_scope` 是不可逆的前向退場 migration，正式套用前必須先備份資料庫並用 `api/scripts/export_retired_rfq_sales_data.py` 匯出將刪除的舊銷售欄位。
 
@@ -186,7 +181,6 @@ python scripts/seed_demo_showcase.py \
 - 自有網域、TLS、canonical、sitemap 與表單允許 hostname 正確。
 - RFQ challenge、Turnstile、速率限制、通知與接手期限設定已確認。
 - 收件確認信預設可關閉；若開啟，寄件網域、內容與收件範圍已核准。
-- 一般外寄與郵件回訪預設 fail closed，未取得合法依據不得啟用。
 - 備份、還原、readiness、migration head、API、Admin 與公開網站 smoke test 通過。
 
 ## 開發原則

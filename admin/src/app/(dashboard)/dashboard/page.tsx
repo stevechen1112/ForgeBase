@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ClipboardList, MailCheck, RefreshCw, UserRoundCheck } from "lucide-react";
+import { ArrowRight, Boxes, CheckCircle2, ClipboardList, MailCheck, RefreshCw, Route, UserRoundCheck, Users } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,13 @@ export default function DashboardPage() {
     <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950 to-teal-800 p-6 text-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-5"><div><p className="text-xs font-semibold tracking-[0.18em] text-cyan-200">今日工作 · 網站詢價交接</p><h1 className="mt-2 text-3xl font-bold">{user?.full_name ? `${user.full_name}，` : ""}先完成 {queue?.total_open ?? 0} 項可確認工作</h1><p className="mt-2 max-w-3xl text-sm text-cyan-50/85">ForgeBase 負責把網站內容、訪客足跡與詢價完整交給業務；成交與線下聯繫留在公司原有作業，不要求業務重複回填。</p></div><div className="flex gap-2"><Button asChild className="bg-white text-slate-900 hover:bg-cyan-50"><Link href="/dashboard/tasks">開始處理 <ArrowRight className="ml-2 h-4 w-4" /></Link></Button><Button variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white" onClick={load} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />更新</Button></div></div></div>
     {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
+    <Card><CardHeader className="pb-3"><CardTitle>外銷網站接單流程</CardTitle><p className="text-sm text-muted-foreground">功能依工作順序完整列出；業務接手後，電話、報價與成交仍在公司既有作業處理。</p></CardHeader><CardContent><div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{[
+      ["1", "網站與產品準備", "產品、技術資料、網站與多語內容", "/dashboard/workspaces/website-product", Boxes],
+      ["2", "訪客與來源觀察", "來源、瀏覽、網站對話與詢價訊號", "/dashboard/workspaces/visitor-sources", Route],
+      ["3", "買家與聯絡資料", "公司、窗口與詢價所需資訊", "/dashboard/workspaces/buyer-details", Users],
+      ["4", "詢價接手與分派", "確認資料並交給正確業務", "/dashboard/workspaces/inquiries", ClipboardList],
+    ].map(([number, title, body, href, Icon]) => { const StageIcon = Icon as typeof Boxes; return <Link key={number as string} href={href as string} className="group rounded-xl border bg-slate-50 p-4 transition hover:border-primary/40 hover:bg-cyan-50/40"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{number as string}</span><StageIcon className="h-5 w-5 text-primary" /></div><p className="mt-4 font-semibold text-slate-900">{title as string}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{body as string}</p></Link>; })}</div></CardContent></Card>
+
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {[
         { label: "今日必須處理", value: queue?.total_open ?? "—", note: "未分派、待接手與待核准", Icon: ClipboardList },
@@ -72,9 +79,10 @@ export default function DashboardPage() {
 
     <Card><CardHeader><CardTitle>近 30 天網站詢價交接</CardTitle><p className="text-sm text-muted-foreground">這不是成交漏斗；只呈現 ForgeBase 能由網站與系統事件確認的階段。</p></CardHeader><CardContent><div className="grid gap-5 md:grid-cols-4">{stages.map(([label, value, note], index) => <div key={label} className="relative"><div className="mb-2 flex items-end justify-between"><span className="text-sm font-semibold">{index + 1}. {label}</span><span className="text-2xl font-bold">{value}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(value ? 8 : 0, Math.round(value / maxStage * 100))}%` }} /></div><p className="mt-2 text-xs text-muted-foreground">{note}</p></div>)}</div></CardContent></Card>
 
-    <div className="grid gap-4 md:grid-cols-3">{[
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{[
       ["準備網站與產品", "先維護產品、頁面、多語內容，讓訪客看懂能否合作。", "/dashboard/content"],
       ["觀察訪客與來源", "查看第一方訪客旅程、來源與客服對話，不假裝知道買家意圖。", "/dashboard/buyers"],
+      ["整理買家資料", "保存詢價所需的公司與聯絡窗口，不建立 CRM 管線。", "/dashboard/workspaces/buyer-details"],
       ["承接網站詢價", "確認表單內容、分派業務並留下可稽核的接手時間。", "/dashboard/rfqs"],
     ].map(([title, body, href]) => <Card key={title}><CardContent className="p-5"><p className="font-semibold">{title}</p><p className="mt-2 min-h-10 text-sm text-muted-foreground">{body}</p><Link href={href} className="mt-4 inline-flex items-center text-sm font-semibold text-primary">前往工作區 <ArrowRight className="ml-1 h-4 w-4" /></Link></CardContent></Card>)}</div>
   </div>;

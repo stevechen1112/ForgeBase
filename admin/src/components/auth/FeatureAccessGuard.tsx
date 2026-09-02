@@ -10,10 +10,7 @@ import { Button } from "@/components/ui/button";
 const FEATURE_ROUTES: { path: string; feature: string }[] = [
   { path: "/dashboard/settings/notifications", feature: "notifications" },
   { path: "/dashboard/pages/new", feature: "advanced_content" },
-  { path: "/dashboard/content-performance", feature: "full_tracking" },
   { path: "/dashboard/visitors", feature: "full_tracking" },
-  { path: "/dashboard/segments", feature: "audience_segments" },
-  { path: "/dashboard/nurture", feature: "nurture_email" },
   { path: "/dashboard/comparisons", feature: "advanced_content" },
   { path: "/dashboard/ctas", feature: "dynamic_cta" },
   { path: "/dashboard/redirects", feature: "seo_redirects" },

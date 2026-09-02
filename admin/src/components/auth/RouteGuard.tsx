@@ -55,10 +55,6 @@ export function RouteGuard({ children, allowedRoles }: Props) {
     "/dashboard/settings/site-profile",
   ];
   const salesHiddenRoutes = [
-    "/dashboard/growth",
-    "/dashboard/content-performance",
-    "/dashboard/segments",
-    "/dashboard/nurture",
     "/dashboard/categories",
     "/dashboard/pages",
     "/dashboard/assets",

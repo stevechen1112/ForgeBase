@@ -79,7 +79,6 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               <DropdownMenuLabel>選擇要新增的內容</DropdownMenuLabel><DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link href="/dashboard/products/new" className="min-h-10 cursor-pointer">新增商品</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link href="/dashboard/pages/new" className="min-h-10 cursor-pointer">新增頁面</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/dashboard/segments/new" className="min-h-10 cursor-pointer">建立跟進名單條件</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -90,7 +89,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
           <DialogHeader className="border-b p-5 pb-4">
             <DialogTitle>搜尋所有後台功能</DialogTitle>
             <DialogDescription>輸入工作目的或功能名稱；未開通功能仍會顯示並清楚標示。</DialogDescription>
-            <div className="relative pt-2"><Search className="absolute left-3 top-[1.35rem] h-5 w-5 text-slate-400" /><Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：詢價、產品、圖片、回訪" className="h-12 pl-11 text-base" /></div>
+            <div className="relative pt-2"><Search className="absolute left-3 top-[1.35rem] h-5 w-5 text-slate-400" /><Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：詢價、產品、圖片、多語內容" className="h-12 pl-11 text-base" /></div>
           </DialogHeader>
           <div className="max-h-[50vh] overflow-y-auto p-3">
             {results.map((item) => {

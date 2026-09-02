@@ -69,17 +69,9 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "label": "進階頁面與比較內容", "group": "網站與內容",
         "description": "新增自訂頁面與產品比較內容。", "configurable": True,
     },
-    "audience_segments": {
-        "label": "買家分群", "group": "買家旅程",
-        "description": "依訪客與行為條件建立可重算分群。", "configurable": True,
-    },
     "dynamic_cta": {
         "label": "動態 CTA", "group": "買家旅程",
         "description": "依關注階段與頁面情境選擇行動按鈕。", "configurable": True,
-    },
-    "nurture_email": {
-        "label": "經同意的郵件回訪", "group": "郵件回訪",
-        "description": "建立回訪安排；寄送保留人工核准、退訂與安全限制。", "configurable": True,
     },
     "seo_redirects": {
         "label": "SEO 網址轉址", "group": "網站與內容",
@@ -167,6 +159,3 @@ def resolve_tenant_features(tenant: Tenant) -> dict[str, bool]:
 
 def tenant_has_feature(tenant: Tenant, feature: str) -> bool:
     return resolve_tenant_features(tenant).get(feature, False)
-
-# Capability key for the Email Nurture Engine (sequence / step / enrollment).
-NURTURE_FEATURE = "nurture_email"

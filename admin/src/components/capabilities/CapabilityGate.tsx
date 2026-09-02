@@ -30,11 +30,8 @@ export const FEATURE_LABELS: Record<string, string> = {
   ai_advisor: "AI 產品顧問",
   chat_handoff: "官網對話",
   notifications: "即時通知",
-  follow_up_reminders: "跟進提醒",
-  nurture_email: "跟進郵件",
   seo_redirects: "舊網址轉址",
   advanced_content: "進階頁面與比較內容",
-  audience_segments: "等待跟進的買家",
   company_identification: "企業辨識與聯絡人候選",
 };
 

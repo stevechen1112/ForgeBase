@@ -1,5 +1,5 @@
 """
-Email Service — send transactional/nurture emails.
+Email Service — send transactional emails.
 2.1.4 Email Nurture Engine.
 Resend is the single supported delivery provider.
 """
@@ -233,28 +233,3 @@ async def send_email(
         reply_to=reply_to,
     )
     return result.success
-
-
-async def send_nurture_step(contact, step) -> bool:
-    """Send one nurture sequence step email to a contact."""
-    result = await send_nurture_step_result(contact, step)
-    return result.success
-
-
-async def send_nurture_step_result(
-    contact,
-    step,
-    *,
-    idempotency_key: str | None = None,
-) -> EmailDeliveryResult:
-    """Send a nurture step while preserving its provider delivery outcome."""
-    return await send_email_result(
-        to=contact.email,
-        subject=step.subject,
-        html_body=step.html_body,
-        text_body=step.text_body,
-        from_name=step.from_name,
-        from_email=step.from_email,
-        idempotency_key=idempotency_key or f"nurture-{step.id}-{contact.id}",
-        recipient_kind="external",
-    )

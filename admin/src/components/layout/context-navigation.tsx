@@ -20,35 +20,30 @@ type RouteGroup = {
 };
 
 const DASHBOARD_HUBS: Record<string, string> = {
-  "/dashboard/content": "內容中心",
-  "/dashboard/growth": "郵件回訪",
+  "/dashboard/content": "網站與產品準備",
 };
 
 const DASHBOARD_GROUPS: RouteGroup[] = [
-  { base: "/dashboard/content/locales", label: "多語內容", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/settings/site-copy", label: "網站文案與圖片", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/products", label: "商品管理", entityLabel: "商品", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/categories", label: "商品分類", entityLabel: "分類", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/pages", label: "頁面管理", entityLabel: "頁面", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/assets", label: "圖片與檔案", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/applications", label: "應用場景", entityLabel: "應用場景", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/faqs", label: "常見問題", entityLabel: "常見問題", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/certifications", label: "認證管理", entityLabel: "認證", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/capabilities", label: "廠能介紹", entityLabel: "廠能", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/comparisons", label: "產品比較", entityLabel: "產品比較", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
-  { base: "/dashboard/redirects", label: "SEO 網址轉址", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
+  { base: "/dashboard/content/locales", label: "多語內容", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/settings/site-copy", label: "網站文案與圖片", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/products", label: "商品管理", entityLabel: "商品", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/categories", label: "商品分類", entityLabel: "分類", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/pages", label: "頁面管理", entityLabel: "頁面", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/assets", label: "圖片與檔案", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/applications", label: "應用場景", entityLabel: "應用場景", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/faqs", label: "常見問題", entityLabel: "常見問題", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/certifications", label: "認證管理", entityLabel: "認證", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/capabilities", label: "廠能介紹", entityLabel: "廠能", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/comparisons", label: "產品比較", entityLabel: "產品比較", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
+  { base: "/dashboard/redirects", label: "SEO 網址轉址", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
 
-  { base: "/dashboard/buyers", label: "訪客與來源總覽", parentHref: "/dashboard/workspaces/customers", parentLabel: "訪客與來源" },
-  { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/buyers", parentLabel: "訪客與來源總覽" },
-  { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "訪客與來源總覽" },
+  { base: "/dashboard/buyers", label: "買家與聯絡人", parentHref: "/dashboard/workspaces/buyer-details", parentLabel: "買家與聯絡資料" },
+  { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/workspaces/visitor-sources", parentLabel: "訪客與來源觀察" },
   { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價承接", childLabels: { templates: "回覆範本" } },
 
-  { base: "/dashboard/content-performance", label: "網站內容與詢價成效", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪" },
-  { base: "/dashboard/segments", label: "回訪名單", entityLabel: "名單條件", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪" },
-  { base: "/dashboard/ctas", label: "行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/nurture", label: "回訪安排", entityLabel: "回訪安排", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪", childLabels: { outbox: "寄出前確認" } },
+  { base: "/dashboard/ctas", label: "行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/workspaces/website-product", parentLabel: "網站與產品準備" },
 
-  { base: "/dashboard/chats", label: "AI 客服對話", entityLabel: "客服對話", parentHref: "/dashboard/workspaces/customers", parentLabel: "訪客與來源" },
+  { base: "/dashboard/chats", label: "網站對話與人工接手", entityLabel: "網站對話", parentHref: "/dashboard/workspaces/visitor-sources", parentLabel: "訪客與來源觀察" },
   { base: "/dashboard/tasks", label: "今日待辦", parentHref: "/dashboard/workspaces/today", parentLabel: "今日工作" },
   { base: "/dashboard/notifications", label: "通知中心", parentHref: "/dashboard/workspaces/today", parentLabel: "今日工作" },
   { base: "/dashboard/users", label: "團隊成員", parentHref: "/dashboard/workspaces/team", parentLabel: "團隊管理" },
