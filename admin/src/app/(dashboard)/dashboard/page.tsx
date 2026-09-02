@@ -1,89 +1,30 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Boxes, CheckCircle2, ClipboardList, MailCheck, RefreshCw, Route, UserRoundCheck, Users } from "lucide-react";
-
+import { ArrowRight, Bell, CheckCircle2, ClipboardList, MailCheck, RefreshCw, UserRoundCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/store";
-
-type Stats = { total: number; open: number; unassigned: number; awaiting_acceptance: number; overdue_acceptance: number; accepted: number; archived: number; acknowledged: number; verified_responses: number; status_counts: Record<string, number> };
-type RFQ = { id: string; rfq_number: string; status: string; priority: string; assigned_to_name: string | null; acceptance_due_at: string | null; acceptance_sla_breached: boolean; created_at: string; contact: { full_name: string; company_name: string | null; country: string | null } | null };
-type TaskQueue = { total_open: number; tasks: { type: string; title: string; count: number }[] };
-
-const STATUS_LABEL: Record<string, string> = { new: "新進詢價", assigned: "已分派", accepted: "已接手", archived: "已封存" };
-function dateTime(value: string | null) { return value ? new Date(value).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"; }
-
-export default function DashboardPage() {
-  const { state } = useAuth();
-  const token = state.status === "authenticated" ? state.accessToken : "";
-  const user = state.status === "authenticated" ? state.user : null;
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [rfqs, setRfqs] = useState<RFQ[]>([]);
-  const [queue, setQueue] = useState<TaskQueue | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    if (!token) return;
-    setLoading(true); setError(null);
-    try {
-      const [statsData, rfqData, queueData] = await Promise.all([
-        apiClient.get<Stats>("/tracking/rfqs/stats?days=30", token),
-        apiClient.get<RFQ[]>("/tracking/rfqs?view=active&limit=12", token),
-        apiClient.get<TaskQueue>("/ops/task-queue", token),
-      ]);
-      setStats(statsData); setRfqs(rfqData); setQueue(queueData);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "營運資料載入失敗"); }
-    finally { setLoading(false); }
-  }, [token]);
-  useEffect(() => { load(); }, [load]);
-
-  const priority = useMemo(() => [...rfqs].filter((item) => item.status === "new" || item.status === "assigned").sort((a, b) => Number(b.acceptance_sla_breached) - Number(a.acceptance_sla_breached) || Number(b.priority === "urgent") - Number(a.priority === "urgent") || new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).slice(0, 5), [rfqs]);
-  const stages = [
-    ["網站收到", stats?.total ?? 0, "近 30 天有效詢價"],
-    ["等待分派", stats?.unassigned ?? 0, "等待指定負責業務"],
-    ["已分派", stats?.awaiting_acceptance ?? 0, "等待業務確認接手"],
-    ["業務接手", stats?.accepted ?? 0, "已確認內部交接"],
-  ] as const;
-  const maxStage = Math.max(...stages.map((stage) => stage[1]), 1);
-
-  return <div className="space-y-5">
-    <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950 to-teal-800 p-6 text-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-5"><div><p className="text-xs font-semibold tracking-[0.18em] text-cyan-200">今日工作 · 網站詢價交接</p><h1 className="mt-2 text-3xl font-bold">{user?.full_name ? `${user.full_name}，` : ""}先完成 {queue?.total_open ?? 0} 項可確認工作</h1><p className="mt-2 max-w-3xl text-sm text-cyan-50/85">ForgeBase 負責把網站內容、訪客足跡與詢價完整交給業務；成交與線下聯繫留在公司原有作業，不要求業務重複回填。</p></div><div className="flex gap-2"><Button asChild className="bg-white text-slate-900 hover:bg-cyan-50"><Link href="/dashboard/tasks">開始處理 <ArrowRight className="ml-2 h-4 w-4" /></Link></Button><Button variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white" onClick={load} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />更新</Button></div></div></div>
-    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-
-    <Card><CardHeader className="pb-3"><CardTitle>外銷網站接單流程</CardTitle><p className="text-sm text-muted-foreground">功能依工作順序完整列出；業務接手後，電話、報價與成交仍在公司既有作業處理。</p></CardHeader><CardContent><div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{[
-      ["1", "網站與產品準備", "產品、技術資料、網站與多語內容", "/dashboard/workspaces/website-product", Boxes],
-      ["2", "訪客與來源觀察", "來源、瀏覽、網站對話與詢價訊號", "/dashboard/workspaces/visitor-sources", Route],
-      ["3", "買家與聯絡資料", "公司、窗口與詢價所需資訊", "/dashboard/workspaces/buyer-details", Users],
-      ["4", "詢價接手與分派", "確認資料並交給正確業務", "/dashboard/workspaces/inquiries", ClipboardList],
-    ].map(([number, title, body, href, Icon]) => { const StageIcon = Icon as typeof Boxes; return <Link key={number as string} href={href as string} className="group rounded-xl border bg-slate-50 p-4 transition hover:border-primary/40 hover:bg-cyan-50/40"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{number as string}</span><StageIcon className="h-5 w-5 text-primary" /></div><p className="mt-4 font-semibold text-slate-900">{title as string}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{body as string}</p></Link>; })}</div></CardContent></Card>
-
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {[
-        { label: "今日必須處理", value: queue?.total_open ?? "—", note: "未分派、待接手與待核准", Icon: ClipboardList },
-        { label: "新詢價未分派", value: stats?.unassigned ?? "—", note: "主管需指定負責業務", Icon: MailCheck },
-        { label: "等待業務接手", value: stats?.awaiting_acceptance ?? "—", note: `${stats?.overdue_acceptance ?? 0} 筆已逾期`, Icon: UserRoundCheck },
-        { label: "近 30 天已接手", value: stats?.accepted ?? "—", note: "完成網站到業務的交接", Icon: CheckCircle2 },
-      ].map(({ label, value, note, Icon }) => <Card key={label}><CardContent className="flex items-start justify-between p-5"><div><p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></div><Icon className="h-5 w-5 text-primary" /></CardContent></Card>)}
-    </div>
-
-    <div className="grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
-      <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle>優先承接的詢價</CardTitle><p className="mt-1 text-sm text-muted-foreground">依接手逾期、緊急程度與收到時間排序</p></div><Button asChild variant="outline" size="sm"><Link href="/dashboard/rfqs">查看全部</Link></Button></CardHeader><CardContent>{priority.length === 0 ? <div className="rounded-lg bg-muted/40 py-10 text-center text-sm text-muted-foreground">目前沒有等待承接的詢價</div> : <div className="space-y-2">{priority.map((rfq) => <Link key={rfq.id} href={`/dashboard/rfqs/${rfq.id}`} className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 transition hover:border-primary/40 hover:bg-muted/30 ${rfq.acceptance_sla_breached ? "border-red-200 bg-red-50/50" : ""}`}><div><p className="font-semibold">{rfq.contact?.company_name || rfq.contact?.full_name || "未填買家公司"}</p><p className="mt-1 text-xs text-muted-foreground">{rfq.rfq_number} · {rfq.contact?.country || "地區未填"} · {STATUS_LABEL[rfq.status]}</p></div><div className="text-right"><p className={rfq.acceptance_sla_breached ? "text-sm font-semibold text-red-600" : "text-sm font-medium"}>{!rfq.assigned_to_name ? "尚未分派" : rfq.acceptance_sla_breached ? "接手已逾期" : `負責：${rfq.assigned_to_name}`}</p><p className="mt-1 text-xs text-muted-foreground">{rfq.acceptance_due_at ? `期限 ${dateTime(rfq.acceptance_due_at)}` : `收到 ${dateTime(rfq.created_at)}`}</p></div></Link>)}</div>}</CardContent></Card>
-
-      <Card><CardHeader><CardTitle>今日工作分類</CardTitle><p className="text-sm text-muted-foreground">只顯示系統能由資料判定的待辦</p></CardHeader><CardContent className="space-y-3">{queue?.tasks.map((task) => <div key={task.type} className="flex items-center justify-between rounded-lg border p-4"><span className="text-sm font-medium">{task.title}</span><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${task.count ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"}`}>{task.count ? `${task.count} 項` : "完成"}</span></div>)}<Button asChild className="w-full"><Link href="/dashboard/tasks">打開今日工作</Link></Button></CardContent></Card>
-    </div>
-
-    <Card><CardHeader><CardTitle>近 30 天網站詢價交接</CardTitle><p className="text-sm text-muted-foreground">這不是成交漏斗；只呈現 ForgeBase 能由網站與系統事件確認的階段。</p></CardHeader><CardContent><div className="grid gap-5 md:grid-cols-4">{stages.map(([label, value, note], index) => <div key={label} className="relative"><div className="mb-2 flex items-end justify-between"><span className="text-sm font-semibold">{index + 1}. {label}</span><span className="text-2xl font-bold">{value}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(value ? 8 : 0, Math.round(value / maxStage * 100))}%` }} /></div><p className="mt-2 text-xs text-muted-foreground">{note}</p></div>)}</div></CardContent></Card>
-
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{[
-      ["準備網站與產品", "先維護產品、頁面、多語內容，讓訪客看懂能否合作。", "/dashboard/workspaces/website-product"],
-      ["觀察訪客與來源", "查看第一方訪客旅程、來源與客服對話，不假裝知道買家意圖。", "/dashboard/workspaces/visitor-sources"],
-      ["整理買家資料", "保存詢價所需的公司與聯絡窗口，不建立 CRM 管線。", "/dashboard/workspaces/buyer-details"],
-      ["承接網站詢價", "確認表單內容、分派業務並留下可稽核的接手時間。", "/dashboard/workspaces/inquiries"],
-    ].map(([title, body, href]) => <Card key={title}><CardContent className="p-5"><p className="font-semibold">{title}</p><p className="mt-2 min-h-10 text-sm text-muted-foreground">{body}</p><Link href={href} className="mt-4 inline-flex items-center text-sm font-semibold text-primary">前往工作區 <ArrowRight className="ml-1 h-4 w-4" /></Link></CardContent></Card>)}</div>
-  </div>;
+type Stats={total:number;unassigned:number;awaiting_acceptance:number;overdue_acceptance:number;accepted:number};
+type RFQ={id:string;rfq_number:string;status:string;priority:string;assigned_to_name:string|null;acceptance_sla_breached:boolean;created_at:string;contact:{full_name:string;company_name:string|null;country:string|null}|null};
+type Queue={total_open:number};
+const FLOW=[["內容準備","網站與產品準備","/dashboard/workspaces/website-product"],["觀察市場","訪客與來源觀察","/dashboard/workspaces/visitor-sources"],["辨識買家","買家與聯絡資料","/dashboard/workspaces/buyer-details"],["交給業務","詢價接手與分派","/dashboard/workspaces/inquiries"]] as const;
+const status:Record<string,string>={new:"新進詢價",assigned:"已分派",accepted:"已接手"};
+export default function DashboardPage(){
+ const {state}=useAuth(),token=state.status==="authenticated"?state.accessToken:"",user=state.status==="authenticated"?state.user:null;
+ const [stats,setStats]=useState<Stats|null>(null),[rfqs,setRfqs]=useState<RFQ[]>([]),[queue,setQueue]=useState<Queue|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState<string|null>(null);
+ const load=useCallback(async()=>{if(!token)return;setLoading(true);setError(null);try{const r=await Promise.all([apiClient.get<Stats>("/tracking/rfqs/stats?days=30",token),apiClient.get<RFQ[]>("/tracking/rfqs?view=active&limit=12",token),apiClient.get<Queue>("/ops/task-queue",token)]);setStats(r[0]);setRfqs(r[1]);setQueue(r[2])}catch(e){setError(e instanceof Error?e.message:"營運資料載入失敗")}finally{setLoading(false)}},[token]);useEffect(()=>{void load()},[load]);
+ const priorities=useMemo(()=>[...rfqs].filter(x=>x.status==="new"||x.status==="assigned").sort((a,b)=>Number(b.acceptance_sla_breached)-Number(a.acceptance_sla_breached)||Number(b.priority==="urgent")-Number(a.priority==="urgent")).slice(0,5),[rfqs]);
+ const todo=queue?.total_open??0,stages=[["有效詢價",stats?.total??0],["等待分派",stats?.unassigned??0],["等待接手",stats?.awaiting_acceptance??0],["完成交接",stats?.accepted??0]] as const,max=Math.max(...stages.map(x=>x[1]),1);
+ const metrics=[["今日必須完成",todo,"未分派、待接手與待核准",ClipboardList,"border-l-[#087b8f]"],["新詢價待分派",stats?.unassigned??"—","主管需指定負責業務",MailCheck,"border-l-amber-500"],["等待業務接手",stats?.awaiting_acceptance??"—",(stats?.overdue_acceptance??0)+" 筆已逾期",UserRoundCheck,"border-l-emerald-700"],["本月完成交接",stats?.accepted??"—","由業務後續處理",CheckCircle2,"border-l-violet-500"]] as const;
+ return <div className="space-y-4 pb-8">
+ <section className="rounded-[14px] bg-gradient-to-r from-[#123b55] to-[#087b8f] px-7 py-6 text-white shadow-[0_10px_28px_rgba(20,38,57,.08)]"><div className="flex flex-wrap items-center justify-between gap-5"><div><p className="text-[13px] font-extrabold text-cyan-100">今天先完成網站承接與詢價交接</p><h1 className="mt-1 text-[29px] font-black">{user?.full_name?user.full_name+"，":""}今天必須完成 {todo} 項</h1><p className="mt-2 text-[15px] text-cyan-50">{stats?.unassigned??0} 筆新詢價等待分派；先讓每筆有效需求交到正確業務手上。</p></div><div className="flex gap-2"><Button asChild className="h-11 bg-white text-[#087b8f] hover:bg-cyan-50"><Link href="/dashboard/tasks">開啟今日待辦 <ArrowRight className="ml-2 h-4 w-4"/></Link></Button><Button variant="outline" size="icon" className="h-11 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white" onClick={load} disabled={loading}><RefreshCw className={loading?"h-4 w-4 animate-spin":"h-4 w-4"}/></Button></div></div></section>
+ {error&&<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+ <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-extrabold text-[#10263b]">外銷網站接單流程地圖</h2><p className="mt-1 text-sm text-slate-500">從網站與產品準備，看見市場訊號，到詢價交給業務；系統在業務接手後不取代 CRM。</p></div><Link href="/dashboard/workspaces/website-product" className="text-sm font-extrabold text-[#087b8f]">查看全部功能 →</Link></div><div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{FLOW.map(([short,title,href],i)=><Link key={title} href={href} className="rounded-[10px] border border-slate-200 bg-slate-50 p-3 hover:border-[#8cbec7] hover:bg-cyan-50"><span className="text-xs font-black text-[#087b8f]">階段 {i+1}</span><p className="mt-1 font-extrabold text-[#10263b]">{short}</p><p className="mt-1 text-xs text-slate-500">{title}</p></Link>)}</div></section>
+ <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(([label,value,note,Icon,accent])=>{const I=Icon;return <article key={label} className={"min-h-32 rounded-[14px] border border-slate-200 border-l-4 bg-white p-5 shadow-sm "+accent}><div className="flex justify-between"><p className="text-sm font-bold text-slate-500">{label}</p><I className="h-5 w-5 text-[#087b8f]"/></div><p className="mt-4 text-4xl font-black text-[#10263b]">{value}</p><p className="mt-2 text-xs text-slate-500">{note}</p></article>})}</section>
+ <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(290px,.75fr)]"><article className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm"><header className="flex items-center justify-between border-b px-5 py-4"><div><h2 className="text-xl font-extrabold text-[#10263b]">主管優先工作</h2><p className="mt-1 text-sm text-slate-500">依時效、緊急程度與收到時間排序</p></div><Link href="/dashboard/rfqs" className="text-sm font-extrabold text-[#087b8f]">查看全部待辦 →</Link></header><div className="px-4 py-1">{priorities.length?priorities.map((r,i)=><Link key={r.id} href={"/dashboard/rfqs/"+r.id} className="grid min-h-[76px] grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 border-b px-1 py-3 last:border-0 hover:bg-slate-50"><span className="grid h-11 w-11 place-items-center rounded-lg bg-amber-50 text-xs font-black text-amber-700">{r.acceptance_sla_breached?"逾期":i===0?"優先":"待辦"}</span><span className="min-w-0"><strong className="block truncate text-[#10263b]">{r.contact?.company_name||r.contact?.full_name||"未填買家公司"}</strong><small className="mt-1 block truncate text-slate-500">{r.contact?.country||"地區未填"}・{r.rfq_number}・{status[r.status]||r.status}</small></span><span className="text-right"><small className={r.acceptance_sla_breached?"font-bold text-red-600":"font-bold text-[#176c58]"}>{!r.assigned_to_name?"詢價分派":r.acceptance_sla_breached?"接手逾期":"詢價接手"}</small><b className="mt-2 block rounded-lg border px-3 py-1.5 text-sm text-[#087b8f]">處理</b></span></Link>):<p className="py-12 text-center text-sm text-slate-500">目前沒有等待承接的詢價</p>}</div></article>
+ <aside className="space-y-4"><article className="rounded-[14px] border bg-white shadow-sm"><header className="border-b px-5 py-4"><h2 className="text-lg font-extrabold text-[#10263b]">本月網站承接</h2><p className="mt-1 text-sm text-slate-500">網站訊號到業務交接</p></header><div className="space-y-3 p-5">{stages.map(([label,value])=><div key={label} className="grid grid-cols-[82px_1fr_28px] items-center gap-2 text-sm"><span>{label}</span><span className="h-2.5 overflow-hidden rounded-full bg-slate-100"><i className="block h-full rounded-full bg-[#247d69]" style={{width:Math.max(value?8:0,Math.round(value/max*100))+"%"}}/></span><b>{value}</b></div>)}<Button asChild variant="outline" className="mt-2 w-full"><Link href="/dashboard/rfqs">查看詢價交接</Link></Button></div></article><article className="rounded-[14px] border bg-white shadow-sm"><header className="border-b px-5 py-4"><h2 className="text-lg font-extrabold text-[#10263b]">建議下一步</h2></header><div className="space-y-3 p-4"><div className="border-l-[3px] border-[#087b8f] bg-[#f5fafb] p-3"><b>上午先完成分派</b><p className="mt-1 text-sm text-slate-500">{stats?.unassigned??0} 筆新詢價等待指定負責人與確認資料。</p></div><div className="border-l-[3px] border-[#087b8f] bg-[#f5fafb] p-3"><b>檢查等待接手案件</b><p className="mt-1 text-sm text-slate-500">{stats?.awaiting_acceptance??0} 筆已分派案件等待業務確認接手。</p></div></div></article></aside></section>
+ <section><div className="mb-3 flex items-end justify-between"><div><h2 className="text-xl font-extrabold text-[#10263b]">今日工作的完整入口</h2><p className="mt-1 text-sm text-slate-500">功能不隱藏；每一項都清楚對應正式系統路由。</p></div><b className="text-sm">3 項</b></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[["01","每日營運總覽","掌握今日優先事項與近 30 天營運概況。","/dashboard"],["02","今日待辦","集中處理已指派、到期與逾期工作。","/dashboard/tasks"],["03","通知中心","查看系統與團隊需要留意的通知。","/dashboard/notifications"]].map(([no,title,body,href])=><Link key={no} href={href} className="min-h-44 rounded-[14px] border bg-white p-5 shadow-sm hover:border-[#8cbec7] hover:bg-[#f7fbfc]"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f6f7] text-sm font-black text-[#087b8f]">{no}</span><h3 className="mt-4 font-extrabold text-[#10263b]">{title}</h3><p className="mt-2 text-sm text-slate-500">{body}</p><span className="mt-4 inline-block text-sm font-extrabold text-[#087b8f]">開啟功能 →</span></Link>)}</div></section>
+ </div>
 }

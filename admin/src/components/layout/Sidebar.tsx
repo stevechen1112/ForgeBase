@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ChevronUp, ExternalLink, Lock, LogOut, Search, Settings, Star } from "lucide-react";
+import { ChevronRight, ChevronUp, ExternalLink, Lock, LogOut, Search, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { API_BASE, buildApiHeaders } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/store";
 import { useCapabilities } from "@/lib/hooks/useCapabilities";
-import { DEFAULT_FAVORITES, WORKSPACES, isRoleAllowed, isRouteActive } from "@/lib/navigation/workspaces";
+import { WORKSPACES, isRoleAllowed, isRouteActive } from "@/lib/navigation/workspaces";
 import { cn } from "@/lib/utils";
 
 function getInitials(email: string) {
@@ -50,7 +50,6 @@ export function Sidebar() {
     () => visibleWorkspaces.flatMap((workspace) => workspace.items.filter((item) => isRoleAllowed(item.roles, role)).map((item) => ({ ...item, workspaceLabel: workspace.label }))),
     [role, visibleWorkspaces],
   );
-  const favorites = DEFAULT_FAVORITES.map((href) => allVisibleItems.find((item) => item.href === href)).filter((item): item is NonNullable<typeof item> => Boolean(item));
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-TW");
   const results = normalizedQuery
     ? allVisibleItems.filter((item) => [item.label, item.description, item.workspaceLabel, ...(item.keywords ?? [])].join(" ").toLocaleLowerCase("zh-TW").includes(normalizedQuery))
@@ -58,7 +57,7 @@ export function Sidebar() {
   const locked = (feature?: string) => Boolean(feature && !isLoading && !hasFeature(feature));
 
   return (
-    <aside className="flex h-screen w-[304px] flex-col bg-[#10243a] text-slate-100">
+    <aside className="flex h-screen w-[272px] flex-col bg-[#10243a] text-slate-100">
       <div className="border-b border-white/10 px-[18px] pb-[13px] pt-[18px]">
         <div className="flex items-center gap-3">
           <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[9px] bg-white text-sm font-black text-[#10243a] shadow-sm">{tenantBrand.mark}</div>
@@ -68,7 +67,7 @@ export function Sidebar() {
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-[13px] text-slate-300">
-          <span>{visibleWorkspaces.length} 個工作入口</span><strong className="text-white">完整功能找得到</strong>
+          <span>完整功能入口</span><strong className="text-white">{allVisibleItems.length} 項全數保留</strong>
         </div>
       </div>
 
@@ -100,20 +99,9 @@ export function Sidebar() {
         ) : (
           <nav aria-label="後台工作區" className="space-y-5">
             <section>
-              <div className="mb-1 flex items-center gap-2 px-3"><Star className="h-3.5 w-3.5 text-amber-300" /><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">我最常用</p></div>
-              <div className="space-y-0.5">
-                {favorites.map((item) => {
-                  const Icon = item.icon;
-                  const active = isRouteActive(pathname, item.href);
-                  return <Link key={item.href} href={item.href} className={cn("flex min-h-11 items-center gap-3 rounded-[7px] px-3 py-2 text-[14px] font-semibold", active ? "bg-white text-[#10243a]" : "text-slate-200 hover:bg-white/10 hover:text-white")}><Icon className="h-[18px] w-[18px] shrink-0" /><span className="truncate">{item.label}</span><Star className="ml-auto h-4 w-4 fill-amber-300 text-amber-300" /></Link>;
-                })}
-              </div>
-            </section>
-
-            <section>
-              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">所有工作區・{visibleWorkspaces.length}</p>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">每天從這裡開始</p>
               <div className="space-y-1">
-                {visibleWorkspaces.map((workspace) => {
+                {visibleWorkspaces.slice(0, 5).map((workspace) => {
                   const Icon = workspace.icon;
                   const active = isRouteActive(pathname, workspace.href) || workspace.items.some((item) => isRouteActive(pathname, item.href));
                   return (
@@ -123,6 +111,16 @@ export function Sidebar() {
                       <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold", active ? "bg-[#e5eff6] text-[#355572]" : "bg-white/10 text-slate-300")}>{workspace.items.filter((item) => isRoleAllowed(item.roles, role)).length}</span>
                     </Link>
                   );
+                })}
+              </div>
+            </section>
+            <section>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">管理工具・固定顯示</p>
+              <div className="space-y-1">
+                {visibleWorkspaces.slice(5).map((workspace) => {
+                  const Icon = workspace.icon;
+                  const active = isRouteActive(pathname, workspace.href) || workspace.items.some((item) => isRouteActive(pathname, item.href));
+                  return <Link key={workspace.id} href={workspace.href} className={cn("group flex min-h-12 items-center gap-3 rounded-[7px] px-3 py-2 text-[15px] font-semibold transition-colors", active ? "bg-white text-[#10243a]" : "text-slate-200 hover:bg-white/5 hover:text-white")}><span className="flex h-7 w-7 shrink-0 items-center justify-center"><Icon className="h-[18px] w-[18px]" /></span><span className="truncate">{workspace.shortLabel}</span><span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold", active ? "bg-[#e5eff6] text-[#355572]" : "bg-white/10 text-slate-300")}>{workspace.items.filter((item) => isRoleAllowed(item.roles, role)).length}</span></Link>;
                 })}
               </div>
             </section>
