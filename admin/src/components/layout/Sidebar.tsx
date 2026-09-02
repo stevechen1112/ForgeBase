@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ChevronUp, ExternalLink, Lock, LogOut, Search, Settings } from "lucide-react";
+import { ChevronRight, ChevronUp, ExternalLink, LayoutDashboard, Lock, LogOut, Search, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -99,8 +99,13 @@ export function Sidebar() {
         ) : (
           <nav aria-label="後台工作區" className="space-y-5">
             <section>
-              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">每天從這裡開始</p>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">總覽與今日工作</p>
               <div className="space-y-1">
+                <Link href="/dashboard" className={cn("group flex min-h-12 items-center gap-3 rounded-[7px] px-3 py-2 text-[15px] font-semibold transition-colors", pathname === "/dashboard" ? "bg-white text-[#10243a]" : "text-slate-200 hover:bg-white/5 hover:text-white")}>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center"><LayoutDashboard className="h-[18px] w-[18px]" /></span>
+                  <span className="truncate">營運總覽</span>
+                  <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold", pathname === "/dashboard" ? "bg-[#e5eff6] text-[#355572]" : "bg-white/10 text-slate-300")}>DASHBOARD</span>
+                </Link>
                 {visibleWorkspaces.slice(0, 5).map((workspace) => {
                   const Icon = workspace.icon;
                   const active = isRouteActive(pathname, workspace.href) || workspace.items.some((item) => isRouteActive(pathname, item.href));

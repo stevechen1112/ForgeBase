@@ -25,6 +25,10 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const canEdit = role === "owner" || role === "admin" || role === "marketing_manager";
   const workspace = findWorkspace(pathname);
   const currentItem = findCurrentItem(pathname);
+  const isOverview = pathname === "/dashboard";
+  const contextLabel = isOverview ? "營運總覽" : currentItem && currentItem.href !== workspace.href ? currentItem.label : workspace.label;
+  const contextHref = isOverview ? "/dashboard" : currentItem && currentItem.href !== workspace.href ? currentItem.href : workspace.href;
+  const contextEyebrow = isOverview ? "Dashboard" : currentItem && currentItem.href !== workspace.href ? workspace.label : "工作區";
 
   const visibleWorkspaces = useMemo(() => WORKSPACES.filter((item) => isRoleAllowed(item.roles, role)), [role]);
   const visibleItems = useMemo(
@@ -61,8 +65,8 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
         <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={onOpenMenu} aria-label="顯示或收合功能選單"><Menu className="h-5 w-5" /></Button>
 
         <nav aria-label="目前位置" className="hidden min-w-[150px] flex-col items-start leading-tight lg:flex">
-          <span className="text-xs text-slate-500">{currentItem && currentItem.href !== workspace.href ? workspace.label : "工作區"}</span>
-          <Link href={currentItem && currentItem.href !== workspace.href ? currentItem.href : workspace.href} className="mt-1 max-w-44 truncate text-[15px] font-bold text-slate-900 hover:text-[#176c89]">{currentItem && currentItem.href !== workspace.href ? currentItem.label : workspace.label}</Link>
+          <span className="text-xs text-slate-500">{contextEyebrow}</span>
+          <Link href={contextHref} className="mt-1 max-w-44 truncate text-[15px] font-bold text-slate-900 hover:text-[#176c89]">{contextLabel}</Link>
         </nav>
 
         <button type="button" onClick={() => setFinderOpen(true)} className="mx-auto flex h-11 min-w-0 max-w-xl flex-1 items-center gap-3 rounded-lg border border-slate-300 bg-slate-50 px-3 text-left text-sm text-slate-500 transition hover:border-[#4aa7be] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#176c89] lg:mx-4">
