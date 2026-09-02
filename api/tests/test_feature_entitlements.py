@@ -22,13 +22,12 @@ def test_single_product_defaults_and_governance_overrides() -> None:
     defaults = resolve_tenant_features(tenant)
     for feature in (
         "full_tracking", "ai_advisor",
-        "chat_handoff", "audience_segments", "nurture_email", "rfq_workspace",
+        "chat_handoff", "rfq_workspace",
         "notifications", "follow_up_reminders",
     ):
         assert defaults[feature] is True
 
-    tenant.feature_overrides = {"nurture_email": False, "advanced_content": False}
-    assert tenant_has_feature(tenant, "nurture_email") is False
+    tenant.feature_overrides = {"advanced_content": False}
     assert tenant_has_feature(tenant, "dynamic_cta") is True
 
     # External dependencies cannot be enabled by a crafted override.
@@ -82,7 +81,7 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         assert any(item["key"] == "company_identification" and not item["configurable"] for item in catalog.json()["features"])
 
         for path in (
-            "/api/v1/tracking/segments", "/api/v1/tracking/visitors",
+            "/api/v1/tracking/visitors",
         ):
             response = await http_client.get(path, headers=_auth(tenant_token))
             assert response.status_code == 200, response.text
@@ -90,8 +89,6 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         enabled = await http_client.put(
             f"/api/v1/admin/tenants/{tenant.id}",
             json={"feature_overrides": {
-                "nurture_email": False,
-                "audience_segments": False,
                 "advanced_content": False,
             }},
             headers=_auth(platform_token),
@@ -102,11 +99,6 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         current = await http_client.get("/api/v1/capabilities/access", headers=_auth(tenant_token))
         assert current.status_code == 200, current.text
         assert current.json()["product"] == "forgebase"
-        assert current.json()["features"]["audience_segments"] is False
-        assert current.json()["features"]["nurture_email"] is False
-
-        disabled_segments = await http_client.get("/api/v1/tracking/segments", headers=_auth(tenant_token))
-        assert disabled_segments.status_code == 403
         notifications = await http_client.get("/api/v1/notifications/history", headers=_auth(tenant_token))
         assert notifications.status_code == 200, notifications.text
         assert {item["event_type"] for item in notifications.json()["data"]} == {
@@ -117,8 +109,8 @@ async def test_platform_operator_can_govern_capabilities_and_api_enforces_overri
         assert preferences.status_code == 200, preferences.text
         assert [item["channel"] for item in preferences.json()["data"]] == ["email"]
 
-        disabled_nurture = await http_client.get("/api/v1/nurture/sequences", headers=_auth(tenant_token))
-        assert disabled_nurture.status_code == 403
+        assert "audience_segments" not in current.json()["features"]
+        assert "nurture_email" not in current.json()["features"]
 
         # Published comparison pages remain publicly readable, while direct
         # mutations still honor the tenant capability and editor role checks.
