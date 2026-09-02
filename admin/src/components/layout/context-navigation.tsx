@@ -87,7 +87,7 @@ export function resolveDashboardTrail(pathname: string): NavigationCrumb[] {
   const hubLabel = DASHBOARD_HUBS[pathname];
   if (hubLabel) {
     return [
-      { href: "/dashboard", label: "每日營運總覽" },
+      { href: "/dashboard", label: "營運總覽" },
       { href: pathname, label: hubLabel },
     ];
   }
@@ -97,12 +97,12 @@ export function resolveDashboardTrail(pathname: string): NavigationCrumb[] {
     .sort((left, right) => right.base.length - left.base.length)[0];
   if (!group) {
     return [
-      { href: "/dashboard", label: "每日營運總覽" },
+      { href: "/dashboard", label: "營運總覽" },
       { href: pathname, label: "目前頁面" },
     ];
   }
 
-  const trail: NavigationCrumb[] = [{ href: "/dashboard", label: "每日營運總覽" }];
+  const trail: NavigationCrumb[] = [{ href: "/dashboard", label: "營運總覽" }];
   if (group.parentHref !== "/dashboard") {
     trail.push({ href: group.parentHref, label: group.parentLabel });
   }
