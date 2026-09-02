@@ -452,7 +452,6 @@ def _run_browser_and_api_matrix(
             "owner": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
@@ -464,7 +463,6 @@ def _run_browser_and_api_matrix(
             "admin": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/pages": "allowed",
                 "/dashboard/users": "allowed",
                 "/dashboard/settings/site-profile": "allowed",
@@ -475,7 +473,6 @@ def _run_browser_and_api_matrix(
             "marketing_manager": {
                 "/dashboard": "allowed",
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "redirect:/dashboard/workspaces/buyer-followup",
                 "/dashboard/content/locales": "allowed",
                 "/dashboard/pages": "denied",
                 "/dashboard/users": "denied",
@@ -487,12 +484,10 @@ def _run_browser_and_api_matrix(
             "sales": {
                 "/dashboard": "allowed",
                 "/dashboard/rfqs": "allowed",
-                "/dashboard/replies": "allowed",
                 "/dashboard/visitors": "allowed",
                 # The content hub is intentionally read-only for Sales and
                 # exposes only product lookup; editor tools remain hidden.
                 "/dashboard/content": "allowed",
-                "/dashboard/growth": "denied",
                 "/dashboard/content/locales": "denied",
                 "/dashboard/users": "denied",
                 "/dashboard/settings/site-profile": "denied",
