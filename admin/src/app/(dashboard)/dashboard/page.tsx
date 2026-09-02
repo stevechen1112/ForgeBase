@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bell, CheckCircle2, ClipboardList, MailCheck, RefreshCw, UserRoundCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, MailCheck, RefreshCw, UserRoundCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api/client";

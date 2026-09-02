@@ -40,6 +40,9 @@ export function WorkspaceHub({
   flowDescription = "「尚未開通」表示這項服務目前沒有啟用，並不代表系統已確認匿名訪客的身分。",
   primaryAction,
   sectionTitle,
+  metrics = [],
+  caseStudy,
+  nextStep,
 }: {
   eyebrow: string;
   title: string;
@@ -50,6 +53,9 @@ export function WorkspaceHub({
   flowDescription?: string;
   primaryAction?: { label: string; href: string };
   sectionTitle?: string;
+  metrics?: [string, string, string][];
+  caseStudy?: { title: string; status: string; facts: [string, string][] };
+  nextStep?: string;
 }) {
   const { state } = useAuth();
   const { hasFeature, isLoading } = useCapabilities();
@@ -60,7 +66,7 @@ export function WorkspaceHub({
   });
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       <header className="relative flex flex-wrap items-center justify-between gap-5 overflow-hidden rounded-xl bg-gradient-to-r from-[#173f5d] to-[#1f7185] p-6 text-white shadow-sm">
         <div className="relative max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">{eyebrow}</p>
@@ -69,6 +75,10 @@ export function WorkspaceHub({
         </div>
         {primaryAction && <Link href={primaryAction.href} className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-[#176c89] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#115d76] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">{primaryAction.label}</Link>}
       </header>
+
+      {metrics.length > 0 && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(([label, value, note], index) => <article key={label} className={cn("min-h-32 rounded-[14px] border border-slate-200 border-l-4 bg-white p-5 shadow-sm", ["border-l-[#087b8f]", "border-l-amber-500", "border-l-emerald-700", "border-l-violet-500"][index % 4])}><p className="text-sm font-bold text-slate-500">{label}</p><p className="mt-3 text-3xl font-black text-[#10263b]">{value}</p><p className="mt-2 text-xs text-slate-500">{note}</p></article>)}</section>}
+
+      {caseStudy && <section className="overflow-hidden rounded-[14px] border border-[#bad8dd] bg-[#f7fbfc] shadow-sm"><header className="flex flex-wrap items-start justify-between gap-3 border-b border-[#cfe3e6] px-5 py-4"><div><p className="text-xs font-black tracking-wide text-[#087b8f]">主案例回放</p><h2 className="mt-1 text-xl font-extrabold text-[#10263b]">{caseStudy.title}</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{caseStudy.status}</span></header><div className="grid md:grid-cols-[1fr_.58fr]"><div className="grid gap-3 p-5 sm:grid-cols-3">{caseStudy.facts.map(([label, value])=><div key={label} className="rounded-lg border border-[#d7e5e8] bg-white p-3"><p className="text-xs font-bold text-slate-500">{label}</p><p className="mt-1 text-sm font-bold leading-6 text-[#10263b]">{value}</p></div>)}</div><div className="bg-[#10263b] p-5 text-white"><p className="text-xs font-bold tracking-wide text-cyan-100">這一階段的下一步</p><p className="mt-2 text-sm leading-6 text-cyan-50">{nextStep}</p></div></div></section>}
 
       {flow && (
         <section aria-label={flowTitle} className="rounded-xl border bg-white p-5 shadow-sm">
