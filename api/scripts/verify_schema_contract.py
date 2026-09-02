@@ -1,4 +1,4 @@
-"""Fail when the migrated database breaks the North Star buyer pipeline contract."""
+"""Fail when the migrated database breaks the website-to-RFQ handoff contract."""
 
 from __future__ import annotations
 
@@ -89,7 +89,12 @@ REQUIRED_COLUMNS: dict[str, set[str]] = {
         "rfq_id",
         "status",
     },
-    "rfq_requests": {"id", "tenant_id", "visitor_id", "status", "quality_score"},
+    "rfq_requests": {
+        "id", "tenant_id", "visitor_id", "status", "assigned_to",
+        "source_context_json",
+        "acknowledgement_sent_at", "accepted_at", "first_verified_response_at",
+        "archived_at", "acceptance_due_at", "acceptance_sla_breached",
+    },
     "operational_jobs": {
         "id",
         "tenant_id",
@@ -164,9 +169,15 @@ FORBIDDEN_COLUMNS = {
     "visitors": {"intent_score", "intent_stage", "intent_explanation", "stage_alert_sent"},
     "tracking_events": {"score_delta"},
     "contacts": {"intent_score_at_creation", "hubspot_contact_id"},
-    "rfq_requests": {"intent_score_at_submit", "intent_snapshot_json", "hubspot_deal_id", "agent_run_id"},
+    "rfq_requests": {
+        "intent_score_at_submit", "intent_snapshot_json", "hubspot_deal_id", "agent_run_id",
+        "quality_score", "quality_reasons_json", "first_response_at", "quote_sent_at",
+        "next_follow_up_at", "lost_reason", "won_reason", "deal_amount", "deal_currency",
+        "sla_due_at", "sla_breached", "closed_at", "attribution_json",
+    },
     "journey_snapshots": {"intent_score", "intent_stage", "intent_facets"},
 }
+FORBIDDEN_TABLES = {"content_strategies", "attribution_links", "attribution_events"}
 
 
 def _expected_heads() -> set[str]:
@@ -207,8 +218,8 @@ async def verify() -> list[str]:
                         failures.append(f"{table}: missing columns {sorted(missing)}")
                     if forbidden := FORBIDDEN_COLUMNS.get(table, set()) & actual:
                         failures.append(f"{table}: retired columns still present {sorted(forbidden)}")
-                if "content_strategies" in table_names:
-                    failures.append("retired table still present: content_strategies")
+                for retired_table in sorted(FORBIDDEN_TABLES & table_names):
+                    failures.append(f"retired table still present: {retired_table}")
 
                 actual_fks: set[tuple[str, str, str, str, str]] = set()
                 for table in REQUIRED_COLUMNS:
@@ -261,11 +272,11 @@ async def verify() -> list[str]:
 async def main() -> int:
     failures = await verify()
     if failures:
-        print("North Star database contract FAILED:")
+        print("Website-to-RFQ database contract FAILED:")
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print("North Star database contract OK")
+    print("Website-to-RFQ database contract OK")
     return 0
 
 

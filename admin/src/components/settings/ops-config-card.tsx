@@ -14,7 +14,7 @@ type OpsConfig = {
   auto_reply_enabled?: boolean;
   auto_reply_signature?: string;
   auto_reply_from_name?: string;
-  sla_response_hours?: number;
+  sla_acceptance_hours?: number;
 };
 
 export function OpsConfigCard() {
@@ -43,7 +43,7 @@ export function OpsConfigCard() {
       setAutoReplyEnabled(data.auto_reply_enabled === true);
       setSignature(data.auto_reply_signature ?? "");
       setFromName(data.auto_reply_from_name ?? "");
-      setSlaHours(data.sla_response_hours != null ? String(data.sla_response_hours) : "4");
+      setSlaHours(data.sla_acceptance_hours != null ? String(data.sla_acceptance_hours) : "4");
     } catch (e) {
       setError(e instanceof Error ? e.message : "載入營運設定失敗");
     } finally {
@@ -72,7 +72,7 @@ export function OpsConfigCard() {
           auto_reply_enabled: autoReplyEnabled,
           auto_reply_signature: signature || null,
           auto_reply_from_name: fromName || null,
-          sla_response_hours: hours,
+          sla_acceptance_hours: hours,
         }),
       });
       if (!res.ok) throw new Error(`儲存失敗 (${res.status})`);
@@ -89,9 +89,9 @@ export function OpsConfigCard() {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>詢價回覆與時限</CardTitle>
+            <CardTitle>詢價收件確認與接手時限</CardTitle>
             <CardDescription>
-              設定收到詢價後是否寄出固定格式的收件確認信，以及希望業務在多久內第一次回覆。
+              設定收到詢價後是否寄出固定格式的收件確認信，以及希望業務在多久內確認接手。
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -118,9 +118,9 @@ export function OpsConfigCard() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="sla_response_hours">首次回應 SLA（營業小時）</Label>
+            <Label htmlFor="sla_acceptance_hours">業務接手 SLA（營業小時）</Label>
             <Input
-              id="sla_response_hours"
+              id="sla_acceptance_hours"
               type="number"
               min={1}
               max={168}
@@ -129,7 +129,7 @@ export function OpsConfigCard() {
               onChange={(e) => setSlaHours(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              新詢價會依買家時區的營業時間計算回覆期限，逾期自動標示並進入「今日待辦」。
+              新詢價會依買家時區的營業時間計算內部接手期限；它不代表已回覆買家，也不推測線下聯繫。
             </p>
           </div>
           <div className="space-y-2">

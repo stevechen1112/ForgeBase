@@ -99,8 +99,8 @@ async def build_platform_data_quality_report(session: AsyncSession) -> dict[str,
             """
             SELECT r.id, r.rfq_number, r.tenant_id, t.name AS tenant_name,
                    r.status, r.is_spam, r.is_test_data, r.test_run_id,
-                   r.sla_breached, r.assigned_to, r.source_page, r.form_data,
-                   r.created_at, r.updated_at, r.closed_at
+                   r.acceptance_sla_breached, r.assigned_to, r.source_page, r.form_data,
+                   r.created_at, r.updated_at, r.archived_at
             FROM rfq_requests r
             LEFT JOIN tenants t ON t.id = r.tenant_id
             ORDER BY r.created_at DESC
@@ -122,7 +122,7 @@ async def build_platform_data_quality_report(session: AsyncSession) -> dict[str,
                 "is_spam": bool(row["is_spam"]),
                 "is_test_data": bool(row["is_test_data"]),
                 "test_run_id_present": bool(row["test_run_id"]),
-                "sla_breached": bool(row["sla_breached"]),
+                "acceptance_sla_breached": bool(row["acceptance_sla_breached"]),
                 "assigned": row["assigned_to"] is not None,
                 "source_page": row["source_page"],
                 "email_domain": email.rsplit("@", 1)[-1] if "@" in email else None,
@@ -132,7 +132,7 @@ async def build_platform_data_quality_report(session: AsyncSession) -> dict[str,
                 "requires_manual_review": bool(signals) and not bool(row["is_test_data"]),
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None,
                 "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
-                "closed_at": row["closed_at"].isoformat() if row["closed_at"] else None,
+                "archived_at": row["archived_at"].isoformat() if row["archived_at"] else None,
             }
         )
 

@@ -153,9 +153,9 @@ async def require_content_editor(current_user: User = Depends(get_current_user))
 async def require_rfq_operator(current_user: User = Depends(get_current_user)) -> User:
     """Allow the people who actually operate sales cases.
 
-    Marketing users retain read-only visibility for attribution, while sales
-    users can update RFQs assigned to them. Endpoint-level ownership checks
-    still enforce the latter boundary.
+    Marketing users retain read-only visibility, while sales users can accept
+    and archive RFQs assigned to them. Endpoint-level ownership checks still
+    enforce the latter boundary.
     """
     if current_user.role not in ("admin", "owner", "sales"):
         raise HTTPException(
@@ -190,6 +190,39 @@ def require_user_tenant_id(current_user: User) -> UUID:
     return current_user.tenant_id
 
 
+async def _require_feature(
+    session: AsyncSession,
+    current_user: User,
+    feature: str,
+) -> User:
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant context required",
+        )
+
+    tenant = await session.get(Tenant, current_user.tenant_id)
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found",
+        )
+
+    from app.services.capability_access import tenant_has_feature
+
+    if not tenant_has_feature(tenant, feature):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "feature_not_available",
+                "feature": feature,
+                "message": f"Feature '{feature}' is not enabled for this tenant.",
+            },
+        )
+
+    return current_user
+
+
 class RequireFeature:
     """Block access when a tenant capability is not operationally enabled."""
 
@@ -201,32 +234,27 @@ class RequireFeature:
         session: AsyncSession = Depends(get_session),
         current_user: User = Depends(get_current_user),
     ) -> User:
-        if not current_user.tenant_id:
+        return await _require_feature(session, current_user, self.feature)
+
+
+class RequireFeatureRole:
+    """Enforce a feature entitlement and an authenticated role on mutations."""
+
+    def __init__(self, feature: str, roles: tuple[str, ...]):
+        self.feature = feature
+        self.roles = roles
+
+    async def __call__(
+        self,
+        session: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.role not in self.roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Tenant context required",
+                detail="Required role is not available",
             )
-
-        tenant = await session.get(Tenant, current_user.tenant_id)
-        if not tenant:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tenant not found",
-            )
-
-        from app.services.capability_access import tenant_has_feature
-
-        if not tenant_has_feature(tenant, self.feature):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "error": "feature_not_available",
-                    "feature": self.feature,
-                    "message": f"Feature '{self.feature}' is not enabled for this tenant.",
-                },
-            )
-
-        return current_user
+        return await _require_feature(session, current_user, self.feature)
 
 
 async def resolve_tenant_id(

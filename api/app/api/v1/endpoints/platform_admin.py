@@ -384,11 +384,10 @@ class PlatformRFQItem(BaseModel):
     contact_email: Optional[str] = None
     status: str
     priority: str
-    quality_score: int
     assigned_to: Optional[str] = None
     assigned_name: Optional[str] = None
-    sla_due_at: Optional[datetime] = None
-    sla_breached: bool
+    acceptance_due_at: Optional[datetime] = None
+    acceptance_sla_breached: bool
     created_at: datetime
     is_spam: bool
     is_test_data: bool
@@ -646,8 +645,8 @@ async def platform_workspace(
                  WHERE status != 'published' OR delivery_stage != 'live') AS delivery_open,
                 (SELECT COUNT(*) FROM rfq_requests
                  WHERE is_test_data = FALSE AND is_spam = FALSE
-                   AND status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation')
-                   AND (assigned_to IS NULL OR sla_breached = TRUE)) AS rfq_attention,
+                   AND status IN ('new', 'assigned')
+                   AND (assigned_to IS NULL OR acceptance_sla_breached = TRUE)) AS rfq_attention,
                 (SELECT COUNT(*) FROM operational_jobs WHERE status = 'failed') AS failed_jobs,
                 (SELECT COUNT(*) FROM tenant_domains
                  WHERE domain_type = 'custom' AND status IN ('pending', 'verifying', 'verified', 'failed')) AS domain_attention
@@ -735,21 +734,21 @@ async def platform_workspace(
     rfq_rows = await session.exec(
         text("""
             SELECT r.id, r.tenant_id, t.name AS tenant_name, r.rfq_number,
-                   r.priority, r.assigned_to, r.sla_breached, r.created_at
+                   r.priority, r.assigned_to, r.acceptance_sla_breached, r.created_at
             FROM rfq_requests r
             LEFT JOIN tenants t ON t.id = r.tenant_id
             WHERE r.is_test_data = FALSE AND r.is_spam = FALSE
-              AND r.status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation')
-              AND (r.assigned_to IS NULL OR r.sla_breached = TRUE)
-            ORDER BY r.sla_breached DESC, r.created_at ASC
+              AND r.status IN ('new', 'assigned')
+              AND (r.assigned_to IS NULL OR r.acceptance_sla_breached = TRUE)
+            ORDER BY r.acceptance_sla_breached DESC, r.created_at ASC
             LIMIT 10
         """)
     )
     for row in rfq_rows.mappings().all():
-        attention = "已逾期" if row["sla_breached"] else "尚未指派負責業務"
+        attention = "接手已逾期" if row["acceptance_sla_breached"] else "尚未指派負責業務"
         items.append(PlatformWorkItem(
             kind="rfq",
-            severity="urgent" if row["sla_breached"] else "high",
+            severity="urgent" if row["acceptance_sla_breached"] else "high",
             title=f"RFQ {row['rfq_number']}：{row['tenant_name'] or '未歸屬租戶'}",
             detail=attention,
             tenant_id=str(row["tenant_id"]) if row["tenant_id"] else None,
@@ -874,8 +873,8 @@ async def platform_rfqs(
         filters.append("r.is_test_data = FALSE")
     if needs_attention:
         filters.append(
-            "(r.status IN ('new', 'assigned', 'in_progress', 'quoted', 'negotiation') "
-            "AND (r.assigned_to IS NULL OR r.sla_breached = TRUE))"
+            "(r.status IN ('new', 'assigned') "
+            "AND (r.assigned_to IS NULL OR r.acceptance_sla_breached = TRUE))"
         )
     if search:
         filters.append("(r.rfq_number ILIKE :search OR t.name ILIKE :search OR r.form_data ILIKE :search)")
@@ -888,14 +887,14 @@ async def platform_rfqs(
     rows = await session.exec(
         text(f"""
             SELECT r.id, r.tenant_id, t.name AS tenant_name, r.rfq_number, r.form_data,
-                   r.status, r.priority, r.quality_score, r.assigned_to,
-                   assignee.full_name AS assigned_name, r.sla_due_at, r.sla_breached,
+                   r.status, r.priority, r.assigned_to,
+                   assignee.full_name AS assigned_name, r.acceptance_due_at, r.acceptance_sla_breached,
                    r.created_at, r.is_spam, r.is_test_data
             FROM rfq_requests r
             LEFT JOIN tenants t ON t.id = r.tenant_id
             LEFT JOIN users assignee ON assignee.id = r.assigned_to
             {where_sql}
-            ORDER BY r.sla_breached DESC, r.created_at DESC
+            ORDER BY r.acceptance_sla_breached DESC, r.created_at DESC
             LIMIT :limit
         """),
         params=params,
@@ -911,10 +910,10 @@ async def platform_rfqs(
             tenant_name=row["tenant_name"] or "未歸屬租戶", rfq_number=row["rfq_number"],
             contact_name=form_data.get("full_name") or form_data.get("contact_name"),
             contact_email=form_data.get("email") or form_data.get("contact_email"),
-            status=row["status"], priority=row["priority"], quality_score=int(row["quality_score"] or 0),
+            status=row["status"], priority=row["priority"],
             assigned_to=str(row["assigned_to"]) if row["assigned_to"] else None,
-            assigned_name=row["assigned_name"], sla_due_at=row["sla_due_at"],
-            sla_breached=bool(row["sla_breached"]), created_at=row["created_at"],
+            assigned_name=row["assigned_name"], acceptance_due_at=row["acceptance_due_at"],
+            acceptance_sla_breached=bool(row["acceptance_sla_breached"]), created_at=row["created_at"],
             is_spam=bool(row["is_spam"]), is_test_data=bool(row["is_test_data"]),
         ))
     return PlatformRFQList(data=data, total=int((count_row.mappings().first() or {}).get("total", 0)))

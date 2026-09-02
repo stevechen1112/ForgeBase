@@ -12,8 +12,7 @@ import io
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from datetime import timedelta
 from typing import List, Optional
 from uuid import UUID as _UUID
 
@@ -46,7 +45,6 @@ from app.models.rfq_request import RFQProductLink, RFQRequest
 from app.models.tracking_event import TrackingEvent
 from app.models.user import User
 from app.models.visitor import Visitor
-from app.services.attribution import derive_attribution, record_outcome_change
 from app.services.email_governance import is_authorized_synthetic_request
 from app.services.form_challenge import (
     issue_form_challenge,
@@ -86,12 +84,16 @@ async def _log_rfq_event(
         detail=detail,
     ))
 
-VALID_STATUSES = {"new", "assigned", "in_progress", "quoted", "negotiation", "won", "lost", "expired"}
+VALID_STATUSES = {"new", "assigned", "accepted", "archived"}
 VALID_PRIORITIES = {"normal", "high", "urgent"}
 
 HOW_DID_YOU_FIND_VALUES = {
     "google", "linkedin", "trade_show", "referral",
     "direct", "email", "other",
+}
+VALID_INCOTERMS = {
+    "EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP",
+    "FAS", "FOB", "CFR", "CIF",
 }
 
 
@@ -171,7 +173,6 @@ class RFQFormIn(BaseModel):
     @classmethod
     def validate_incoterm(cls, v):
         if v:
-            from app.services.rfq_quality import VALID_INCOTERMS
             v = v.strip().upper()
             if v not in VALID_INCOTERMS:
                 raise ValueError("Invalid incoterm value")
@@ -360,13 +361,9 @@ async def submit_rfq(
     else:
         priority = "normal"
 
-    # ── 4b. Lead Quality Score (T9, rule-based v1) ────────────────────
-    from app.services.rfq_quality import score_rfq_quality
-    quality_score, quality_reasons = score_rfq_quality(body)
-
-    # ── 4c. Timezone-aware first-response SLA (T7) ────────────────────
+    # ── 4b. Timezone-aware handoff acceptance SLA ────────────────────
     from app.services.sla import compute_sla
-    buyer_tz, sla_due = await compute_sla(body.country, tenant_id, now, db)
+    buyer_tz, acceptance_due = await compute_sla(body.country, tenant_id, now, db)
 
     # ── 5. Create RFQRequest ─────────────────────────────────────────
     form_snapshot = json.dumps({
@@ -390,7 +387,7 @@ async def submit_rfq(
         "target_price": body.target_price,
     }, ensure_ascii=False)
 
-    attribution_snapshot = None
+    source_context_snapshot = None
     if visitor:
         latest_event = (
             await db.exec(
@@ -404,7 +401,7 @@ async def submit_rfq(
             )
         ).first()
         if latest_event:
-            attribution_snapshot = json.dumps({
+            source_context_snapshot = json.dumps({
                 "traffic_source": latest_event.traffic_source,
                 "campaign_id": latest_event.campaign_id,
                 "referrer": latest_event.referrer,
@@ -419,17 +416,15 @@ async def submit_rfq(
         visitor_id=visitor_id_parsed,
         application_id=application_id_parsed,
         form_data=form_snapshot,
-        attribution_json=attribution_snapshot,
+        source_context_json=source_context_snapshot,
         source_chat_session_id=draft.chat_session_id if draft else None,
         source_draft_id=draft.id if draft else None,
         status="new",
         priority=priority,
         source_page=body.source_page,
         tenant_id=tenant_id,
-        quality_score=quality_score,
-        quality_reasons_json=json.dumps(quality_reasons, ensure_ascii=False),
         buyer_timezone=buyer_tz,
-        sla_due_at=sla_due,
+        acceptance_due_at=acceptance_due,
         incoterm=body.incoterm,
         annual_volume=body.annual_volume[:100] if body.annual_volume else None,
         is_trial_order=body.is_trial_order,
@@ -454,13 +449,8 @@ async def submit_rfq(
         db, rfq.id, "created",
         f"RFQ {rfq_number} submitted by {body.email}",
         tenant_id=tenant_id,
-        detail=json.dumps({
-            "priority": priority,
-            "quality_score": quality_score,
-        }),
+        detail=json.dumps({"priority": priority}),
     )
-    if tenant_id:
-        await derive_attribution(db, rfq=rfq)
 
     from app.services.operational_outbox import enqueue_operational_job
     common_payload = {"rfq_id": str(rfq.id)}
@@ -488,10 +478,6 @@ async def submit_rfq(
 
 class StatusUpdate(BaseModel):
     status: str
-    reason: Optional[str] = PydanticField(default=None, max_length=500)
-    deal_amount: Optional[Decimal] = PydanticField(default=None, gt=0, max_digits=14, decimal_places=2)
-    deal_currency: str = PydanticField(default="USD", min_length=3, max_length=3)
-    # §6.3：won/lost 必須填成交／流失原因，供業務成效分析。
 
     @field_validator("status")
     @classmethod
@@ -499,15 +485,6 @@ class StatusUpdate(BaseModel):
         if v not in VALID_STATUSES:
             raise ValueError(f"status must be one of {VALID_STATUSES}")
         return v
-
-    @field_validator("deal_currency")
-    @classmethod
-    def validate_currency(cls, v):
-        currency = v.strip().upper()
-        if not currency.isalpha():
-            raise ValueError("deal_currency must be a three-letter currency code")
-        return currency
-
 
 class AssignUpdate(BaseModel):
     assigned_to: uuid.UUID
@@ -519,13 +496,6 @@ class AssignUpdate(BaseModel):
         if v and v not in VALID_PRIORITIES:
             raise ValueError(f"priority must be one of {VALID_PRIORITIES}")
         return v
-
-
-class FollowUpUpdate(BaseModel):
-    first_response_at: Optional[datetime] = None
-    quote_sent_at: Optional[datetime] = None
-    next_follow_up_at: Optional[datetime] = None
-    lost_reason: Optional[str] = PydanticField(default=None, max_length=500)
 
 
 class NoteCreate(BaseModel):
@@ -607,9 +577,7 @@ async def list_rfqs(
     assigned_to: Optional[uuid.UUID] = None,
     search: Optional[str] = None,
     view: str = "active",
-    follow_up: Optional[str] = None,
-    sort: Optional[str] = None,
-    sla: Optional[str] = None,
+    attention: Optional[str] = None,
     include_test_data: bool = False,
     limit: int = 50,
     offset: int = 0,
@@ -619,18 +587,10 @@ async def list_rfqs(
     tenant_id = _ensure_tenant_scope(_)
     if view not in {"active", "spam", "merged", "all"}:
         raise HTTPException(status_code=422, detail="Invalid RFQ view")
-    if follow_up not in {None, "due", "overdue", "today", "upcoming"}:
-        raise HTTPException(status_code=422, detail="Invalid follow-up filter")
+    if attention not in {None, "unassigned", "awaiting_acceptance", "acceptance_overdue"}:
+        raise HTTPException(status_code=422, detail="Invalid attention filter")
 
-    # sort="quality": 品質 × SLA — 最該先回的單在最上面（T11）
-    if sort == "quality":
-        q = select(RFQRequest).order_by(
-            col(RFQRequest.quality_score).desc(),
-            col(RFQRequest.sla_due_at).asc(),
-            col(RFQRequest.created_at).asc(),
-        )
-    else:
-        q = select(RFQRequest).order_by(col(RFQRequest.created_at).desc())
+    q = select(RFQRequest).order_by(col(RFQRequest.created_at).desc())
     q = q.where(RFQRequest.tenant_id == tenant_id)
     if not include_test_data:
         q = q.where(RFQRequest.is_test_data.is_(False))
@@ -656,34 +616,16 @@ async def list_rfqs(
             | col(Contact.company_name).ilike(term)
             | col(Contact.email).ilike(term)
         )
-    now = utcnow_naive()
-    if follow_up == "due":
+    if attention == "unassigned":
+        q = q.where(RFQRequest.status == "new", RFQRequest.assigned_to.is_(None))
+    elif attention == "awaiting_acceptance":
+        q = q.where(RFQRequest.status == "assigned", RFQRequest.accepted_at.is_(None))
+    elif attention == "acceptance_overdue":
         q = q.where(
-            RFQRequest.next_follow_up_at.is_not(None),
-            col(RFQRequest.next_follow_up_at) < now + timedelta(days=1),
-            RFQRequest.status.not_in(("won", "lost", "expired")),
-        )
-    elif follow_up == "overdue":
-        q = q.where(
-            RFQRequest.next_follow_up_at.is_not(None),
-            col(RFQRequest.next_follow_up_at) < now,
-            RFQRequest.status.not_in(("won", "lost", "expired")),
-        )
-    elif follow_up == "today":
-        q = q.where(
-            RFQRequest.next_follow_up_at.is_not(None),
-            col(RFQRequest.next_follow_up_at) >= now,
-            col(RFQRequest.next_follow_up_at) < now + timedelta(days=1),
-        )
-    elif follow_up == "upcoming":
-        q = q.where(RFQRequest.next_follow_up_at.is_not(None), col(RFQRequest.next_follow_up_at) >= now)
-    if sla == "breached":
-        q = q.where(RFQRequest.sla_breached == True)
-    elif sla == "due_soon":
-        q = q.where(
-            RFQRequest.first_response_at.is_(None),
-            RFQRequest.sla_due_at.is_not(None),
-            col(RFQRequest.sla_due_at) <= utcnow_naive() + timedelta(hours=1),
+            RFQRequest.status == "assigned",
+            RFQRequest.accepted_at.is_(None),
+            RFQRequest.acceptance_sla_breached.is_(True)
+            | (col(RFQRequest.acceptance_due_at) < utcnow_naive()),
         )
     q = q.offset(offset).limit(min(limit, 200))
     rows = (await db.exec(q)).all()
@@ -716,8 +658,8 @@ async def export_rfqs_csv(
     writer = csv.writer(buffer)
     writer.writerow([
         "RFQ Number", "Company", "Contact", "Email", "Country", "Status",
-        "Owner", "Next Follow-up", "Deal Amount", "Currency", "Source Page",
-        "Created At", "Spam", "Merged Into",
+        "Owner", "Accepted At", "Acknowledgement Sent At", "Verified Response At",
+        "Archived At", "Source Page", "Created At", "Spam", "Merged Into",
     ])
     for rfq, row in zip(rows, enriched):
         contact = row.get("contact") or {}
@@ -729,9 +671,10 @@ async def export_rfqs_csv(
             contact.get("country") or "",
             rfq.status,
             row.get("assigned_to_name") or "",
-            isoformat_utc(rfq.next_follow_up_at) or "",
-            str(rfq.deal_amount) if rfq.deal_amount is not None else "",
-            rfq.deal_currency,
+            isoformat_utc(rfq.accepted_at) or "",
+            isoformat_utc(rfq.acknowledgement_sent_at) or "",
+            isoformat_utc(rfq.first_verified_response_at) or "",
+            isoformat_utc(rfq.archived_at) or "",
             rfq.source_page or "",
             rfq.created_at.isoformat(),
             "yes" if rfq.is_spam else "no",
@@ -752,7 +695,7 @@ async def rfq_stats(
     db: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ):
-    """首回時間與 SLA 達成率統計（T8）。
+    """RFQ intake and handoff acceptance statistics.
 
     注意：必須定義在 /rfqs/{rfq_id} 之前，否則 "stats" 會被當成 UUID 解析。
     """
@@ -775,46 +718,49 @@ async def rfq_stats(
         # created_at（timestamptz）與 SLA 欄位（timestamp）時區感知不一致，統一歸一
         return dt.replace(tzinfo=None) if dt is not None and dt.tzinfo is not None else dt
 
-    now = utcnow_naive()
     total = len(rows)
 
-    responded_hours = sorted(
-        (_naive(r.first_response_at) - _naive(r.created_at)).total_seconds() / 3600.0
+    accepted_hours = sorted(
+        (_naive(r.accepted_at) - _naive(r.created_at)).total_seconds() / 3600.0
         for r in rows
-        if r.first_response_at
+        if r.accepted_at
     )
-    avg_first_response_hours = (
-        round(sum(responded_hours) / len(responded_hours), 2) if responded_hours else None
+    avg_acceptance_hours = (
+        round(sum(accepted_hours) / len(accepted_hours), 2) if accepted_hours else None
     )
-    median_first_response_hours = (
-        round(responded_hours[len(responded_hours) // 2], 2) if responded_hours else None
+    median_acceptance_hours = (
+        round(accepted_hours[len(accepted_hours) // 2], 2) if accepted_hours else None
     )
 
-    sla_applicable = [r for r in rows if r.sla_due_at]
-    sla_met = sum(
-        1 for r in sla_applicable
-        if r.first_response_at and _naive(r.first_response_at) <= _naive(r.sla_due_at)
+    acceptance_sla_applicable = [r for r in rows if r.acceptance_due_at]
+    acceptance_sla_met = sum(
+        1 for r in acceptance_sla_applicable
+        if r.accepted_at and _naive(r.accepted_at) <= _naive(r.acceptance_due_at)
     )
-    sla_breached = sum(
-        1 for r in sla_applicable
-        if (r.first_response_at and _naive(r.first_response_at) > _naive(r.sla_due_at))
-        or (not r.first_response_at and _naive(r.sla_due_at) < now)
+    now = utcnow_naive()
+    def _acceptance_breached(row: RFQRequest) -> bool:
+        if row.acceptance_sla_breached:
+            return True
+        due = _naive(row.acceptance_due_at)
+        accepted = _naive(row.accepted_at)
+        return bool(due and ((accepted and accepted > due) or (not accepted and due < now)))
+
+    acceptance_sla_breached = sum(1 for r in acceptance_sla_applicable if _acceptance_breached(r))
+    acceptance_sla_pending = (
+        len(acceptance_sla_applicable) - acceptance_sla_met - acceptance_sla_breached
     )
-    sla_pending = len(sla_applicable) - sla_met - sla_breached
-    sla_closed = sla_met + sla_breached
-    sla_achievement_rate = round(sla_met / sla_closed, 4) if sla_closed else None
+    acceptance_sla_closed = acceptance_sla_met + acceptance_sla_breached
+    acceptance_sla_rate = (
+        round(acceptance_sla_met / acceptance_sla_closed, 4)
+        if acceptance_sla_closed else None
+    )
 
     status_counts: dict[str, int] = {}
     for r in rows:
         status_counts[r.status] = status_counts.get(r.status, 0) + 1
 
-    quality_scores = [r.quality_score for r in rows if r.quality_score]
-    avg_quality = round(sum(quality_scores) / len(quality_scores), 1) if quality_scores else None
-
-    # 追蹤視圖指標（原 /dashboard/conversions 獨有，2026-08 併入 RFQ 列表頁）
-    # 「待處理」採全量未結案單計算，不受上方 30 天窗口限制：
-    # 超過 30 天未報價／未指派的單仍是營運待辦，不應從摘要消失。
-    _OPEN_STATUSES = ("new", "assigned", "in_progress")
+    # Intake work uses the full open queue, not only the reporting window.
+    _OPEN_STATUSES = ("new", "assigned")
     q_open = select(RFQRequest).where(
         col(RFQRequest.status).in_(_OPEN_STATUSES),
         RFQRequest.tenant_id == tenant_id,
@@ -827,35 +773,31 @@ async def rfq_stats(
     elif assigned_to:
         q_open = q_open.where(RFQRequest.assigned_to == assigned_to)
     open_rows = (await db.exec(q_open)).all()
-    unquoted = len(open_rows)
+    open_count = len(open_rows)
     unassigned = sum(1 for r in open_rows if not r.assigned_to)
-    overdue_follow_ups = sum(
-        1 for r in open_rows if r.next_follow_up_at and _naive(r.next_follow_up_at) < now
-    )
-    due_today = sum(
-        1 for r in open_rows
-        if r.next_follow_up_at
-        and _naive(r.next_follow_up_at) >= now
-        and _naive(r.next_follow_up_at) < now + timedelta(days=1)
-    )
+    awaiting_acceptance = sum(1 for r in open_rows if r.status == "assigned" and not r.accepted_at)
+    overdue_acceptance = sum(1 for r in open_rows if _acceptance_breached(r))
+    acknowledged = sum(1 for r in rows if r.acknowledgement_sent_at)
+    verified_responses = sum(1 for r in rows if r.first_verified_response_at)
 
     return {
         "period_days": days,
-        "total_rfqs": total,
-        "responded": len(responded_hours),
-        "avg_first_response_hours": avg_first_response_hours,
-        "median_first_response_hours": median_first_response_hours,
-        "sla_applicable": len(sla_applicable),
-        "sla_met": sla_met,
-        "sla_breached": sla_breached,
-        "sla_pending": sla_pending,
-        "sla_achievement_rate": sla_achievement_rate,
-        "avg_quality_score": avg_quality,
+        "total": total,
+        "accepted": len(accepted_hours),
+        "avg_acceptance_hours": avg_acceptance_hours,
+        "median_acceptance_hours": median_acceptance_hours,
+        "acceptance_sla_applicable": len(acceptance_sla_applicable),
+        "acceptance_sla_met": acceptance_sla_met,
+        "acceptance_sla_breached": acceptance_sla_breached,
+        "acceptance_sla_pending": acceptance_sla_pending,
+        "acceptance_sla_rate": acceptance_sla_rate,
         "status_counts": status_counts,
-        "unquoted": unquoted,
+        "open": open_count,
         "unassigned": unassigned,
-        "overdue_follow_ups": overdue_follow_ups,
-        "due_today": due_today,
+        "awaiting_acceptance": awaiting_acceptance,
+        "overdue_acceptance": overdue_acceptance,
+        "acknowledged": acknowledged,
+        "verified_responses": verified_responses,
     }
 
 
@@ -1086,57 +1028,36 @@ async def update_rfq_status(
         raise HTTPException(status_code=404, detail="RFQ not found")
     _ensure_rfq_access(r, _, write=True)
     old_status = r.status
-
-    # §6.3：成交／流失原因必填
-    if body.status in ("won", "lost"):
-        existing_reason = r.won_reason if body.status == "won" else r.lost_reason
-        if not (body.reason and body.reason.strip()) and not existing_reason:
-            raise HTTPException(
-                status_code=422,
-                detail=f"reason is required when closing as {body.status}（成交／流失原因為必填，供漏斗分析）",
-            )
-        if body.reason and body.reason.strip():
-            if body.status == "won":
-                r.won_reason = body.reason.strip()
-            else:
-                r.lost_reason = body.reason.strip()
-    if body.status == "won" and body.deal_amount is not None:
-        r.deal_amount = body.deal_amount
-        r.deal_currency = body.deal_currency
+    now = utcnow_naive()
+    if body.status == "assigned" and not r.assigned_to:
+        raise HTTPException(status_code=422, detail="Assign an owner before setting assigned status")
+    if body.status == "accepted" and not r.assigned_to:
+        raise HTTPException(status_code=422, detail="Assign an owner before accepting the RFQ")
 
     r.status = body.status
-    r.updated_at = utcnow_naive()
-    # 僅真實跟進狀態記首回；lost/expired 不算回覆（避免 SLA／首回統計偏樂觀）
-    _FIRST_RESPONSE_STATUSES = {"assigned", "in_progress", "quoted", "negotiation"}
-    if old_status == "new" and body.status in _FIRST_RESPONSE_STATUSES and r.first_response_at is None:
-        r.first_response_at = r.updated_at
-    if body.status == "quoted" and r.quote_sent_at is None:
-        # 漏斗量測：首次進入 quoted 視為報價送出（§6.3）
-        r.quote_sent_at = r.updated_at
-    if body.status in ("won", "lost", "expired"):
-        r.closed_at = r.updated_at
-        r.next_follow_up_at = None
-    else:
-        r.closed_at = None
+    r.updated_at = now
+    if body.status == "accepted":
+        r.accepted_at = r.accepted_at or now
+        r.archived_at = None
+        r.acceptance_sla_breached = bool(
+            r.acceptance_due_at and r.accepted_at > r.acceptance_due_at
+        )
+    elif body.status == "archived":
+        r.archived_at = r.archived_at or now
+    elif body.status in {"new", "assigned"}:
+        r.accepted_at = None
+        r.archived_at = None
     db.add(r)
 
+    event_type = "accepted" if body.status == "accepted" else "archived" if body.status == "archived" else "status_changed"
     await _log_rfq_event(
-        db, r.id, "status_changed",
+        db, r.id, event_type,
         f"Status changed from {old_status} to {body.status}",
         actor_id=_.id, tenant_id=r.tenant_id,
         detail=json.dumps({
             "old_status": old_status,
             "new_status": body.status,
-            "reason": body.reason.strip() if body.reason else None,
-            "deal_amount": str(r.deal_amount) if body.status == "won" and r.deal_amount is not None else None,
-            "deal_currency": r.deal_currency if body.status == "won" else None,
         }),
-    )
-    await record_outcome_change(
-        db,
-        rfq=r,
-        previous_status=old_status,
-        actor_user_id=_.id,
     )
     await db.commit()
 
@@ -1155,8 +1076,8 @@ async def update_rfq_status(
     return {
         "rfq_number": r.rfq_number,
         "status": r.status,
-        "deal_amount": str(r.deal_amount) if r.deal_amount is not None else None,
-        "deal_currency": r.deal_currency,
+        "accepted_at": isoformat_utc(r.accepted_at),
+        "archived_at": isoformat_utc(r.archived_at),
     }
 
 
@@ -1183,8 +1104,9 @@ async def assign_rfq(
     r.assigned_to = body.assigned_to
     if body.priority:
         r.priority = body.priority
-    if r.status == "new":
-        r.status = "assigned"
+    r.status = "assigned"
+    r.accepted_at = None
+    r.archived_at = None
     r.assigned_notified_at = None  # reset so notification fires again
     r.updated_at = utcnow_naive()
     db.add(r)
@@ -1214,51 +1136,6 @@ async def assign_rfq(
         logger.warning("rfq assign notification failed", exc_info=True)
 
     return {"rfq_number": r.rfq_number, "status": r.status, "assigned_to": str(r.assigned_to)}
-
-
-@tracking_router.put("/rfqs/{rfq_id}/follow-up")
-async def update_rfq_follow_up(
-    rfq_id: uuid.UUID,
-    body: FollowUpUpdate,
-    db: AsyncSession = Depends(get_session),
-    _: User = Depends(require_rfq_operator),
-):
-    r = await db.get(RFQRequest, rfq_id)
-    if not r:
-        raise HTTPException(status_code=404, detail="RFQ not found")
-    _ensure_rfq_access(r, _, write=True)
-    updates = body.model_dump(exclude_unset=True)
-    for field, value in updates.items():
-        # Columns are TIMESTAMP WITHOUT TIME ZONE; strip tzinfo from aware inputs.
-        if isinstance(value, datetime) and value.tzinfo is not None:
-            value = value.astimezone(timezone.utc).replace(tzinfo=None)
-            updates[field] = value
-        setattr(r, field, value)
-    r.updated_at = utcnow_naive()
-    db.add(r)
-
-    for field in updates:
-        event_type_map = {
-            "first_response_at": "first_response",
-            "quote_sent_at": "quote_sent",
-            "next_follow_up_at": "next_follow_up_set",
-            "lost_reason": "lost_reason_set",
-        }
-        etype = event_type_map.get(field, field)
-        val = updates[field]
-        await _log_rfq_event(
-            db, r.id, etype,
-            (
-                "已設定下次跟進時間" if field == "next_follow_up_at"
-                else f"{field} recorded" if field != "lost_reason"
-                else f"Lost reason: {val}"
-            ),
-            actor_id=_.id, tenant_id=r.tenant_id,
-            detail=json.dumps({"field": field, "value": val.isoformat() if isinstance(val, datetime) else val}),
-        )
-
-    await db.commit()
-    return {"rfq_number": r.rfq_number, "updated_fields": list(updates.keys())}
 
 
 @tracking_router.get("/rfqs/{rfq_id}/notes")
@@ -1442,16 +1319,16 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         "visitor_id": str(r.visitor_id) if r.visitor_id else None,
         "status": r.status,
         "priority": r.priority,
-        "quality_score": r.quality_score,
-        "sla_due_at": r.sla_due_at.isoformat() if r.sla_due_at else None,
-        "sla_breached": r.sla_breached,
+        "acceptance_due_at": isoformat_utc(r.acceptance_due_at),
+        "acceptance_sla_breached": r.acceptance_sla_breached,
         "assigned_to": str(r.assigned_to) if r.assigned_to else None,
-        "next_follow_up_at": isoformat_utc(r.next_follow_up_at),
+        "acknowledgement_sent_at": isoformat_utc(r.acknowledgement_sent_at),
+        "accepted_at": isoformat_utc(r.accepted_at),
+        "first_verified_response_at": isoformat_utc(r.first_verified_response_at),
+        "archived_at": isoformat_utc(r.archived_at),
         "is_spam": r.is_spam,
         "spam_reason": r.spam_reason,
         "merged_into_rfq_id": str(r.merged_into_rfq_id) if r.merged_into_rfq_id else None,
-        "deal_amount": str(r.deal_amount) if r.deal_amount is not None else None,
-        "deal_currency": r.deal_currency,
         "source_page": r.source_page,
         "created_at": r.created_at.isoformat(),
     }
@@ -1460,9 +1337,6 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         base["source_page"] = r.source_page
         base["buyer_timezone"] = r.buyer_timezone
         base["form_data"] = json.loads(r.form_data) if r.form_data else None
-        base["quality_reasons"] = (
-            json.loads(r.quality_reasons_json) if r.quality_reasons_json else []
-        )
         base["incoterm"] = r.incoterm
         base["annual_volume"] = r.annual_volume
         base["is_trial_order"] = r.is_trial_order
@@ -1479,16 +1353,7 @@ def _rfq_row(r: RFQRequest, full: bool = False) -> dict:
         base["escalation_48h_sent_at"] = (
             r.escalation_48h_sent_at.isoformat() if r.escalation_48h_sent_at else None
         )
-        base["closed_at"] = r.closed_at.isoformat() if r.closed_at else None
         base["updated_at"] = r.updated_at.isoformat()
-        base["first_response_at"] = (
-            r.first_response_at.isoformat() if r.first_response_at else None
-        )
-        base["quote_sent_at"] = (
-            r.quote_sent_at.isoformat() if r.quote_sent_at else None
-        )
-        base["lost_reason"] = r.lost_reason
-        base["won_reason"] = r.won_reason
         base["spam_marked_at"] = r.spam_marked_at.isoformat() if r.spam_marked_at else None
         base["merged_at"] = r.merged_at.isoformat() if r.merged_at else None
     return base

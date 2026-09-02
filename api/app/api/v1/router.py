@@ -14,7 +14,6 @@ from app.api.v1.endpoints import (
     contact_enrichment,
     contacts,
     events,
-    growth_attribution,
     growth_ops,
     inbound_replies,
     locale_draft,
@@ -84,14 +83,10 @@ content_router.include_router(categories.router)
 content_router.include_router(products.router)
 content_router.include_router(applications_router)
 content_router.include_router(faqs_router)
-content_router.include_router(
-    comparisons_router, dependencies=[Depends(RequireFeature("advanced_content"))]
-)
+content_router.include_router(comparisons_router)
 content_router.include_router(certifications_router)
 content_router.include_router(capabilities_router)
-content_router.include_router(
-    ctas_router, dependencies=[Depends(RequireFeature("dynamic_cta"))]
-)
+content_router.include_router(ctas_router)
 content_router.include_router(pages_router)
 content_router.include_router(page_meta.router)
 content_router.include_router(assets.router)
@@ -120,14 +115,6 @@ tracking_router.include_router(
 )  # /tracking/replies, handoffs
 tracking_router.include_router(segments.router)  # /tracking/segments
 tracking_router.include_router(analytics.router)  # /tracking/analytics/*
-tracking_router.include_router(
-    growth_ops.tracking_router,
-    dependencies=[Depends(RequireFeature("outcomes_dashboard"))],
-)  # /tracking/outcomes, /tracking/funnel
-tracking_router.include_router(
-    growth_attribution.router,
-    dependencies=[Depends(RequireFeature("closed_loop_attribution"))],
-)  # /tracking/growth-funnel, /tracking/rfqs/{id}/attribution
 tracking_router.include_router(
     nurture.router, dependencies=[Depends(RequireFeature("nurture_email"))]
 )  # /tracking/nurture/*

@@ -146,7 +146,7 @@ class SalesHandoff(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("inbound_reply_id", name="uq_sales_handoff_inbound_reply"),
         CheckConstraint(
-            "status IN ('new', 'accepted', 'in_progress', 'converted_to_rfq', 'closed')",
+            "status IN ('new', 'accepted', 'converted_to_rfq', 'closed')",
             name="ck_sales_handoff_status",
         ),
         CheckConstraint(
@@ -189,8 +189,8 @@ class SalesHandoffEvent(SQLModel, table=True):
     __tablename__ = "sales_handoff_events"
     __table_args__ = (
         CheckConstraint(
-            "action IN ('created', 'accepted', 'assigned', 'started', 'linked_rfq', "
-            "'created_rfq', 'contacted', 'marked_wrong_person', 'unsubscribed', 'closed')",
+            "action IN ('created', 'accepted', 'assigned', 'linked_rfq', "
+            "'created_rfq', 'marked_wrong_person', 'unsubscribed', 'closed')",
             name="ck_sales_handoff_event_action",
         ),
     )

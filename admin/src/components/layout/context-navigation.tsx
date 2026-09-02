@@ -21,7 +21,7 @@ type RouteGroup = {
 
 const DASHBOARD_HUBS: Record<string, string> = {
   "/dashboard/content": "內容中心",
-  "/dashboard/growth": "潛在買家跟進",
+  "/dashboard/growth": "郵件回訪",
 };
 
 const DASHBOARD_GROUPS: RouteGroup[] = [
@@ -38,18 +38,17 @@ const DASHBOARD_GROUPS: RouteGroup[] = [
   { base: "/dashboard/comparisons", label: "產品比較", entityLabel: "產品比較", parentHref: "/dashboard/workspaces/product-content", parentLabel: "產品內容" },
   { base: "/dashboard/redirects", label: "SEO 網址轉址", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
 
-  { base: "/dashboard/outcomes", label: "商機漏斗與成果", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價與跟進" },
-  { base: "/dashboard/buyers", label: "買家管線", parentHref: "/dashboard/workspaces/customers", parentLabel: "買家與客戶" },
-  { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
-  { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "買家管線" },
-  { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價與跟進", childLabels: { my: "我的詢價案件", templates: "回覆範本" } },
+  { base: "/dashboard/buyers", label: "訪客與來源總覽", parentHref: "/dashboard/workspaces/customers", parentLabel: "訪客與來源" },
+  { base: "/dashboard/visitors", label: "訪客旅程", entityLabel: "訪客旅程", parentHref: "/dashboard/buyers", parentLabel: "訪客與來源總覽" },
+  { base: "/dashboard/replies", label: "買家回信與接手", parentHref: "/dashboard/buyers", parentLabel: "訪客與來源總覽" },
+  { base: "/dashboard/rfqs", label: "詢價案件", entityLabel: "詢價案件", parentHref: "/dashboard/workspaces/inquiries", parentLabel: "詢價承接", childLabels: { templates: "回覆範本" } },
 
-  { base: "/dashboard/content-performance", label: "內容成效", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "潛在買家跟進" },
-  { base: "/dashboard/segments", label: "等待跟進的買家", entityLabel: "買家條件", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "潛在買家跟進" },
+  { base: "/dashboard/content-performance", label: "網站內容與詢價成效", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪" },
+  { base: "/dashboard/segments", label: "回訪名單", entityLabel: "名單條件", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪" },
   { base: "/dashboard/ctas", label: "行動按鈕", entityLabel: "行動按鈕", parentHref: "/dashboard/workspaces/website-content", parentLabel: "網站內容" },
-  { base: "/dashboard/nurture", label: "跟進內容與時間", entityLabel: "跟進流程", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "潛在買家跟進", childLabels: { outbox: "寄出前確認" } },
+  { base: "/dashboard/nurture", label: "回訪安排", entityLabel: "回訪安排", parentHref: "/dashboard/workspaces/buyer-followup", parentLabel: "郵件回訪", childLabels: { outbox: "寄出前確認" } },
 
-  { base: "/dashboard/chats", label: "AI 客服對話", entityLabel: "客服對話", parentHref: "/dashboard/workspaces/customers", parentLabel: "買家與客戶" },
+  { base: "/dashboard/chats", label: "AI 客服對話", entityLabel: "客服對話", parentHref: "/dashboard/workspaces/customers", parentLabel: "訪客與來源" },
   { base: "/dashboard/tasks", label: "今日待辦", parentHref: "/dashboard/workspaces/today", parentLabel: "今日工作" },
   { base: "/dashboard/notifications", label: "通知中心", parentHref: "/dashboard/workspaces/today", parentLabel: "今日工作" },
   { base: "/dashboard/users", label: "團隊成員", parentHref: "/dashboard/workspaces/team", parentLabel: "團隊管理" },

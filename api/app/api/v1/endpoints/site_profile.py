@@ -108,7 +108,7 @@ async def update_site_profile(
     return profile
 
 
-# ── Ops Config（RFQ 自動回覆 / SLA）──────────────────────────────────────────
+# ── Ops Config（RFQ 收件確認 / 接手 SLA）────────────────────────────────────
 # 獨立於公開 GET /site-profile，避免 LINE token 等營運設定外洩。
 # 實際生效的 key 見 app/services/rfq_auto_reply.py 與 app/services/sla.py。
 
@@ -116,7 +116,7 @@ _KNOWN_OPS_KEYS = {
     "auto_reply_enabled",
     "auto_reply_signature",
     "auto_reply_from_name",
-    "sla_response_hours",
+    "sla_acceptance_hours",
 }
 
 
@@ -124,7 +124,7 @@ class OpsConfigUpdate(BaseModel):
     auto_reply_enabled: Optional[bool] = None
     auto_reply_signature: Optional[str] = Field(default=None, max_length=200)
     auto_reply_from_name: Optional[str] = Field(default=None, max_length=120)
-    sla_response_hours: Optional[float] = Field(default=None, gt=0, le=168)
+    sla_acceptance_hours: Optional[float] = Field(default=None, gt=0, le=168)
 
 
 def _load_ops_dict(profile: SiteProfile) -> dict:

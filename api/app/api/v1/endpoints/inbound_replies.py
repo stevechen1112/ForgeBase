@@ -37,7 +37,6 @@ from app.models.platform_audit_log import PlatformAuditLog
 from app.models.rfq_request import RFQRequest
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.services.attribution import derive_attribution
 from app.services.inbound_reply.jobs import ensure_inbound_reply_fetch
 from app.services.inbound_reply.rfq_conversion import create_rfq_from_handoff
 from app.services.inbound_reply.routing import inbound_route_configured
@@ -712,51 +711,6 @@ async def assign_handoff(
     return _handoff_dict(row)
 
 
-@tracking_router.post("/sales-handoffs/{handoff_id}/start")
-async def start_handoff(
-    handoff_id: uuid.UUID,
-    body: HandoffActionIn,
-    db: DbDep,
-    current_user: OperatorDep,
-):
-    tenant_id = require_user_tenant_id(current_user)
-    row = await _tenant_handoff(db, handoff_id, tenant_id, lock=True)
-    _assert_owner_or_manager(row, current_user)
-    if row.status in {"converted_to_rfq", "closed"}:
-        raise HTTPException(status_code=409, detail="Handoff is already closed")
-    now = utcnow_naive()
-    row.owner_id = row.owner_id or current_user.id
-    row.accepted_at = row.accepted_at or now
-    row.status = "in_progress"
-    row.updated_at = now
-    db.add(row)
-    _event(db, row, current_user, "started", note=body.note)
-    await db.commit()
-    return _handoff_dict(row)
-
-
-@tracking_router.post("/sales-handoffs/{handoff_id}/contacted")
-async def mark_contacted(
-    handoff_id: uuid.UUID,
-    body: HandoffActionIn,
-    db: DbDep,
-    current_user: OperatorDep,
-):
-    tenant_id = require_user_tenant_id(current_user)
-    row = await _tenant_handoff(db, handoff_id, tenant_id, lock=True)
-    _assert_owner_or_manager(row, current_user)
-    if row.status in {"converted_to_rfq", "closed"}:
-        raise HTTPException(status_code=409, detail="Handoff is already closed")
-    row.status = "in_progress"
-    row.owner_id = row.owner_id or current_user.id
-    row.accepted_at = row.accepted_at or utcnow_naive()
-    row.updated_at = utcnow_naive()
-    db.add(row)
-    _event(db, row, current_user, "contacted", note=body.note)
-    await db.commit()
-    return _handoff_dict(row)
-
-
 async def _finish_handoff(
     db: AsyncSession,
     row: SalesHandoff,
@@ -871,12 +825,6 @@ async def _link_handoff_rfq(
     db.add(row)
     _event(db, row, actor, action, note=note, detail={"rfq_id": rfq.id})
     await db.flush()
-    await derive_attribution(
-        db,
-        rfq=rfq,
-        source_action=action,
-        actor_user_id=actor.id,
-    )
     return {**_handoff_dict(row), "rfq_number": rfq.rfq_number}
 
 

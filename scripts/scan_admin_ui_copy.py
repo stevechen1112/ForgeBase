@@ -48,8 +48,6 @@ SIDEBAR_ROUTES = [
     "/dashboard/replies",
     "/dashboard/support",
     "/dashboard/tasks",
-    "/dashboard/outcomes",
-    "/dashboard/rfqs/my",
     "/dashboard/rfqs",
     "/dashboard/rfqs/templates",
     "/dashboard/notifications",

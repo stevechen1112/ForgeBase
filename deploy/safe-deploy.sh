@@ -45,6 +45,32 @@ for service in "${release_services[@]}"; do
   [ "$service" = "api" ] && continue  # migrate and api share forgebase-api
   docker compose --env-file "$repo_dir/.env" -f "$compose_file" build "$service"
 done
+
+# Migration 0102 intentionally removes legacy CRM-style RFQ fields.  Export
+# them once, after the new API image exists but before any migration runs.  The
+# full database backup above remains the recovery source; this protected JSON
+# is a review-friendly audit export and is never uploaded as a CI artifact.
+db_user="$(docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+  exec -T db sh -c 'printf "%s" "$POSTGRES_USER"')"
+db_name="$(docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+  exec -T db sh -c 'printf "%s" "$POSTGRES_DB"')"
+legacy_rfq_sales_schema="$(docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+  exec -T db psql -At -U "$db_user" -d "$db_name" -c \
+  "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='rfq_requests' AND column_name='quality_score');")"
+if [ "$legacy_rfq_sales_schema" = "t" ]; then
+  retired_export_name="retired-rfq-sales-$stamp.json"
+  docker compose --env-file "$repo_dir/.env" -f "$compose_file" \
+    run --rm --no-deps --user 0:0 \
+    -v "$repo_dir/backups:/protected-exports" api \
+    python scripts/export_retired_rfq_sales_data.py \
+      --output "/protected-exports/$retired_export_name"
+  test -s "$repo_dir/backups/$retired_export_name"
+  chmod 0600 "$repo_dir/backups/$retired_export_name"
+  printf 'Protected retired RFQ sales export passed: %s\n' "$retired_export_name"
+else
+  printf 'Protected retired RFQ sales export skipped: legacy columns are already absent.\n'
+fi
+
 # The uploads volume may have been created by an older root-running API.
 # Normalize it with the already scanned API image before the non-root UID 10001
 # starts; this is replay-safe and avoids weakening the volume to world-writable.

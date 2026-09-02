@@ -4,7 +4,7 @@ Ops Config admin 端點測試（GET/PUT /site-profile/ops-config）。
 確保：
 - 需登入（公開 GET /site-profile 不回傳 ops_config，避免設定外洩）
 - 部分更新保留未提供的 key；顯式 null 清除 key
-- sla_response_hours 範圍驗證（0 < hours <= 168）
+- sla_acceptance_hours 範圍驗證（0 < hours <= 168）
 - 寫入後 load_ops_config 服務層讀得到
 """
 import pytest
@@ -30,11 +30,11 @@ async def test_ops_config_roundtrip_and_merge(http_client, two_tenants, admin_to
 
     r = await http_client.put(
         "/api/v1/site-profile/ops-config", headers=auth,
-        json={"auto_reply_enabled": True, "sla_response_hours": 8},
+        json={"auto_reply_enabled": True, "sla_acceptance_hours": 8},
     )
     assert r.status_code == 200
     assert r.json()["auto_reply_enabled"] is True
-    assert r.json()["sla_response_hours"] == 8
+    assert r.json()["sla_acceptance_hours"] == 8
 
     # 部分更新只動 signature，其餘保留
     r = await http_client.put(
@@ -45,7 +45,7 @@ async def test_ops_config_roundtrip_and_merge(http_client, two_tenants, admin_to
     data = r.json()
     assert data["auto_reply_signature"] == "Export Sales"
     assert data["auto_reply_enabled"] is True
-    assert data["sla_response_hours"] == 8
+    assert data["sla_acceptance_hours"] == 8
 
     # 顯式 null 清除 key
     r = await http_client.put(
@@ -58,7 +58,7 @@ async def test_ops_config_roundtrip_and_merge(http_client, two_tenants, admin_to
     # 還原，避免影響其他測試
     await http_client.put(
         "/api/v1/site-profile/ops-config", headers=auth,
-        json={"auto_reply_enabled": False, "sla_response_hours": 4},
+        json={"auto_reply_enabled": False, "sla_acceptance_hours": 4},
     )
 
 
@@ -69,7 +69,7 @@ async def test_ops_config_sla_hours_validation(http_client, two_tenants, admin_t
     for bad in (0, -4, 999):
         r = await http_client.put(
             "/api/v1/site-profile/ops-config", headers=auth,
-            json={"sla_response_hours": bad},
+            json={"sla_acceptance_hours": bad},
         )
         assert r.status_code == 422
 
@@ -83,15 +83,15 @@ async def test_ops_config_tenant_isolation(http_client, two_tenants, admin_token
 
     await http_client.put(
         "/api/v1/site-profile/ops-config", headers=auth_a,
-        json={"sla_response_hours": 24},
+        json={"sla_acceptance_hours": 24},
     )
     r = await http_client.get("/api/v1/site-profile/ops-config", headers=auth_b)
     assert r.status_code == 200
-    assert r.json().get("sla_response_hours") != 24
+    assert r.json().get("sla_acceptance_hours") != 24
 
     await http_client.put(
         "/api/v1/site-profile/ops-config", headers=auth_a,
-        json={"sla_response_hours": 4},
+        json={"sla_acceptance_hours": 4},
     )
 
 
@@ -103,7 +103,7 @@ async def test_public_site_profile_does_not_leak_ops_config(
     auth = {"Authorization": f"Bearer {await admin_token_for_tenant(tenant_a.id)}"}
     await http_client.put(
         "/api/v1/site-profile/ops-config", headers=auth,
-        json={"auto_reply_enabled": False, "sla_response_hours": 4},
+        json={"auto_reply_enabled": False, "sla_acceptance_hours": 4},
     )
     r = await http_client.get(
         "/api/v1/site-profile", headers={"X-Tenant-ID": str(tenant_a.id)}

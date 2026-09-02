@@ -61,23 +61,41 @@ async def test_rfq_sla_lifecycle(http_client, two_tenants, admin_token_for_tenan
     r = await http_client.get(f"/api/v1/tracking/rfqs/{rfq_id}", headers=auth)
     detail = r.json()
     assert detail["buyer_timezone"] == "Europe/Berlin"
-    assert detail["sla_due_at"] is not None
-    assert detail["sla_breached"] is False
-    assert detail["first_response_at"] is None
+    assert detail["acceptance_due_at"] is not None
+    assert detail["acceptance_sla_breached"] is False
+    assert detail["accepted_at"] is None
+    assert detail["first_verified_response_at"] is None
 
-    # 首次狀態流轉 → 記錄首回時間（T8 的資料源）
+    # 尚未分派不得直接接手；分派與接手是兩個獨立事件。
+    denied = await http_client.put(
+        f"/api/v1/tracking/rfqs/{rfq_id}/status", headers=auth,
+        json={"status": "accepted"},
+    )
+    assert denied.status_code == 422
+    from tests.conftest import _make_engine
+    from app.models.user import User
+    from sqlmodel import select
+    _, factory = _make_engine()
+    async with factory() as session:
+        owner = (await session.exec(select(User).where(User.tenant_id == tenant_a.id))).first()
+    r = await http_client.put(
+        f"/api/v1/tracking/rfqs/{rfq_id}/assign", headers=auth,
+        json={"assigned_to": str(owner.id)},
+    )
+    assert r.status_code == 200, r.text
     r = await http_client.put(
         f"/api/v1/tracking/rfqs/{rfq_id}/status", headers=auth,
-        json={"status": "in_progress"},
+        json={"status": "accepted"},
     )
     assert r.status_code == 200, r.text
 
     r = await http_client.get(f"/api/v1/tracking/rfqs/{rfq_id}", headers=auth)
     detail = r.json()
-    assert detail["first_response_at"] is not None
-    assert detail["first_response_at"] >= detail["created_at"]
+    assert detail["accepted_at"] is not None
+    assert detail["accepted_at"] >= detail["created_at"]
+    assert detail["first_verified_response_at"] is None
 
-    # SLA 篩選參數 smoke test
-    r = await http_client.get("/api/v1/tracking/rfqs?sla=due_soon", headers=auth)
+    # 接手篩選參數 smoke test
+    r = await http_client.get("/api/v1/tracking/rfqs?attention=awaiting_acceptance", headers=auth)
     assert r.status_code == 200, r.text
-    assert all(row["sla_due_at"] is not None for row in r.json())
+    assert all(row["status"] == "assigned" for row in r.json())

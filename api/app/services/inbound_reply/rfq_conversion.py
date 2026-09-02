@@ -129,7 +129,7 @@ async def create_rfq_from_handoff(
         contact_id=contact.id,
         visitor_id=message.visitor_id,
         form_data=json.dumps(source_snapshot, ensure_ascii=False),
-        attribution_json=json.dumps(
+        source_context_json=json.dumps(
             {
                 "source": "outreach_reply_handoff",
                 "outreach_message_id": str(message.id),
@@ -140,10 +140,6 @@ async def create_rfq_from_handoff(
         status="new",
         priority=handoff.priority,
         source_page="inbound-email",
-        quality_score=0,
-        quality_reasons_json=json.dumps(
-            ["Human-confirmed conversion from an inbound outreach reply"]
-        ),
         is_test_data=False,
         created_at=now,
         updated_at=now,

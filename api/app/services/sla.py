@@ -1,4 +1,4 @@
-"""Timezone-aware first-response SLA for RFQs (T7).
+"""Timezone-aware RFQ handoff acceptance SLA.
 
 設計依據：FORGEBASE_LEADS_EFFECTIVENESS_PLAN.md §5.3「首回速度工程」。
 SLA 以**買家時區的工作時間**（週一至週五 09:00–18:00 買家當地時間）計時：
@@ -93,14 +93,14 @@ def add_business_hours(start_naive: datetime, hours: float, tz_name: str) -> dat
 
 
 async def load_sla_hours(tenant_id, db) -> float:
-    """Per-tenant SLA 目標時數：SiteProfile.ops_config_json 的 "sla_response_hours"。"""
+    """Per-tenant acceptance target; supports the legacy key during migration."""
     if not tenant_id:
         return DEFAULT_SLA_HOURS
     try:
         from app.services.ops_config import load_ops_config
 
         config = await load_ops_config(tenant_id, db)
-        hours = config.get("sla_response_hours")
+        hours = config.get("sla_acceptance_hours") or config.get("sla_response_hours")
         if hours:
             return float(hours)
     except Exception:
@@ -109,7 +109,7 @@ async def load_sla_hours(tenant_id, db) -> float:
 
 
 async def compute_sla(body_country: Optional[str], tenant_id, created_at: datetime, db) -> tuple[str, datetime]:
-    """回傳 (buyer_timezone, sla_due_at) 供 RFQ 建立時寫入。"""
+    """Return ``(buyer_timezone, acceptance_due_at)`` for a new RFQ."""
     tz_name = timezone_for_country(body_country)
     hours = await load_sla_hours(tenant_id, db)
     return tz_name, add_business_hours(created_at, hours, tz_name)
@@ -118,8 +118,8 @@ async def compute_sla(body_country: Optional[str], tenant_id, created_at: dateti
 async def scan_sla_breaches() -> dict:
     """每 15 分鐘由排程呼叫：
 
-    - 即將逾期（1 小時內）且未提醒 → notify_rfq_reminder
-    - 已逾期且未標記 → sla_breached=True + notify_rfq_escalation（升級主管）
+    - 即將超過接手期限且未提醒 → notify_rfq_reminder
+    - 已超過接手期限 → acceptance_sla_breached=True + escalation
     """
     from sqlmodel import col, select
 
@@ -137,16 +137,16 @@ async def scan_sla_breaches() -> dict:
             await db.exec(
                 select(RFQRequest).where(
                     col(RFQRequest.status).in_(["new", "assigned"]),
-                    RFQRequest.first_response_at.is_(None),
-                    RFQRequest.sla_due_at.is_not(None),
+                    RFQRequest.accepted_at.is_(None),
+                    RFQRequest.acceptance_due_at.is_not(None),
                 )
             )
         ).all()
 
         for rfq in open_rfqs:
-            if rfq.sla_due_at < now:
-                if not rfq.sla_breached:
-                    rfq.sla_breached = True
+            if rfq.acceptance_due_at < now:
+                if not rfq.acceptance_sla_breached:
+                    rfq.acceptance_sla_breached = True
                     rfq.updated_at = now
                     db.add(rfq)
                     stats["breached"] += 1
@@ -154,7 +154,7 @@ async def scan_sla_breaches() -> dict:
                         await notify_rfq_escalation(rfq.id)
                     except Exception:
                         logger.warning("escalation notify failed for %s", rfq.id, exc_info=True)
-            elif rfq.sla_due_at <= soon and rfq.reminder_24h_sent_at is None:
+            elif rfq.acceptance_due_at <= soon and rfq.reminder_24h_sent_at is None:
                 try:
                     await notify_rfq_reminder(rfq.id)
                     stats["reminded"] += 1

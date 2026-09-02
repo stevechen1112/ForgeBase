@@ -75,12 +75,12 @@ def test_ack_email_professional_and_escaped():
             "specifications": "SUS304, tolerance +/-0.05mm",
         },
         missing_info=["Preferred trade terms (e.g. FOB, CIF, DAP)"],
-        sla_hours=4,
         signature="Alice Wang\nExport Sales",
         company_display="Acme Fasteners",
     )
     assert "RFQ-20260803-001" in subject
-    assert "within 4 business hours" in body
+    assert "received and under review" in subject
+    assert "contact you" in body
     assert "Hans &lt;b&gt;Müller&lt;/b&gt;" in body  # XSS escape
     assert "10,000 pcs" in body
     assert "trade terms" in body
@@ -98,7 +98,7 @@ def test_business_open_delay():
 
 @requires_db
 async def test_auto_reply_respects_tenant_toggle(http_client, two_tenants):
-    """關閉的 tenant 不發信；開啟的 tenant 會寫入 auto_reply_sent 事件。
+    """關閉的 tenant 不發信；開啟的 tenant 會寫入收件確認事件。
 
     端點本身也會觸發 maybe_auto_reply（背景 task），測試時先把端點觸發
     mock 掉，再以真實函式直接驗證 gate／發送／冪等。
@@ -188,18 +188,20 @@ async def test_auto_reply_respects_tenant_toggle(http_client, two_tenants):
     assert len(sent_emails) == 1
     assert "RFQ-" in sent_emails[0]["subject"]
 
-    # 事件與首回時間有記錄
+    # 事件與收件確認時間有記錄，但不得偽裝為人工實質回覆。
     async with factory() as session:
         rows = (await session.exec(
             sa_text("SELECT event_type FROM rfq_events WHERE rfq_id = :rid"),
             params={"rid": rfq_b},
         )).all()
-        assert any(r[0] == "auto_reply_sent" for r in rows)
-        frt = (await session.exec(
-            sa_text("SELECT first_response_at FROM rfq_requests WHERE id = :rid"),
+        assert any(r[0] == "acknowledgement_sent" for r in rows)
+        ack, accepted, verified = (await session.exec(
+            sa_text("SELECT acknowledgement_sent_at, accepted_at, first_verified_response_at FROM rfq_requests WHERE id = :rid"),
             params={"rid": rfq_b},
-        )).scalar()
-        assert frt is not None
+        )).one()
+        assert ack is not None
+        assert accepted is None
+        assert verified is None
 
     await eng.dispose()
 
@@ -222,16 +224,11 @@ async def test_rfq_stats_endpoint(http_client, two_tenants, admin_token_for_tena
     token = await admin_token_for_tenant(tenant_a.id)
     auth = {"Authorization": f"Bearer {token}"}
 
-    await http_client.put(
-        f"/api/v1/tracking/rfqs/{rfq_id}/status", headers=auth,
-        json={"status": "in_progress"},
-    )
-
     r = await http_client.get("/api/v1/tracking/rfqs/stats?days=30", headers=auth)
     assert r.status_code == 200, r.text
     stats = r.json()
-    assert stats["total_rfqs"] >= 1
-    assert stats["responded"] >= 1
-    assert stats["avg_first_response_hours"] is not None
-    assert stats["sla_applicable"] >= 1
-    assert "sla_achievement_rate" in stats
+    assert stats["total"] >= 1
+    assert stats["unassigned"] >= 1
+    assert stats["accepted"] == 0
+    assert stats["verified_responses"] == 0
+    assert "acceptance_sla_rate" in stats

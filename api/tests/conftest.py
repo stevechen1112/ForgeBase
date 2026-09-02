@@ -176,8 +176,6 @@ async def two_tenants():
         for tid in (str(tenant_a.id), str(tenant_b.id)):
             for table in (
                 "privacy_operations",
-                "attribution_events",
-                "attribution_links",
                 "sales_handoff_events",
                 "sales_handoffs",
                 "inbound_replies",

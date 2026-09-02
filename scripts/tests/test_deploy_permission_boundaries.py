@@ -55,6 +55,21 @@ def test_safe_deploy_keeps_edge_running_until_dependencies_are_healthy() -> None
     assert 'up -d --remove-orphans\n' not in script
 
 
+def test_safe_deploy_exports_retired_rfq_fields_before_migration() -> None:
+    script = (ROOT / "deploy/safe-deploy.sh").read_text(encoding="utf-8")
+
+    backup = 'bash "$repo_dir/deploy/backup.sh"'
+    retired_export = "python scripts/export_retired_rfq_sales_data.py"
+    migration = 'run --rm migrate'
+    assert backup in script
+    assert retired_export in script
+    assert migration in script
+    assert script.index(backup) < script.index(retired_export) < script.index(migration)
+    assert '-v "$repo_dir/backups:/protected-exports"' in script
+    assert 'chmod 0600 "$repo_dir/backups/$retired_export_name"' in script
+    assert "legacy columns are already absent" in script
+
+
 def test_reference_site_uses_an_explicit_host_not_a_stale_tenant_slug() -> None:
     compose = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
     reference = compose.split("  web_reference:", 1)[1].split("\n  caddy:", 1)[0]

@@ -143,7 +143,6 @@ async def _seed_lab(database_url: str) -> dict:
         for key, meta in FEATURE_CATALOG.items()
         if meta.get("configurable", True)
     }
-    configurable["outcomes_dashboard"] = False
     tenant = Tenant(
         name="ForgeBase RBAC Lab",
         slug=f"rbac-lab-{tag}",
@@ -416,14 +415,6 @@ def _run_browser_and_api_matrix(
             back_link = page.locator('a[aria-label^="返回"]')
             if back_link.count() < 1:
                 raise LabFailure(f"{path} did not expose a deterministic parent link")
-        if path == "/dashboard/rfqs/my" and expectation == "allowed":
-            page.get_by_role("heading", name="我的詢價案件", exact=True).wait_for(
-                state="visible", timeout=30_000
-            )
-            if page.url != f"{admin_base}/dashboard/rfqs/my":
-                raise LabFailure("My RFQs route did not remain on its dedicated view")
-            if page.get_by_label("負責業務").count() > 0:
-                raise LabFailure("My RFQs view exposed the company-wide owner filter")
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -468,9 +459,7 @@ def _run_browser_and_api_matrix(
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/products/new": "allowed",
                 "/dashboard/rfqs": "allowed",
-                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
-                "/dashboard/outcomes": "locked",
             },
             "admin": {
                 "/dashboard": "allowed",
@@ -481,7 +470,6 @@ def _run_browser_and_api_matrix(
                 "/dashboard/settings/site-profile": "allowed",
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
-                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
             },
             "marketing_manager": {
@@ -494,13 +482,11 @@ def _run_browser_and_api_matrix(
                 "/dashboard/settings/site-profile": "denied",
                 "/dashboard/settings/site-copy": "allowed",
                 "/dashboard/rfqs": "allowed",
-                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/visitors": "allowed",
             },
             "sales": {
                 "/dashboard": "allowed",
                 "/dashboard/rfqs": "allowed",
-                "/dashboard/rfqs/my": "allowed",
                 "/dashboard/replies": "allowed",
                 "/dashboard/visitors": "allowed",
                 # The content hub is intentionally read-only for Sales and
