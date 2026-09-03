@@ -24,6 +24,8 @@ type TaskItem = {
   id?: string;
   rfq_number?: string;
   page_title?: string;
+  content_title?: string;
+  content_type?: string;
   slug?: string;
   created_at?: string;
   acceptance_due_at?: string;
@@ -61,8 +63,33 @@ const SEVERITY_LABEL: Record<Task["severity"], string> = {
   none: "待確認",
 };
 
+const CONTENT_EDIT_PATHS: Record<string, string> = {
+  pages: "/dashboard/pages",
+  products: "/dashboard/products",
+  categories: "/dashboard/categories",
+  applications: "/dashboard/applications",
+  faqs: "/dashboard/faqs",
+  comparisons: "/dashboard/comparisons",
+  certifications: "/dashboard/certifications",
+  capabilities: "/dashboard/capabilities",
+};
+
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  pages: "網站頁面",
+  products: "商品",
+  categories: "商品分類",
+  applications: "應用案例",
+  faqs: "常見問題",
+  comparisons: "比較內容",
+  certifications: "認證資料",
+  capabilities: "工廠能力",
+};
+
 function itemHref(item: TaskItem, fallback: string | null) {
   if (item.rfq_number && item.id) return `/dashboard/rfqs/${item.id}`;
+  if (item.content_type && item.id && CONTENT_EDIT_PATHS[item.content_type]) {
+    return `${CONTENT_EDIT_PATHS[item.content_type]}/${item.id}/edit`;
+  }
   if (item.page_title && item.id) return `/dashboard/pages/${item.id}/edit`;
   return fallback ?? "/dashboard";
 }
@@ -74,6 +101,10 @@ function itemMeta(item: TaskItem) {
       return item.overdue ? `接手已逾期・${when}` : `接手期限・${when}`;
     }
     return item.created_at ? `收到於 ${new Date(item.created_at).toLocaleString("zh-TW")}` : "新詢價";
+  }
+  if (item.content_type) {
+    const label = CONTENT_TYPE_LABELS[item.content_type] ?? "內容";
+    return item.slug ? `${label}・/${item.slug}` : `${label}・待內容確認`;
   }
   return item.slug ? `/${item.slug}` : "待內容確認";
 }
@@ -195,7 +226,7 @@ export function TodayWorkQueue() {
                     {task.items.map((item, index) => (
                       <div key={item.id || `${task.type}-${index}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
                         <div className="min-w-0">
-                          <p className="font-bold text-[#10263b]">{item.rfq_number ?? item.page_title ?? task.title}</p>
+                          <p className="font-bold text-[#10263b]">{item.rfq_number ?? item.content_title ?? item.page_title ?? task.title}</p>
                           <p className={item.overdue ? "mt-1 text-sm font-semibold text-red-600" : "mt-1 text-sm text-slate-500"}>{itemMeta(item)}</p>
                         </div>
                         <Button asChild size="sm" className="bg-[#087b8f] hover:bg-[#056b7c]">

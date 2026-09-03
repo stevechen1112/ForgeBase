@@ -10,7 +10,7 @@ const flow: FlowStep[] = [
   { label: "AI 客服對話", feature: "chat_handoff" },
   { label: "留下聯絡資料或詢價" },
   { label: "建立買家資料" },
-  { label: "詢價交給業務", feature: "sales_handoff" },
+  { label: "詢價交給業務", feature: "rfq_workspace" },
 ];
 
 const items: WorkspaceItem[] = [

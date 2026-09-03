@@ -59,3 +59,45 @@ async def test_task_queue_draft_link_points_to_pages(http_client, two_tenants, a
     data = (await http_client.get("/api/v1/ops/task-queue", headers=auth)).json()
     draft = next(item for item in data["tasks"] if item["type"] == "content_pending_approval")
     assert draft["link"] == "/dashboard/pages"
+
+
+@requires_db
+async def test_task_queue_includes_draft_products(http_client, two_tenants, admin_token_for_tenant):
+    tenant, _ = two_tenants
+    auth = {"Authorization": f"Bearer {await admin_token_for_tenant(tenant.id)}"}
+    before = (await http_client.get("/api/v1/ops/task-queue", headers=auth)).json()
+    before_drafts = next(item for item in before["tasks"] if item["type"] == "content_pending_approval")
+
+    category = await http_client.post(
+        "/api/v1/content/categories",
+        headers=auth,
+        json={
+            "category_name": "Queue category",
+            "slug": f"queue-category-{uuid.uuid4().hex[:8]}",
+            "locale": "en",
+            "status": "published",
+        },
+    )
+    assert category.status_code == 201, category.text
+    product = await http_client.post(
+        "/api/v1/content/products",
+        headers=auth,
+        json={
+            "product_name": "Queue draft product",
+            "slug": f"queue-product-{uuid.uuid4().hex[:8]}",
+            "model_number": f"QUEUE-{uuid.uuid4().hex[:8]}",
+            "short_description": "A draft product for the operational queue.",
+            "category_id": category.json()["data"]["id"],
+            "locale": "en",
+            "status": "draft",
+        },
+    )
+    assert product.status_code == 201, product.text
+
+    after = (await http_client.get("/api/v1/ops/task-queue", headers=auth)).json()
+    after_drafts = next(item for item in after["tasks"] if item["type"] == "content_pending_approval")
+    assert after_drafts["count"] == before_drafts["count"] + 1
+    assert any(
+        item["id"] == product.json()["data"]["id"] and item["content_type"] == "products"
+        for item in after_drafts["items"]
+    )

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/store";
 import { productsApi, type Product } from "@/lib/api/content";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Plus, Star, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { DataTable } from "@/components/ui/DataTable";
@@ -22,29 +23,45 @@ export default function ProductsListPage() {
   const [sortingId, setSortingId] = useState<string | null>(null);
   const [localeFilter, setLocaleFilter] = useState("");
   const [pairStatus, setPairStatus] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const pair = new URLSearchParams(window.location.search).get("pair_status");
     if (pair) setPairStatus(pair);
   }, []);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    if (!token) return;
     const params: Record<string, string | number> = { page, page_size: 20 };
     if (localeFilter) params.locale = localeFilter;
     if (pairStatus) params.pair_status = pairStatus;
-    productsApi.list(token, params).then((res) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await productsApi.list(token, params);
       setRows(res.data);
       setTotalPages(res.meta.total_pages);
-    });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "商品資料載入失敗");
+    } finally {
+      setLoading(false);
+    }
   }, [token, page, localeFilter, pairStatus]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
-    await productsApi.delete(token, id);
-    load();
-    setDeleting(null);
+    setError(null);
+    try {
+      await productsApi.delete(token, id);
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "商品刪除失敗");
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const handleStatusChange = (id: string, newStatus: string) => {
@@ -56,6 +73,8 @@ export default function ProductsListPage() {
     try {
       await productsApi.update(token, id, { is_featured: !current } as Partial<Product>);
       setRows((prev) => prev.map((r) => (r.id === id ? { ...r, is_featured: !current } : r)));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "商品主推設定失敗");
     } finally {
       setFeaturingId(null);
     }
@@ -66,7 +85,9 @@ export default function ProductsListPage() {
     try {
       const next = Math.max(0, (row.display_priority || 0) + delta);
       await productsApi.update(token, row.id, { display_priority: next } as Partial<Product>);
-      load();
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "商品排序更新失敗");
     } finally {
       setSortingId(null);
     }
@@ -157,6 +178,8 @@ export default function ProductsListPage() {
           <Button asChild><Link href="/dashboard/products/new"><Plus className="mr-1.5 h-4 w-4" />+ 新增商品</Link></Button>
         </div>
       </div>
+      {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
+      {loading && rows.length === 0 && <p className="mb-4 text-sm text-muted-foreground">正在讀取商品資料…</p>}
       <DataTable
         columns={COLUMNS}
         rows={rows}
