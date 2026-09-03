@@ -10,7 +10,8 @@ const flow: FlowStep[] = [
   { label: "AI 客服對話", feature: "chat_handoff" },
   { label: "留下聯絡資料或詢價" },
   { label: "建立買家資料" },
-  { label: "詢價交給業務", feature: "rfq_workspace" },
+  // RFQ 交接是此產品的固定核心，不應因能力服務暫時讀取失敗而顯示為未開通。
+  { label: "詢價交給業務" },
 ];
 
 const items: WorkspaceItem[] = [
