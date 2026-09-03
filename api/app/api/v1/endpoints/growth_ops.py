@@ -14,8 +14,15 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.v1.deps import get_current_user, require_admin
 from app.core.datetime import isoformat_utc, utcnow_naive
 from app.db.session import get_session
+from app.models.application import Application
+from app.models.capability import Capability
+from app.models.certification import Certification
+from app.models.comparison_topic import ComparisonTopic
+from app.models.faq_item import FAQItem
 from app.models.operational_job import OperationalJob
 from app.models.page import Page
+from app.models.product import Product
+from app.models.product_category import ProductCategory
 from app.models.rfq_request import RFQRequest
 from app.models.user import User
 
@@ -85,11 +92,36 @@ async def get_task_queue(
             due = due.replace(tzinfo=None)
         return bool(row.acceptance_sla_breached or (due and due < utcnow_naive()))
 
-    drafts_query = select(Page).where(Page.status == "draft", Page.tenant_id == tenant_id)
-    draft_count = await _count(db, drafts_query)
-    draft_rows = list((await db.exec(
-        drafts_query.order_by(col(Page.updated_at).asc()).limit(5)
-    )).all())
+    content_sources = (
+        ("pages", Page, "title"),
+        ("products", Product, "product_name"),
+        ("categories", ProductCategory, "category_name"),
+        ("applications", Application, "application_name"),
+        ("faqs", FAQItem, "question"),
+        ("comparisons", ComparisonTopic, "topic_title"),
+        ("certifications", Certification, "cert_name"),
+        ("capabilities", Capability, "capability_name"),
+    )
+    pending_content = []
+    for content_type, model, title_attribute in content_sources:
+        query = select(model).where(model.status == "draft", model.tenant_id == tenant_id)
+        rows = list((await db.exec(query)).all())
+        pending_content.extend(
+            (
+                row.updated_at,
+                {
+                    "id": str(row.id),
+                    "content_title": str(getattr(row, title_attribute)),
+                    "content_type": content_type,
+                    "slug": getattr(row, "slug", None),
+                    "updated_at": isoformat_utc(row.updated_at),
+                },
+            )
+            for row in rows
+        )
+    pending_content.sort(key=lambda item: item[0])
+    draft_count = len(pending_content)
+    draft_rows = [item for _, item in pending_content[:5]]
 
     tasks = [
         {
@@ -133,15 +165,7 @@ async def get_task_queue(
             "title": "待核准內容",
             "count": draft_count,
             "severity": "low" if draft_count else "none",
-            "items": [
-                {
-                    "id": str(page.id),
-                    "page_title": page.title,
-                    "slug": page.slug,
-                    "updated_at": isoformat_utc(page.updated_at),
-                }
-                for page in draft_rows
-            ],
+            "items": draft_rows,
             "link": "/dashboard/pages",
         })
 
